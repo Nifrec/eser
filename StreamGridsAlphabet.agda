@@ -1,4 +1,4 @@
--- Module      : StreamGrid.Alphabet
+-- Module      : StreamGridsAlphabet
 -- Description : Alphabets and algebras
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
@@ -23,8 +23,7 @@
 -- * Conversion of `Algebras` to Agda types.
 -- * Conversion of `Algebras` to `Alphabet`s.
 
--- TODO: figure out how to get the module structure correct.
-module Alph3 where
+module StreamGridsAlphabet where
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
