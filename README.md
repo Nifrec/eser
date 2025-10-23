@@ -62,3 +62,23 @@ Alphabet n = Fin (suc n)
 NamedAlphabet : ℕ → Set
 NamedAlphabet n = (Alphabet n) × (Fin (suc n) → String)
 ```
+
+# Lessons learned
+
+## Confusing types and elements
+Why does this not work?
+```agda
+Alphabet : ℕ → Set
+Alphabet n = Fin (suc n)
+
+AlgToAlph : (A : Algebra) → Alphabet (Data.Nat.pred (totNumConstr A))
+AlgToAlph A = Fin (Data.Nat.suc (Data.Nat.pred (totNumConstr A)))
+```
+Last line gives a type error while I checked that
+both `Alphabet (Data.Nat.pred (totNumConstr A))`
+and `Fin (Data.Nat.suc (Data.Nat.pred (totNumConstr A)))`
+normalise to `Fin (suc (totNumConstr A ∸ 1))`!
+
+**Solution:** 
+A function `f : A → B` needs to output *an element* of `B`. 
+Not the type `B`. #facepalm
