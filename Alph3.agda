@@ -1,5 +1,5 @@
 -- Module      : StreamGrid.Alphabet
--- Description : Representation of alphabets of atomic path pieces.
+-- Description : Alphabets and algebras
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -12,6 +12,16 @@
 -- 3. It is finite.
 -- 4. It is linearly ordered 
 --  (hence strings over A are lexicographically ordered).
+-- Most terse implementation: alphabets are `Fin n` for `n ≥ 1`.
+-- This does not give any naming to the elements,
+-- but that can be done via an exernal function `Fin n → String`.
+--------------------------------------------------------------------------------
+-- Contents of this file:
+-- * Definition of `Alphabet`.
+-- * Definition of `Algebra`: non-empty algebras with a finite maximum arity
+--  and finitely many constructors of each arity.
+-- * Conversion of `Algebras` to Agda types.
+-- * Conversion of `Algebras` to `Alphabet`s.
 
 -- TODO: figure out how to get the module structure correct.
 module Alph3 where
@@ -34,12 +44,24 @@ open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
+--------------------------------------------------------------------------------
+--  Alphabets
+--------------------------------------------------------------------------------
 Alphabet : ℕ → Set
 Alphabet n = Fin (suc n)
 
 NamedAlphabet : ℕ → Set
 NamedAlphabet n = (Alphabet n) × (Fin (suc n) → String)
 
+--------------------------------------------------------------------------------
+--  Lexicographical order on alphabets
+--------------------------------------------------------------------------------
+
+-- TODO!
+
+--------------------------------------------------------------------------------
+--  Algebras
+--------------------------------------------------------------------------------
 -- Very terse definition of an algebra.
 -- Interpretation: if `(n , c)` is an algebra then:
 -- * Its maximum arity of a constructor is `n`.
@@ -202,15 +224,9 @@ data ToType (A : Algebra) : Set where
 atom : {A : Algebra} → (m : ℕ) → (m Data.Nat.< numConstr A zero) → ToType A
 atom m m<M = construct zero (fromℕ< m<M) []
 
------------ ALL STUFF BELOW IS WIP AND BROKEN ----------------------------------
-
-NonEmptyAlg : Algebra → Set
-NonEmptyAlg A with (0 Data.Nat.<? totNumConstr A)
-... | yes _ = ⊤
-... | no _ = ⊥
-
-AlgToAlph : (A : Algebra) → NonEmptyAlg A → Alphabet (Data.Nat.pred (totNumConstr A))
--- Agda doesn't yet know that (suc (pred N)) = N
--- where N is num constructors.
--- Need to prove totNumConstr is of the form (suc N).
-AlgToAlph A _ = {! Fin (totNumConstr A) !}
+-- Thanks to the chosen representations of alphabets and algebras,
+-- converting an algebra into an alphabet is now trivial!
+AlgToAlph : (A : Algebra) → Set
+AlgToAlph A = Alphabet (Data.Nat.pred (totNumConstr A))
+    --^ `Alphabet` increments the input ℕ by 1 to avoid empty alphabets,
+    --  hence the `pred`.
