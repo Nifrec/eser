@@ -40,17 +40,62 @@ open import Relation.Nullary
 -- When we isolate those relations, we obtain the more general 'signoids'
 -- that only have the properties needed for building a StreamGrid from it.
 --------------------------------------------------------------------------------
+
+-- Strict `<` relations of the form `x_1 < x_2 < x_3 < ...`.
+-- AKA 'linear orders'.
 Chain 
     : {A : Set} 
     → Rel A 0ℓ 
     → Set
-Chain {A} _<_ = ?
+Chain {A} _<_ 
+    = (Transitive _<_)
+    × (Irreflexive _≡_ _<_)
+    × (Total _<_)
+    × (Asymmetric _<_)
 
-Enumeration 
+-- The elements of order (A, <) can be iterated: 
+-- there is an enumeration `f : ℕ → A` monotone in <.
+-- Note: if _<_ is a chain then (1) surjectivity plus (2) monoticity 
+-- of f imply injectivity (i.e., every element has a *unique* index).
+data Enumeration (A : Set) (_<_ : Rel A 0ℓ) : Set where
+    -- If A has only finitely many elements:
+    finEnum : 
+        Σ[ n ∈ ℕ ] (
+        Σ[ f ∈ (Fin n → A) ] (
+        ((a : A) → Σ[ m ∈ Fin n ](a ≡ f m))
+        ×
+        ((m m' : Fin n) → (f m < f m'))
+        )
+        )
+        → Enumeration A _<_
+    -- If A has countably infinitely many elements:
+    infEnum : 
+        Σ[ f ∈ (ℕ → A) ] (
+        ((a : A) → Σ[ m ∈ ℕ ](a ≡ f m))
+        ×
+        ((m m' : ℕ) → (f m < f m'))
+        )
+        → Enumeration A _<_
+
+-- Extract enumeration function out of an enumerated linear order.
+getEnumerator 
     : {A : Set} 
-    → Rel A 0ℓ 
-    → Set
-Enumeration {A} _<_ = ?
+    → {_<_ : Rel A 0ℓ}
+    → (c : Chain _<_)
+    → (e : Enumeration A _<_)
+    → ℕ 
+    → A
+getEnumerator c e n = ?
+
+-- Lookup the index of an element in an enumerated linear order.
+getIndex 
+    : {A : Set} 
+    → {_<_ : Rel A 0ℓ}
+    → (c : Chain _<_)
+    → (e : Enumeration A _<_)
+    → (a : A)
+    → Σ[ n ∈ ℕ ] ((getEnumerator c e) n ≡ a)
+getIndex c e a = ?
 
 SubRelat 
     : {A : Set} 
@@ -69,7 +114,7 @@ data Signoid (A : Set) (_<_ : Rel A 0ℓ) (_⊂_ : Rel A 0ℓ) : Set where
     mkSignoid 
         --: (_<_  : Rel A 0ℓ) 
         : (c    : Chain _<_)
-        → (σ    : Enumeration _<_)
+        → (σ    : Enumeration A _<_)
         --→ (_⊂_  : Rel A 0ℓ)
         → (p    : SubRelat _<_ _⊂_)
         → NiceProperties _⊂_

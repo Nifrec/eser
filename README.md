@@ -11,6 +11,11 @@ TODO: explain what this is all about...
 * Write better README
 * Rename 'algebra' to 'signature'
 
+### To test:
+* `Enumeration`
+* `getEnumerator`
+* `getIndex`
+
 ## Ideas for extensions and explanations
 * Local rules & CA.
 * Enforcing additional constraints such as associativity.
