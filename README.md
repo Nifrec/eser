@@ -1,8 +1,29 @@
-# TODOs
-1. Write proper README.
-2. Organise files into decent modules.
+# StreamGrids
+TODO: explain what this is all about...
+
+## What is where
+* `StreamGrids/Fold`    : Function to fold finite sets.
+* `StreamGrids/Algebra` : Representation of finite-arity algebras/signatures.
+* `StreamGrids/Practise`: no library functions;
+                          just experiments with Agda, 
+                          to try out what is possible.
+## TODOs
+* Write better README
+* Rename 'algebra' to 'signature'
+
+## Ideas for extensions and explanations
+* Local rules & CA.
+* Enforcing additional constraints such as associativity.
+* Modal logic for arbitrary signatures?
+* Dependent coalgebras?
+
+### To explain
+* Why signatures with constructors with external args from external
+    finite sets are *not* a generalisation: one can add more constructors
+    instead, one for each pair of external arguments.
 
 # Alphabet representation issues
+**This part of the README is not very relevant anymore!**
 
 ## Philosophically: what is an alphabet?
 It is a set `A` with the following properties:

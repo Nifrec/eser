@@ -1,4 +1,4 @@
--- Module      : ITETypes
+-- Module      : StreamGrids.Practise.ITETypes
 -- Description : Trying out if-then-else statements in type-level functions
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
@@ -6,7 +6,7 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 
-module practise.ITETypes where
+module StreamGrids.Practise.ITETypes where
 
 -- Problem 1: given `f : X → X`,
 -- Wanted: dependent function `g : Π(x : X) → if f(x) = x then A else B`

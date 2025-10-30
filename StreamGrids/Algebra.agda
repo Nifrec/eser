@@ -1,4 +1,4 @@
--- Module      : StreamGridsAlphabet
+-- Module      : StreamGrids.Algebra
 -- Description : Alphabets and algebras
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
@@ -23,7 +23,7 @@
 -- * Conversion of `Algebras` to Agda types.
 -- * Conversion of `Algebras` to `Alphabet`s.
 
-module StreamGridsAlphabet where
+module StreamGrids.Algebra where
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
@@ -43,7 +43,7 @@ open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
-open import StreamGridsFold
+open import StreamGrids.Fold
 
 --------------------------------------------------------------------------------
 --  Alphabets

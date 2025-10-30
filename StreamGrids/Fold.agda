@@ -1,4 +1,4 @@
--- Module      : StreamGridsFold
+-- Module      : StreamGrids.Fold
 -- Description : Folding of finite sets
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
@@ -6,7 +6,7 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 
-module StreamGridsFold where
+module StreamGrids.Fold where
 
 open import Data.Fin
 open import Data.List
