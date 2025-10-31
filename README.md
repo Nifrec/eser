@@ -2,11 +2,26 @@
 TODO: explain what this is all about...
 
 ## What is where
-* `StreamGrids/Fold`    : Function to fold finite sets.
-* `StreamGrids/Algebra` : Representation of finite-arity algebras/signatures.
-* `StreamGrids/Practise`: no library functions;
-                          just experiments with Agda, 
-                          to try out what is possible.
+* `StreamGrids/Fold`    
+    Function to fold finite sets.
+* `StreamGrids/Algebra` 
+    Representation of finite-arity algebras/signatures.
+* `StreamGrids/Practise`
+    No library functions; just experiments with Agda, 
+    to try out what is possible.
+* `StreamGrids/Enumeration`
+    Predicate telling that a set is enumerable.
+* `StreamGrids/Chain`
+    Definition of total linear order relations.
+* `StreamGrids/Examples`
+    Example instantiations of abstract definitions,
+    also functions as test cases.
+    `StreamGrids.Examples.Foo` contains the examples for
+    module `StreamGrids.Foo`.
+* `StreamGrids/Practise`
+    Informal personal practise to get better acquinted with Agda.
+    
+
 ## TODOs
 * Write better README
 * Rename 'algebra' to 'signature'
@@ -17,9 +32,15 @@ TODO: explain what this is all about...
 * `getIndex`
 
 ## Ideas for extensions and explanations
+
+### Concrete ideas
+* Prove that `SGToType` is an hSet.
 * Local rules & CA.
 * Enforcing additional constraints such as associativity.
+
+### Abstract ideas
 * Modal logic for arbitrary signatures?
+* Regular expressions for arbitrary signatures?
 * Dependent coalgebras?
 
 ### To explain
