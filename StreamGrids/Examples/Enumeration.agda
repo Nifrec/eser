@@ -126,6 +126,8 @@ OnlyBs empty = ⊤
 OnlyBs (appA s) = ⊥
 OnlyBs (appB s) = OnlyBs s
 
+nTimesA : ℕ → 
+
 incrRec : (s : AB*) → (OnlyBs s) ⊎ Σ[ s' ∈ AB* ] (len s ≡ len s')
 incrRec empty = inj₁ tt
 incrRec (appA s) with incrRec s
