@@ -98,6 +98,28 @@ data AB* : Set where
     appA    : AB* → AB*
     appB    : AB* → AB*
 
+appAinj : {x y : AB*} → appA x ≡ appA y → x ≡ y
+appAinj refl = refl
+
+appBinj : {x y : AB*} → appB x ≡ appB y → x ≡ y
+appBinj refl = refl
+
+decEqAB* : DecidableEquality AB*
+decEqAB* empty empty = yes refl
+decEqAB* empty (appA y) = no λ { () }
+decEqAB* empty (appB y) = no λ { () }
+decEqAB* (appA x) empty = no λ { () }
+decEqAB* (appA x) (appA y) with decEqAB* x y
+... | yes p = yes (cong appA p)
+... | no x≢y = no λ { appAx≡appAy → x≢y (appAinj appAx≡appAy) }
+decEqAB* (appA x) (appB y) = no λ { () }
+decEqAB* (appB x) empty = no λ { () }
+decEqAB* (appB x) (appA y) = no λ { () }
+decEqAB* (appB x) (appB y) with decEqAB* x y
+... | yes p = yes (cong appB p)
+... | no x≢y = no λ { appBx≡appBy → x≢y (appBinj appBx≡appBy) }
+
+
 numElAB* : ℕ∞
 numElAB* = ∞
 
