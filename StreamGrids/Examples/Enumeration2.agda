@@ -352,6 +352,10 @@ expected
 test4 : someNums ≡ expected
 test4 = refl
 
+--------------------------------------------------------------------------------
+-- Monotonicity of enumAB*
+--------------------------------------------------------------------------------
+
 incrMakesBigger : (α : AB*) →  α <lex increment α
 incrMakesBigger empty = tt
 incrMakesBigger (appA α) = inj₁ refl
@@ -413,3 +417,54 @@ monoAB* zero p = tt
 monoAB* (suc n) p = 
     let rec = monoAB* n p in
     incrMono (enumAB* n) (enumAB* (suc n)) rec
+
+--------------------------------------------------------------------------------
+-- Surjectivity of enumAB*
+--------------------------------------------------------------------------------
+
+
+decrement : AB* → AB*
+decrement empty = empty
+-- Input is "a":
+decrement (appA empty) = empty 
+-- Input is "b":
+decrement (appB empty) = empty
+-- Input is "xa", with x nonempty, so x can be decremented:
+decrement (appA x) = appA (decrement x)
+decrement (appB x) = appA x
+
+getIdxAB* : AB* → ℕ
+getIdxAB* empty = 0
+-- #TODO this is probably correct but Agda needs to be convinced
+-- that it terminates. 
+-- How? Well we have Chain, so I guess:
+-- (1) prove every Chain is Well-Founded (that would be useful in general!)
+-- (2) show decrement is op-monotone: 
+--      show that the output is accessible from the input according
+--      to this WF relation.
+-- (3) Show the composition enumAB* ∘ getIdxAB*AB* is homotopic to id-ℕ.
+--      That will prove that enumAB* is surjective
+--      (the commented out attempt below fails badly!
+--      The recursive structure is not just pasting another constructor on
+--      top...)
+getIdxAB* (appA x) = suc (getIdxAB* (decrement (appA x)))
+getIdxAB* (appB x) = suc (getIdxAB* (decrement (appB x)))
+
+--surjAB*
+--    : (x : AB*)
+--    → Σ[ n ∈ ℕ ]( (fin n <∞ ∞) × (enumAB* n ≡ x))
+--surjAB* empty = (0 , tt , refl)
+--surjAB* (appA x) = 
+--    let (n , n<∞ , en≡x) = surjAB* x in
+--    -- To show: enumAB* (suc n) = appA x
+--    --
+--    suc n , tt , en≡x 
+--surjAB* (appB x) = {! !}
+
+IsEnumAB* : Enumeration AB* _<lex_ _≡_
+IsEnumAB* = record {
+    numEl = ∞ ;
+    enum  = enumAB* ;
+    monotone = monoAB* ;
+    surj = ?
+    }
