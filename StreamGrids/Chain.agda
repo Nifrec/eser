@@ -1,5 +1,5 @@
 -- Module      : StreamGrids.Chain
--- Description : Definition of a Chain (strict total linear order)
+-- Description : Definition of a Chain (irreflective linear order)
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -28,13 +28,14 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
 -- Strict `<` relations of the form `x_1 < x_2 < x_3 < ...`.
--- AKA 'linear orders'.
+-- AKA 'linear orders'. 
+-- Not to be confused with a total order, which is reflexive.
 Chain 
     : {A : Set} 
     → Rel A 0ℓ 
     → Set
 Chain {A} _<_ 
     = (Transitive _<_)
-    × (Irreflexive _≡_ _<_)
-    × (Total _<_)
-    × (Asymmetric _<_)
+    × (Trichotomous _≡_ _<_)
+    --× (Irreflexive _≡_ _<_) -- Implied by Trichotomous?
+    -- × (Asymmetric _<_) -- Also implies by Trichotomous?
