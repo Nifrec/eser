@@ -119,7 +119,6 @@ decEqAB* (appB x) (appB y) with decEqAB* x y
 ... | yes p = yes (cong appB p)
 ... | no x≢y = no λ { appBx≡appBy → x≢y (appBinj appBx≡appBy) }
 
-
 numElAB* : ℕ∞
 numElAB* = ∞
 
@@ -127,48 +126,6 @@ len : AB* → ℕ
 len empty = zero
 len (appA s) = suc (len s)
 len (appB s) = suc (len s)
-
-increment : AB* → AB*
-increment empty = appA empty
-increment (appA s) = appB s
-increment (appB s) = appA (increment s)
-
-test1 : increment empty ≡ appA empty
-test1 = refl
-test2 : increment (appB (appA ( empty))) ≡ appA (appB empty)
-test2 = refl
-test3 : increment (appB (appB ( empty))) ≡ appA (appA (appA empty ))
-test3 = refl
-
-enumAB* : ℕ → AB*
-enumAB* zero = empty
-enumAB* (suc n) = increment (enumAB* n)
-
--- Testing enumAB* on inputs 0 to 7:
-someNums : List AB*
-someNums 
-    = (enumAB* 0) 
-    ∷ (enumAB* 1) 
-    ∷ (enumAB* 2) 
-    ∷ (enumAB* 3) 
-    ∷ (enumAB* 4) 
-    ∷ (enumAB* 5) 
-    ∷ (enumAB* 6) 
-    ∷ (enumAB* 7) 
-    ∷ []
-expected : List AB*
-expected 
-    = (empty) 
-    ∷ (appA empty)
-    ∷ (appB empty)
-    ∷ (appA (appA empty))
-    ∷ (appB (appA empty))
-    ∷ (appA (appB empty))
-    ∷ (appB (appB empty))
-    ∷ appA (appA (appA empty))
-    ∷ []
-test4 : someNums ≡ expected
-test4 = refl
 
 _<lex_ : Rel AB* 0ℓ
 empty <lex empty = ⊥
@@ -221,6 +178,138 @@ lexTrans {appB α} {appA β} {appB γ} α<β (inj₂ β<γ)
 lexTrans {appB α} {appB β} {appA γ} α<β β<γ = lexTrans {α} {β} {γ} α<β β<γ
 lexTrans {appB α} {appB β} {appB γ} α<β β<γ = lexTrans {α} {β} {γ} α<β β<γ
 
+lexIrrefl : Irreflexive _≡_ _<lex_
+--lexIrrefl {x} {y} x≡y x<y = ?
+lexIrrefl {empty} {empty} p ()
+lexIrrefl {empty} {appA x} () q
+lexIrrefl {empty} {appB x} () q
+lexIrrefl {appA x} {appA y} xa≡ya x<y = 
+    let x≡y = appAinj xa≡ya in lexIrrefl x≡y x<y
+lexIrrefl {appB x} {appB y} xb≡yb x<y =
+    let x≡y = appBinj xb≡yb in lexIrrefl x≡y x<y
+
+lexDec : Decidable _<lex_
+lexDec empty empty = no (lexIrrefl {empty} {empty} (refl))
+lexDec empty (appA y) = yes tt
+lexDec empty (appB y) = yes tt
+lexDec (appA x) empty = no λ { () }
+lexDec (appA x) (appA y) = lexDec x y
+lexDec (appA x) (appB y) with lexDec x y
+... | yes x<y = yes (inj₂ x<y)
+... | no x≮y with decEqAB* x y
+...     | yes x≡y = yes (inj₁ x≡y)
+...     | no x≢y = no λ { (inj₁ p) → x≢y p ; (inj₂ q) → x≮y q }
+lexDec (appB x) empty = no λ { () }
+lexDec (appB x) (appA y) = lexDec x y
+lexDec (appB x) (appB y) = lexDec x y
+
+--------------------------------------------------------------------------------
+-- Trichotometry and auxiliary lemmas
+--------------------------------------------------------------------------------
+
+lexEqImplIncomp : {x y : AB*} → (x ≡ y) → ¬ (x <lex y)
+lexEqImplIncomp {x} {y} refl = lexIrrefl {x} refl
+
+x<y→xa<ya : {x y : AB*} → (x <lex y) → (appA x <lex appA y)
+x<y→xa<ya {x} {y} p = p
+
+x<y⊎y<x→xa<ya⊎ya<xa 
+    : {x y : AB*} 
+    → (x <lex y ⊎ y <lex x) 
+    → (appA x <lex appA y ⊎ appA y <lex appA x)
+x<y⊎y<x→xa<ya⊎ya<xa {x} {y} (inj₁ p) = inj₁ (x<y→xa<ya {x} {y} p)
+x<y⊎y<x→xa<ya⊎ya<xa {x} {y} (inj₂ p) = inj₂ (x<y→xa<ya {y} {x} p)
+
+-- Previous two lemmas with appB i.o. appA
+x<y→xb<yb : {x y : AB*} → (x <lex y) → (appB x <lex appB y)
+x<y→xb<yb {x} {y} p = p
+
+x<y⊎y<x→xb<yb⊎yb<xb 
+    : {x y : AB*} 
+    → (x <lex y ⊎ y <lex x) 
+    → (appB x <lex appB y ⊎ appB y <lex appB x)
+x<y⊎y<x→xb<yb⊎yb<xb {x} {y} (inj₁ p) = inj₁ (x<y→xb<yb {x} {y} p)
+x<y⊎y<x→xb<yb⊎yb<xb {x} {y} (inj₂ p) = inj₂ (x<y→xb<yb {y} {x} p)
+
+lexNeqImplComp : {x y : AB*} → (x ≢ y) → (x <lex y) ⊎ (y <lex x)
+--lexNeqImplComp {x} {y} x≢y = ?
+lexNeqImplComp {empty} {empty} x≢y = 
+    let contradiction = x≢y (refl) in ⊥-elim contradiction
+lexNeqImplComp {empty} {appA y} x≢y = inj₁ tt
+lexNeqImplComp {empty} {appB y} x≢y = inj₁ tt
+lexNeqImplComp {appA x} {empty} x≢y = inj₂ tt
+lexNeqImplComp {appA x} {appA y} xa≢ya =
+    let rec = lexNeqImplComp x≢y in
+    x<y⊎y<x→xa<ya⊎ya<xa {x} {y} rec
+    where 
+        x≢y : x ≢ y
+        x≢y x≡y = xa≢ya (cong appA x≡y)
+lexNeqImplComp {appA x} {appB y} x≢y = {! !} -- use lexDec!!!
+lexNeqImplComp {appB x} {empty} x≢y = inj₂ tt
+lexNeqImplComp {appB x} {appA y} x≢y = {!  !}
+lexNeqImplComp {appB x} {appB y} xb≢yb =
+    let rec = lexNeqImplComp x≢y in
+    x<y⊎y<x→xb<yb⊎yb<xb {x} {y} rec
+    where 
+        x≢y : x ≢ y
+        x≢y x≡y = xb≢yb (cong appB x≡y)
+
+lexTri : Trichotomous _≡_ _<lex_
+lexTri x y with decEqAB* x y
+... | yes x≡y = 
+    let x≮y = lexEqImplIncomp x≡y in
+    let y≮x = lexEqImplIncomp (sym x≡y) in
+    tri≈ x≮y x≡y y≮x
+... | no x≢y with (lexDec x y) -- don't do `with`, use lemma above!
+...     | yes p = ?
+...     | no q = ?
+
+--------------------------------------------------------------------------------
+-- Incrementing strings (getting the next string in lexicographical order).
+-- This gives, inductively, an enumeration of all strings.
+--------------------------------------------------------------------------------
+increment : AB* → AB*
+increment empty = appA empty
+increment (appA s) = appB s
+increment (appB s) = appA (increment s)
+
+test1 : increment empty ≡ appA empty
+test1 = refl
+test2 : increment (appB (appA ( empty))) ≡ appA (appB empty)
+test2 = refl
+test3 : increment (appB (appB ( empty))) ≡ appA (appA (appA empty ))
+test3 = refl
+
+enumAB* : ℕ → AB*
+enumAB* zero = empty
+enumAB* (suc n) = increment (enumAB* n)
+
+-- Testing enumAB* on inputs 0 to 7:
+someNums : List AB*
+someNums 
+    = (enumAB* 0) 
+    ∷ (enumAB* 1) 
+    ∷ (enumAB* 2) 
+    ∷ (enumAB* 3) 
+    ∷ (enumAB* 4) 
+    ∷ (enumAB* 5) 
+    ∷ (enumAB* 6) 
+    ∷ (enumAB* 7) 
+    ∷ []
+expected : List AB*
+expected 
+    = (empty) 
+    ∷ (appA empty)
+    ∷ (appB empty)
+    ∷ (appA (appA empty))
+    ∷ (appB (appA empty))
+    ∷ (appA (appB empty))
+    ∷ (appB (appB empty))
+    ∷ appA (appA (appA empty))
+    ∷ []
+test4 : someNums ≡ expected
+test4 = refl
+
 incrMakesBigger : (α : AB*) →  α <lex increment α
 incrMakesBigger empty = tt
 incrMakesBigger (appA α) = inj₁ refl
@@ -240,32 +329,51 @@ incrMono (appA α) (appB β) (inj₁ α≡β) =
 incrMono (appA α) (appB β) (inj₂ α<β) =
     let β<incrβ = incrMakesBigger β in
     lexTrans {α} {β} {increment β} α<β β<incrβ
-incrMono (appB empty) (appA (appA empty)) p = inj₁ refl
-incrMono (appB empty) (appA (appA (appA β))) p = inj₂ tt
-incrMono (appB empty) (appA (appA (appB β))) p = inj₂ tt
-incrMono (appB empty) (appA (appB empty)) p = inj₂ (inj₁ refl)
-incrMono (appB empty) (appA (appB (appA β))) p = inj₂ (inj₂ tt)
-incrMono (appB empty) (appA (appB (appB β))) p = inj₂ (inj₂ tt)
-incrMono (appB (appA α)) (appA (appA β)) p = inj₂ p
-incrMono (appB (appA α)) (appA (appB β)) (inj₁ x) 
-    = inj₁ (cong (λ δ → appB δ) x)
-incrMono (appB (appA α)) (appA (appB β)) (inj₂ y) = inj₂ y 
-incrMono (appB (appB empty)) (appA (appA (appA empty))) p = inj₁ refl
-incrMono (appB (appB empty)) (appA (appA (appA (appA β)))) p = inj₂ tt
-incrMono (appB (appB empty)) (appA (appA (appA (appB β)))) p = inj₂ tt
-incrMono (appB (appB empty)) (appA (appA (appB empty))) p = inj₂ (inj₁ refl)
-incrMono (appB (appB empty)) (appA (appA (appB (appA β)))) p = inj₂ (inj₂ tt)
-incrMono (appB (appB empty)) (appA (appA (appB (appB β)))) p = inj₂ (inj₂ tt)
-incrMono (appB (appB (appA α))) (appA (appA (appA β))) p = inj₂ p 
-incrMono (appB (appB (appA α))) (appA (appA (appB β))) (inj₁ x) = 
-    inj₁ (cong (λ δ → appA (appB δ)) x)
-incrMono (appB (appB (appA α))) (appA (appA (appB β))) (inj₂ y) = inj₂ y
-incrMono (appB (appB (appB α))) (appA (appA (appA empty))) p = {! !}
-incrMono (appB (appB (appB α))) (appA (appA (appA (appA β)))) p = {! !}
-incrMono (appB (appB (appB α))) (appA (appA (appA (appB β)))) p = {! !}
-incrMono (appB (appB (appB α))) (appA (appA (appB β))) p = {! !}
-incrMono (appB (appB α)) (appA (appB β)) p = {! !}
+incrMono (appB x) (appA y) p with (decEqAB* (increment x) y)
+... | yes q = inj₁ q
+... | no q = inj₂ ?
 incrMono (appB α) (appB β) p = incrMono α β p
+
+--incrMono : (α β : AB*) → (α <lex β) → increment α <lex increment β
+--incrMono empty (appA empty) p = inj₁ refl
+--incrMono empty (appA (appA β)) p = inj₂ tt
+--incrMono empty (appA (appB β)) p = inj₂ tt
+--incrMono empty (appB empty) p = tt
+--incrMono empty (appB (appA β)) p = tt
+--incrMono empty (appB (appB β)) p = tt
+--incrMono (appA α) (appA β) p = p
+--incrMono (appA α) (appB β) (inj₁ α≡β) = 
+--    let β<incrβ = incrMakesBigger β in
+--    subst (λ δ → δ <lex increment β) (sym α≡β) β<incrβ
+--incrMono (appA α) (appB β) (inj₂ α<β) =
+--    let β<incrβ = incrMakesBigger β in
+--    lexTrans {α} {β} {increment β} α<β β<incrβ
+--incrMono (appB empty) (appA (appA empty)) p = inj₁ refl
+--incrMono (appB empty) (appA (appA (appA β))) p = inj₂ tt
+--incrMono (appB empty) (appA (appA (appB β))) p = inj₂ tt
+--incrMono (appB empty) (appA (appB empty)) p = inj₂ (inj₁ refl)
+--incrMono (appB empty) (appA (appB (appA β))) p = inj₂ (inj₂ tt)
+--incrMono (appB empty) (appA (appB (appB β))) p = inj₂ (inj₂ tt)
+--incrMono (appB (appA α)) (appA (appA β)) p = inj₂ p
+--incrMono (appB (appA α)) (appA (appB β)) (inj₁ x) 
+--    = inj₁ (cong (λ δ → appB δ) x)
+--incrMono (appB (appA α)) (appA (appB β)) (inj₂ y) = inj₂ y 
+--incrMono (appB (appB empty)) (appA (appA (appA empty))) p = inj₁ refl
+--incrMono (appB (appB empty)) (appA (appA (appA (appA β)))) p = inj₂ tt
+--incrMono (appB (appB empty)) (appA (appA (appA (appB β)))) p = inj₂ tt
+--incrMono (appB (appB empty)) (appA (appA (appB empty))) p = inj₂ (inj₁ refl)
+--incrMono (appB (appB empty)) (appA (appA (appB (appA β)))) p = inj₂ (inj₂ tt)
+--incrMono (appB (appB empty)) (appA (appA (appB (appB β)))) p = inj₂ (inj₂ tt)
+--incrMono (appB (appB (appA α))) (appA (appA (appA β))) p = inj₂ p 
+--incrMono (appB (appB (appA α))) (appA (appA (appB β))) (inj₁ x) = 
+--    inj₁ (cong (λ δ → appA (appB δ)) x)
+--incrMono (appB (appB (appA α))) (appA (appA (appB β))) (inj₂ y) = inj₂ y
+--incrMono (appB (appB (appB α))) (appA (appA (appA empty))) p = {! !}
+--incrMono (appB (appB (appB α))) (appA (appA (appA (appA β)))) p = {! !}
+--incrMono (appB (appB (appB α))) (appA (appA (appA (appB β)))) p = {! !}
+--incrMono (appB (appB (appB α))) (appA (appA (appB β))) p = {! !}
+--incrMono (appB (appB α)) (appA (appB β)) p = {! !}
+--incrMono (appB α) (appB β) p = incrMono α β p
 
 monoAB*
     : (n : ℕ)
