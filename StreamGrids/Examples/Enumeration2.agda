@@ -300,8 +300,11 @@ lexTri x y with decEqAB* x y
     let y≮x = lexEqImplIncomp (sym x≡y) in
     tri≈ x≮y x≡y y≮x
 ... | no x≢y with (lexDec x y) -- don't do `with`, use lemma above!
-...     | yes p = ?
-...     | no q = ?
+...     | yes x<y = tri< x<y x≢y (lexAsym {x} {y} x<y)
+...     | no x≮y = 
+        let xyCompar = lexNeqImplComp x≢y in
+        let y<x = elimCaseLeft xyCompar x≮y in
+        tri> x≮y x≢y y<x
 
 --------------------------------------------------------------------------------
 -- Incrementing strings (getting the next string in lexicographical order).
