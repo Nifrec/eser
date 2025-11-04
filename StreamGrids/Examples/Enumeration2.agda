@@ -357,6 +357,24 @@ incrMakesBigger empty = tt
 incrMakesBigger (appA α) = inj₁ refl
 incrMakesBigger (appB α) = incrMakesBigger α
 
+-- The above lemma gives x < ix.
+-- This lemma proves there exists no y s.t. x < y < ix.
+incrTight : {x y : AB*} → (x <lex y) → (y <lex (increment x)) → ⊥
+incrTight {empty} {appA empty} x<y ()
+incrTight {empty} {appA (appA y)} x<y ()
+incrTight {empty} {appA (appB y)} x<y ()
+incrTight {empty} {appB empty} x<y ()
+incrTight {empty} {appB (appA y)} x<y () 
+incrTight {empty} {appB (appB y)} x<y () 
+incrTight {appA x} {appA y} x<y y<ix with y<ix
+... | inj₁ y≡ix = lexIrrefl (sym y≡ix) x<y 
+... | inj₂ y<x = lexAsym {x} {y} x<y y<x
+incrTight {appA x} {appB y} x<y y<ix with x<y
+... | inj₁ x≡y = lexIrrefl (sym x≡y) y<ix
+... | inj₂ y<x = lexAsym {x} {y} y<x y<ix
+incrTight {appB x} {appA y} x<y y<ix = incrTight {x} {y} x<y y<ix
+incrTight {appB x} {appB y} x<y y<ix = incrTight {x} {y} x<y y<ix
+
 incrMono : (α β : AB*) → (α <lex β) → increment α <lex increment β
 incrMono empty (appA empty) p = inj₁ refl
 incrMono empty (appA (appA β)) p = inj₂ tt
@@ -373,49 +391,14 @@ incrMono (appA α) (appB β) (inj₂ α<β) =
     lexTrans {α} {β} {increment β} α<β β<incrβ
 incrMono (appB x) (appA y) p with (decEqAB* (increment x) y)
 ... | yes q = inj₁ q
-... | no q = inj₂ ?
+--... | no q = inj₂ ?
+... | no ix≢y with lexDec (increment x) y
+... | yes ix<y = inj₂ ix<y
+... | no  ix≮y with lexTri (increment x) y
+... | tri< a₁ ¬b ¬c = ⊥-elim (ix≮y a₁) 
+... | tri≈ ¬a b₁ ¬c = ⊥-elim (ix≢y b₁)
+... | tri> ¬a ¬b c₁ = ⊥-elim (incrTight {x} {y} p c₁)
 incrMono (appB α) (appB β) p = incrMono α β p
-
---incrMono : (α β : AB*) → (α <lex β) → increment α <lex increment β
---incrMono empty (appA empty) p = inj₁ refl
---incrMono empty (appA (appA β)) p = inj₂ tt
---incrMono empty (appA (appB β)) p = inj₂ tt
---incrMono empty (appB empty) p = tt
---incrMono empty (appB (appA β)) p = tt
---incrMono empty (appB (appB β)) p = tt
---incrMono (appA α) (appA β) p = p
---incrMono (appA α) (appB β) (inj₁ α≡β) = 
---    let β<incrβ = incrMakesBigger β in
---    subst (λ δ → δ <lex increment β) (sym α≡β) β<incrβ
---incrMono (appA α) (appB β) (inj₂ α<β) =
---    let β<incrβ = incrMakesBigger β in
---    lexTrans {α} {β} {increment β} α<β β<incrβ
---incrMono (appB empty) (appA (appA empty)) p = inj₁ refl
---incrMono (appB empty) (appA (appA (appA β))) p = inj₂ tt
---incrMono (appB empty) (appA (appA (appB β))) p = inj₂ tt
---incrMono (appB empty) (appA (appB empty)) p = inj₂ (inj₁ refl)
---incrMono (appB empty) (appA (appB (appA β))) p = inj₂ (inj₂ tt)
---incrMono (appB empty) (appA (appB (appB β))) p = inj₂ (inj₂ tt)
---incrMono (appB (appA α)) (appA (appA β)) p = inj₂ p
---incrMono (appB (appA α)) (appA (appB β)) (inj₁ x) 
---    = inj₁ (cong (λ δ → appB δ) x)
---incrMono (appB (appA α)) (appA (appB β)) (inj₂ y) = inj₂ y 
---incrMono (appB (appB empty)) (appA (appA (appA empty))) p = inj₁ refl
---incrMono (appB (appB empty)) (appA (appA (appA (appA β)))) p = inj₂ tt
---incrMono (appB (appB empty)) (appA (appA (appA (appB β)))) p = inj₂ tt
---incrMono (appB (appB empty)) (appA (appA (appB empty))) p = inj₂ (inj₁ refl)
---incrMono (appB (appB empty)) (appA (appA (appB (appA β)))) p = inj₂ (inj₂ tt)
---incrMono (appB (appB empty)) (appA (appA (appB (appB β)))) p = inj₂ (inj₂ tt)
---incrMono (appB (appB (appA α))) (appA (appA (appA β))) p = inj₂ p 
---incrMono (appB (appB (appA α))) (appA (appA (appB β))) (inj₁ x) = 
---    inj₁ (cong (λ δ → appA (appB δ)) x)
---incrMono (appB (appB (appA α))) (appA (appA (appB β))) (inj₂ y) = inj₂ y
---incrMono (appB (appB (appB α))) (appA (appA (appA empty))) p = {! !}
---incrMono (appB (appB (appB α))) (appA (appA (appA (appA β)))) p = {! !}
---incrMono (appB (appB (appB α))) (appA (appA (appA (appB β)))) p = {! !}
---incrMono (appB (appB (appB α))) (appA (appA (appB β))) p = {! !}
---incrMono (appB (appB α)) (appA (appB β)) p = {! !}
---incrMono (appB α) (appB β) p = incrMono α β p
 
 monoAB*
     : (n : ℕ)
@@ -427,21 +410,6 @@ monoAB* zero p = tt
 -- Goal: increment (enumAB* n) <lex increment (enumAB* (suc n))
 -- So it suffices to show that `increment` is monotone, and then we can simply
 -- apply this monoticity to the induction hypothesis.
-monoAB* (suc n) p = ?
---monoAB* (suc n) p with (incrRec (enumAB* n))
---... | empty , zero = tt
---... | empty , suc zero = ≤-refl
---... | appA fst , zero = {! !}
---... | appA fst , suc snd = {! !}
---... | appB fst , snd = {! !}
-----monoAB* (suc n) p with (enumAB* (suc n) , enumAB* (suc (suc n)))
-----... | empty , empty = {! !}
-----... | empty , appA s' = {! !}
-----... | empty , appB s' = {! !}
-----... | appA s , s' = {! !}
-----... | appB s , s' = {! !}
-----monoAB* (suc n) p with enumAB* (suc n)
-----... | empty = tt
-----... | appA q = {! !}
-----... | appB q = {! !}
-
+monoAB* (suc n) p = 
+    let rec = monoAB* n p in
+    incrMono (enumAB* n) (enumAB* (suc n)) rec
