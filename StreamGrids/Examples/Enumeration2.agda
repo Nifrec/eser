@@ -127,6 +127,10 @@ len empty = zero
 len (appA s) = suc (len s)
 len (appB s) = suc (len s)
 
+--------------------------------------------------------------------------------
+-- Lexicographical order
+--------------------------------------------------------------------------------
+
 _<lex_ : Rel AB* 0ℓ
 empty <lex empty = ⊥
 empty <lex appA β = ⊤
@@ -210,26 +214,45 @@ lexDec (appB x) (appB y) = lexDec x y
 lexEqImplIncomp : {x y : AB*} → (x ≡ y) → ¬ (x <lex y)
 lexEqImplIncomp {x} {y} refl = lexIrrefl {x} refl
 
-x<y→xa<ya : {x y : AB*} → (x <lex y) → (appA x <lex appA y)
-x<y→xa<ya {x} {y} p = p
+appAmono : {x y : AB*} → (x <lex y) → (appA x <lex appA y)
+appAmono {x} {y} p = p
 
 x<y⊎y<x→xa<ya⊎ya<xa 
     : {x y : AB*} 
     → (x <lex y ⊎ y <lex x) 
     → (appA x <lex appA y ⊎ appA y <lex appA x)
-x<y⊎y<x→xa<ya⊎ya<xa {x} {y} (inj₁ p) = inj₁ (x<y→xa<ya {x} {y} p)
-x<y⊎y<x→xa<ya⊎ya<xa {x} {y} (inj₂ p) = inj₂ (x<y→xa<ya {y} {x} p)
+x<y⊎y<x→xa<ya⊎ya<xa {x} {y} (inj₁ p) = inj₁ (appAmono {x} {y} p)
+x<y⊎y<x→xa<ya⊎ya<xa {x} {y} (inj₂ p) = inj₂ (appAmono {y} {x} p)
 
 -- Previous two lemmas with appB i.o. appA
-x<y→xb<yb : {x y : AB*} → (x <lex y) → (appB x <lex appB y)
-x<y→xb<yb {x} {y} p = p
+-- Note that in case of `appB`, the types `x <lex y` and `appB x <lex appB y`
+-- are definitionally equal.
+appBmono : {x y : AB*} → (x <lex y) → (appB x <lex appB y)
+appBmono {x} {y} p = p
 
 x<y⊎y<x→xb<yb⊎yb<xb 
     : {x y : AB*} 
     → (x <lex y ⊎ y <lex x) 
     → (appB x <lex appB y ⊎ appB y <lex appB x)
-x<y⊎y<x→xb<yb⊎yb<xb {x} {y} (inj₁ p) = inj₁ (x<y→xb<yb {x} {y} p)
-x<y⊎y<x→xb<yb⊎yb<xb {x} {y} (inj₂ p) = inj₂ (x<y→xb<yb {y} {x} p)
+x<y⊎y<x→xb<yb⊎yb<xb {x} {y} (inj₁ p) = inj₁ (appBmono {x} {y} p)
+x<y⊎y<x→xb<yb⊎yb<xb {x} {y} (inj₂ p) = inj₂ (appBmono {y} {x} p)
+
+lexAsym : Asymmetric _<lex_
+lexAsym {empty} {appA y} x<y ()
+lexAsym {empty} {appB y} x<y ()
+-- In the next, xa <lex ya means either x=y or x <lex y.
+-- Note: yb<xa is the same as y<x.
+lexAsym {appA x} {appB y} xa<yb yb<xa with xa<yb
+... | inj₁ x≡y = lexIrrefl {y} {x} (sym x≡y) yb<xa
+... | inj₂ x<y = lexAsym {x} {y} x<y yb<xa
+-- Note: xb<ya is the same as x<y.
+lexAsym {appB x} {appA y} xb<ya ya<xb with ya<xb
+... | inj₁ y≡x = lexIrrefl {x} {y} (sym y≡x) xb<ya 
+... | inj₂ y<x = lexAsym {y} {x} y<x xb<ya
+-- The next cases exploit the fact that the types 
+-- `x <lex y` and `appB x <lex appB y` are definitionally equal.
+lexAsym {appA x} {appA y} x<y = lexAsym {x} {y} x<y
+lexAsym {appB x} {appB y} x<y = lexAsym {x} {y} x<y 
 
 lexNeqImplComp : {x y : AB*} → (x ≢ y) → (x <lex y) ⊎ (y <lex x)
 --lexNeqImplComp {x} {y} x≢y = ?
