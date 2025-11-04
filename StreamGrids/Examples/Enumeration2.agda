@@ -27,6 +27,7 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
 open import StreamGrids.Enumeration
+open import StreamGrids.Logic
 
 
 --------------------------------------------------------------------------------
@@ -267,9 +268,24 @@ lexNeqImplComp {appA x} {appA y} xa≢ya =
     where 
         x≢y : x ≢ y
         x≢y x≡y = xa≢ya (cong appA x≡y)
-lexNeqImplComp {appA x} {appB y} x≢y = {! !} -- use lexDec!!!
-lexNeqImplComp {appB x} {empty} x≢y = inj₂ tt
-lexNeqImplComp {appB x} {appA y} x≢y = {!  !}
+lexNeqImplComp {appA x} {appB y} x≢y with lexDec (appA x) (appB y)
+... | yes (inj₁ x≡y) = inj₁ (inj₁ x≡y) 
+... | yes (inj₂ x<y) = inj₁ (inj₂ x<y)
+... | no  xa≮yb with lexDec y x
+... | yes y<x = inj₂ y<x
+... | no  y≮x = 
+    let rec = lexNeqImplComp (orWeakenLeft xa≮yb) in 
+    let x<y = elimCaseRight rec y≮x in
+    inj₁ (inj₂ x<y)
+lexNeqImplComp {appB x} {empty} _ = inj₂ tt
+lexNeqImplComp {appB x} {appA y} xb≢ya with lexDec (appB x) (appA y)
+... | yes xb<ya = inj₁ xb<ya
+... | no  yb≮ya with decEqAB* x y
+... | yes x≡y = inj₂ (inj₁ (sym x≡y))
+... | no  x≢y = 
+    let rec = lexNeqImplComp x≢y in 
+    let y<x = elimCaseLeft rec yb≮ya in
+    inj₂ (inj₂ y<x)
 lexNeqImplComp {appB x} {appB y} xb≢yb =
     let rec = lexNeqImplComp x≢y in
     x<y⊎y<x→xb<yb⊎yb<xb {x} {y} rec
