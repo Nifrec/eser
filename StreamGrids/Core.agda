@@ -73,36 +73,8 @@ A iff B = (A → B) × (B → A)
 -- Therefore we allow the user is allowed to 
 -- provide custom (optimised) implementations for both if they so desire.
 --------------------------------------------------------------------------------
-open import Relation.Binary.Reasoning.Syntax using (SubRelation)
 
--- #TODO: this definition is still WIP,
--- the type may change (maybe enum is needed).
--- Intuition in the context of signatures:
--- if `c(a)` is a term consisting of constructor `c` 
--- taking argument `a` (a tree),
--- and there exist a smaller tree `a'`, then `c(a')` is also an existing term,
--- and in the lexicographical order we have `c(a') < c(a)`.
--- In general, _⊂_ is a subterm relation of _<_ if:
--- (1) it is a subrelation that satisfies
--- (2) if `x ⊂ y` and `x' < x`, then there exists a `y'` with the same
---      ⊂-children as `y`, except for also having `x'` and possibly not `x`,
---      and `y' < y`.
-IsSubTermRelat 
-    : {ℓ : Level.Level}
-    → {A : Set ℓ} 
-    → (_<_ : Rel A ℓ)
-    → SubRelation _<_ ℓ ℓ
-    → Set ℓ
-IsSubTermRelat {ℓ} {A} _<_ 
-    record { S = _⊂_ ; IsS = IsS ; IsS? = IsS? ; extract = extract } =
-    {x y x' : A} → (x ⊂ y) → (x' < x) → Σ[ y' ∈ A ](
-        (y' < y)
-        ×
-        (x' ⊂ y')
-        ×
-        ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
-        -- `y'` same subterms as `y` except possibly not `x` and extra `x'`.
-        )
+
 
 -- Map a cardinality in Bigℕ to the prefix of the natural numbers
 -- with that cardinality.
@@ -130,23 +102,71 @@ cardToPred {fin (suc n)} (suc m) = inject₁ m
 cardToPred {∞} zero = zero
 cardToPred {∞} (suc m) = m
 
+--------------------------------------------------------------------------------
+-- Subterm relations
+--------------------------------------------------------------------------------
+-- Intuition in the context of signatures:
+-- if `c(a)` is a term consisting of constructor `c` 
+-- taking argument `a` (a tree),
+-- and there exist a smaller tree `a'`, then `c(a')` is also an existing term,
+-- and in the lexicographical order we have `c(a') < c(a)`.
+-- In general, _⊂_ is a subterm relation of _<_ if:
+-- (1) it is a subrelation,
+-- (2) it has the subterm property:
+--      if `x ⊂ y` and `x' < x`, then there exists a `y'` with the same
+--      ⊂-children as `y`, except for also having `x'` and possibly not `x`,
+--      and `y' < y`.
+
+-- There is a definiton `SubRelation` in `Relation.Binary.Reasoning.Syntax`
+-- but it is notationally too cumbersome (_S_ would be hidden in a 
+-- huge record, making it difficult to get an infix _S_ without pattern-matching
+-- the whole record every time).
+IsSubRelat 
+    : {ℓ : Level.Level}
+    → {A : Set ℓ}
+    → Rel A ℓ 
+    → Rel A ℓ
+    → Set ℓ
+IsSubRelat {ℓ} {A} _R_ _S_ = {x y : A} → x S y → x R y
+
+HasSubTermProp
+    : {ℓ : Level.Level}
+    → {A : Set ℓ} 
+    → (_<_ : Rel A ℓ)
+    → (_⊂_ : Rel A ℓ)
+    → Set ℓ
+HasSubTermProp {ℓ} {A} _<_ _⊂_ =
+    {x y x' : A} → (x ⊂ y) → (x' < x) → Σ[ y' ∈ A ](
+        (y' < y)
+        ×
+        (x' ⊂ y')
+        ×
+        ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
+        -- `y'` same subterms as `y` except possibly not `x` and extra `x'`.
+        )
+
+--------------------------------------------------------------------------------
+-- Actual definition of Signoid and constuction methods.
+--------------------------------------------------------------------------------
+
 record Signoid 
     {ℓ : Level.Level} 
     {A : Set ℓ} 
     (_<_ : Rel A ℓ) 
-    (_⊂_ : SubRelation _<_ ℓ ℓ) 
+    (_⊂_ : Rel A ℓ) 
     : Set ℓ where
     field
         numEl    : ℕ∞
         enum     : (cardToSet numEl) → A
-        monotone : (n m : (cardToSet numEl)) → (cardTo< n m) → (enum m) < (enum n)
-        --^ I tried defining this also as 
-        --  `(n : cardToSet numEl) → (enum cardToPred n) < (enum n)`,
-        --  but this runs into issues when n=0. 
-        --  Using suc instead leads to the same problem when n is the max.
         mono : Monotonic₁ (cardTo<) (_<_) enum
         surj     : (a : A) → Σ[ n ∈ cardToSet numEl ]( enum n ≡ a)
         chain : Chain _<_
-        subterm : IsSubTermRelat _<_ _⊂_ 
+        subrelat : IsSubRelat _<_ _⊂_
+        subterm : HasSubTermProp _<_ _⊂_ 
         getIdx : A → cardToSet numEl
         inv : Inverseᵇ _≡_ _≡_ enum getIdx
+        --monotone : (n m : (cardToSet numEl)) → (cardTo< n m) → (enum m) < (enum n)
+        ----^ I tried defining this also as 
+        ----  `(n : cardToSet numEl) → (enum cardToPred n) < (enum n)`,
+        ----  but this runs into issues when n=0. 
+        ----  Using suc instead leads to the same problem when n is the max.
