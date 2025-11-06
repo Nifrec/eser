@@ -31,12 +31,23 @@ TODO: explain what this is all about...
 * `getEnumerator`
 * `getIndex`
 
+### To check if exists in library:
+* Definition of `monotone` (used in def `Signoid`).
+
 ## Ideas for extensions and explanations
 
 ### Concrete ideas
+* Prove all enumerable inductive types embed into StreamGrids.
+    - Is there also a backward map? What is the largest class of types that are
+      all StreamGrids?
 * Prove that `SGToType` is an hSet.
 * Local rules & CA.
 * Enforcing additional constraints such as associativity.
+* Defining morphisms between StreamGrids:
+    - Weak morphisms: preserve equalities between elements.
+    - Strong morphisms: preserve *also* the enumeration, _<_ and _⊂_.
+    - For signatures, might also consider morphisms that send
+      constructors-to-constructors-with-same-arity.
 
 ### Abstract ideas
 * Modal logic for arbitrary signatures?
