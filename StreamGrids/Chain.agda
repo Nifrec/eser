@@ -31,9 +31,10 @@ open import Relation.Nullary
 -- AKA 'linear orders'. 
 -- Not to be confused with a total order, which is reflexive.
 Chain 
-    : {A : Set} 
-    → Rel A 0ℓ 
-    → Set
+    : {ℓ : Level.Level}
+    → {A : Set ℓ} 
+    → Rel A ℓ 
+    → Set ℓ
 Chain {A} _<_ 
     = (Transitive _<_)
     × (Trichotomous _≡_ _<_)

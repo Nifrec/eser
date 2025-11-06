@@ -65,27 +65,72 @@ open import StreamGrids.Enumeration
 -- Therefore we allow the user is allowed to 
 -- provide custom (optimised) implementations for both if they so desire.
 --------------------------------------------------------------------------------
+open import Relation.Binary.Reasoning.Syntax using (SubRelation)
 
-SubRelat 
-    : {A : Set} 
-    → Rel A 0ℓ 
-    → Rel A 0ℓ 
-    → Set
-SubRelat {A} _<_ _⊂_ = ?
+-- #TODO: this definition is still WIP,
+-- the type may change (maybe enum is needed).
+IsSubTermRelat 
+    : {ℓ : Level.Level}
+    → {A : Set ℓ} 
+    → (_<_ : Rel A ℓ)
+    → SubRelation _<_ ℓ ℓ
+    → Set ℓ
+IsSubTermRelat {A} _⊂_ = ?
 
-NiceProperties 
-    : {A : Set} 
-    → Rel A 0ℓ 
-    → Set
-NiceProperties {A} _⊂_ = ?
+--InverseOfEnum : {ℓ : Level.Level} {A : Set ℓ} (e : Enumeration _<_ _≡_) → Set ℓ
+--InverseOfEnum = ?
 
-data Signoid (A : Set) (_<_ : Rel A 0ℓ) (_⊂_ : Rel A 0ℓ) : Set where
-    mkSignoid 
-        --: (_<_  : Rel A 0ℓ) 
-        : (c    : Chain _<_)
-        → (σ    : Enumeration A _<_ _≡_)
-        --→ (_⊂_  : Rel A 0ℓ)
-        → (p    : SubRelat _<_ _⊂_)
-        → NiceProperties _⊂_
-        → Signoid A _<_ _⊂_
+-- Map a cardinality in Bigℕ to the prefix of the natural numbers
+-- with that cardinality.
+cardToSet : ℕ∞ → Set
+cardToSet (fin 0) = ⊥
+cardToSet (fin (suc n)) = Fin (suc n) -- Fin 0 cannot be constructed!
+cardToSet ∞ = ℕ
+ 
+-- Get the default < relation on a prefix of ℕ.
+cardTo< : (n : ℕ∞) → Rel (cardToSet n) 0ℓ
+cardTo< (fin 0) ()
+cardTo< (fin (suc n)) = Data.Fin._<_
+cardTo< ∞ = Data.Nat._<_
 
+cardToMax : (n : ℕ∞) → cardToSet n
+cardToMax (fin 0) ()
+cardToMax (fin (suc n)) = fromℕ n
+cardToMax 
+
+cardToSuc : {n : ℕ∞} → (m : cardToSet n) → (m (cardTo< n) ?) → cardToSet n 
+cardToSuc {fin 0} ()
+cardToSuc {fin (suc n)} m m<∞n = Data.Fin.suc m
+cardToSuc {∞} m m<∞n = Data.Nat.suc m
+
+--record PreEnum {ℓ : Level.Level} {A : Set ℓ} (_≈_ : Rel A ℓ) : Set ℓ where
+--    field
+--        numEl    : ℕ∞
+--        enum     : ℕ → A
+--        monotone : (n : ℕ) → ((fin (suc n)) <∞ numEl) → enum n < enum (suc n)
+--        surj     : (a : A) → Σ[ n ∈ ℕ ]( (fin n <∞ numEl) × (enum n ≈ a) )
+---- Implementation note: 
+---- in case `numEl` is finite, then there may exist different
+---- enumerations f,g : ℕ → A whose restruction to [0, 1, 2, ..., numEl-1]
+---- coincides.
+---- This can be avoided by adding an additional constraint, e.g.,
+---- requiring all greater values to be mapped to some `error` output:
+---- f : ℕ → A ⊎ ⊤
+---- and requiring (n ≥∞ numEl) → (f n = inr tt)`.
+---- It is not done here as there is no real need for introducing additional
+---- complexity.
+
+record Signoid 
+    {ℓ : Level.Level} 
+    {A : Set ℓ} 
+    (_<_ : Rel A ℓ) 
+    (_⊂_ : SubRelation _<_ ℓ ℓ) 
+    : Set ℓ where
+    field
+        numEl    : ℕ∞
+        enum     : (cardToSet numEl) → A
+        monotone : (n : (cardToSet numEl)) → (enum n) < (enum (cardToSuc numEl n))
+        --surj     : (a : A) → Σ[ n ∈ ℕ ]( (fin n <∞ numEl) × (enum n ≈ a) )
+        chain : Chain _<_
+        subterm : IsSubTermRelat _<_ _⊂_ 
+        --getIdx : InverseOfEnum enum

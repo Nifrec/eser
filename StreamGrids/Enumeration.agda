@@ -49,7 +49,8 @@ fin n <∞ ∞      = ⊤
 -- Note: in the typical use case where _<_ is a chain,
 -- the (1) surjectivity plus (2) monoticity 
 -- of `enum` imply injectivity (i.e., every element has a *unique* index).
-record Enumeration (A : Set) (_<_ : Rel A 0ℓ) (_≈_ : Rel A 0ℓ) : Set where
+record ChainEnum {ℓ : Level.Level} {A : Set ℓ} (_<_ : Rel A ℓ) (_≈_ : Rel A ℓ) 
+    : Set ℓ where
     field
         numEl    : ℕ∞
         enum     : ℕ → A
@@ -76,6 +77,14 @@ record Enumeration (A : Set) (_<_ : Rel A 0ℓ) (_≈_ : Rel A 0ℓ) : Set where
 --    → (a : A)
 --    → Σ[ n ∈ ℕ ] ((getEnumerator c e) n ≡ a)
 --getIndex c e a = ?
+
+record InvertibleEnum {ℓ : Level.Level} {A : Set ℓ} (_<_ : Rel A ℓ) (_≈_ : Rel A ℓ) 
+    : Set ℓ where
+    field
+        numEl    : ℕ∞
+        enum     : ℕ → A
+        getIdx   : A → ℕ
+
 
 --------------------------------------------------------------------------------
 -- Unused alternative ideas for defining `Enumeration`.
