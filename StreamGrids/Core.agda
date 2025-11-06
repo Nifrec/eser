@@ -165,8 +165,3 @@ record Signoid
         subterm : HasSubTermProp _<_ _⊂_ 
         getIdx : A → cardToSet numEl
         inv : Inverseᵇ _≡_ _≡_ enum getIdx
-        --monotone : (n m : (cardToSet numEl)) → (cardTo< n m) → (enum m) < (enum n)
-        ----^ I tried defining this also as 
-        ----  `(n : cardToSet numEl) → (enum cardToPred n) < (enum n)`,
-        ----  but this runs into issues when n=0. 
-        ----  Using suc instead leads to the same problem when n is the max.
