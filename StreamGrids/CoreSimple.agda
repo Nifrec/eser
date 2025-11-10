@@ -7,18 +7,17 @@
 --------------------------------------------------------------------------------
 -- Contents of this file:
 
-module StreamGrids.Core where
+module StreamGrids.CoreSimple where
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
 open import Data.Empty
-open import Data.Fin
+open import Data.Fin hiding (_<_)
 open import Function using (Inverseᵇ)
 open import Data.List
-open import Data.Nat
+open import Data.Nat hiding (_<_)
 open import Data.Nat.Properties
 open import Data.Product
-open import Data.String
 open import Data.Sum
 open import Data.Unit
 open import Data.Vec
@@ -37,6 +36,7 @@ open import StreamGrids.Enumeration
 -- Biimplication A ←→ B : two types can prove each other.
 _iff_ : {ℓ : Level.Level} → (A B : Set ℓ) → Set ℓ
 A iff B = (A → B) × (B → A)
+
 
 --------------------------------------------------------------------------------
 -- Signoids
@@ -213,6 +213,29 @@ chainPreToSignoid sig = record {
 -- theoretic sense, so a StreamGrid is an hSet and `x ≡ y` and hProp).
 --------------------------------------------------------------------------------
 
+-- Canonical PrefixList of A: just [e(0), e(1), e(2), ..., e(n-1)].
+prefix : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A
+prefix _ zero = []
+prefix e (suc n) = (e (suc n)) ∷ (prefix e n)
+
+-- A list `L` is an n-prefix of an enumeration of a type `A`
+-- if 
+-- (1) it contains the first n A-elements exactly once 
+-- and
+-- (2) it contains nothing else
+PrefixList : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A → Set _
+PrefixList e n = (prefix e n)  (fold L _++_ []) 
+
+module SGStates
+    {ℓ : Level.Level}
+    {A : Set ℓ}
+    {_«_ _⊂_ : Rel A ℓ}
+    where
+
+    
+IsPrefix : (Signoid _«_ _⊂_) → (L : List (List A)) → Set _
+IsPrefix S L = ?
+
 -- Partially explored StreamGrid.
 SGState : 
     {ℓ : Level.Level}
@@ -220,7 +243,15 @@ SGState :
     {_<_ _⊂_ : Rel A ℓ}
     → Signoid _<_ _⊂_
     → Set ℓ
-SGState = ?
+SGState {A} {_<_} {_⊂_} S = Σ[ L ∈ List (List A)](
+    (IsPrefix S L)
+    --×
+    --(Sorted _<_ (firstEl L))
+    --×
+    --(All (Sorted _<_) L)
+    --×
+    --(SubtermConsistent S L)
+    )
 
 ---- Use case: we have a function `f : List A → A`
 --data listToType
@@ -251,7 +282,7 @@ _∈?_ : Decidable _∈_
 a ∈? xs = ?
 
 data ListToType {A : Set _} (L : List A) : (Set _) where
-    first : (a : A) → ListToType #TODO WIP
+    first : (a : A) → ListToType (a ∷ [])
     cons  : (a : A) (as : List A) → ListToType (a ∷ as)
     inj   : (a : A) (as : List A) (v : ListToType as) → ListToType (a ∷ as)
 
