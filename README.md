@@ -19,7 +19,7 @@ TODO: explain what this is all about...
     `StreamGrids.Examples.Foo` contains the examples for
     module `StreamGrids.Foo`.
 * `StreamGrids/Practise`
-    Informal personal practise to get better acquinted with Agda.
+    Informal personal practise to get better acquainted with Agda.
     
 
 ## TODOs
@@ -36,12 +36,18 @@ TODO: explain what this is all about...
 
 ## Ideas for extensions and explanations
 
+### Applications
+* Propositional truncation without HIITs.
+* Integers & rational numbers.
+* Other HIITs / more complicated inductive types / advanced grids.
+
 ### Concrete ideas
 * Prove all enumerable inductive types embed into StreamGrids.
     - Is there also a backward map? What is the largest class of types that are
       all StreamGrids?
 * Prove that `SGToType` is an hSet.
-* Local rules & CA.
+* Coloured grids.
+    * Next step: local rules & CA.
 * Enforcing additional constraints such as associativity.
 * Defining morphisms between StreamGrids:
     - Weak morphisms: preserve equalities between elements.

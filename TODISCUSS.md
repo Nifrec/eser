@@ -5,6 +5,7 @@
     Current idea: give a parameter `numEl ∈ {ℕ , ∞}` that gives the size
     of the set, and only specify the behaviour of the enumerator `ℕ → A`
     on inputs smaller than this size.
+
 ## Bialgebras or stronger types?
     I assume a signoid has been given and that `Q` is the type of partially
     explored but otherwise consistent grids (= partially defined equivalences)
@@ -44,3 +45,10 @@ data _↭_ : Rel (List A) a where
   trans : xs ↭ ys → ys ↭ zs → xs ↭ zs
 ```
 It is *exactly* the definition that took me so much effort to find!
+
+## Abel 2007's paper
+* *Monotone operator*?
+* Difference recursion and corecursion? Number of arguments?
+* *Unguarded* sets of terms can be smaller than guarded ones?
+    But how can make adding more terms something 'safer'?
+    Or is 'guarded' just a misleading name?
