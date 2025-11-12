@@ -129,22 +129,28 @@ IsSubRelat
     → Set ℓ
 IsSubRelat {ℓ} {A} _R_ _S_ = {x y : A} → x S y → x R y
 
-HasSubTermProp
+-- See "Lessons learned" in README.md.
+-- #TODO: ref to more docu about this.
+SubtermCoercion
     : {ℓ : Level.Level}
     → {A : Set ℓ} 
     → (_<_ : Rel A ℓ)
     → (_⊂_ : Rel A ℓ)
     → Set ℓ
-HasSubTermProp {ℓ} {A} _<_ _⊂_ =
-    {x y x' : A} → (x ⊂ y) → (x' < x) → Σ[ y' ∈ A ](
+SubtermCoercion {ℓ} {A} _<_ _⊂_ =
+    {x y x' : A} 
+        → (x ⊂ y) → (x' < x) 
+        --^ If y has a subterm x for which an alternative, lexicographically
+        -- smaller choice x' also exists, ...
+        → Σ[ y' ∈ A ](
+        --^ ...then there exists a coercion y' of y, ...
         (y' < y)
-        ×
-        (x' ⊂ y')
-        ×
-        ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
-        -- `y'` same subterms as `y` except possibly not `x` and extra `x'`.
+        --^ ...which is lexicographically smaller...
+        × (x' ⊂ y') × ¬ (x ⊂ y')
+        --^ ...and which has subterm x' instead of x...
+        × ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
+        -- ... but the other subterms of y' are the same as for y.
         )
-
 --------------------------------------------------------------------------------
 -- Actual definition of Signoid and constuction methods.
 --------------------------------------------------------------------------------
@@ -162,7 +168,7 @@ record Signoid
         surj     : (a : A) → Σ[ n ∈ cardToSet numEl ]( enum n ≡ a)
         chain : Chain _<_
         subrelat : IsSubRelat _<_ _⊂_
-        subterm : HasSubTermProp _<_ _⊂_ 
+        coercion : SubtermCoercion _<_ _⊂_ 
         getIdx : A → cardToSet numEl
         inv : Inverseᵇ _≡_ _≡_ enum getIdx
 
@@ -180,7 +186,7 @@ record ChainPreSignoid
         surj     : (a : A) → Σ[ n ∈ cardToSet numEl ]( enum n ≡ a)
         chain : Chain _<_
         subrelat : IsSubRelat _<_ _⊂_
-        subterm : HasSubTermProp _<_ _⊂_ 
+        coercion : SubtermCoercion _<_ _⊂_ 
 
 chainPreToSignoid 
     : {ℓ : Level.Level} {A : Set ℓ} {_<_ _⊂_ : Rel A ℓ}
@@ -193,7 +199,7 @@ chainPreToSignoid sig = record {
     surj = ChainPreSignoid.surj sig ;
     chain = ChainPreSignoid.chain sig ;
     subrelat = ChainPreSignoid.subrelat sig ;
-    subterm = ChainPreSignoid.subterm sig ;
+    coercion = ChainPreSignoid.coercion sig ;
     getIdx = {! !} ;
     inv = {! !} 
     }
@@ -218,40 +224,35 @@ prefix : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A
 prefix _ zero = []
 prefix e (suc n) = (e (suc n)) ∷ (prefix e n)
 
--- A list `L` is an n-prefix of an enumeration of a type `A`
--- if 
--- (1) it contains the first n A-elements exactly once 
--- and
--- (2) it contains nothing else
-PrefixList : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A → Set _
-PrefixList e n = (prefix e n)  (fold L _++_ []) 
+---- A list `L` is an n-prefix of an enumeration of a type `A`
+---- if 
+---- (1) it contains the first n A-elements exactly once 
+---- and
+---- (2) it contains nothing else
+--PrefixList : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A → Set _
+--PrefixList e n = (prefix e n)  (fold L _++_ []) 
 
 module SGStates
     {ℓ : Level.Level}
     {A : Set ℓ}
     {_«_ _⊂_ : Rel A ℓ}
+    (S : Signoid _«_ _⊂_)
     where
 
-    
-IsPrefix : (Signoid _«_ _⊂_) → (L : List (List A)) → Set _
-IsPrefix S L = ?
+    IsPrefix : (L : List (List A)) → Set ℓ
+    IsPrefix L = ?
 
--- Partially explored StreamGrid.
-SGState : 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    → Signoid _<_ _⊂_
-    → Set ℓ
-SGState {A} {_<_} {_⊂_} S = Σ[ L ∈ List (List A)](
-    (IsPrefix S L)
-    --×
-    --(Sorted _<_ (firstEl L))
-    --×
-    --(All (Sorted _<_) L)
-    --×
-    --(SubtermConsistent S L)
-    )
+    -- Partially explored StreamGrid.
+    SGState : Set ℓ
+    SGState = Σ[ L ∈ List (List A)](
+        (IsPrefix L)
+        --×
+        --(Sorted _<_ (firstEl L))
+        --×
+        --(All (Sorted _<_) L)
+        --×
+        --(SubtermConsistent S L)
+        )
 
 ---- Use case: we have a function `f : List A → A`
 --data listToType
@@ -261,17 +262,17 @@ SGState {A} {_<_} {_⊂_} S = Σ[ L ∈ List (List A)](
 --    → Set ℓ
 
 
--- Allowed successor StreamGrid states.
--- These contain the same raw terms in the same nested lists,
--- but also the lexicographically next term in one allowed position.
-sucState : 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    {sig : Signoid _<_ _⊂_}
-    → SGState sig 
-    → List (SGState sig)
-sucState {sig} s = ?
+    ---- Allowed successor StreamGrid states.
+    ---- These contain the same raw terms in the same nested lists,
+    ---- but also the lexicographically next term in one allowed position.
+    --sucState : 
+    --    {ℓ : Level.Level}
+    --    {A : Set ℓ}
+    --    {_<_ _⊂_ : Rel A ℓ}
+    --    {sig : Signoid _<_ _⊂_}
+    --    → SGState sig 
+    --    → List (SGState sig)
+    --sucState {sig} s = ?
 
 -- Testing list membership.
 _∈_ : {A : Set _} → A → List A → Set _
@@ -281,25 +282,25 @@ a ∈ (x ∷ xs) = (a ≡ x) ⊎ (a ∈ xs)
 _∈?_ : Decidable _∈_
 a ∈? xs = ?
 
-data ListToType {A : Set _} (L : List A) : (Set _) where
-    first : (a : A) → ListToType (a ∷ [])
-    cons  : (a : A) (as : List A) → ListToType (a ∷ as)
-    inj   : (a : A) (as : List A) (v : ListToType as) → ListToType (a ∷ as)
+--data ListToType {A : Set _} (L : List A) : (Set _) where
+--    first : (a : A) → ListToType (a ∷ [])
+--    cons  : (a : A) (as : List A) → ListToType (a ∷ as)
+--    inj   : (a : A) (as : List A) (v : ListToType as) → ListToType (a ∷ as)
 
-SGDecider : 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    → Signoid _<_ _⊂_
-    → Set ℓ
-SGDecider sig = (L : sucState sig) → Σ[ s' ∈ SGState sig ]( s' ∈ L )
+--SGDecider : 
+--    {ℓ : Level.Level}
+--    {A : Set ℓ}
+--    {_<_ _⊂_ : Rel A ℓ}
+--    → Signoid _<_ _⊂_
+--    → Set ℓ
+--SGDecider sig = (L : SGStates.sucState sig) → Σ[ s' ∈ SGStates.SGState sig ]( s' ∈ L )
 
-record StreamGrid 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    : Set ℓ 
-    where
-    field
-        signoid : Signoid _<_ _⊂_
-        decider : SGDecider signoid
+--record StreamGrid 
+--    {ℓ : Level.Level}
+--    {A : Set ℓ}
+--    {_<_ _⊂_ : Rel A ℓ}
+--    : Set ℓ 
+--    where
+--    field
+--        signoid : Signoid _<_ _⊂_
+--        decider : SGDecider signoid

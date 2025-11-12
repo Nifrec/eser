@@ -180,6 +180,7 @@ i.e., coerce both to `c(x', x')`.
 Then the exploration algorithm will force `c(x', x') ≈ c(x, x') ≈ c(x', x)`,
 as desired.
 Note that `c(x', x')` will be explored first, as desired.
+In implementation, this means simply adding `× ¬ (x ⊂ y')` to the type.
 
 
 ## Confusing types and elements
