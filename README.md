@@ -60,6 +60,17 @@ TODO: explain what this is all about...
 * Regular expressions for arbitrary signatures?
 * Dependent coalgebras?
 
+### Doubts
+* Do we really need to enumerate *all* elements of a type-of-raw-terms?
+    Perhaps we want to use only a part of it for our StreamGrid,
+    and have our enumeration only enumerate that part (and `_<_` only has the
+    right properties for that part).
+    **Counterargument**: in such a scenario, if `A` has more raw terms than
+    desired, one can probably also define an inductive type `B` with only
+    constructors for the desired terms. 
+    Maybe not as flexible as allowing partial enumerations, but let's keep
+    bijective enumerations `ℕ → A` for now to keep things simpler.
+
 ### To explain
 * Why signatures with constructors with external args from external
     finite sets are *not* a generalisation: one can add more constructors
@@ -128,6 +139,48 @@ NamedAlphabet n = (Alphabet n) × (Fin (suc n) → String)
 ```
 
 # Lessons learned
+
+## 10&12 Nov 2025: Coercions instead of any simplification
+If a term `c(x)` is a constructor `c` with an argument (a *subterm*) `x`,
+and there exists an `x' < x`, then the term `c(x')` also exists
+and `c(x') < c(x)`. 
+In any Signoid, such a 'coercion' to `c(x')` must exist.
+Now if `x ≈ x'` is an equivalence in the partially explored
+grid, then we need `c(x) ≈ c(x')` as well.
+That's OK, we have `x' < x` so the lexicographical order
+ensures also `c(x') < c(x)`, and the state of a grid where `c(x)` is
+the next to explore already contains `c(x')`, so the unique successor state can
+be the state where `c(x)` is added to the stream of `c(x')`.
+
+But subtleties occur when, for example, `c(x, x')` and `c(x', x)` both exist.
+In this case, the following (old definition of Signoid) requirement
+allows to coerce `c(x', x)` to the lexicographically bigger `c(x, x')`,
+which breaks the algorithm.
+```agda
+HasSubTermProp
+    : {ℓ : Level.Level}
+    → {A : Set ℓ} 
+    → (_<_ : Rel A ℓ)
+    → (_⊂_ : Rel A ℓ)
+    → Set ℓ
+HasSubTermProp {ℓ} {A} _<_ _⊂_ =
+    {x y x' : A} → (x ⊂ y) → (x' < x) → Σ[ y' ∈ A ](
+        (y' < y)
+        ×
+        (x' ⊂ y')
+        ×
+        ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
+        -- `y'` same subterms as `y` except possibly not `x` and extra `x'`.
+        )
+```
+The solution? There should be a *chosen* coercion that is lexicographically
+smaller. 
+More precisely, we should coerce *all* instances of the argument,
+i.e., coerce both to `c(x', x')`. 
+Then the exploration algorithm will force `c(x', x') ≈ c(x, x') ≈ c(x', x)`,
+as desired.
+Note that `c(x', x')` will be explored first, as desired.
+
 
 ## Confusing types and elements
 Why does this not work?
