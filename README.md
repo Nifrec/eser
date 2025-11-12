@@ -25,11 +25,9 @@ TODO: explain what this is all about...
 ## TODOs
 * Write better README
 * Rename 'algebra' to 'signature'
-
-### To test:
-* `Enumeration`
-* `getEnumerator`
-* `getIndex`
+* Update `Experimental` status in file headers.
+* Handle `#TODO`s in source files.
+* Remove superfluous imports.
 
 ### To check if exists in library:
 * Definition of `monotone` (used in def `Signoid`).
