@@ -27,7 +27,8 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
 open import StreamGrids.Chain
-open import StreamGrids.Enumeration
+open import StreamGrids.Card
+open import StreamGrids.List
 
 --------------------------------------------------------------------------------
 -- Auxiliary definitions
@@ -72,35 +73,6 @@ A iff B = (A → B) × (B → A)
 -- Therefore we allow the user is allowed to 
 -- provide custom (optimised) implementations for both if they so desire.
 --------------------------------------------------------------------------------
-
-
-
--- Map a cardinality in Bigℕ to the prefix of the natural numbers
--- with that cardinality.
-cardToSet : ℕ∞ → Set
-cardToSet (fin 0) = ⊥
-cardToSet (fin (suc n)) = Fin (suc n) -- Fin 0 cannot be constructed!
-cardToSet ∞ = ℕ
- 
--- Get the default < relation on a prefix of ℕ.
-cardTo< : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
-cardTo< {fin 0} ()
-cardTo< {fin (suc n)} = Data.Fin._<_
-cardTo< {∞} = Data.Nat._<_
-
-cardToSuc : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n) 
-cardToSuc {fin 0} ()
-cardToSuc {fin (suc n)} m = Data.Fin.suc m
-cardToSuc {∞} m = Data.Nat.suc m
-
--- Return one lower number if it exists, but return 0 as predecessor of 0.
-cardToPred : {n : ℕ∞} → (m : cardToSet n) → cardToSet n
-cardToPred {fin 0} ()
-cardToPred {fin (suc n)} zero = zero
-cardToPred {fin (suc n)} (suc m) = inject₁ m
-cardToPred {∞} zero = zero
-cardToPred {∞} (suc m) = m
-
 --------------------------------------------------------------------------------
 -- Subterm relations
 --------------------------------------------------------------------------------
@@ -238,8 +210,8 @@ module SGStates
     (S : Signoid _«_ _⊂_)
     where
 
-    IsPrefix : (L : List (List A)) → (n : ℕ) → Set ℓ
-    IsPrefix L = (a : A) → (getIdx a < n) → a ∈∈ L
+    IsPrefix : (L : List (List A)) → ℕ → Set ℓ
+    IsPrefix L n = ? -- (a : A) → (Signoid.getIdx S a < n) → a ∈∈ L
 
     SubtermConsistent : (L : List (List A)) → Set ℓ
     SubtermConsistent L = ?
@@ -281,13 +253,13 @@ module SGStates
 
 open SGStates
 
--- Testing list membership.
-_∈_ : {A : Set _} → A → List A → Set _
-_ ∈ [] = ⊥
-a ∈ (x ∷ xs) = (a ≡ x) ⊎ (a ∈ xs)
+---- Testing list membership.
+--_∈_ : {A : Set _} → A → List A → Set _
+--_ ∈ [] = ⊥
+--a ∈ (x ∷ xs) = (a ≡ x) ⊎ (a ∈ xs)
 
-_∈?_ : Decidable _∈_
-a ∈? xs = ?
+--_∈?_ : Decidable _∈_
+--a ∈? xs = ?
 
 --data ListToType {A : Set _} (L : List A) : (Set _) where
 --    first : (a : A) → ListToType (a ∷ [])
