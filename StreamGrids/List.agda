@@ -22,6 +22,7 @@ open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
+open import Function.Base using (_∘_)
 
 module StreamGrids.List where
 
@@ -61,12 +62,22 @@ open SingleIndex public
 --------------------------------------------------------------------------------
 -- Double-indiced lists (lists of lists)
 --------------------------------------------------------------------------------
+module DoubleIndex 
+    {ℓ : Level.Level}
+    {A : Set ℓ}
+    where
 
--- Predicate that says that an element occurs in at least one of the sublists.
--- For example, it holds that:
---      6 ∈∈ (( 1 ∷ 2 ∷ 3 ∷ [] ) ∷ ( 4 ∷ 5 ∷ 6 ∷ [] ) ∷ [])
-_∈∈_ : {ℓ : Level.Level} {A : Set ℓ} → A → List (List A) → Set ℓ
-a ∈∈ L = Σ[ i ∈ (Indices L) ](
-    Σ[ j ∈ (Indices (L ,, i)) ]( L ,, i ,, j ≡ a)
-    )
-infixr 30 _∈∈_
+    -- Predicate that says that an element occurs in at least one of the sublists.
+    -- For example, it holds that:
+    --      6 ∈∈ (( 1 ∷ 2 ∷ 3 ∷ [] ) ∷ ( 4 ∷ 5 ∷ 6 ∷ [] ) ∷ [])
+    _∈∈_ : A → List (List A) → Set ℓ
+    a ∈∈ L = Σ[ i ∈ (Indices L) ](
+        Σ[ j ∈ (Indices (L ,, i)) ]( L ,, i ,, j ≡ a)
+        )
+    infixr 30 _∈∈_
+
+    -- Total number of elements in a doubly indexed list
+    doubleLength : List (List A) → ℕ
+    doubleLength = length ∘ concat
+
+open DoubleIndex public
