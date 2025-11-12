@@ -5,7 +5,6 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
--- Contents of this file:
 
 module StreamGrids.CoreSimple where
 
@@ -239,19 +238,25 @@ module SGStates
     (S : Signoid _«_ _⊂_)
     where
 
-    IsPrefix : (L : List (List A)) → Set ℓ
-    IsPrefix L = ?
+    IsPrefix : (L : List (List A)) → (n : ℕ) → Set ℓ
+    IsPrefix L = (a : A) → (getIdx a < n) → a ∈∈ L
+
+    SubtermConsistent : (L : List (List A)) → Set ℓ
+    SubtermConsistent L = ?
 
     -- Partially explored StreamGrid.
     SGState : Set ℓ
-    SGState = Σ[ L ∈ List (List A)](
-        (IsPrefix L)
+    SGState = 
+        Σ[ n ∈ ℕ ](
+        Σ[ L ∈ List (List A)](
+            (IsPrefix L n)
         --×
         --(Sorted _<_ (firstEl L))
         --×
         --(All (Sorted _<_) L)
         --×
         --(SubtermConsistent S L)
+        )
         )
 
 ---- Use case: we have a function `f : List A → A`
@@ -273,6 +278,8 @@ module SGStates
     --    → SGState sig 
     --    → List (SGState sig)
     --sucState {sig} s = ?
+
+open SGStates
 
 -- Testing list membership.
 _∈_ : {A : Set _} → A → List A → Set _
