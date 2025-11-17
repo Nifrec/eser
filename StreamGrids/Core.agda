@@ -6,7 +6,8 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 
-module StreamGrids.CoreSimple where
+{-# OPTIONS --allow-unsolved-metas #-}
+module StreamGrids.Core where
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
@@ -191,7 +192,7 @@ chainPreToSignoid sig = record {
 --------------------------------------------------------------------------------
 
 -- Canonical PrefixList of A: just [e(0), e(1), e(2), ..., e(n-1)].
-prefix : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A
+prefix : {ℓ : Level.Level} {A : Set ℓ} → (e : ℕ → A) → (n : ℕ) → List A
 prefix _ zero = []
 prefix e (suc n) = (e (suc n)) ∷ (prefix e n)
 
@@ -222,34 +223,20 @@ module SGStates
         _<S_ = cardTo< {Signoid.numEl S}
 
     -- All of the first n elements of A occur in L.
-    IsPrefix : (L : List (List A)) → SIndices → Set ℓ
+    IsPrefix : (L : List (List A)) → SIndices → Set _
     IsPrefix L n 
         = ((a : A) → ((Signoid.getIdx S a) <S n) → a ∈∈ L)
         --^ Every of the first n elements of A occurs in L...
         × ℕequalsCardToSetElem (flatLength L) n
         --^ ...and L has excatly n elements in total.
 
-    -- This checks if x ≈ x' according to L, denoted as `L ⊢ x ≈ x'`,
-    -- using the convention that x ≈ x' iff (x and x' are both in the same
-    -- sublist of L).
-    -- Warning: this is intended to be used in contexts 
-    -- where x and x' occur in at most one sublist of L. 
-    -- Otherwise x ≈ x' iff the FIRST sublists in which
-    -- they occur are the same.
-    listRelat : (L : List (List A)) → (x x' : A) → Set ℓ
-    listRelat L x x' 
-        = Σ[ p ∈ (x ∈∈ L) ]( 
-          Σ[ q ∈ (x' ∈∈ L) ](
-          (getSuperListIdx {ℓ} {A} {L} {x} p) 
-            ≡ (getSuperListIdx {ℓ} {A} {L} {x'} q)
-        ))
-    syntax listRelat L x x' = L ⊢ x ≈ x'
-
+    -- #TODO: the above relation is, (after fixing L), an equivalence relation.
+    -- If the need arises, prove refl sym trans.
         
     -- If two subterms x' < x are deemed equivalent in L,
     -- then any superterm must have been coerced along this x' ≈ x relation.
     -- (In case of constructors, we must have c(x) ≈ c(x') if we have x ≈ x').
-    IsCongruence : (L : List (List A)) → Set ℓ
+    IsCongruence : (L : List (List A)) → Set _
     IsCongruence L 
         = (y x x' : A)
         → (x⊂y : x ⊂ y)

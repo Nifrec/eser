@@ -74,10 +74,32 @@ module DoubleIndex
     a ∈∈ L = Σ[ i ∈ (Indices L) ](
         Σ[ j ∈ (Indices (L ,, i)) ]( L ,, i ,, j ≡ a)
         )
+    --^ In Python notation, this would be `L[i, j] = a`.
     infixr 30 _∈∈_
 
     -- Total number of elements in a doubly indexed list.
     flatLength : List (List A) → ℕ
     flatLength = length ∘ concat
+
+    -- Get the index of the sublist of L that contains a,
+    -- given that a occurs in some sublist.
+    getSuperListIdx : {L : List(List A)} → {a : A} → (a ∈∈ L) → Indices L
+    getSuperListIdx {L} {a} (i , _) = i
+
+    -- This checks if x ≈ x' according to L, denoted as `L ⊢ x ≈ x'`,
+    -- using the convention that x ≈ x' iff (x and x' are both in the same
+    -- sublist of L).
+    -- Warning: this is intended to be used in contexts 
+    -- where x and x' occur in at most one sublist of L. 
+    -- Otherwise x ≈ x' iff the FIRST sublists in which
+    -- they occur are the same.
+    listRelat : (L : List (List A)) → (x x' : A) → Set ℓ
+    listRelat L x x' 
+        = Σ[ p ∈ (x ∈∈ L) ]( 
+          Σ[ q ∈ (x' ∈∈ L) ](
+          (getSuperListIdx {L = L} {x} p) ≡ (getSuperListIdx {L = L} {x'} q)
+        ))
+    syntax listRelat L x x' = L ⊢ x ≈ x'
+
 
 open DoubleIndex public
