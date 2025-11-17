@@ -73,6 +73,11 @@ TODO: explain what this is all about...
 * Why signatures with constructors with external args from external
     finite sets are *not* a generalisation: one can add more constructors
     instead, one for each pair of external arguments.
+* The custom notations (e.g., `listRelat`).
+* Why not all monoids fit into the framework: dependency, your input is a
+  congruence that you need to extend. It might not be recursively be generated
+  by yourself (in practise it is, but you don't know). 
+  See LL journal 14 Nov.
 
 # Alphabet representation issues
 **This part of the README is not very relevant anymore!**

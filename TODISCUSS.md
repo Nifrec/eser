@@ -1,36 +1,42 @@
 # To discuss or tell
 
+## Are all enumerable types of level 0?
+Do there exist enumerable types of higher level than 0?
+If not, all the implicit level arguments can be removed,
+which simplifies my code and maybe makes Agda less confused about types 
+(and maybe faster to compile all this).
+
 ## Enumerations
-    Annoyed by needing a case distinction between finite and countable types.
-    Current idea: give a parameter `numEl ∈ {ℕ , ∞}` that gives the size
-    of the set, and only specify the behaviour of the enumerator `ℕ → A`
-    on inputs smaller than this size.
+Annoyed by needing a case distinction between finite and countable types.
+Current idea: give a parameter `numEl ∈ {ℕ , ∞}` that gives the size
+of the set, and only specify the behaviour of the enumerator `ℕ → A`
+on inputs smaller than this size.
 
 ## Bialgebras or stronger types?
-    I assume a signoid has been given and that `Q` is the type of partially
-    explored but otherwise consistent grids (= partially defined equivalences)
-    over this sigmoid.
-    1. I could model StreamGrids as bialgebras
-        ```
-        Q --> [Q] --> Q
-           σ       δ
-        ```
-        Here σ is part of the definition of the StreamGrids framework; it is
-        hardcoded, it are the allowed successors of a partially explored grid.
-        But δ is what the user provides: the decider of equivalences,
-        making locally a choice what to do with the next element to decide.
-        (the list functor could also be the powerset or ordered lists).
-        - The type `[Q]` is bigger than needed, not all elements will be
-          reached.
-        - The output of `δ` must be in the input list, of course!
-    2. I could also type δ stronger, as
-        ```agda
-        δ : (q : Q) «σ(q)» 
-        ```
-        where `«...»` lifts a list (or set, or so) to a type whose terms
-        are the element of the list.
-        I think this approach guarantees that function extensionally
-        holds for the δs.
+I assume a signoid has been given and that `Q` is the type of partially
+explored but otherwise consistent grids (= partially defined equivalences)
+over this sigmoid.
+1. I could model StreamGrids as bialgebras
+    ```
+    Q --> [Q] --> Q
+       σ       δ
+    ```
+    Here σ is part of the definition of the StreamGrids framework; it is
+    hardcoded, it are the allowed successors of a partially explored grid.
+    But δ is what the user provides: the decider of equivalences,
+    making locally a choice what to do with the next element to decide.
+    (the list functor could also be the powerset or ordered lists).
+    - The type `[Q]` is bigger than needed, not all elements will be
+      reached.
+    - The output of `δ` must be in the input list, of course!
+2. I could also type δ stronger, as
+    ```agda
+    δ : (q : Q) «σ(q)» 
+    ```
+    where `«...»` lifts a list (or set, or so) to a type whose terms
+    are the element of the list.
+    I think this approach guarantees that function extensionally
+    holds for the δs.
 
 ## Permutations
 The Agda library apparently defines multiple definitions of
