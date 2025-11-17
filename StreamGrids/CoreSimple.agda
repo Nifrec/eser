@@ -109,7 +109,7 @@ SubtermCoercion
     → (_⊂_ : Rel A ℓ)
     → Set ℓ
 SubtermCoercion {ℓ} {A} _<_ _⊂_ =
-    {x y x' : A} 
+    {y x x' : A} 
         → (x ⊂ y) → (x' < x) 
         --^ If y has a subterm x for which an alternative, lexicographically
         -- smaller choice x' also exists, ...
@@ -225,12 +225,38 @@ module SGStates
     IsPrefix : (L : List (List A)) → SIndices → Set ℓ
     IsPrefix L n 
         = ((a : A) → ((Signoid.getIdx S a) <S n) → a ∈∈ L)
-        --^ Every of the first n elements of A occurs in L.
-        × (flatLength L ≡ n)
-        
+        --^ Every of the first n elements of A occurs in L...
+        × ℕequalsCardToSetElem (flatLength L) n
+        --^ ...and L has excatly n elements in total.
 
+    -- This checks if x ≈ x' according to L, denoted as `L ⊢ x ≈ x'`,
+    -- using the convention that x ≈ x' iff (x and x' are both in the same
+    -- sublist of L).
+    -- Warning: this is intended to be used in contexts 
+    -- where x and x' occur in at most one sublist of L. 
+    -- Otherwise x ≈ x' iff the FIRST sublists in which
+    -- they occur are the same.
+    stateRelat : (L : List (List A)) → (x x' : A) → Set ℓ
+    stateRelat L x x' 
+        = Σ[ p ∈ (x ∈∈ L) ]( 
+          Σ[ q ∈ (x' ∈∈ L) ](
+          (getSuperListIdx {ℓ} {A} {L} {x} p) 
+            ≡ (getSuperListIdx {ℓ} {A} {L} {x'} q)
+        ))
+    syntax stateRelat L x x' = L ⊢ x ≈ x'
+
+        
+    -- If two subterms x' < x are deemed equivalent in L,
+    -- then any superterm must have been coerced along this x' ≈ x relation.
+    -- (In case of constructors, we must have c(x) ≈ c(x') if we have x ≈ x').
     IsCongruence : (L : List (List A)) → Set ℓ
-    IsCongruence L = ?
+    IsCongruence L 
+        = (y x x' : A)
+        → (x⊂y : x ⊂ y)
+        → (x'«x : x' « x)
+        → L ⊢ x' ≈ x
+        → L ⊢ y ≈ proj₁ (Signoid.coercion S {y} {x} {x'} x⊂y x'«x)
+
 
     -- Partially explored StreamGrid.
     SGState : Set ℓ
