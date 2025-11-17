@@ -209,9 +209,25 @@ module SGStates
     {_«_ _⊂_ : Rel A ℓ}
     (S : Signoid _«_ _⊂_)
     where
+    
+    private 
+        -- Existing indices in the enumeration of A.
+        -- That's ℕ if A has infinitely many elements
+        -- and Fin n otherwise.
+        SIndices : Set
+        SIndices = cardToSet (Signoid.numEl S)
 
-    IsPrefix : (L : List (List A)) → ℕ → Set ℓ
-    IsPrefix L n = ? -- (a : A) → (Signoid.getIdx S a < n) → a ∈∈ L
+        -- The associated '<' relation on the indices of A.
+        _<S_ : Rel SIndices 0ℓ
+        _<S_ = cardTo< {Signoid.numEl S}
+
+    -- All of the first n elements of A occur in L.
+    IsPrefix : (L : List (List A)) → SIndices → Set ℓ
+    IsPrefix L n 
+        = ((a : A) → ((Signoid.getIdx S a) <S n) → a ∈∈ L)
+        --^ Every of the first n elements of A occurs in L.
+        × (doubleLength L ≡ n)
+        
 
     SubtermConsistent : (L : List (List A)) → Set ℓ
     SubtermConsistent L = ?
@@ -219,7 +235,7 @@ module SGStates
     -- Partially explored StreamGrid.
     SGState : Set ℓ
     SGState = 
-        Σ[ n ∈ ℕ ](
+        Σ[ n ∈ SIndices ](
         Σ[ L ∈ List (List A)](
             (IsPrefix L n)
         --×
