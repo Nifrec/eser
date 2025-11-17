@@ -236,14 +236,14 @@ module SGStates
     -- where x and x' occur in at most one sublist of L. 
     -- Otherwise x ≈ x' iff the FIRST sublists in which
     -- they occur are the same.
-    stateRelat : (L : List (List A)) → (x x' : A) → Set ℓ
-    stateRelat L x x' 
+    listRelat : (L : List (List A)) → (x x' : A) → Set ℓ
+    listRelat L x x' 
         = Σ[ p ∈ (x ∈∈ L) ]( 
           Σ[ q ∈ (x' ∈∈ L) ](
           (getSuperListIdx {ℓ} {A} {L} {x} p) 
             ≡ (getSuperListIdx {ℓ} {A} {L} {x'} q)
         ))
-    syntax stateRelat L x x' = L ⊢ x ≈ x'
+    syntax listRelat L x x' = L ⊢ x ≈ x'
 
         
     -- If two subterms x' < x are deemed equivalent in L,
