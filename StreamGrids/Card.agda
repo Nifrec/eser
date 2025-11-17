@@ -77,3 +77,7 @@ cardToPred {fin (suc n)} (suc m) = inject₁ m
 cardToPred {∞} zero = zero
 cardToPred {∞} (suc m) = m
 
+-- Compare a natural number for equality n to a number m in (cardToSet c).
+ℕequalsCardToSetElem : {c : ℕ∞} → ℕ → (m : cardToSet c) → Set
+ℕequalsCardToSetElem {fin (suc c)} n m  = (toℕ m) ≡ n
+ℕequalsCardToSetElem {∞} n m = n ≡ m
