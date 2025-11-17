@@ -226,11 +226,11 @@ module SGStates
     IsPrefix L n 
         = ((a : A) → ((Signoid.getIdx S a) <S n) → a ∈∈ L)
         --^ Every of the first n elements of A occurs in L.
-        × (doubleLength L ≡ n)
+        × (flatLength L ≡ n)
         
 
-    SubtermConsistent : (L : List (List A)) → Set ℓ
-    SubtermConsistent L = ?
+    IsCongruence : (L : List (List A)) → Set ℓ
+    IsCongruence L = ?
 
     -- Partially explored StreamGrid.
     SGState : Set ℓ
@@ -243,7 +243,7 @@ module SGStates
         --×
         --(All (Sorted _<_) L)
         --×
-        --(SubtermConsistent S L)
+        --(IsCongruence S L)
         )
         )
 

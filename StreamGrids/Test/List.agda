@@ -47,5 +47,5 @@ testGetIdx = refl
 test∈∈ : 6 ∈∈ DL
 test∈∈ = (suc zero , suc (suc zero) , refl) -- 6 occurs at index pair (1, 2).
 
-testDoubleLength : doubleLength DL ≡ 6
-testDoubleLength = refl
+testFlatLength : flatLength DL ≡ 6
+testFlatLength = refl

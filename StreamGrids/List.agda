@@ -76,8 +76,8 @@ module DoubleIndex
         )
     infixr 30 _∈∈_
 
-    -- Total number of elements in a doubly indexed list
-    doubleLength : List (List A) → ℕ
-    doubleLength = length ∘ concat
+    -- Total number of elements in a doubly indexed list.
+    flatLength : List (List A) → ℕ
+    flatLength = length ∘ concat
 
 open DoubleIndex public
