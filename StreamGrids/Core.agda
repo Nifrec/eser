@@ -24,8 +24,15 @@ open import Data.Vec
 open import Level using (0ℓ)
 open import Relation.Binary.Core using (Rel)
 open import Relation.Binary.Definitions
-open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
+
+-- The ones below are certainly needed.
+open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Data.List.Relation.Unary.All using (All)
+open import Data.List.Relation.Unary.Linked using (Linked)
+-- Implementation note: Data.List.Relation.Unary.Sorted.TotalOrder
+-- gives `Sorted` instead of `Linked`, but it only works with reflexive
+-- total orders, and _«_ is always irreflexive.
 
 open import StreamGrids.Chain
 open import StreamGrids.Card
@@ -246,17 +253,18 @@ module SGStates
 
 
     -- Partially explored StreamGrid.
+    -- `Linked _«_` means just 'sorted according to _«_'.
     SGState : Set ℓ
     SGState = 
         Σ[ n ∈ SIndices ](
         Σ[ L ∈ List (List A)](
             (IsPrefix L n)
-        --×
-        --(Sorted _<_ (firstEl L))
-        --×
-        --(All (Sorted _<_) L)
-        --×
-        --(IsCongruence S L)
+        ×
+        (Linked _«_ (firstElem L))
+        ×
+        (All (λ as → Linked _«_ as) L)
+        ×
+        (IsCongruence L)
         )
         )
 
