@@ -101,5 +101,12 @@ module DoubleIndex
         ))
     syntax listRelat L x x' = L ⊢ x ≈ x'
 
+    -- Take out the first elements of nested lists.
+    -- Ignore empty lists.
+    -- E.g., [[1, 2, 3], [4, 5, 6], [], [7, 8, 9]] ↦  [1, 4, 7].
+    firstElem : (L : List (List A)) → List A
+    firstElem [] = []
+    firstElem ([] ∷ Ls) = firstElem Ls
+    firstElem ((a ∷ as) ∷ Ls) = a ∷ (firstElem Ls)
 
 open DoubleIndex public
