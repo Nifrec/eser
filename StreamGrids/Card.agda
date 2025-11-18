@@ -77,6 +77,33 @@ cardToPred {fin (suc n)} (suc m) = inject₁ m
 cardToPred {∞} zero = zero
 cardToPred {∞} (suc m) = m
 
+meh : {A B : Set} → ¬ B → (A → B) → ¬ A
+meh {A} {B} ¬B f a = ⊥-elim (¬B (f a))
+
+clipSuc : {n : ℕ} → Fin n → Fin n
+clipSuc {suc n} m with n Data.Nat.≟ toℕ m
+... | yes _ = m
+... | no p = let q = meh p (lemma' {n} {m}) in
+    lower₁ (suc m) q
+    where
+        --lemma : {n : ℕ} {m : Fin n} → (n ≡ toℕ m) → (suc n ≡ toℕ (suc m))
+        --lemma {n} {m} p = cong suc p
+        lemma' : {n : ℕ} {m : Fin (suc n)} → (suc n ≡ toℕ ( suc m)) → (n ≡ toℕ m)
+        lemma' {n} {m} r = suc-injective r
+{-# WARNING_ON_USAGE clipSuc "Warning: cleanup clipSuc " #-}
+
+--clipSuc {suc n} m with n Data.Nat.≤? toℕ m
+--... | yes _ = m
+--... | no p = {! lower₁ (suc m) !}
+--... | no _ = {! lower {suc (suc n)} {suc (toℕ m)} !}
+
+-- Return one greater element if it exists, return the maximum if the set is
+-- finite and the input is the maximum element.
+cardToClipSuc : {n : ℕ∞} → (m : cardToSet n) → cardToSet n
+cardToClipSuc {fin 0} ()
+cardToClipSuc {fin (suc n)} m = clipSuc m
+cardToClipSuc {∞} m = suc m
+
 -- Compare a natural number for equality n to a number m in (cardToSet c).
 ℕequalsCardToSetElem : {c : ℕ∞} → ℕ → (m : cardToSet c) → Set
 ℕequalsCardToSetElem {fin (suc c)} n m  = (toℕ m) ≡ n
