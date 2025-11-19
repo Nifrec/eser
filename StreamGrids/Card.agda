@@ -109,7 +109,6 @@ IsNotMax
     → (m : cardToSet c)
     → Set
 IsNotMax {fin zero} ()
---IsNotMax {fin (suc n)} m = ¬ (ℕequalsCardToSetElem n m)
 IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
     --^ The largest element of fin (1 + n) is fromℕ n.
 IsNotMax {∞} n = ⊤ 
