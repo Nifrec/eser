@@ -219,11 +219,14 @@ module SGStates
     where
     
     private 
+        card : ℕ∞
+        card = Signoid.numEl S
+
         -- Existing indices in the enumeration of A.
         -- That's ℕ if A has infinitely many elements
         -- and Fin n otherwise.
         SIndices : Set
-        SIndices = cardToSet (Signoid.numEl S)
+        SIndices = cardToSet card
 
         -- The associated '<' relation on the indices of A.
         _<S_ : Rel SIndices 0ℓ
@@ -252,13 +255,28 @@ module SGStates
         → L ⊢ y ≈ proj₁ (Signoid.coercion S {y} {x} {x'} x⊂y x'«x)
 
 
+    ---- Partially explored StreamGrid.
+    ---- `Linked _«_` means just 'sorted according to _«_'.
+    --SGState : Set ℓ
+    --SGState = 
+    --    Σ[ n ∈ SIndices ](
+    --    Σ[ L ∈ List (List A)](
+    --        (IsPrefix L n)
+    --    ×
+    --    (Linked _«_ (firstElem L))
+    --    ×
+    --    (All (λ as → Linked _«_ as) L)
+    --    ×
+    --    (IsCongruence L)
+    --    )
+    --    )
+
     -- Partially explored StreamGrid.
     -- `Linked _«_` means just 'sorted according to _«_'.
-    SGState : Set ℓ
-    SGState = 
-        Σ[ n ∈ SIndices ](
+    SGState : (n : SIndices) → Set ℓ
+    SGState n = 
         Σ[ L ∈ List (List A)](
-            (IsPrefix L n)
+        (IsPrefix L n)
         ×
         (Linked _«_ (firstElem L))
         ×
@@ -266,14 +284,67 @@ module SGStates
         ×
         (IsCongruence L)
         )
-        )
 
----- Use case: we have a function `f : List A → A`
---data listToType
---    {ℓ : Level.Level}
---    {A : Set ℓ}
---    → List A
---    → Set ℓ
+    next : (n : SIndices) → (h : IsNotMax n) → A
+    next n h = Signoid.enum S (cardToClipSuc n)
+
+    -- Predicate expressing that the next element y to explore, 
+    -- contains a subterm x that is equivalent to some smaller element x'.
+    -- (This implies that, to preserve congruence consistenct,
+    -- y must equal its x ≈ x' coercion in the only allowed successor state).
+    -- #TODO: h is not used -- remove it?
+    CongrConstrApplies
+        : {n : SIndices}
+        → (h : IsNotMax n) 
+        --^ Otherwise the predicate makes no sense.
+        → (q : SGState n)
+        → Set _
+    CongrConstrApplies {n} h (L , Lprops) = {! (x x' : A) → (x ∈∈ L) → (x' ∈∈ L)
+    → (x' « x) → (L ⊢ x' ≈ x) → (x ⊂ next A n h)!}
+    
+    -- #TODO: h is not used -- remove it?
+    addToIdx
+        : {n : SIndices}
+        → (q : SGState n)
+        → (i : Indices (proj₁ q))
+        → (h1 : IsNotMax n)
+        --^ Proof that there actually exists a next element in A to add.
+        → (h2 : ¬ (CongrConstrApplies h1 q))
+        --^ Proof that the choice of equality for next element to add is not
+        -- constrained by the congruence condition.
+        → SGState (cardToClipSuc n)
+    addToIdx {n} q i h1 h2 = ?
+
+    allFreeChoices 
+        : {n : SIndices} 
+        → SGState n 
+        → List (SGState (cardToClipSuc n))
+    allFreeChoices {n} q = ?
+
+    sucStatesList : {n : SIndices} → SGState n  → List (SGState (cardToClipSuc n))
+    -- Algorithm sketch:
+    -- if <n is max>
+    -- then
+    --      <we're already done;
+    --      return a list only containing the current state>
+    -- elif <congruence constraint apply> 
+    -- then 
+    --      <singleton q a> 
+    -- else 
+    --      <allFreeChoices q a>
+    -- where
+    --      <a = nextToChoose q>
+    -- Well, in practise both `singleton` and `allFreeChoices` know which
+    -- element `a` must be. 
+    sucStatesList q = ? 
+
+    -- Wrapping the sucStatesList into a type.
+    -- First I considered using some ListToType {B} {L : List B} → Set,
+    -- but just using the indices avoids introducing new definitions
+    -- and encodes exactly the same data anyway.
+    SucStates : {n : SIndices} → SGState n → Set _
+    SucStates q = Indices (sucStatesList q)
+
 
 
     ---- Allowed successor StreamGrid states.
@@ -290,18 +361,6 @@ module SGStates
 
 open SGStates
 
----- Testing list membership.
---_∈_ : {A : Set _} → A → List A → Set _
---_ ∈ [] = ⊥
---a ∈ (x ∷ xs) = (a ≡ x) ⊎ (a ∈ xs)
-
---_∈?_ : Decidable _∈_
---a ∈? xs = ?
-
---data ListToType {A : Set _} (L : List A) : (Set _) where
---    first : (a : A) → ListToType (a ∷ [])
---    cons  : (a : A) (as : List A) → ListToType (a ∷ as)
---    inj   : (a : A) (as : List A) (v : ListToType as) → ListToType (a ∷ as)
 
 --SGDecider : 
 --    {ℓ : Level.Level}
