@@ -102,3 +102,15 @@ cardToClipSuc {∞} m = suc m
 ℕequalsCardToSetElem : {c : ℕ∞} → ℕ → (m : cardToSet c) → Set
 ℕequalsCardToSetElem {fin (suc c)} n m  = (toℕ m) ≡ n
 ℕequalsCardToSetElem {∞} n m = n ≡ m
+
+
+IsNotMax
+    : {c : ℕ∞}
+    → (m : cardToSet c)
+    → Set
+IsNotMax {fin zero} ()
+--IsNotMax {fin (suc n)} m = ¬ (ℕequalsCardToSetElem n m)
+IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
+    --^ The largest element of fin (1 + n) is fromℕ n.
+IsNotMax {∞} n = ⊤ 
+    --^ Trivial: there is no maximal natural number.

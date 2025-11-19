@@ -78,3 +78,15 @@ testCardToClipSuc2 = refl
 -- No clipping ever occurs for finite inputs in the natural numbers case.
 testCardToClipSuc3 : cardToClipSuc {∞} 10 ≡ 11
 testCardToClipSuc3 = refl
+
+--------------------------------------------------------------------------------
+-- IsNotMax testcases
+--------------------------------------------------------------------------------
+testIsNotMax1 : IsNotMax {fin 2} zero
+testIsNotMax1 = s≤s z≤n
+
+testIsNotMax2 : ¬ (IsNotMax {fin 2} (suc zero))
+testIsNotMax2 (s≤s ())
+
+testIsNotMax3 : IsNotMax {∞} 10
+testIsNotMax3 = tt
