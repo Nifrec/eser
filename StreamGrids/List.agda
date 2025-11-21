@@ -23,6 +23,9 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
 open import Function.Base using (_∘_)
+open import Data.List.Properties
+
+open import StreamGrids.PropositionalEquality
 
 module StreamGrids.List where
 
@@ -110,3 +113,134 @@ module DoubleIndex
     firstElem ((a ∷ as) ∷ Ls) = a ∷ (firstElem Ls)
 
 open DoubleIndex public
+
+--------------------------------------------------------------------------------
+-- Inserting elements in sublists of double-indexed lists.
+-- Such inserts preserve a lot of properties of the original list.
+--------------------------------------------------------------------------------
+
+module DoubleInsert 
+    {ℓ : Level.Level}
+    {A : Set ℓ}
+    where
+
+    -- Insert a in the sublist L[i].
+    -- Notation : `L [ i ]+= a`.
+    insert 
+        : (L : List (List A))
+        → (a : A) 
+        → (i : Indices L)
+        → List( List A)
+    insert L a i = L [ i ]%= λ as → a ∷ as
+    infixl 5 insert
+    syntax insert L a i = L [ i ]+= a
+
+    insertPresvLength 
+        : (L : List (List A))
+        → (a : A) 
+        → (i : Indices L)
+        → length L ≡ length (L [ i ]+= a)
+    insertPresvLength L a i = sym (length-%= L i (λ as → a ∷ as))
+
+    insertPresvIndices
+        : (L : List (List A))
+        → (a : A) 
+        → (i : Indices L)
+        → Indices L ≡ Indices (L [ i ]+= a)
+    insertPresvIndices L a i = cong (λ n → Fin n) (insertPresvLength L a i)
+
+    insertIdxMap
+        : (L : List (List A))
+        → (a : A) 
+        → (i k : Indices L)
+        → Indices (L [ i ]+= a)
+    insertIdxMap L a i k = coe (insertPresvIndices L a i) k
+
+    insertPresvEl 
+        : (L : List (List A))
+        → (a : A) 
+        → (i : Indices L)
+        → {a' : A} 
+        → a' ∈∈ L 
+        → a' ∈∈ (L [ i ]+= a)
+    insertPresvEl L a i {a'} (k , j , p) = 
+        let p' = ? in
+        let k' = insertIdxMap L a i k in
+        (k' ,  {! inject₁ j !}  , p')
+
+    lemma 
+        : (L : List (List A))
+        → (a : A) 
+        → (i : Indices L)
+        → {a' : A} 
+        → (h : a' ∈∈ L)
+        → (¬ ((proj₁ h) ≡ i))
+        --^ a' is in sublist with index i
+        → a' ∈∈ (L [ i ]+= a)
+    lemma L a i {a'} (k , j , p) q = 
+        let p' = ? in
+        (k' ,  {! inject₁ j !}  , p')
+        where
+            L' : List (List A) 
+            L' = L [ i ]+= a
+            k' : Indices L'
+            k' = insertIdxMap L a i k
+            lenLi≡lenL'i : length (L ,, k) ≡ length ((L [ i ]+= a) ,, k')
+            lenLi≡lenL'i = refl
+
+
+open DoubleInsert public
+
+
+--module DoubleInsert 
+--    {ℓ : Level.Level}
+--    {A : Set ℓ}
+--    (L : List (List A))
+--    --^ List to insert new element into.
+--    (a : A) 
+--    --^ Element to insert.
+--    (i : Indices L)
+--    --^ Index at which to insert a.
+--    where
+
+
+
+--open DoubleInsert public
+
+----_[_]+=_ := insert
+
+
+--The standard library has
+
+--  ∈-∷=⁺-untouched : ∀ {xs x y v} (x∈xs : x ∈ xs) → (¬ x ≈ y) → y ∈ xs → y ∈ (x∈xs ∷= v)
+--  ∈-∷=⁺-untouched (here  x≈z)  x≉y (here  y≈z)  = contradiction (trans x≈z (sym y≈z)) x≉y
+--  ∈-∷=⁺-untouched (here  x≈z)  x≉y (there y∈xs) = there y∈xs
+--  ∈-∷=⁺-untouched (there x∈xs) x≉y (here  y≈z)  = here y≈z
+--  ∈-∷=⁺-untouched (there x∈xs) x≉y (there y∈xs) = there (∈-∷=⁺-untouched x∈xs x≉y y∈xs)
+--in Data.List.Membership.Setoid.Properties
+--That should deal with the indices that have not changed?
+-- (1) It can (for List (List A) stuff) prove that the unchanged sublists are still in L';
+-- these then obviously contain the elements the original sublist in L has.
+-- (2) Now the stuff below should allow to prove that the extended sublist also has
+-- all elements of the non-extended version.
+-- So prove both of these things as a sublemma, then make a case distinction
+-- on the first index of the element a' (like Tarmo suggested),
+-- and all should work out -- in intuition...
+
+--Data.List.Membership.Propositional.Properties has this:
+--(not useful, only useful when using mappings of the form l' → x ∷ l'
+--on the nested lists.
+---- nested lists
+
+--map∷⁻ : xs ∈ map (y ∷_) xss → ∃[ ys ] ys ∈ xss × xs ≡ y ∷ ys
+--map∷⁻ = ∈-map⁻ (_ ∷_)
+
+--[]∉map∷ : (List A ∋ []) ∉ map (x ∷_) xss
+--[]∉map∷ p with () ← map∷⁻ p
+
+--map∷-decomp∈ : (List A ∋ x ∷ xs) ∈ map (y ∷_) xss → x ≡ y × xs ∈ xss
+--map∷-decomp∈ p with _ , xs∈xss , refl ← map∷⁻ p = refl , xs∈xss
+
+--∈-map∷⁻ : xs ∈ map (x ∷_) xss → x ∈ xs
+--∈-map∷⁻ p with _ , _ , refl ← map∷⁻ p = here refl
+

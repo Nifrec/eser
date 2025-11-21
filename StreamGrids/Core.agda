@@ -20,7 +20,6 @@ open import Data.Nat.Properties
 open import Data.Product
 open import Data.Sum
 open import Data.Unit
-open import Data.Vec
 open import Level using (0ℓ)
 open import Relation.Binary.Core using (Rel)
 open import Relation.Binary.Definitions
@@ -272,7 +271,9 @@ module SGStates
     --    )
 
     -- Partially explored StreamGrid.
-    -- `Linked _«_` means just 'sorted according to _«_'.
+    -- The equivalences between the first n raw terms have been decided
+    -- and form an congruence.
+    -- Note: `Linked _«_` means just 'sorted according to _«_'.
     SGState : (n : SIndices) → Set ℓ
     SGState n = 
         Σ[ L ∈ List (List A)](
@@ -299,8 +300,13 @@ module SGStates
         --^ Otherwise the predicate makes no sense.
         → (q : SGState n)
         → Set _
-    CongrConstrApplies {n} h (L , Lprops) = {! (x x' : A) → (x ∈∈ L) → (x' ∈∈ L)
-    → (x' « x) → (L ⊢ x' ≈ x) → (x ⊂ next A n h)!}
+    CongrConstrApplies {n} h (L , Lprops) 
+        = (x x' : A) 
+        → x ∈∈ L 
+        → x' ∈∈ L 
+        → x' « x 
+        → (L ⊢ x' ≈ x )
+        → x ⊂ next n h
     
     -- #TODO: h is not used -- remove it?
     addToIdx
@@ -313,7 +319,16 @@ module SGStates
         --^ Proof that the choice of equality for next element to add is not
         -- constrained by the congruence condition.
         → SGState (cardToClipSuc n)
-    addToIdx {n} q i h1 h2 = ?
+    addToIdx {n} (L , pref , linked , subLinked , congr) i h1 h2 = 
+        let subI = L ,, i in
+        let L' = L [ i ]%= (λ as → (next n h1) ∷ as) in
+        --^ Add next element to sublist with index i.
+        let prefComplete = (λ a a<n → ?) in
+        let pref' = (prefComplete , {! !}) in
+        let linked' = ? in
+        let subLinked' = ? in
+        let congr' = ? in
+        L' , pref' , linked' , subLinked' , congr'
 
     allFreeChoices 
         : {n : SIndices} 
@@ -321,7 +336,10 @@ module SGStates
         → List (SGState (cardToClipSuc n))
     allFreeChoices {n} q = ?
 
-    sucStatesList : {n : SIndices} → SGState n  → List (SGState (cardToClipSuc n))
+    sucStatesList 
+        : {n : SIndices} 
+        → SGState n  
+        → List (SGState (cardToClipSuc n))
     -- Algorithm sketch:
     -- if <n is max>
     -- then
