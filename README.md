@@ -20,6 +20,17 @@ TODO: explain what this is all about...
     module `StreamGrids.Foo`.
 * `StreamGrids/Practise`
     Informal personal practise to get better acquainted with Agda.
+
+## Naming conventions
+### Nested lists
+In a list of lists `LS = [ L1 , L2 , L3 , ...]` 
+where each Li : List A and where LS : List (List A),
+I will call:
+* Ls the **toplist**
+* Li a **lowlist**
+**Warning:** old comments (pre-22 Nov 2025)
+might still confuse 'sublist' and 'lowlist'.
+'Sublist' always means 'lowlist'.
     
 
 ## TODOs
@@ -38,12 +49,13 @@ TODO: explain what this is all about...
 * Propositional truncation without HIITs.
 * Integers & rational numbers.
 * Other HIITs / more complicated inductive types / advanced grids.
+* Prove that `SGToType` is an hSet.
 
 ### Concrete ideas
 * Prove all enumerable inductive types embed into StreamGrids.
-    - Is there also a backward map? What is the largest class of types that are
-      all StreamGrids?
-* Prove that `SGToType` is an hSet.
+    - Is there also a backward map? 
+    - What is the largest class of types that are all StreamGrids?
+    - Maybe the initial algebras of a certain class of functors?
 * Coloured grids.
     * Next step: local rules & CA.
 * Enforcing additional constraints such as associativity.
