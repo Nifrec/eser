@@ -64,6 +64,13 @@ cardTo< {fin 0} ()
 cardTo< {fin (suc n)} = Data.Fin._<_
 cardTo< {∞} = Data.Nat._<_
 
+-- Get the zero element of the associated set.
+-- Only defined for `suc∞ n` since things with cardinality zero have
+-- no elements.
+cardToZero : (n : ℕ∞) → cardToSet (suc∞ n) 
+cardToZero (fin n) = Data.Fin.zero
+cardToZero ∞ = Data.Nat.zero
+
 cardToSuc : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n) 
 cardToSuc {fin 0} ()
 cardToSuc {fin (suc n)} m = Data.Fin.suc m
