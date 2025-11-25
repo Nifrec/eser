@@ -10,6 +10,7 @@
 open import Data.Bool hiding (_≤_; _≤?_)
 open import Data.Empty
 open import Data.Fin hiding (_<_)
+open import Data.Fin.Properties
 open import Function using (Inverseᵇ)
 open import Data.List
 open import Data.Nat hiding (_<_)
@@ -84,7 +85,8 @@ cardToPred {fin (suc n)} (suc m) = inject₁ m
 cardToPred {∞} zero = zero
 cardToPred {∞} (suc m) = m
 
-
+-- Compute successor, but if input is already the max,
+-- then return the max.
 clipSuc : {n : ℕ} → Fin n → Fin n
 clipSuc {suc n} m with n Data.Nat.≟ toℕ m
 ... | yes _ = m
@@ -94,7 +96,7 @@ clipSuc {suc n} m with n Data.Nat.≟ toℕ m
         lemma : {n : ℕ} {m : Fin (suc n)} 
               → (suc n ≡ toℕ ( suc m)) 
               → (n ≡ toℕ m)
-        lemma {n} {m} r = suc-injective r
+        lemma {n} {m} r = Data.Nat.Properties.suc-injective r
         negTransport : {A B : Set} → ¬ B → (A → B) → ¬ A
         negTransport {A} {B} ¬B f a = ⊥-elim (¬B (f a))
 
@@ -110,7 +112,6 @@ cardToClipSuc {∞} m = suc m
 ℕequalsCardToSetElem {fin (suc c)} n m  = (toℕ m) ≡ n
 ℕequalsCardToSetElem {∞} n m = n ≡ m
 
-
 IsNotMax
     : {c : ℕ∞}
     → (m : cardToSet c)
@@ -120,3 +121,18 @@ IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
     --^ The largest element of fin (1 + n) is fromℕ n.
 IsNotMax {∞} n = ⊤ 
     --^ Trivial: there is no maximal natural number.
+
+-- If m is not the maximum element in a set of cardinality n+1
+-- then it also exists in a set of cardinality n.
+cardLower : {n : ℕ∞} → {m : cardToSet (suc∞ n)} → (IsNotMax m) → cardToSet n
+cardLower {fin (suc n)} {m} notMax = 
+    coe h (Data.Fin.lower m notMax)
+    where
+        h : Fin (toℕ (fromℕ ( ℕ.suc n))) ≡ Fin (ℕ.suc n)
+        h = cong (λ X → Fin X) (toℕ-fromℕ (ℕ.suc n))
+        -- Coe is taken from the book PROGAM=PROOF.
+        coe : {A B : Set} → A ≡ B → A → B
+        coe p x = subst (λ A → A) p x
+cardLower {∞} {m} notMax = m
+    --^ ℕ-1 is still ℕ.
+
