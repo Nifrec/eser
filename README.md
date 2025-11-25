@@ -22,6 +22,13 @@ TODO: explain what this is all about...
     Informal personal practise to get better acquainted with Agda.
 
 ## Naming conventions
+
+### Acronyms & abbreviations
+* 'SG' means 'StreamGrid'.
+* 'SGS' means 'StreamGrid state'.
+* 'NF' means 'Normal Form'.
+* 'card' means 'cardinality'.
+
 ### Nested lists
 In a list of lists `LS = [ L1 , L2 , L3 , ...]` 
 where each Li : List A and where LS : List (List A),
