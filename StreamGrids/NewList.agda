@@ -1,5 +1,3 @@
--- Module      : StreamGrids.List
--- Description : Auxiliary functions for lists and lists of lists
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -13,116 +11,124 @@
 --open import Function using (Inverseᵇ)
 --open import Data.Nat hiding (_<_)
 --open import Data.Nat.Properties
---open import Data.Product
 --open import Data.Sum
 --open import Relation.Binary.Core using (Rel)
 --open import Relation.Binary.Definitions
 --open import Relation.Binary.PropositionalEquality hiding ([_])
 --open import Function.Base using (_∘_)
+--open import Data.Unit
 
 open import Level
---open import Data.Unit
+open import Data.Product
 open import Relation.Nullary
 open import Data.List
-import Data.List.Membership.Setoid
-import Data.List.Membership.Setoid.Properties
+open import Data.List.Membership.Propositional
+open import Data.List.Membership.Propositional.Properties
 open import Data.List.Properties
 open import Data.Fin
 open import Data.List.Relation.Unary.Any using (Any)
-open import Relation.Binary.Bundles using (Setoid)
+    renaming (lookup to Any-lookup)
 open import Relation.Binary.PropositionalEquality hiding ([_])
 
 open import StreamGrids.PropositionalEquality
 
-module StreamGrids.NewList {c ℓ} (S : Setoid c ℓ) where
+module StreamGrids.NewList where
+    
+-- Generic definitions for all lists.
+module _ {A : Set _} where
+    Indices : List A → Set _
+    Indices L = Fin (length L)
 
-Indices : {A : Set _} → List A → Set _
-Indices xs = Fin (length xs)
+    -- Left associative notation for indexing lists.
+    -- So a list of lists can now be indexed as `L ,, i ,, j`.
+    _,,_ : (L : List A) → Indices L → A
+    L ,, i = lookup L i
+    infixl 30 _,,_
 
-open Setoid S renaming (Carrier to A)
--- Without this 'open' statement giving argument S,
--- things break because Agda doesn't know that _∈_ uses the same S
--- as our parameter.
---open Data.List.Membership.Setoid S as Low
---open Data.List.Membership.Setoid (setoid (List A)) as Top
+-- Module concerning lists of lists.
+module DoubleIndex {A : Set _} where
 
--- In Low, things like Low._∈_ and Low._∷=_ refer to elements as A-elements
--- and lists as List A.
-open module Low = Data.List.Membership.Setoid S
--- In Top, elements are List A, and lists are List (List A).
-open module Top = Data.List.Membership.Setoid (setoid (List A))
---open module TopProps = Data.List.Membership.Setoid.Properties (setoid (List A))
+    -- x ∈∈ xss denotes that x is a member of some lowlist xs ∈ xss. 
+    -- Intuitively: x ∈ xs ∈ xss.
+    infix 4 _∈∈_ _∉∉_
 
--- x ∈∈ xss denotes that x is a member of some lowlist xs ∈ xss. 
--- Intuitively: x ∈ xs ∈ xss.
-infix 4 _∈∈_ _∉∉_
+    _∈∈_ : A → List (List A) → Set _
+    a ∈∈ L = Σ[ i ∈ (Indices L) ](
+        Σ[ j ∈ (Indices (L ,, i)) ]( L ,, i ,, j ≡ a)
+        )
+    --^ In Python notation, this would be `L[i, j] = a`.
+    -- Alternative implementation:
+    --      x ∈∈ xss = Any (λ xs → x ∈ xs) xss
+    -- This version gives less readable terms.
 
-_∈∈_ : A → List (List A) → Set _
-x ∈∈ xss = Any (λ xs → x Low.∈ xs) xss
+    _∉∉_ : A → List (List A) → Set _
+    x ∉∉ xss = ¬ (x ∈∈ xss)
 
-_∉∉_ : A → List (List A) → Set _
-x ∉∉ xss = ¬ (x ∈∈ xss)
+    -- Insert an element in a lowlist by pointing to the lowlist directly.
+    insertLow
+        : {xss : List (List A)}
+        → {xs : List A}
+        → (x : A) 
+        → (xs∈xss : xs ∈ xss)
+        → List( List A )
+    insertLow {xss} {xs} x xs∈xss = xs∈xss ∷= (x ∷ xs)
 
--- Insert an element in a lowlist by pointing to the lowlist directly.
-insertLow
-    : {xss : List (List A)}
-    → {xs : List A}
-    → (x : A) 
-    → (xs∈xss : xs Top.∈ xss)
-    → List( List A )
-insertLow {xss} {xs} x xs∈xss = xs∈xss Top.∷= (x ∷ xs)
+    --infixl 5 insertLow
+    --syntax insertLow x xs∈xss = [ xs∈xss ]+= x
 
-infixl 5 insertLow
-syntax insertLow x xs∈xss = [ xs∈xss ]+= x
+    -- Insert an element in a lowlist by pointing to the *index of* the lowlist.
+    -- Implementation detail: xss could be implicit, but `i : Indices xss`
+    -- could be an index of any list with the same length, 
+    -- so Agda would probably fail to determine `xss` automatically anyway.
+    insertIdx
+        : (xss : List (List A))
+        → (x : A) 
+        → (i : Indices xss)
+        → List( List A )
+    insertIdx xss x i = xss [ i ]∷= (x ∷ xs)
+        where
+            xs = lookup xss i
+        --let xs∈xss =  Data.List.Membership.Propositional.Properties.∈-lookup i in 
+        --insertLow {xss} x xs∈xss
 
+    infixl 5 insertIdx
+    syntax insertIdx xss x i = xss [ i ]+= x
 
+    insertPresvLength 
+        : (xss : List (List A))
+        → (x : A) 
+        → (i : Indices xss)
+        → length xss ≡ length (xss [ i ]+= x)
+    insertPresvLength xss  x i = sym (length-∷= xss i (x ∷ xs))
+        where
+            xs = lookup xss i
 
--- Insert an element in a lowlist by pointing to the *index of* the lowlist.
-insertIdx
-    : {xss : List (List A)}
-    → (x : A) 
-    → (i : Indices xss)
-    → List( List A )
-insertIdx {xss} x i = 
-    let xs∈xss =  Data.List.Membership.Setoid.Properties.∈-lookup xss i in 
-    [ xs∈xss ]+= x
+    insertPresvIndices
+        : (xss : List (List A))
+        → (x : A) 
+        → (i : Indices xss)
+        → Indices xss ≡ Indices (xss [ i ]+= x)
+    insertPresvIndices xss x i = cong (λ n → Fin n) (insertPresvLength xss x i)
 
---infixl 5 insertIdx
---syntax insertIdx x xs∈xss = [ xs∈xss ]+= x
+    lemma
+        : (xs : List A)
+        → (x : A) 
+        → (a : A)
+        → a ∈ xs
+        → a ∈ (x ∷ xs)
+    lemma xs x a a∈xs = ?
 
---insertPresvLength 
---    : {xss : List (List A)}
---    → {xs : List A}
---    → (x : A) 
---    → (xs∈xss : xs Top.∈ xss)
---    → length xss ≡ length (L [ i ]+= a)
---insertPresvLength L a i = sym (length-%= L i (λ as → a ∷ as))
-
-
--- Data.List.Membership.Setoid has the following conversion from indices to _∈_
--- proofs:
---module _ (S : Setoid c ℓ) where
-
---  open Setoid S using (refl)
---  open Membership S using (_∈_)
-
---  ∈-lookup : ∀ xs i → lookup xs i ∈ xs
---  ∈-lookup (x ∷ xs) zero    = here refl
---  ∈-lookup (x ∷ xs) (suc i) = there (∈-lookup xs i)
-
---insertPresvIndices
---    : (L : List (List A))
---    → (a : A) 
---    → (i : Indices L)
---    → Indices L ≡ Indices (L [ i ]+= a)
---insertPresvIndices L a i = cong (λ n → Fin n) (insertPresvLength L a i)
-
---insertIdxMap
---    : (L : List (List A))
---    → (a : A) 
---    → (i k : Indices L)
---    → Indices (L [ i ]+= a)
---insertIdxMap L a i k = coe (insertPresvIndices L a i) k
+    -- All existing elements are preserved when adding an element to a lowlist.
+    insertPresvEl
+        : (xss : List (List A))
+        → (x : A) 
+        → (i : Indices xss)
+        → {a : A}
+        → a ∈∈ xss
+        → a ∈∈ (xss [ i ]+= x)
+    insertPresvEl xss x i {a} (i' , j , xss[i',j]≡a ) with i ≟ i'
+    ... | yes i≡i' = {! lemma (xss ,, i') x a!}? -- with <j is last idx, then a = x> = {! (i' , j , ?) !}
+    ... | no p = ?
 
 --insertPresvEl 
 --    : (L : List (List A))
@@ -135,6 +141,25 @@ insertIdx {xss} x i =
 --    let p' = ? in
 --    let k' = insertIdxMap L a i k in
 --    (k' ,  {! inject₁ j !}  , p')
+-- Data.List.Membership.Setoid has the following conversion from indices to _∈_
+-- proofs:
+--module _ (S : Setoid c ℓ) where
+
+--  open Setoid S using (refl)
+--  open Membership S using (_∈_)
+
+--  ∈-lookup : ∀ xs i → lookup xs i ∈ xs
+--  ∈-lookup (x ∷ xs) zero    = here refl
+--  ∈-lookup (x ∷ xs) (suc i) = there (∈-lookup xs i)
+
+
+--insertIdxMap
+--    : (L : List (List A))
+--    → (a : A) 
+--    → (i k : Indices L)
+--    → Indices (L [ i ]+= a)
+--insertIdxMap L a i k = coe (insertPresvIndices L a i) k
+
 
 --------------------------------------------------------------------------------
 -- Deprecated stuff
