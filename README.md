@@ -34,8 +34,11 @@ might still confuse 'sublist' and 'lowlist'.
     
 
 ## TODOs
-* Write better README
-* Rename 'algebra' to 'signature'
+* Finish stuff in `Signoid.agda`.
+* Remove/archive deprecated source files.
+* Update What-is-Where.
+* Write better README.
+* Rename 'algebra' to 'signature'.
 * Update `Experimental` status in file headers.
 * Handle `#TODO`s in source files.
 * Remove superfluous imports.
