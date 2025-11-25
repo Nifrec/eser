@@ -77,11 +77,11 @@ module SGStates
         StateIndices : Set
         StateIndices = cardToSet (suc∞ card)
 
-        StateZero : StateIndices
-        StateZero = cardToZero card
+        StateIdxZero : StateIndices
+        StateIdxZero = cardToZero card
 
-        StateSuc : StateIndices → StateIndices
-        StateSuc = cardToClipSuc {suc∞ card}
+        StateIdxSuc : StateIndices → StateIndices
+        StateIdxSuc = cardToClipSuc {suc∞ card}
 
         -- The associated '<' relation on the indices of A.
         _<S_ : Rel SIndices 0ℓ
@@ -93,6 +93,14 @@ module SGStates
     data LegalChoices : {n : StateIndices} → SGState n → Set _
     data ForcedCoercion : {n : StateIndices} → SGState n → Set _
     data NoForcedCoercion : {n : StateIndices} → SGState n → Set _
+    data NormalForms : {n : StateIndices} → SGState n → Set _
+
+    data SGState where
+        empty : SGState StateIdxZero
+        choose : {n : StateIndices} 
+            → (q : SGState n) 
+            → LegalChoices q 
+            → SGState (StateIdxSuc n)
 
 
     --ForcedCoercion : {n : StateIndices} → SGState n → Set _
@@ -112,6 +120,8 @@ module SGStates
             : {n : StateIndices} 
             → (q : SGState n) 
             → (NoForcedCoercion q )
+            → NormalForms q
+            --^ Existing element we set the next element equal to.
             → LegalChoices q
         newNF 
             : {n : StateIndices} 
@@ -154,9 +164,19 @@ module SGStates
     --    )))))
         
 
-    data SGState where
-        empty : SGState StateZero
-        choose : {n : StateIndices} 
+
+    data NormalForms where
+        root 
+            : IsNotMax StateIdxZero 
+            → (q : SGState (StateIdxSuc StateIdxZero)) 
+            → NormalForms q
+        --^ First element of the signoid.
+        here 
+            : {n : StateIndices} 
             → (q : SGState n) 
-            → LegalChoices q 
-            → SGState (StateSuc n)
+            → (h : NoForcedCoercion q)
+            → NormalForms(choose q (newNF q h))
+        --^ Topmost entry in the ChoiceLog is introduction of a new normal form,
+        -- pick that normal form.
+        there : ?
+        --^ Pick a normal form from further down the choice log.

@@ -41,6 +41,7 @@ might still confuse 'sublist' and 'lowlist'.
     
 
 ## TODOs
+* Document the types in `ChoiceLog.Core.agda`.
 * Finish stuff in `Signoid.agda`.
 * Remove/archive deprecated source files.
 * Update What-is-Where.
