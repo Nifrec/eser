@@ -49,6 +49,7 @@ open import Relation.Binary
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open import Data.Product
+open import Data.Nat
 
 -- Certainly used local imports.
 open import StreamGrids.Signoid
@@ -93,9 +94,11 @@ module SGStates
     data ForcedCoercion : {n : StateIndices} → SGState n → Set _
     data NoForcedCoercion : {n : StateIndices} → SGState n → Set _
 
+
     --ForcedCoercion : {n : StateIndices} → SGState n → Set _
     _⊢_≈_ : {n : StateIndices} → SGState n → A → A → Set _
-    next : {n : StateIndices} → IsNotMax n → SGState n → A
+    next : {n : StateIndices} → IsNotMax n → A
+    next {n} notMax = Signoid.enum S (cardLower notMax)
 
     q ⊢ x ≈ x' = ?
 
@@ -124,7 +127,7 @@ module SGStates
             → (x : A )
             → (x' : A )
             → (x' « x )
-            → (x ⊂ next h q )
+            → (x ⊂ next h)
             → (q ⊢ x ≈ x')
             → ForcedCoercion q
 
@@ -132,7 +135,12 @@ module SGStates
         notforced 
             : {n : StateIndices}
             → (q : SGState n)
-            → ¬ (ForcedCoercion q)
+            → (h : IsNotMax n )
+            → (x : A )
+            → (x' : A )
+            → (x' « x )
+            → (x ⊂ next h )
+            → ¬ (q ⊢ x ≈ x')
             → NoForcedCoercion q
 
     -- This does not work if (A : Set ℓ) and ℓ ≠ 0ℓ.
