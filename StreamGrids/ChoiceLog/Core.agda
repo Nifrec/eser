@@ -108,24 +108,6 @@ module SGStates
     next : {n : StateIndices} → IsNotMax n → A
     next {n} notMax = Signoid.enum S (cardLower notMax)
 
-    -- #TODO: conjecture: 
-    -- IsAProp(q ⊢ x ≈ x') for all q, x, x'.
-    -- Proposition that the congruence encoded in q
-    -- relates x to x'.
-    data _⊢_≈_ where
-        -- x is last element added to choice log, and a normal form, so related
-        -- to only itself in the current state.
-        hereNFRefl : ?
-        -- x is last element added to the choice log via a forced coercion.
-        hereForced : ?
-        -- x is last element added to the choice log, via a free choice.
-        hereFreeChoice : ?
-        -- x is not the last element added to the choice log,
-        -- but a prefix of the choice log proves x ≈ x',
-        -- which does not change when adding the subsequent choices
-        -- to the choice log.
-        there : ?
-
     data LegalChoices where
         coercion 
             : {n : StateIndices} 
@@ -149,11 +131,11 @@ module SGStates
         forced 
             : {n : StateIndices}
             → (q : SGState n)
-            → (h : IsNotMax n )
+            → (notMax : IsNotMax n )
             → (x : A )
             → (x' : A )
             → (x' « x )
-            → (x ⊂ next h)
+            → (x ⊂ next notMax)
             → (q ⊢ x ≈ x')
             → ForcedCoercion q
 
@@ -161,13 +143,52 @@ module SGStates
         notforced 
             : {n : StateIndices}
             → (q : SGState n)
-            → (h : IsNotMax n )
+            → (notMax : IsNotMax n )
             → (x : A )
             → (x' : A )
             → (x' « x )
-            → (x ⊂ next h )
+            → (x ⊂ next notMax )
             → ¬ (q ⊢ x ≈ x')
             → NoForcedCoercion q
+
+
+    -- #TODO: conjecture: 
+    -- IsAProp(q ⊢ x ≈ x') for all q, x, x'.
+    -- Proposition that the congruence encoded in q
+    -- relates x to x'.
+    data _⊢_≈_ where
+        -- x is last element added to choice log, and a normal form, so related
+        -- to only itself in the current state.
+        hereNFRefl 
+            : {n : StateIndices}
+            → (notMax : IsNotMax n)
+            → (q : SGState n)
+            → (h : NoForcedCoercion q)
+            → (choose q (newNF q h)) ⊢ (next notMax) ≈ (next notMax)
+        -- x is last element added to the choice log via a forced coercion.
+        hereForced
+            : {n : StateIndices}
+            → (notMax : IsNotMax n)
+            → (q : SGState n)
+            -- The next arguments are the data that witnesses a ForcedCoercion.
+            -- It is the same data as the `forced` constructor of that type.
+            → (x : A )
+            → (x' : A )
+            → (x'«x : x' « x )
+            → (x⊂next :  x ⊂ next notMax)
+            → (x≈x' : q ⊢ x ≈ x')
+            -- #TODO: maybe make a getter for the coercion instead of writing
+            -- proj₁ here, for readability!
+            → (choose q (coercion q (forced q notMax x x' x'«x x⊂next x≈x')) ⊢ (next notMax) ≈ (
+                proj₁ (Signoid.coercion S {next notMax} {x} {x'} x⊂next x'«x)
+                ))
+        -- x is last element added to the choice log, via a free choice.
+        hereFreeChoice : ?
+        -- x is not the last element added to the choice log,
+        -- but a prefix of the choice log proves x ≈ x',
+        -- which does not change when adding the subsequent choices
+        -- to the choice log.
+        there : ?
 
     -- This does not work if (A : Set ℓ) and ℓ ≠ 0ℓ.
     --ForcedCoercion {n} q = 
