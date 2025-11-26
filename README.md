@@ -26,7 +26,9 @@ TODO: explain what this is all about...
 ### Acronyms & abbreviations
 * 'SG' means 'StreamGrid'.
 * 'SGS' means 'StreamGrid state'.
-* 'NF' means 'Normal Form'.
+* 'NF' means 'normal form'. 
+    For StreamGrid elements, it is the lexicographically least element
+    in an equivalence class under the encoded congruence.
 * 'card' means 'cardinality'.
 
 ### Nested lists

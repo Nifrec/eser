@@ -94,6 +94,7 @@ module SGStates
     data ForcedCoercion : {n : StateIndices} → SGState n → Set _
     data NoForcedCoercion : {n : StateIndices} → SGState n → Set _
     data NormalForms : {n : StateIndices} → SGState n → Set _
+    data _⊢_≈_ : {n : StateIndices} → SGState n → A → A → Set _
 
     data SGState where
         empty : SGState StateIdxZero
@@ -104,11 +105,26 @@ module SGStates
 
 
     --ForcedCoercion : {n : StateIndices} → SGState n → Set _
-    _⊢_≈_ : {n : StateIndices} → SGState n → A → A → Set _
     next : {n : StateIndices} → IsNotMax n → A
     next {n} notMax = Signoid.enum S (cardLower notMax)
 
-    q ⊢ x ≈ x' = ?
+    -- #TODO: conjecture: 
+    -- IsAProp(q ⊢ x ≈ x') for all q, x, x'.
+    -- Proposition that the congruence encoded in q
+    -- relates x to x'.
+    data _⊢_≈_ where
+        -- x is last element added to choice log, and a normal form, so related
+        -- to only itself in the current state.
+        hereNFRefl : ?
+        -- x is last element added to the choice log via a forced coercion.
+        hereForced : ?
+        -- x is last element added to the choice log, via a free choice.
+        hereFreeChoice : ?
+        -- x is not the last element added to the choice log,
+        -- but a prefix of the choice log proves x ≈ x',
+        -- which does not change when adding the subsequent choices
+        -- to the choice log.
+        there : ?
 
     data LegalChoices where
         coercion 
@@ -166,17 +182,24 @@ module SGStates
 
 
     data NormalForms where
+        -- First element of the signoid (with number 0 in the enumeration).
         root 
             : IsNotMax StateIdxZero 
             → (q : SGState (StateIdxSuc StateIdxZero)) 
             → NormalForms q
-        --^ First element of the signoid.
+        -- Topmost entry in the ChoiceLog is introduction of a new normal form,
+        -- pick that normal form.
         here 
             : {n : StateIndices} 
             → (q : SGState n) 
             → (h : NoForcedCoercion q)
             → NormalForms(choose q (newNF q h))
-        --^ Topmost entry in the ChoiceLog is introduction of a new normal form,
-        -- pick that normal form.
-        there : ?
-        --^ Pick a normal form from further down the choice log.
+        -- Pick a normal form from further down the choice log.
+        there
+            : {n : StateIndices}
+            → (q : SGState n)
+            → (c : LegalChoices q)
+            --^ Arbitrary topmost choice in the log we are not interested in.
+            → NormalForms q
+            --^ The normal form of the sub-choice-log.
+            → NormalForms (choose q c)
