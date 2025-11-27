@@ -136,3 +136,7 @@ cardLower {fin (suc n)} {m} notMax =
 cardLower {∞} {m} notMax = m
     --^ ℕ-1 is still ℕ.
 
+-- Inject the elements of cardinality n into the set of cardinality n+1.
+cardInject : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n)
+cardInject {fin (suc n)} m = inject₁ m
+cardInject {∞} m = m
