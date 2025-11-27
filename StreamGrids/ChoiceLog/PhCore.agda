@@ -48,8 +48,12 @@ open import Level
 open import Relation.Binary
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
 open import Data.Product
 open import Data.Nat
+open import Data.Sum
+open import Data.Fin
+open import Data.Fin.Properties
 
 -- Certainly used local imports.
 open import StreamGrids.Signoid
@@ -92,9 +96,113 @@ module SGStates
     data SGState : StateIndices → Set ℓ
     data LegalChoices : {n : StateIndices} → SGState n → Set ℓ
     record ForcedCoercion {n : StateIndices}  (q : SGState n) : Set ℓ
-    data NoForcedCoercion : {n : StateIndices} → SGState n → Set ℓ
+    record NoForcedCoercion {n : StateIndices} (q : SGState n) : Set ℓ
     data NormalForms : {n : StateIndices} → SGState n → Set ℓ
-    data _⊢_≈_ : {n : StateIndices} → SGState n → A → A → Set ℓ
+    --data _⊢_≈_ : {n : StateIndices} → SGState n → A → A → Set ℓ
+
+    -- Indices of elements that occur in q.
+    -- q : SGState n has the elements A_0, A_1, ..., A_{n-1},
+    -- so the indices are {0, 1, ..., n-1}.
+    iElem : {n : StateIndices} → (q : SGState n) → Set _
+    iElem {n} q = Σ[ i ∈ SIndices ](cardTo< (cardInject i) n)
+
+    -- Mapping an index existing in q 
+    iElemToTerm : {n : StateIndices} → {q : SGState n} → (i : iElem q) → A
+    iElemToTerm (i , _) = Signoid.enum S i
+
+    SIndexToLastStateIndex 
+        : (n : StateIndices) 
+        → Σ[ i ∈ SIndices ](cardToSuc i ≡ n)
+    SIndexToLastStateIndex n = ?
+
+    lastIdx : {n : StateIndices} → (q : SGState n) → iElem q
+    lastIdx {n} q = (proj₁ (SIndexToLastStateIndex n) , ?)
+    
+    -- Trip a choice log down to the prefix of choices up to and
+    -- including the point where A_i was chosen,
+    -- discard the choices for A_{i+1}, A_{i+2}, ..., A_{n-1}.
+    stripDownTo 
+        : {n : StateIndices} 
+        → (q : SGState n) 
+        → (i : iElem q) 
+        → (SGState (cardToSuc (proj₁ i)))
+    stripDownTo {n} q (i , i<n) = ?
+
+    -- Look up the normal form of the last chosen element,
+    -- i.e., A_{n-1}, given a q state of index n.
+    -- The normal form is the least representative of the equivalence
+    -- class containing A_{n-1} according to the congruence encoded in q.
+    -- #TODO: make `(cardTo< (proj₁ j) (proj₁ i))` more readable by defining
+    -- a nice macro `S ⊢ j < i` or something like that.
+    nfTop
+        : {n : StateIndices}
+        → (q : SGState n)
+        → Σ[ j ∈ iElem q ](
+            proj₁ j ≡  proj₁ (lastIdx q) 
+            ⊎ 
+            (cardTo< (proj₁ j) (proj₁ (lastIdx q)))
+            )
+    nfTop {n} q = ?
+
+    isInState : {n : StateIndices} → (i : SIndices) → (q : SGState n) → Set _
+    isInState {n} i q = cardTo< (cardToSuc i) n
+    syntax isInState i q = i ∈ q 
+
+    iElemLift 
+        : {n m : StateIndices} 
+        → (cardTo< m n) 
+        → {q : SGState n}
+        → {q' : SGState m}
+        → {i : SIndices}
+        → (i ∈ q')
+        → (i ∈ q)
+    iElemLift = ?
+
+    -- Look up the normal form of an already chosen term x in a state q.
+    -- The normal form is the least representative of the equivalence
+    -- class containing x according to the congruence encoded in q.
+    -- x is represented by its index i in the enumeration of A.
+    nfIdx
+        : {n : StateIndices}
+        → (q : SGState n)
+        → (i : iElem q)
+        → Σ[ j ∈ iElem q ](
+            proj₁ j ≡  proj₁ i
+            ⊎ 
+            (cardTo< (proj₁ j) (proj₁ i))
+            )
+    nfIdx {n} q i = let q' = stripDownTo q i in
+        -- TODO: need define q' < q and prove (i ∈ q') → (i ∈ q).
+        -- The latter should be trivial.
+        let (j , j≤i ) =  nfTop q' 
+        in {! j' , j≤i !}
+            where
+                q' = stripDownTo q i
+                j =  proj₁ (nfTop q')
+                j≤i = proj₂ (nfTop q')
+                j' : iElem q
+                j' = (proj₁ j , {! j!}) --{! iElemLift ?  (proj₂ j) !})
+                
+
+    -- Look up the normal form of an already chosen term x in a state q.
+    -- The normal form is the least representative of the equivalence
+    -- class containing x according to the congruence encoded in q.
+    nf
+        : {n : StateIndices}
+        → (q : SGState n)
+        → (x : A)
+        → (idxx<n : cardTo< (cardInject (Signoid.getIdx S x)) n)
+        --^ q has elements A_0, A_1, ..., A_{n-1}.
+        -- So if the index of x is smaller than n, it is in q.
+        → A
+    nf {n} q x h = ?
+
+
+    _⊢_≈_ : {n : StateIndices} → (q : SGState n) → (ix ix' : iElem q) → Set _
+    q ⊢ ix ≈ ix' = (nf q x ?) ≡ (nf q x' ?)
+        where
+            x = iElemToTerm ix
+            x' = iElemToTerm ix'
 
     data SGState where
         empty : SGState StateIdxZero
@@ -131,37 +239,47 @@ module SGStates
         inductive
         field
             notMax : IsNotMax n 
-            x : A 
-            x' : A 
-            x'«x : x' « x 
-            x⊂next : x ⊂ next notMax
-            x≈x' : q ⊢ x ≈ x'
+            i : iElem q
+            i' : iElem q
+            x'«x : iElemToTerm i' « iElemToTerm i 
+            x⊂next : iElemToTerm i ⊂ next notMax
+            x≈x' : q ⊢ i ≈ i'
 
-    data NoForcedCoercion where
-        notforced 
-            : {n : StateIndices}
-            → (q : SGState n)
-            → (notMax : IsNotMax n )
-            → (x : A )
-            → (x' : A )
-            → (x' « x )
-            → (x ⊂ next notMax )
-            → ¬ (q ⊢ x ≈ x')
-            → NoForcedCoercion q
+    record NoForcedCoercion {n} q where
+        inductive
+        field
+            notMax : IsNotMax n 
+            i : iElem q
+            i' : iElem q
+            x'«x : iElemToTerm i' « iElemToTerm i 
+            x⊂next : iElemToTerm i ⊂ next notMax
+            x≉x' : ¬ (q ⊢ i ≈ i')
+        --notforced 
+        --    : {n : StateIndices}
+        --    → (q : SGState n)
+        --    → (notMax : IsNotMax n )
+        --    → (x : A )
+        --    → (x' : A )
+        --    → (x' « x )
+        --    → (x ⊂ next notMax )
+        --    → ¬ (q ⊢ x ≈ x')
+        --    → NoForcedCoercion q
 
-    -- #TODO: conjecture: 
-    -- IsAProp(q ⊢ x ≈ x') for all q, x, x'.
-    -- Proposition that the congruence encoded in q
-    -- relates x to x'.
-    data _⊢_≈_ where
-        -- x is last element added to choice log, and a normal form, so related
-        -- to only itself in the current state.
-        hereNFRefl 
-            : {n : StateIndices}
-            → (notMax : IsNotMax n)
-            → (q : SGState n)
-            → (h : NoForcedCoercion q)
-            → (choose q (newNF q h)) ⊢ (next notMax) ≈ (next notMax)
+    
+
+    ---- #TODO: conjecture: 
+    ---- IsAProp(q ⊢ x ≈ x') for all q, x, x'.
+    ---- Proposition that the congruence encoded in q
+    ---- relates x to x'.
+    --data _⊢_≈_ where
+    --    -- x is last element added to choice log, and a normal form, so related
+    --    -- to only itself in the current state.
+    --    hereNFRefl 
+    --        : {n : StateIndices}
+    --        → (notMax : IsNotMax n)
+    --        → (q : SGState n)
+    --        → (h : NoForcedCoercion q)
+    --        → (choose q (newNF q h)) ⊢ (next notMax) ≈ (next notMax)
     --    -- x is last element added to the choice log via a forced coercion.
     --    hereForced
     --        : {n : StateIndices}
@@ -221,3 +339,44 @@ module SGStates
             → NormalForms q
             --^ The normal form of the sub-choice-log.
             → NormalForms (choose q c)
+
+    module Lemmas where
+        -- #TODO: rename and move those lemmas to right files/modules.
+
+        cardTo≤ : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
+        cardTo≤ {fin 0} ()
+        cardTo≤ {fin (suc n)} = Data.Fin._≤_
+        cardTo≤ {∞} = Data.Nat._≤_
+
+        ℕSucCardToSucComm 
+            : {n : ℕ}
+            → (i : cardToSet (fin n)) 
+            → toℕ (cardToSuc i) ≡ ℕ.suc (toℕ (cardInject i))
+        ℕSucCardToSucComm {ℕ.suc n} i = begin
+              toℕ (cardToSuc i) 
+                ≡⟨ refl ⟩
+              ℕ.suc (toℕ i) 
+                ≡⟨ cong ℕ.suc (sym (toℕ-inject₁ i)) ⟩
+              ℕ.suc (toℕ (cardInject i))
+              ∎
+
+        cardTo<→s≤ 
+            : {n : ℕ∞} 
+            → (i : cardToSet n) 
+            → (j : cardToSet (suc∞ n)) 
+            → (cardTo< (cardInject i) j) 
+            → (cardTo≤ (cardToSuc i) j)
+        cardTo<→s≤ {fin (ℕ.suc n)} i j i<j = 
+            let h = sym (ℕSucCardToSucComm i) in
+            subst (λ x → x Data.Nat.≤ toℕ j) h i<j
+        cardTo<→s≤ {∞} i j i<j = i<j
+       
+        -- A term (i , p) : iElem q comes with a proof p : i < n.
+        -- It follows that (i+1 ≤ n). 
+        -- Regardless of the cardinality of StateIndices.
+        lemma1 
+             : {n : StateIndices} 
+             → (q : SGState n) 
+             → (i : iElem q) 
+             → cardTo≤ (cardToSuc (proj₁ i)) n
+        lemma1 {n} q (i , i<n) = ?
