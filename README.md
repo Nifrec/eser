@@ -43,6 +43,10 @@ might still confuse 'sublist' and 'lowlist'.
     
 
 ## TODOs
+* Why do we keep `_«_` in Signoids?
+    It is just the `_<_` on indices in the enumeration anyway!
+    More precisely, `_«_` is the relation
+    `x, y -> cardTo< (getIdx x) (getIdx y)`.
 * Document the types in `ChoiceLog.Core.agda`.
 * Finish stuff in `Signoid.agda`.
 * Remove/archive deprecated source files.
@@ -168,7 +172,7 @@ NamedAlphabet n = (Alphabet n) × (Fin (suc n) → String)
 
 # Lessons learned
 
-## 10&12 Nov 2025: Coercions instead of any simplification
+## 10 & 12 Nov 2025: Coercions instead of any simplification
 If a term `c(x)` is a constructor `c` with an argument (a *subterm*) `x`,
 and there exists an `x' < x`, then the term `c(x')` also exists
 and `c(x') < c(x)`. 
@@ -228,3 +232,88 @@ normalise to `Fin (suc (totNumConstr A ∸ 1))`!
 **Solution:** 
 A function `f : A → B` needs to output *an element* of `B`. 
 Not the type `B`. #facepalm
+
+## 24-27 Nov 2025 use constructors not dependent sums
+I started with defining StreamGrid states as lists of lists
+that I then Σ-ed with externally proven properties (invariants)
+that those lists satisfy:
+```agda
+-- Partially explored StreamGrid.
+-- The equivalences between the first n raw terms have been decided
+-- and form an congruence.
+-- Note: `Linked _«_` means just 'sorted according to _«_'.
+SGState : (n : SIndices) → Set ℓ
+SGState n = 
+    Σ[ L ∈ List (List A)](
+    (IsPrefix L n)
+    ×
+    (Linked _«_ (firstElem L))
+    ×
+    (All (λ as → Linked _«_ as) L)
+    ×
+    (IsCongruence L)
+    )
+```
+This works but it is awfully cumbersome to prove that all variants are retained
+when extending a list with a new element.
+`Data.List.Membership.Propositional` gives useful tools but it remains
+confusing and a lot of work.
+
+**Better: use an inductive type where all invariants are enforced by the
+constructors!**
+Now I have:
+```agda
+data SGState where
+    empty : SGState StateIdxZero
+    choose : {n : StateIndices} 
+        → (q : SGState n) 
+        → LegalChoices q 
+        → SGState (StateIdxSuc n)
+
+next : {n : StateIndices} → IsNotMax n → A
+next {n} notMax = Signoid.enum S (cardLower notMax)
+
+data LegalChoices where
+    coercion 
+        : {n : StateIndices} 
+        → (q : SGState n) 
+        → ForcedCoercion q 
+        → LegalChoices q
+    newEquiv
+        : {n : StateIndices} 
+        → (q : SGState n) 
+        → (NoForcedCoercion q )
+        → NormalForms q
+        --^ Existing element we set the next element equal to.
+        → LegalChoices q
+    newNF 
+        : {n : StateIndices} 
+        → (q : SGState n) 
+        → (NoForcedCoercion q )
+        → LegalChoices q
+```
+
+## 27 Nov 2025 why lex order in Signoids?
+Why do we keep `_«_` in Signoids?
+It is just the `_<_` on indices in the enumeration anyway!
+More precisely, `_«_` is the relation
+`x, y -> cardTo< (getIdx x) (getIdx y)`.
+Right now the def is:
+```agda
+record Signoid 
+    {ℓ : Level.Level} 
+    {A : Set ℓ} 
+    (_<_ : Rel A ℓ) 
+    (_⊂_ : Rel A ℓ) 
+    : Set ℓ where
+    field
+        numEl    : ℕ∞
+        enum     : (cardToSet numEl) → A
+        mono : Monotonic₁ (cardTo<) (_<_) enum
+        surj     : (a : A) → Σ[ n ∈ cardToSet numEl ]( enum n ≡ a)
+        chain : Chain _<_
+        subrelat : IsSubRelat _<_ _⊂_
+        coercion : SubtermCoercion _<_ _⊂_ 
+        getIdx : A → cardToSet numEl
+        inv : Inverseᵇ _≡_ _≡_ enum getIdx
+```
