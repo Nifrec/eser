@@ -379,4 +379,4 @@ module SGStates
              → (q : SGState n) 
              → (i : iElem q) 
              → cardTo≤ (cardToSuc (proj₁ i)) n
-        lemma1 {n} q (i , i<n) = ?
+        lemma1 {n} q (i , i<n) = cardTo<→s≤ i n i<n
