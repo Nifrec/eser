@@ -23,6 +23,7 @@ open import Level using (0ℓ)
 open import Relation.Binary.Core using (Rel)
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open ≡-Reasoning
 open import Relation.Nullary
 
 
@@ -59,11 +60,23 @@ cardToSet (fin 0) = ⊥
 cardToSet (fin (suc n)) = Fin (suc n) -- Fin 0 cannot be constructed!
 cardToSet ∞ = ℕ
  
--- Get the default < relation on a prefix of ℕ.
+-- Get the default < relation on a prefix of ℕ, or on ℕ.
 cardTo< : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
 cardTo< {fin 0} ()
 cardTo< {fin (suc n)} = Data.Fin._<_
 cardTo< {∞} = Data.Nat._<_
+
+cardTo<Trans
+    : {n : ℕ∞}
+    → Transitive (cardTo< {n})
+cardTo<Trans {fin (ℕ.suc n)} = Data.Fin.Properties.<-trans
+cardTo<Trans {∞} = Data.Nat.Properties.<-trans
+
+-- Get the default ≤ relation on a prefix of ℕ, or on ℕ.
+cardTo≤ : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
+cardTo≤ {fin 0} ()
+cardTo≤ {fin (suc n)} = Data.Fin._≤_
+cardTo≤ {∞} = Data.Nat._≤_
 
 -- Get the zero element of the associated set.
 -- Only defined for `suc∞ n` since things with cardinality zero have
@@ -140,3 +153,41 @@ cardLower {∞} {m} notMax = m
 cardInject : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n)
 cardInject {fin (suc n)} m = inject₁ m
 cardInject {∞} m = m
+
+--------------------------------------------------------------------------------
+-- Unimportant/unused lemmas
+--------------------------------------------------------------------------------
+ℕSucCardToSucComm 
+    : {n : ℕ}
+    → (i : cardToSet (fin n)) 
+    → toℕ (cardToSuc i) ≡ ℕ.suc (toℕ (cardInject i))
+ℕSucCardToSucComm {ℕ.suc n} i = begin
+      toℕ (cardToSuc i) 
+        ≡⟨ refl ⟩
+      ℕ.suc (toℕ i) 
+        ≡⟨ cong ℕ.suc (sym (toℕ-inject₁ i)) ⟩
+      ℕ.suc (toℕ (cardInject i))
+      ∎
+
+-- If j < (suc i) then j ≤ i.
+card<s→≤ 
+    : {n : ℕ∞} 
+    → {i j : cardToSet n} 
+    → (cardTo< (cardInject j) (cardToSuc i) )
+    --^ Note: this < lives in `cardToSet (suc∞ n)`.
+    → (cardTo≤ j i)
+    --^ Note: this ≤ lives in `cardToSet n`.
+card<s→≤ {fin (ℕ.suc n)} {i} {j} j<si = 
+    let h = ℕSucCardToSucComm i in
+    let P = (λ x → ℕ.suc (toℕ (cardInject j)) Data.Nat.≤ x) in
+    let sjℕ≤si = subst P h j<si in
+    -- Let's first strip away the ℕ.suc from both sides.
+    let jℕ≤i = ≤-pred sjℕ≤si in
+    -- Next, strip away the toℕ ∘ inject₁ from both sides.
+    --let j≤i = toℕ-cancel-≤ jℕ≤i in -- That doesn't help
+    let hj = toℕ-inject₁ j in
+    let hi = toℕ-inject₁ i in
+    let j≤i' = subst (λ x → x Data.Nat.≤ (toℕ (inject₁ i))) hj jℕ≤i in
+    let j≤i = subst (λ x → toℕ j Data.Nat.≤ x) hi j≤i' in
+    j≤i
+card<s→≤ {∞} {i} {j} i<j = ≤-pred i<j

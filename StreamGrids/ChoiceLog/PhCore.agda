@@ -111,6 +111,7 @@ module SGStates
     iElemToTerm : {n : StateIndices} → {q : SGState n} → (i : iElem q) → A
     iElemToTerm (i , _) = Signoid.enum S i
 
+    -- #TODO: this only makes sense if n>0 right?
     SIndexToLastStateIndex 
         : (n : StateIndices) 
         → Σ[ i ∈ SIndices ](cardToSuc i ≡ n)
@@ -149,27 +150,6 @@ module SGStates
     isInState {n} i q = cardTo< (cardToSuc i) n
     syntax isInState i q = i ∈ q 
 
-    iElemLift 
-        : {n m : StateIndices} 
-        → (cardTo< m n) 
-        → {q : SGState n}
-        → {q' : SGState m}
-        → {i : SIndices}
-        → (i ∈ q')
-        → (i ∈ q)
-    iElemLift = ?
-
-    lemma4
-        : {n : StateIndices}
-        → (q : SGState n)
-        → (i' : iElem q)
-        → (j' : iElem (stripDownTo q i'))
-        → (h : (proj₁ j' ≡ proj₁ (lastIdx (stripDownTo q i')))
-            ⊎
-            (cardTo< (proj₁ j' ) (proj₁ (lastIdx (stripDownTo q i'))))
-            )
-        → ((proj₁ j' ≡ proj₁ i') ⊎ (cardTo< (proj₁ j') (proj₁ i')))
-
     lemma4'
         : {n : StateIndices}
         → (q : SGState n)
@@ -202,10 +182,6 @@ module SGStates
             (cardTo< (proj₁ j') (proj₁ i'))
             )
     nfIdx {n} q i' = 
-        --let q' = stripDownTo q i' in
-        -- TODO: need define q' < q and prove (i ∈ q') → (i ∈ q).
-        -- The latter should be trivial.
-        --let (j , j≤i ) =  nfTop q' 
         (jLifted , (lemma4' q i' (proj₁ j) j≤i))
             where
                 q' = stripDownTo q i'
@@ -375,23 +351,6 @@ module SGStates
     module Lemmas where
         -- #TODO: rename and move those lemmas to right files/modules.
 
-        cardTo≤ : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
-        cardTo≤ {fin 0} ()
-        cardTo≤ {fin (suc n)} = Data.Fin._≤_
-        cardTo≤ {∞} = Data.Nat._≤_
-
-        ℕSucCardToSucComm 
-            : {n : ℕ}
-            → (i : cardToSet (fin n)) 
-            → toℕ (cardToSuc i) ≡ ℕ.suc (toℕ (cardInject i))
-        ℕSucCardToSucComm {ℕ.suc n} i = begin
-              toℕ (cardToSuc i) 
-                ≡⟨ refl ⟩
-              ℕ.suc (toℕ i) 
-                ≡⟨ cong ℕ.suc (sym (toℕ-inject₁ i)) ⟩
-              ℕ.suc (toℕ (cardInject i))
-              ∎
-
         -- If i < j then (suc i) ≤ j.
         -- j must be in a set with cardinality 1 greater than the set i is in.
         cardTo<→s≤ 
@@ -415,37 +374,6 @@ module SGStates
              → cardTo≤ (cardToSuc (proj₁ i)) n
         lemma1 {n} q (i , i<n) = cardTo<→s≤ i n i<n
 
-        -- If j < (suc i) then j ≤ i.
-        card<s→≤ 
-            : {n : ℕ∞} 
-            → {i j : cardToSet n} 
-            → (cardTo< (cardInject j) (cardToSuc i) )
-            --^ Note: this < lives in `cardToSet (suc∞ n)`.
-            → (cardTo≤ j i)
-            --^ Note: this ≤ lives in `cardToSet n`.
-        card<s→≤ {fin (ℕ.suc n)} {i} {j} j<si = 
-            let h = ℕSucCardToSucComm i in
-            let P = (λ x → ℕ.suc (toℕ (cardInject j)) Data.Nat.≤ x) in
-            let sjℕ≤si = subst P h j<si in
-            -- Let's first strip away the ℕ.suc from both sides.
-            let jℕ≤i = ≤-pred sjℕ≤si in
-            -- Next, strip away the toℕ ∘ inject₁ from both sides.
-            --let j≤i = toℕ-cancel-≤ jℕ≤i in -- That doesn't help
-            let hj = toℕ-inject₁ j in
-            let hi = toℕ-inject₁ i in
-            let j≤i' = subst (λ x → x Data.Nat.≤ (toℕ (inject₁ i))) hj jℕ≤i in
-            let j≤i = subst (λ x → toℕ j Data.Nat.≤ x) hi j≤i' in
-            j≤i
-        card<s→≤ {∞} {i} {j} i<j = ≤-pred i<j
-
-        -- In my use case: q' = stripDownTo q i'.
-        lemma2
-            : {n : StateIndices}
-            → (i : SIndices)
-            → (q' : SGState (cardToSuc i))
-            → (j' : iElem q')
-            → cardTo≤ {card} (proj₁ j') i
-        lemma2 i q' (j , h) = card<s→≤ {card} {i} {j} h
 
         -- Proof that stripDownTo i' really strips down to the choice
         -- log where i' is the top element.
@@ -455,12 +383,6 @@ module SGStates
             → (i' : iElem q)
             → (proj₁ (lastIdx (stripDownTo q i')) ≡ proj₁ i')
         lemma3 {n} q (i , _) = ? -- refl should work AFTER implementing stripDownTo
-
-        cardTo<Trans
-            : {n : ℕ∞}
-            → Transitive (cardTo< {n})
-        cardTo<Trans {fin (ℕ.suc n)} = Data.Fin.Properties.<-trans
-        cardTo<Trans {∞} = Data.Nat.Properties.<-trans
 
         cardTo<→≤→<
             : {n : ℕ∞}
@@ -474,46 +396,14 @@ module SGStates
 
     open Lemmas
 
-    lemma4 q i' j' h = subst P (lemma3 q i') h
-        where
-            P = (λ x → (proj₁ j' ≡ x) ⊎ (cardTo< (proj₁ j' ) x))
-
     lemma4' q i' j h = subst P (lemma3 q i') h
         where
             P = (λ x → (j ≡ x) ⊎ (cardTo< (j ) x))
-    cardTo<s
-        : {n : ℕ∞}
-        → (i : cardToSet n)
-        → cardTo< {suc∞ n} (cardInject i) (cardToSuc i)
-    cardTo<s i = ?
-
-    cardTo≤Lift
-        : {n : ℕ∞}
-        → {j i : cardToSet n}
-        → (cardTo≤ {n} j i)
-        → (cardTo≤ {suc∞ n} (cardInject j) (cardInject i))
-    cardTo≤Lift {n} {j} {i} j≤i = ?
-    
-    -- If j < (suc i) then j ≤ i.
-    card<s→≤Lifted
-        : {n : ℕ∞} 
-        → {i j : cardToSet n} 
-        → (cardTo< {suc∞ n} (cardInject j) (cardToSuc i) )
-        --^ Note: this < lives in `cardToSet (suc∞ n)`.
-        → (cardTo≤ {suc∞ n} (cardInject j) (cardInject i))
-    card<s→≤Lifted {n} {i} {j} j<si = ?
 
     -- This can be used to prove that iElem of a stipped-down version
     -- of q, are also iElem of q itself.
     -- The iElem is then (proj₁ j' , lemma5 q j').
     lemma5 {n} q i' (j , hj) = 
-        let q' = (stripDownTo q i') in
-        let j≤i = (lemma2 {n} (proj₁ i') q' (j , hj)) in
-        let injj≤inji = cardTo≤Lift {card} j≤i in
-        let injj<suci = card<s→≤Lifted {card} {proj₁ i'} {j} hj in
-        --let injj<sucinji = cardTo<Trans {suc∞ card} injj<inji (cardTo<s {card} (proj₁ i')) in
-        --let j<i = cardTo<Lift {card} (lemma2 {n} (proj₁ i') q' (j , hj)) in
         let i≤n = lemma1 {n} q i' in 
         let j<n = cardTo<→≤→< {suc∞ card} hj i≤n in
         j<n
-        --j<n
