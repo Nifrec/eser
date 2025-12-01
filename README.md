@@ -85,7 +85,9 @@ might still confuse 'sublist' and 'lowlist'.
 ### Abstract ideas
 * Modal logic for arbitrary signatures?
 * Regular expressions for arbitrary signatures?
-* Dependent coalgebras?
+* Dependent coalgebras? Computing next allowed states is a coalgebra!
+    Q -> List Q
+* Kleisli composition of deciders.
 
 ### Doubts
 * Do we really need to enumerate *all* elements of a type-of-raw-terms?
