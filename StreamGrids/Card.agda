@@ -78,12 +78,28 @@ cardTo≤ {fin 0} ()
 cardTo≤ {fin (suc n)} = Data.Fin._≤_
 cardTo≤ {∞} = Data.Nat._≤_
 
--- Get the zero element of the associated set.
+-- Get the zero element of a set of one cardinality greater.
 -- Only defined for `suc∞ n` since things with cardinality zero have
 -- no elements.
 cardToZero : (n : ℕ∞) → cardToSet (suc∞ n) 
 cardToZero (fin n) = Data.Fin.zero
 cardToZero ∞ = Data.Nat.zero
+
+-- Get the zero element of a set of arbitrary cardinality
+-- (and not a one-greater cardinality, like `cardToZero` returns),
+-- provided you can give a witness it is not the empty set.
+cardInhToZero : {n : ℕ∞} → cardToSet n → cardToSet n
+cardInhToZero {fin (ℕ.suc n)} m = Fin.zero
+cardInhToZero {∞} _ = Data.Nat.zero
+
+-- Get the zero element of a set with cardinality greater than zero.
+-- The advantage of using proofs of the form `(fin ℕ.zero <∞ n)`
+-- instead of a witness `cardToSet n` (as in cardInhToZero) is that
+-- there is now only a unique proof of inhabitness.
+nonzeroCardToZeroElem : {n : ℕ∞} → (fin ℕ.zero <∞ n) → cardToSet n
+nonzeroCardToZeroElem {fin n} (s≤s z≤n) = Data.Fin.zero
+nonzeroCardToZeroElem {∞} _ = Data.Nat.zero
+
 
 cardToSuc : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n) 
 cardToSuc {fin 0} ()
@@ -154,6 +170,37 @@ cardInject : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n)
 cardInject {fin (suc n)} m = inject₁ m
 cardInject {∞} m = m
 
+cardTo0<1
+    : {n : ℕ∞} 
+    → (m : cardToSet n) 
+    → cardTo< (cardInject (cardInhToZero m)) (cardToClipSuc (cardToZero n))
+cardTo0<1 {fin 0} ()
+cardTo0<1 {fin (suc n)} m = z<s
+cardTo0<1 {∞} m = z<s
+
+--cardTo0<1'
+--    : {n : ℕ∞} 
+--    → (0<n : fin ℕ.zero <∞ n)
+--    → cardTo< (cardInject (nonzeroCardToZeroElem 0<n)) (cardToClipSuc (cardToZero n))
+--cardTo0<1' {fin 0} ()
+--cardTo0<1' {fin (suc n)} 0<n = 
+--    let toNinjZero = nonzeroCardToZeroElem 0<n in
+--    let toNZero = toℕ-inject₁ meh in 
+--    let lasd = {! subst (λ x → x Data.Nat.≤ 0) lemma z<s !} in
+--    {! ) lemma z<s !} -- Subst the lemma below!
+--    where
+--        lemma : zero ≡ toℕ (inject₁ (nonzeroCardToZeroElem 0<n))
+--        lemma = ?
+--cardTo0<1' {∞} _ = z<s
+
+thereIsOneZero 
+    : {n : ℕ∞}
+    → (i : cardToSet n)
+    → (0<n : fin ℕ.zero <∞ n)
+    → (cardInhToZero i ≡ nonzeroCardToZeroElem 0<n)
+thereIsOneZero {fin zero} ()
+thereIsOneZero {fin (suc n)} i (s≤s 0<n) = {! refl !}
+thereIsOneZero {∞} i 0<n = {! !}
 --------------------------------------------------------------------------------
 -- Unimportant/unused lemmas
 --------------------------------------------------------------------------------

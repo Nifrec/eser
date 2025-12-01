@@ -101,6 +101,19 @@ module SGStates
     data NormalForms : {n : StateIndices} → SGState n → Set ℓ
     --data _⊢_≈_ : {n : StateIndices} → SGState n → A → A → Set ℓ
 
+    data SGState where
+        root 
+            : (fin ℕ.zero) <∞ card
+            --^ *If* at least one element exists,...
+            → SGState (cardToClipSuc StateIdxZero)
+            --^ ...then there is a canonical root state with only that
+            -- element explored (and the reflexive congruence on it).
+        choose : {n : StateIndices} 
+            → (q : SGState n) 
+            → LegalChoices q 
+            → SGState (StateIdxSuc n)
+
+
     -- Indices of elements that occur in q.
     -- q : SGState n has the elements A_0, A_1, ..., A_{n-1},
     -- so the indices are {0, 1, ..., n-1}.
@@ -144,7 +157,10 @@ module SGStates
             ⊎ 
             (cardTo< (proj₁ j) (proj₁ (lastIdx q)))
             )
-    nfTop {n} q = ?
+    nfTop {n} (root 0<1) = 
+        let i = nonzeroCardToZeroElem {card} 0<1 in
+        (i , {!cardTo0<1 i !}) , {! !}
+    nfTop {n} (choose q x) = {! !}
 
     isInState : {n : StateIndices} → (i : SIndices) → (q : SGState n) → Set _
     isInState {n} i q = cardTo< (cardToSuc i) n
@@ -211,13 +227,6 @@ module SGStates
         where
             x = iElemToTerm ix
             x' = iElemToTerm ix'
-
-    data SGState where
-        empty : SGState StateIdxZero
-        choose : {n : StateIndices} 
-            → (q : SGState n) 
-            → LegalChoices q 
-            → SGState (StateIdxSuc n)
 
 
     --ForcedCoercion : {n : StateIndices} → SGState n → Set _
