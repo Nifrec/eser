@@ -1,5 +1,10 @@
 # StreamGrids
 TODO: explain what this is all about...
+And how the readme is organised.
+
+Other files of interest:
+* [./Signoids.md] : discussion on the design of Signoids.
+* [./TODISCUSS.md] : things to discuss with superviors.
 
 ## What is where
 * `StreamGrids/Fold`    
@@ -115,68 +120,6 @@ might still confuse 'sublist' and 'lowlist'.
   congruence that you need to extend. It might not be recursively be generated
   by yourself (in practise it is, but you don't know). 
   See LL journal 14 Nov.
-
-# Alphabet representation issues
-**This part of the README is not very relevant anymore!**
-
-## Philosophically: what is an alphabet?
-It is a set `A` with the following properties:
-1. It is not empty.
-2. We can form lists (strings) over it.
-3. It is finite.
-4. It is linearly ordered 
- (hence strings over A are lexicographically ordered).
-
-## Attempt 1
-Alternative definition of a list.
-Ensures at type level that the alphabet is not empty and
-gives it automatically a linear order.
-**Problem:** overcomplicated, the `≢` is really inconvenient in constructive
-mathematics.
-```agda
-data Alphabet (X : Set) : Set 
-data notInAlphabet {X : Set} : Alphabet X → X → Set
-
-data Alphabet X where
-    least   : X → Alphabet X
-    add     : (A : Alphabet X) → (x : X) → notInAlphabet A x → Alphabet X
-
-data notInAlphabet {X} where
-    singleton : {x x' : X} → (x ≢ x') → notInAlphabet (least x) x'
-    addNew    : (x x' : X) 
-              → (x ≢ x') 
-              → (A : Alphabet X) 
-              → (px : notInAlphabet A x) 
-              → (px' : notInAlphabet A x') 
-              → (notInAlphabet (add A x px) x')
-```
-
-## Attempt 2
-A set `A` is finite if, in order to define a function out of `A`,
-we only need to choose `n` different output values for some natural number `n`.
-**Problem:** universe issues, `∀ P` iterates over all types in the universe.
-```agda
-Alphabet : Set → Set
-data NonEmptySet (A : Set) : Set
-FinIterable : Set → Set
-
-Alphabet A = (NonEmptySet A) × (FinIterable A)
-
-data NonEmptySet A where
-    witness : A → NonEmptySet A
-
-FinIterable A = Σ[ n ∈ ℕ ] ∀ P → ((Fin n → P) → (A → P))
-```
-
-## Attempt 3
-Simple and stupid:
-```agda
-Alphabet : ℕ → Set
-Alphabet n = Fin (suc n)
-
-NamedAlphabet : ℕ → Set
-NamedAlphabet n = (Alphabet n) × (Fin (suc n) → String)
-```
 
 # Lessons learned
 
