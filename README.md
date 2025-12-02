@@ -82,12 +82,18 @@ might still confuse 'sublist' and 'lowlist'.
     - For signatures, might also consider morphisms that send
       constructors-to-constructors-with-same-arity.
 
+### Ideas for examples
+* PropTrunc:
+    * List membership.
+    * List permutation equivalence.
+
 ### Abstract ideas
 * Modal logic for arbitrary signatures?
 * Regular expressions for arbitrary signatures?
 * Dependent coalgebras? Computing next allowed states is a coalgebra!
     Q -> List Q
 * Kleisli composition of deciders.
+* Category of countable sets and (monotone?) functions between them?
 
 ### Doubts
 * Do we really need to enumerate *all* elements of a type-of-raw-terms?
