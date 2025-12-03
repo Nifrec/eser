@@ -99,6 +99,7 @@ cardToPred {fin (suc n)} (suc m) = inject₁ m
 cardToPred {∞} zero = zero
 cardToPred {∞} (suc m) = m
 
+
 -- Compute successor, but if input is already the max,
 -- then return the max.
 clipSuc : {n : ℕ} → Fin n → Fin n
@@ -136,6 +137,39 @@ IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
 IsNotMax {∞} n = ⊤ 
     --^ Trivial: there is no maximal natural number.
 
+-- cardToPrec is a section of the successor function `ℕ.suc ∘ toℕ`,
+-- but only on numbers that are the successor of another.
+sucpredsuc≡suc
+    : {c : ℕ} 
+    → (n : Fin c) --^ Same as `cardToSet c` if `c > 0`.
+    → ℕ.suc (toℕ (cardToPred {fin (ℕ.suc c)} (Fin.suc n))) ≡ toℕ (Fin.suc n)
+sucpredsuc≡suc {c} n = 
+    let sn≡sn = refl {x = toℕ (Fin.suc n)} in
+    let P = (λ x → x ≡ toℕ (Fin.suc n)) in
+    subst P (sym (toℕ-inject₁ (Fin.suc n))) sn≡sn
+    
+-- A number that is the predecessor of another number is never the maximum
+-- in a finite set.
+aPredecIsNotMax 
+    : {c : ℕ∞}
+    → {n : cardToSet c}
+    → (cardTo< (cardToPred n) n)
+    --^ This expresses that 0<n, in a convenient way!
+    → IsNotMax (cardToPred n)
+-- To show, by def of IsNotMax:
+--  (cardToPred (Fin.suc n)) Data.Fin.< (fromℕ c)
+--  I.e., suc n ≤ c. Up to some type conversions.
+aPredecIsNotMax {fin (ℕ.suc c)} {Fin.suc n} (s≤s pn<n) =
+    let sn≤c' = toℕ≤pred[n] {ℕ.suc c} (Fin.suc n) in
+    let P = λ x → toℕ (Fin.suc n) Data.Nat.≤ x in
+    let sn≤c = subst P (sym(toℕ-fromℕ c)) sn≤c' in
+    --^ (suc n) : Fin (suc c) so (suc n) ≤ c.
+    -- This actually already expresses that `suc n ≤ c`,
+    -- but we need help Agda telling that the type conversions work out.
+    let spsn≡sn = sym(sucpredsuc≡suc n) in
+    subst (λ x → x Data.Nat.≤ toℕ (fromℕ c)) spsn≡sn sn≤c 
+aPredecIsNotMax {∞} {n} pn<n = tt
+
 -- If m is not the maximum element in a set of cardinality n+1
 -- then it also exists in a set of cardinality n.
 cardLower : {n : ℕ∞} → {m : cardToSet (suc∞ n)} → (IsNotMax m) → cardToSet n
@@ -157,6 +191,14 @@ cardInject {∞} m = m
 
 --------------------------------------------------------------------------------
 -- Inhabitedness and zero elements
+--
+-- Personal remark: be careful to pattern match the proof of `fin ℕ.zero <∞ n`
+-- carefully all the way down to a canonical form,
+-- otherwise Agda can't normalise nonzeroCardToZeroElem.
+-- Also be careful not to match it with something like `z<n`,
+-- since this is not an existing constuctor of `<` (`<` is defined via `≤`!)
+-- and instead Agda creates a variable with that name...
+-- ... and leaves me confused why things don't normalise correctly...
 --------------------------------------------------------------------------------
 
 -- Get the zero element of a set with cardinality greater than zero.

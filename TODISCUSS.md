@@ -21,6 +21,11 @@ Current idea: give a parameter `numEl ∈ {ℕ , ∞}` that gives the size
 of the set, and only specify the behaviour of the enumerator `ℕ → A`
 on inputs smaller than this size.
 
+## Refactor StreamGrids.Card?
+Split into `StreamGrids.Card.Properties` and `StreamGrids.Card.Core`?
+Currently both important definitions and *really specific* lemmas
+in almost random order in one file.
+
 ## Bialgebras or stronger types?
 I assume a signoid has been given and that `Q` is the type of partially
 explored but otherwise consistent grids (= partially defined equivalences)

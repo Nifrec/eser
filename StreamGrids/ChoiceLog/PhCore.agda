@@ -40,6 +40,7 @@
 -- since this would run into problems with Signoids of cardinality 0;
 -- no SG state could then be defined (since A_0 doesn't exist),
 -- not even an initial state.
+{-# OPTIONS --allow-unsolved-metas #-}
 
 module StreamGrids.ChoiceLog.PhCore where
 
@@ -55,6 +56,7 @@ open import Data.Nat.Properties
 open import Data.Sum
 open import Data.Fin
 open import Data.Fin.Properties
+open import Data.Unit
 
 -- Certainly used local imports.
 open import StreamGrids.Signoid
@@ -124,14 +126,67 @@ module SGStates
     iElemToTerm : {n : StateIndices} → {q : SGState n} → (i : iElem q) → A
     iElemToTerm (i , _) = Signoid.enum S i
 
+    PredSucIsID
+        : {c : ℕ} 
+        → (n : cardToSet (fin (ℕ.suc c))) 
+        → cardToPred (Fin.suc n) ≡ inject₁ n
+    PredSucIsID {c} n = refl
+
+    sucpredsuc≡suc
+        : {c : ℕ} 
+        → (n : Fin c) --^ Same as `cardToSet c` if `c > 0`.
+        → ℕ.suc (toℕ (cardToPred {fin (ℕ.suc c)} (Fin.suc n))) ≡ toℕ (Fin.suc n)
+    sucpredsuc≡suc {c} n = 
+        let sn≡sn = refl {x = toℕ (Fin.suc n)} in
+        let P = (λ x → x ≡ toℕ (Fin.suc n)) in
+        subst P (sym (toℕ-inject₁ (Fin.suc n))) sn≡sn
+        
+    -- A number that is the predecessor of another number is never the maximum
+    -- in a finite set.
+    aPredecIsNotMax 
+        : {c : ℕ∞}
+        → {n : cardToSet c}
+        → (cardTo< (cardToPred n) n)
+        --^ This expresses that 0<n, in a convenient way!
+        → IsNotMax (cardToPred n)
+    -- To show, by def of IsNotMax:
+    --  (cardToPred (Fin.suc n)) Data.Fin.< (fromℕ c)
+    --  I.e., suc n ≤ c. Up to some type conversions.
+    aPredecIsNotMax {fin (ℕ.suc c)} {Fin.suc n} (s≤s pn<n) =
+        let sn≤c' = toℕ≤pred[n] {ℕ.suc c} (Fin.suc n) in
+        let P = λ x → toℕ (Fin.suc n) Data.Nat.≤ x in
+        let sn≤c = subst P (sym(toℕ-fromℕ c)) sn≤c' in
+        --^ (suc n) : Fin (suc c) so (suc n) ≤ c.
+        -- This actually already expresses that `suc n ≤ c`,
+        -- but we need help Agda telling that the type conversions work out.
+        let spsn≡sn = sym(sucpredsuc≡suc n) in
+        subst (λ x → x Data.Nat.≤ toℕ (fromℕ c)) spsn≡sn sn≤c 
+    aPredecIsNotMax {∞} {n} pn<n = tt
+
     -- #TODO: this only makes sense if n>0 right?
     SIndexToLastStateIndex 
-        : (n : StateIndices) 
+        : {n : StateIndices} 
+        → (cardTo< (cardToPred n) n)
+        --^ This expresses that 0<n, in a convenient way!
         → Σ[ i ∈ SIndices ](cardToSuc i ≡ n)
-    SIndexToLastStateIndex n = ?
+    SIndexToLastStateIndex {n} = 
+        let i = cardLower (cardToPred ?) in
+        let si≡n = ? in
+        {! (i , si≡n) !}
+        --where
+        --    pnNotMax : IsNotMax {suc∞ card} (n)
+        --    pnNotMax = ?
 
-    lastIdx : {n : StateIndices} → (q : SGState n) → iElem q
-    lastIdx {n} q = (proj₁ (SIndexToLastStateIndex n) , ?)
+    -- Get the last chosen element from a choicelog.
+    lastIdx 
+        : {n : StateIndices} 
+        → (q : SGState n) 
+        → Σ[ i' ∈ iElem q ](cardToSuc (proj₁ i') ≡ n)
+    lastIdx {n} q =
+        -- #TODO: lemma that SGState n inhabited -> n>0?
+        let i' = (proj₁ (SIndexToLastStateIndex ?) , ?) in
+        let iIsLast = ? in
+        (i' , iIsLast)
     
     -- Trip a choice log down to the prefix of choices up to and
     -- including the point where A_i was chosen,
@@ -153,13 +208,23 @@ module SGStates
         : {n : StateIndices}
         → (q : SGState n)
         → Σ[ j ∈ iElem q ](
-            proj₁ j ≡  proj₁ (lastIdx q) 
+            proj₁ j ≡  proj₁ (proj₁ (lastIdx q) )
             ⊎ 
-            (cardTo< (proj₁ j) (proj₁ (lastIdx q)))
+            (cardTo< (proj₁ j) (proj₁ (proj₁ (lastIdx q))))
             )
+    -- Agda has a really hard time with the root case.
+    -- The problem is probably that `card` is a module variable 
+    -- -- we cannot pattern match on it. 
+    -- Consequently we can also not pattern-match `0<1` with a normal form.
+    -- The best solution I found is prove a lot of sublemmas in which
+    -- pattern-matching is possible.
     nfTop {n} (root 0<1) = 
         let i = nonzeroCardToZeroElem {card} 0<1 in
-        (i , {!cardTo0<1 i !}) , {! !}
+        let i∈root' = cardTo0<1 i in
+        let P = (λ x → cardTo< (cardInject x) (cardToClipSuc StateIdxZero)) in
+        let zeroRewr = thereIsOneZero (nonzeroCardToZeroElem 0<1) 0<1 in
+        let i∈root = subst P zeroRewr i∈root' in
+        (i , i∈root) , inj₁ {!refl !}
     nfTop {n} (choose q x) = {! !}
 
     isInState : {n : StateIndices} → (i : SIndices) → (q : SGState n) → Set _
@@ -171,9 +236,10 @@ module SGStates
         → (q : SGState n)
         → (i' : iElem q)
         → (j : SIndices)
-        → (h : (j ≡ proj₁ (lastIdx (stripDownTo q i')))
+        → (h : (
+            j ≡ (proj₁ (proj₁ (lastIdx (stripDownTo q i'))))
             ⊎
-            (cardTo< (j ) (proj₁ (lastIdx (stripDownTo q i'))))
+            (cardTo< j  (proj₁ (proj₁ (lastIdx (stripDownTo q i'))))))
             )
         → ((j ≡ proj₁ i') ⊎ (cardTo< (j) (proj₁ i')))
 
@@ -390,7 +456,7 @@ module SGStates
             : {n : StateIndices}
             → (q : SGState n)
             → (i' : iElem q)
-            → (proj₁ (lastIdx (stripDownTo q i')) ≡ proj₁ i')
+            → (proj₁ (proj₁ (lastIdx (stripDownTo q i'))) ≡ proj₁ i')
         lemma3 {n} q (i , _) = ? -- refl should work AFTER implementing stripDownTo
 
         cardTo<→≤→<
