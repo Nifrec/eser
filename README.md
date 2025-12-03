@@ -93,6 +93,13 @@ might still confuse 'sublist' and 'lowlist'.
     * List permutation equivalence.
 
 ### Abstract ideas
+* Composability of filtering functions
+    relat X 
+    <all> -> [all relats X+{A_n}] 
+    <σ> -> [all congr equivalences on X+{A_n}]  
+        --^ Assuming inp relat is congr.equiv
+    <?> -> [all assoc congr equivalences on X+{A_n}]
+        --^ Assuming inp relat is assoc
 * Modal logic for arbitrary signatures?
 * Regular expressions for arbitrary signatures?
 * Dependent coalgebras? Computing next allowed states is a coalgebra!
