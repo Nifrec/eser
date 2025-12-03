@@ -132,37 +132,6 @@ module SGStates
         → cardToPred (Fin.suc n) ≡ inject₁ n
     PredSucIsID {c} n = refl
 
-    sucpredsuc≡suc
-        : {c : ℕ} 
-        → (n : Fin c) --^ Same as `cardToSet c` if `c > 0`.
-        → ℕ.suc (toℕ (cardToPred {fin (ℕ.suc c)} (Fin.suc n))) ≡ toℕ (Fin.suc n)
-    sucpredsuc≡suc {c} n = 
-        let sn≡sn = refl {x = toℕ (Fin.suc n)} in
-        let P = (λ x → x ≡ toℕ (Fin.suc n)) in
-        subst P (sym (toℕ-inject₁ (Fin.suc n))) sn≡sn
-        
-    -- A number that is the predecessor of another number is never the maximum
-    -- in a finite set.
-    aPredecIsNotMax 
-        : {c : ℕ∞}
-        → {n : cardToSet c}
-        → (cardTo< (cardToPred n) n)
-        --^ This expresses that 0<n, in a convenient way!
-        → IsNotMax (cardToPred n)
-    -- To show, by def of IsNotMax:
-    --  (cardToPred (Fin.suc n)) Data.Fin.< (fromℕ c)
-    --  I.e., suc n ≤ c. Up to some type conversions.
-    aPredecIsNotMax {fin (ℕ.suc c)} {Fin.suc n} (s≤s pn<n) =
-        let sn≤c' = toℕ≤pred[n] {ℕ.suc c} (Fin.suc n) in
-        let P = λ x → toℕ (Fin.suc n) Data.Nat.≤ x in
-        let sn≤c = subst P (sym(toℕ-fromℕ c)) sn≤c' in
-        --^ (suc n) : Fin (suc c) so (suc n) ≤ c.
-        -- This actually already expresses that `suc n ≤ c`,
-        -- but we need help Agda telling that the type conversions work out.
-        let spsn≡sn = sym(sucpredsuc≡suc n) in
-        subst (λ x → x Data.Nat.≤ toℕ (fromℕ c)) spsn≡sn sn≤c 
-    aPredecIsNotMax {∞} {n} pn<n = tt
-
     -- #TODO: this only makes sense if n>0 right?
     SIndexToLastStateIndex 
         : {n : StateIndices} 
