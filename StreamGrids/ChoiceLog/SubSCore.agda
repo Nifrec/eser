@@ -86,12 +86,47 @@ module SGStates
             : (q : SGState) 
             → LegalChoices q 
             → SGState
+
+    -- Is-a-sub-ChoiceLog-of relation.
+    -- A state/ChoiceLog q is a stack of choices,
+    -- and q' ⊑ q denotes simply that q' is a substack of q.
+    -- This relation forms a poset: reflexive, transitive, antisymmetric.
     data _⊑_ where
         refl : (q : SGState) → q  ⊑ q
         sub  : (q q' : SGState)
              → (ℓ : LegalChoices q)
              → (q' ⊑ q)
-             → q ⊑ choose q ℓ
+             → q' ⊑ choose q ℓ
+
+    ⊑-refl : Reflexive _⊑_
+    ⊑-refl {q} = refl q
+
+    ⊑-trans : Transitive _⊑_
+    ⊑-trans {q} {q} {r} (refl q) q⊑r = q⊑r
+    ⊑-trans {p} {q} {q} p⊑q (refl q) = p⊑q
+    ⊑-trans {p} {q} {r} (sub q' p ℓq p⊑q') (sub r' (choose q' ℓq) ℓr q⊑r') =
+        let q = choose q' ℓq in
+        let q'⊑q = sub q' q' ℓq (refl q') in
+        let p⊑q = ⊑-trans p⊑q' q'⊑q in
+        let p⊑r' = ⊑-trans p⊑q q⊑r' in
+        sub r' p ℓr p⊑r'
+
+    ⊑-antisym : Antisymmetric _≡_ _⊑_
+    ⊑-antisym {q} {q} (refl q) q⊑q = refl
+    ⊑-antisym {q} {q} q⊑q (refl q) = refl
+    ⊑-antisym {p} {q} (sub q' p ℓq p⊑q') (sub p' q ℓp q⊑p') = 
+        let p'⊑p = sub p' p' ℓp (refl p') in
+        let p'⊑q' = ⊑-trans p'⊑p p⊑q' in
+        let q'⊑q = sub q' q' ℓq (refl q') in
+        let q'⊑p' = ⊑-trans q'⊑q q⊑p' in
+        let p'≡q' = ⊑-antisym p'⊑q' q'⊑p' in
+        -- Still need ℓp = ℓq, given that we could
+        -- apply cong pm p'≡q' with (λ x → choose x ℓp), and then subst the
+        -- right occurrence of ℓp via ℓp=ℓq.
+        --let pℓp≡qℓp = cong (λ x → choose x) p'≡q' (refl (choose p')) in
+        {!  !}
+
+    -- #TODO: conjecture: Totality and decidability of _⊑_ can also be proven.
 
     data LegalChoices where
         coercion 
