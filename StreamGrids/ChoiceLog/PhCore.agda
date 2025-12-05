@@ -62,6 +62,14 @@ open import Data.Unit
 open import StreamGrids.Signoid
 open import StreamGrids.Card
 
+lastIdx' 
+    : { c : ℕ∞ }
+    ( n : cardToSet (suc∞ c) )
+    → Σ[ i ∈ cardToSet c ]( (cardToSuc i ≡ n))
+    --^ That also implies  (cardTo< (cardInject i) n).
+lastIdx' {fin c} n = {! !}
+lastIdx' {∞} n = {! !}
+
 module SGStates
     {ℓ : Level}
     {A : Set ℓ}
@@ -110,7 +118,9 @@ module SGStates
             → SGState (cardToClipSuc StateIdxZero)
             --^ ...then there is a canonical root state with only that
             -- element explored (and the reflexive congruence on it).
-        choose : {n : StateIndices} 
+        choose 
+            : {n : StateIndices} 
+            → (IsNotMax n)
             → (q : SGState n) 
             → LegalChoices q 
             → SGState (StateIdxSuc n)
@@ -132,16 +142,16 @@ module SGStates
         → cardToPred (Fin.suc n) ≡ inject₁ n
     PredSucIsID {c} n = refl
 
-    -- #TODO: this only makes sense if n>0 right?
-    SIndexToLastStateIndex 
+    StateIndexToIdxLastChoice
         : {n : StateIndices} 
         → (cardTo< (cardToPred n) n)
         --^ This expresses that 0<n, in a convenient way!
         → Σ[ i ∈ SIndices ](cardToSuc i ≡ n)
-    SIndexToLastStateIndex {n} = 
-        let i = cardLower (cardToPred ?) in
+    StateIndexToIdxLastChoice {n} pn<n = 
+        let isNotMaxn = aPredecIsNotMax pn<n in
+        let i = cardLower isNotMaxn in
         let si≡n = ? in
-        {! (i , si≡n) !}
+        (i , si≡n )
         --where
         --    pnNotMax : IsNotMax {suc∞ card} (n)
         --    pnNotMax = ?
@@ -151,11 +161,16 @@ module SGStates
         : {n : StateIndices} 
         → (q : SGState n) 
         → Σ[ i' ∈ iElem q ](cardToSuc (proj₁ i') ≡ n)
-    lastIdx {n} q =
-        -- #TODO: lemma that SGState n inhabited -> n>0?
-        let i' = (proj₁ (SIndexToLastStateIndex ?) , ?) in
-        let iIsLast = ? in
-        (i' , iIsLast)
+    lastIdx {n} q = ?
+    --lastIdx {n} (root x) with card
+    --... | fin (suc n) = ((Data.Fin.zero , s≤s z≤n ) , refl)
+    --... | ∞  = ((ℕ.zero , s≤s z≤n) , refl)
+    --lastIdx {n} (choose notMax q choice) = {! !}
+    --lastIdx {n} q =
+    --    -- #TODO: lemma that SGState n inhabited -> n>0?
+    --    let i' = (proj₁ (SIndexToLastStateIndex ?) , ?) in
+    --    let iIsLast = ? in
+    --    (i' , iIsLast)
     
     -- Trip a choice log down to the prefix of choices up to and
     -- including the point where A_i was chosen,
@@ -194,7 +209,7 @@ module SGStates
         let zeroRewr = thereIsOneZero (nonzeroCardToZeroElem 0<1) 0<1 in
         let i∈root = subst P zeroRewr i∈root' in
         (i , i∈root) , inj₁ {!refl !}
-    nfTop {n} (choose q x) = {! !}
+    nfTop {n} (choose notMax q x) = {! !}
 
     isInState : {n : StateIndices} → (i : SIndices) → (q : SGState n) → Set _
     isInState {n} i q = cardTo< (cardToSuc i) n
@@ -379,18 +394,20 @@ module SGStates
         -- pick that normal form.
         here 
             : {n : StateIndices} 
+            → {notMax : IsNotMax n}
             → (q : SGState n) 
             → (h : NoForcedCoercion q)
-            → NormalForms(choose q (newNF q h))
+            → NormalForms(choose notMax q (newNF q h))
         -- Pick a normal form from further down the choice log.
         there
             : {n : StateIndices}
+            → {notMax : IsNotMax n}
             → (q : SGState n)
             → (c : LegalChoices q)
             --^ Arbitrary topmost choice in the log we are not interested in.
             → NormalForms q
             --^ The normal form of the sub-choice-log.
-            → NormalForms (choose q c)
+            → NormalForms (choose notMax q c)
 
     module Lemmas where
         -- #TODO: rename and move those lemmas to right files/modules.

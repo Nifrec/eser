@@ -5,6 +5,7 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
+{-# OPTIONS --allow-unsolved-metas #-}
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
@@ -183,6 +184,51 @@ cardLower {fin (suc n)} {m} notMax =
         coe p x = subst (λ A → A) p x
 cardLower {∞} {m} notMax = m
     --^ ℕ-1 is still ℕ.
+
+-- #TODO: remove this
+-- This normalises to `zero`.
+test = cardLower {fin 1} (aPredecIsNotMax (s≤s z≤n))
+-- This normalises to `suc zero`.
+test2 = cardToSuc (cardLower {fin 1} (aPredecIsNotMax (s≤s z≤n)))
+
+
+lemma
+        : {c : ℕ∞}
+        → {n : cardToSet (suc∞ c)} 
+        --^ If c is zero then the final type is not well-defined,
+        -- so we need to rule that out.
+        → (notMax : IsNotMax n)
+        → (notMax' : IsNotMax (cardToSuc n))
+        → cardToSuc (cardLower notMax) ≡ cardLower notMax'
+lemma {fin (suc c)} {zero} (s≤s z≤n) (s≤s (s≤s z≤n)) = {! refl!}
+    --^ Now recurse and decodate the recursion via cong with `s≤s`.
+    -- ... that won't work...
+lemma {fin (suc c)} {suc n} (s≤s notMax) notMax' = {! !}
+lemma {∞} {n} notMax notMax' = refl
+
+sucOfLowerIsID 
+        : {c : ℕ∞}
+        → {n : cardToSet (suc∞ c)} 
+        --^ If c is zero then the final type is not well-defined,
+        -- so we need to rule that out.
+        → (pn<n : cardTo< (cardToPred n) n)
+        → cardToSuc (cardLower (aPredecIsNotMax pn<n)) ≡ n
+        --^ Two calls to `cardToSuc` are needed, since `aPredecIsNotMax`
+        -- returns the predecessor of 1 rather than `n` itself.
+sucOfLowerIsID {fin zero} {zero} ()
+sucOfLowerIsID {fin zero} {suc ()} 
+sucOfLowerIsID {fin (suc c)} {zero} ()
+sucOfLowerIsID {fin (suc c)} {suc zero} (s≤s z≤n) = {!refl !}
+sucOfLowerIsID {fin (suc c)} {suc (suc n)} pn<n = 
+    let rec = sucOfLowerIsID {fin c} {suc n} {! !} in
+    let rec+ = cong (Fin.suc) rec in
+    -- We can now apply `suc` to both sides, but then the LHS is of the wrong
+    -- form. 
+    -- Ofc could do that, and prove that
+    -- suc suc lower predNotMax n<sn ≡ suc lower predNotMax sn<ssn.
+    -- The proofs n<sn and sn<ssn are unique so seems hopefull...
+    {! rec+ !}
+sucOfLowerIsID {∞} {suc n} pn<n = refl
 
 -- Inject the elements of cardinality n into the set of cardinality n+1.
 cardInject : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n)
