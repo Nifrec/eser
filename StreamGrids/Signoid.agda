@@ -127,7 +127,7 @@ SubtermCoercion {ℓ} {A} _<_ _⊂_ =
         × (x' ⊂ y') × ¬ (x ⊂ y')
         --^ ...and which has subterm x' instead of x...
         × ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
-        -- ... but the other subterms of y' are the same as for y.
+        --^ ... but the other subterms of y' are the same as for y.
         )
 --------------------------------------------------------------------------------
 -- Actual definition of Signoid and constuction methods.
