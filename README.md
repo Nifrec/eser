@@ -48,6 +48,8 @@ might still confuse 'sublist' and 'lowlist'.
     
 
 ## TODOs
+* Everywhere I call `_⊂_` a *subterm* relation, while it is a 
+    *is-a-direct-argument* relation!
 * Why do we keep `_«_` in Signoids?
     It is just the `_<_` on indices in the enumeration anyway!
     More precisely, `_«_` is the relation
@@ -64,6 +66,16 @@ might still confuse 'sublist' and 'lowlist'.
 
 ### To check if exists in library:
 * Definition of `monotone` (used in def `Signoid`).
+
+## Where to find handwritten stuff
+
+### 8 Dec version of Signoids
+#### Updated defs 
+Of `Signoid`, `nf()`, `LegalChoices`, see *connf (9)*.
+#### Lemma: confluence normalisation for term-algebras
+The lemma proving *independence of the specific coercion in the LegalChoices
+constructor for the output of `nf()` in the case of term-algebras*,
+is in on sheet *connf (8)*, the related definitions on the next page.
 
 ## Ideas for extensions and explanations
 
