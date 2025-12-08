@@ -81,11 +81,18 @@ might still confuse 'sublist' and 'lowlist'.
 * Coloured grids.
     * Next step: local rules & CA.
 * Enforcing additional constraints such as associativity.
-* Defining morphisms between StreamGrids:
+* **Defining morphisms** between StreamGrids:
     - Weak morphisms: preserve equalities between elements.
     - Strong morphisms: preserve *also* the enumeration, _<_ and _⊂_.
     - For signatures, might also consider morphisms that send
       constructors-to-constructors-with-same-arity.
+* **Multiple roots**: why one enumeration with one 0-element?
+    We can have multiple roots. This can be done in different ways:
+    - Restrict to strings, and have multiple "empty strings".
+        *Eh this is nothing new! It is just a term algebra with multiple
+        nullary constructors...*
+    - Different enumerations of `A`; this idea is probably best combined with
+      *Directed StreamGrids* (see *Abstract ideas* below).
 
 ### Ideas for examples
 * PropTrunc:
@@ -93,6 +100,11 @@ might still confuse 'sublist' and 'lowlist'.
     * List permutation equivalence.
 
 ### Abstract ideas
+* **Directed StreamGrids**: see equalities as outgoing.
+    If `q = [..., [x_1, x_2, x_3, ...], ...]` is a state
+    then we can interpret this also as directed equalities `x_1 -> x_2 -> x_3`
+    instead of `x_1 = x_2 = x_3`. 
+    Is this somehow related to Andrea's work?
 * Composability of filtering functions
     relat X 
     <all> -> [all relats X+{A_n}] 
