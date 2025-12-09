@@ -104,7 +104,7 @@ module SGStates
     -- and q' ⊑ q denotes simply that q' is a substack of q.
     -- This relation forms a poset: reflexive, transitive, antisymmetric.
     data _⊑_ where
-        refl : (q : SGState) → q  ⊑ q
+        refl : (q : SGState) → q ⊑ q
         sub  : (q q' : SGState)
              → (ℓ : LegalChoices q)
              → (q' ⊑ q)
@@ -156,7 +156,10 @@ module SGStates
 
     data LegalChoices where
         forcedCoercion 
-            : (q : SGState) 
+            : (q : SGState)
+            --: (q q': SGState)
+            --→ 
+            --→ (choose q' (forcedCoercion q' 
             → (x : sElem q)
             → ((getEl x) ⊂ (next q))
             → (¬ (IsNF x))
