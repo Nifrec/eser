@@ -176,6 +176,17 @@ module SGStates
     next q = ?
 
     data LegalChoices where
+        newNF 
+            : {L : NFList}
+            → (s : SGState L)
+            → (
+                (x : sElem (L , s)) 
+                → ((getEL x) ⊂ (next (L , s))) 
+                → (getIdx (getEl x)) ∈ L
+                )
+            --^ Proof that no coercion constraint is at play:
+            -- all arguments of the next-to-add element y ≔ next (L , s)
+            -- are in normal f
         -- #TODO
     
     UpdateNFList (L , s) lc = ?
