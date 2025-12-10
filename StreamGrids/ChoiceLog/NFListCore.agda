@@ -63,6 +63,7 @@ open import Data.Fin.Properties
 open import Data.Unit
 open import Data.Empty
 open import Data.List
+open import Data.List.Membership.Propositional
 
 -- Certainly used local imports.
 open import StreamGrids.NewSignoid
@@ -118,6 +119,10 @@ module SGStates
             → (lc : LegalChoices q )
             → SGState (UpdateNFList q lc)
 
+--------------------------------------------------------------------------------
+-- Substack (sub-choice-log) relation ⊑.
+--------------------------------------------------------------------------------
+
 
     -- Is-a-sub-ChoiceLog-of relation.
     -- A state/ChoiceLog q is a stack of choices,
@@ -144,6 +149,10 @@ module SGStates
     --    let p⊑r' = ⊑-trans p⊑q q⊑r' in
     --    sub r' p ℓr p⊑r'
 
+--------------------------------------------------------------------------------
+-- Element representations.
+--------------------------------------------------------------------------------
+    
     -- Substack definition of element-already-chosen-in-a-state.
     -- In contrast to the index-based definition (`iElem`, used in PhCore.agda).
     -- An element is identified with the prefix of the choice log up to the
@@ -158,11 +167,16 @@ module SGStates
     -- ChoiceLog.
     height : Q → SIndices
     height q = ?
+    
+    -- Convert from sElem-representation of an element to the number
+    -- it has in the enumeration of A.
+    getIdx : {q : Q} → sElem q → SIndices
+    getIdx {q} q' = height (getState (q'))
 
     -- Convert from sElem-representation of an element to the A-term
     -- it represents.
     getEl : {q : Q} → sElem q → A
-    getEl {q} q' = Signoid.enum S (height (getState (q')))
+    getEl {q} q' = Signoid.enum S (getIdx q')
 
     -- The relation _⊂_, but slightly modified to work on the sElem
     -- representation of terms, rather than direct A terms.
@@ -175,20 +189,59 @@ module SGStates
     next : Q → A
     next q = ?
 
+--------------------------------------------------------------------------------
+-- Definitions of other auxiliary inductive types used in the construction
+-- of states.
+--------------------------------------------------------------------------------
+    -- Predicate that tells that all arguments (via the _⊂_ relation)
+    -- of the next element for which to choose its equalities
+    -- are normal forms.
+    AllArgsNormal
+            : {L : NFList}
+            → (s : SGState L)
+            → Set _
+    AllArgsNormal {L} s = 
+                (x : sElem (L , s)) 
+                → ((getEl x) ⊂ (next (L , s))) 
+                → (getIdx x) ∈ L
+
+    -- Predicate that the next element y has an x ⊂ y
+    -- such that x is NOT a normal form.
+    NormalisibleArg
+            : {L : NFList}
+            → (s : SGState L)
+            → Set _
+    NormalisibleArg {L} s
+            = Σ[ x ∈ sElem (L , s) ](
+                ((getEl x) ⊂ (next (L , s)))
+                ×
+                (getIdx x) ∉ L
+                )
+
+    -- Set of indices that exist for a given list.
+    -- #TODO: maybe move this somewhere else? It is copied from
+    -- StreamGrids/List.agda.
+    Indices : {X : Set _} → List X → Set
+    Indices L = Fin (length L)
+
     data LegalChoices where
         newNF 
             : {L : NFList}
             → (s : SGState L)
-            → (
-                (x : sElem (L , s)) 
-                → ((getEL x) ⊂ (next (L , s))) 
-                → (getIdx (getEl x)) ∈ L
-                )
-            --^ Proof that no coercion constraint is at play:
-            -- all arguments of the next-to-add element y ≔ next (L , s)
-            -- are in normal f
-        -- #TODO
-    
+            → (AllArgsNormal s)
+            → LegalChoices (L , s)
+        freeChoice
+            : {L : NFList}
+            → (s : SGState L)
+            → (AllArgsNormal s)
+            → (Indices L)
+            --^ (Index of) normal form to which we set the next element equal.
+            → LegalChoices (L , s)
+        forcedChoice
+            : {L : NFList}
+            → (s : SGState L)
+            → (NormalisibleArg s)
+            → LegalChoices (L , s)
     UpdateNFList (L , s) lc = ?
 
     --    forcedCoercion 
@@ -217,6 +270,11 @@ module SGStates
     --IsNF (choose q (coercion q fc))   = ⊥
     --IsNF (choose q (newEquiv q fc x)) = ⊥
     --IsNF (choose q (newNF q x))       = ⊤
+
+--------------------------------------------------------------------------------
+-- Normal-form-computing algorithm.
+--------------------------------------------------------------------------------
+
 
     --NormalForms q = Σ[ x ∈  sElem q ]( IsNF (getState x))
     --NoForcedCoercion q = (x : sElem q) → (x ⊂* (next q)) → IsNF x
