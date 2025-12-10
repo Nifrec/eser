@@ -93,10 +93,18 @@ module SGStates
         C : Set
         C = cardToSet card
 
+        -- Default _<_ relation on `C`, which is either Fin._<_
+        -- or ℕ._<_ (or just ⊥ if card = zero).
+        _<C_ : Rel C _
+        _<C_ = cardTo< {card}
+
         NFList : Set
         NFList = List C
 
+        idxToEl : C → A
         idxToEl = Signoid.idxToEl S
+
+        elToIdx : A → C
         elToIdx = Signoid.elToIdx S
 
     -- These inductive types are defined via mutual induction,
@@ -174,7 +182,9 @@ module SGStates
     -- Number of elements whose equalities have already been chosen in a
     -- ChoiceLog.
     height : Q → C
-    height q = ?
+    -- #TODO: this will require a lemma stating that the maximum
+    -- height is bounded by card. I.e., actual-height <∞ card.
+    height q = ? 
     
     -- Convert from sElem-representation of an element to the number
     -- it has in the enumeration of A.
@@ -194,8 +204,20 @@ module SGStates
     infix 30 sElem⊂
     syntax sElem⊂ q' q'' = q' ⊂* q''
 
-    next : Q → A
-    next q = ?
+    -- _⊂I_ is the relation _⊂_, 
+    -- but slightly modified to work on the enumeration-index
+    -- representation of terms, rather than direct A terms.
+    iElem⊂ : Rel C _
+    iElem⊂ i i' = (idxToEl i) ⊂ (idxToEl i')
+
+    infix 30 iElem⊂
+    syntax iElem⊂ i i' = i ⊂I i'
+
+    nextEl : Q → A
+    nextEl q = idxToEl (height q)
+
+    nextIdx : Q → C
+    nextIdx q = height q
 
 --------------------------------------------------------------------------------
 -- Definitions of other auxiliary inductive types used in the construction
@@ -210,7 +232,7 @@ module SGStates
             → Set _
     AllArgsNormal {L} s = 
                 (x : sElem (L , s))
-                → ((getEl x) ⊂ (next (L , s))) 
+                → ((getEl x) ⊂ (nextEl (L , s))) 
                 → (getIdx x) ∈ L
 
     -- Same as AllArgsNormal, but using the enumeration-index representation of
@@ -221,7 +243,7 @@ module SGStates
             → Set _
     IAllArgsNormal {L} s = 
                 (x : C)
-                → ((idxToEl x) ⊂ (next (L , s))) 
+                → ((idxToEl x) ⊂ (nextEl (L , s))) 
                 → x ∈ L
 
     -- Predicate that the next element y has an x ⊂ y
@@ -232,7 +254,7 @@ module SGStates
             → Set _
     NormalisibleArg {L} s
             = Σ[ x ∈ sElem (L , s) ](
-                ((getEl x) ⊂ (next (L , s)))
+                ((getEl x) ⊂ (nextEl (L , s)))
                 ×
                 (getIdx x) ∉ L
                 )
@@ -245,7 +267,7 @@ module SGStates
             → Set _
     INormalisibleArg {L} s
             = Σ[ x ∈ C ](
-                ((idxToEl x) ⊂ (next (L , s)))
+                ((idxToEl x) ⊂ (nextEl (L , s)))
                 ×
                 (x ∉ L)
                 )
@@ -274,12 +296,27 @@ module SGStates
             → (s : SGState L)
             → (INormalisibleArg s)
             → LegalChoices (L , s)
-    UpdateNFList (L , s) lc = ?
+
+    UpdateNFList (L , s) (newNF s₁ x) = (nextIdx (L , s)) ∷ L
+    UpdateNFList (L , s) (freeChoice s₁ x x₁) = L
+    UpdateNFList (L , s) (forcedChoice s₁ x) = L
 
 --------------------------------------------------------------------------------
 -- Normal-form-computing algorithm.
 --------------------------------------------------------------------------------
 
+    -- #TODO: better define this in terms of sElem first,
+    -- thereafter make iElem version (with type as below)
+    -- that
+    -- 1. Maps an iElem to an sElem.
+    -- 2. Calls the sElem version of nf().
+    nf 
+        : {L : NFList}
+        → {s : SGState L}
+        → (i : C)
+        → (i <C height (L , s))
+        → Indices L
+    nf {L} {s} i i∈s = ?
 
     --NormalForms q = Σ[ x ∈  sElem q ]( IsNF (getState x))
     --NoForcedCoercion q = (x : sElem q) → (x ⊂* (next q)) → IsNF x
