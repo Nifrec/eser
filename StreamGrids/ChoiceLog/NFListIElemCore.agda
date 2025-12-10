@@ -304,47 +304,34 @@ module SGStates
 --------------------------------------------------------------------------------
 -- Normal-form-computing algorithm.
 --------------------------------------------------------------------------------
+    nf  : {L : NFList}
+        → {s : SGState L} 
+        → (x : sElem (L , s)) 
+        → Indices L
+    -- We know that L' is [ 0 ].
+    -- Prove that L' is a sublist of L, then we know that 0 ∈ L.
+    -- * (SomeLemma x⊑q) should give L' ⊆ L.
+    -- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
+    --      or even only 0 ∈ L' is enough.
+    nf {L} {s} ((L' , root h) , x⊑q) = ?    
+    nf {L} {s} ((L' , choose q' lc) , x⊑q) = {! !}
+        where
+            q : Q
+            q = (L , s)
 
     -- #TODO: better define this in terms of sElem first,
     -- thereafter make iElem version (with type as below)
     -- that
     -- 1. Maps an iElem to an sElem.
     -- 2. Calls the sElem version of nf().
-    nf 
+    Inf 
         : {L : NFList}
         → {s : SGState L}
         → (i : C)
         → (i <C height (L , s))
         → Indices L
-    nf {L} {s} i i∈s = ?
+    Inf {L} {s} i i∈s = {! !}
 
-    --NormalForms q = Σ[ x ∈  sElem q ]( IsNF (getState x))
-    --NoForcedCoercion q = (x : sElem q) → (x ⊂* (next q)) → IsNF x
-    ----^ All arguments of q are in normal form, so no congruence-coercion
-    ---- is at play.
-
-    ---- Compute the normal form of an sElem x.
-    ---- The returned sElem is an sElem x' of `getState x`;
-    ---- this is intentional since it proves that `x' « x`.
-    ---- #TODO: add embedding into the super-choicelog.
-    --nf  : {q : SGState} 
-    --    → (x : sElem q) 
-    --    → Σ[ x' ∈ sElem (getState x) ]( IsNF(getState x'))
-    --nf {q} (root h , q'⊑q) = ((root h , ⊑-refl) , tt)
-    --nf {q} (choose q' (coercion q' FC) , q'⊑q) = {! !}
-    ---- If we equated x with some normal form x'', then return
-    ---- just that normal form. Some overhead is needed to show that
-    ---- x'' is also a normal form of getState(x).
-    --nf {q} (choose q'' (newEquiv q'' noFC (x'' , isNFx'')) , q'⊑q) = 
-    --    let q' = choose q'' (newEquiv q'' noFC (x'' , isNFx'')) in
-    --    --^ State of the element of which we query the NF.
-    --    let p = getState x'' in
-    --    let q''⊑q' = sub q'' q'' (newEquiv q'' noFC (x'' , isNFx'')) (refl q'') 
-    --    in
-    --    let p⊑q' = ⊑-trans (proj₂ x'') q''⊑q' in
-    --    ((proj₁ x'' , p⊑q') , isNFx'')
-    ---- If x is a normal form, just return x itself!
-    --nf {q} (choose q' (newNF q' noFC) , q'⊑q) = ((choose q' (newNF q' noFC) , ⊑-refl) , tt)
 
 
     
