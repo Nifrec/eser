@@ -80,7 +80,7 @@ module SGStates
     -- for better readability.
     private 
         card : ℕ∞
-        card = Signoid.numEl S
+        card = Signoid.card S
 
         -- Existing indices in the enumeration of A.
         -- That's ℕ if A has infinitely many elements
@@ -176,7 +176,7 @@ module SGStates
     -- Convert from sElem-representation of an element to the A-term
     -- it represents.
     getEl : {q : Q} → sElem q → A
-    getEl {q} q' = Signoid.enum S (getIdx q')
+    getEl {q} q' = Signoid.idxToEl S (getIdx q')
 
     -- The relation _⊂_, but slightly modified to work on the sElem
     -- representation of terms, rather than direct A terms.

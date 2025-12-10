@@ -49,15 +49,15 @@ record Signoid
     (_⊂_ : Rel A ℓ) 
     : Set ℓ where
     field
-        numEl    : ℕ∞
-        enum     : (cardToSet numEl) → A
-        getIdx : A → cardToSet numEl
-        inv : Inverseᵇ _≡_ _≡_ enum getIdx
-        subrelat : (x y : A) → x ⊂ y → (cardTo< (getIdx x) (getIdx y))
+        card     : ℕ∞
+        idxToEl  : (cardToSet card) → A
+        elToIdx  : A → cardToSet card
+        inv : Inverseᵇ _≡_ _≡_ idxToEl elToIdx
+        subrelat : (x y : A) → x ⊂ y → (cardTo< (elToIdx x) (elToIdx y))
         --^ This just says that _⊂_ is a subrelation of _«_, i.e.,
         -- that x ⊂ y → x « y. But _«_ is not defined yet here, see below.
-        coerc : (y x : A) → x ⊂ y → (x' : A) → x' ⊂ x → Σ[ y' ∈ A ](
-            (cardTo< (getIdx y') (getIdx y)))
+        coerc    : (y x : A) → x ⊂ y → (x' : A) → x' ⊂ x → Σ[ y' ∈ A ](
+            (cardTo< (elToIdx y') (elToIdx y)))
         --^ As for the previous constructor, just `y' « y`.
 
 enumOrder : 
@@ -67,7 +67,7 @@ enumOrder :
     {S : Signoid _⊂_}
     → Rel A _
 enumOrder {ℓ} {A} {_⊂_} {S} x y 
-    = cardTo< {Signoid.numEl S} (Signoid.getIdx S x) (Signoid.getIdx S y)
+    = cardTo< {Signoid.card S} (Signoid.elToIdx S x) (Signoid.elToIdx S y)
 
 infix 30 enumOrder
 syntax enumOrder x y = x « y
