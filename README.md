@@ -143,6 +143,15 @@ is in on sheet *connf (8)*, the related definitions on the next page.
     bijective enumerations `ℕ → A` for now to keep things simpler.
 
 ### To explain
+* Why states are annotated with a list of normal forms.
+    - To avoid circular definitions: do define `LegalChoices`,
+    we need to know whether there is a forced coercion, which occurs
+    iff some argument of y is not in normal form.
+    But we cannot compute the normal forms of the arguments (in the index
+    state `q` of `LegalChoices q`), 
+    since it would require pattern matching the index state, 
+    which also requires pattern matching `LegalChoices`, 
+    which in turn depend on something being normal or not...
 * Why signatures with constructors with external args from external
     finite sets are *not* a generalisation: one can add more constructors
     instead, one for each pair of external arguments.
