@@ -5,6 +5,8 @@ And how the readme is organised.
 Other files of interest:
 * [./Signoids.md] : discussion on the design of Signoids.
 * [./TODISCUSS.md] : things to discuss with superviors.
+* [./Expressivity.md] : discussion what kinds of relations StreamGrids can
+  encode.
 
 ## What is where
 * `StreamGrids/Fold`    
@@ -76,6 +78,9 @@ Of `Signoid`, `nf()`, `LegalChoices`, see *connf (9)*.
 The lemma proving *independence of the specific coercion in the LegalChoices
 constructor for the output of `nf()` in the case of term-algebras*,
 is in on sheet *connf (8)*, the related definitions on the next page.
+
+### 11 Dec 2025 proof of encodability certain relations
+See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
 
 ## Ideas for extensions and explanations
 
