@@ -365,13 +365,10 @@ module SGStates
     --      nonzeroCardToZeroElem h' = nonzeroCardToZeroElem h
     --  #TODO: add a lemma for that!
     multichoiceSuffix {L'} {L} {root h'} {root h} q'⊑q = 
-        let zeroh'≡zeroh = thereIsOneZero' {card} h' h in
+        let zeroh≡zeroh' = thereIsOneZero' {card} h h' in
         let ref = ≼-refl {nonzeroCardToZeroElem h ∷ []} in
-        let goal = subst (λ k → Suffix _≡_ (k ∷ []) 
-                             (nonzeroCardToZeroElem h ∷ [])
-                             ) (sym zeroh'≡zeroh) ref
-        in goal
-        --{!≼-refl !}
+        subst (λ k → Suffix _≡_ (k ∷ []) (nonzeroCardToZeroElem h ∷ [])) 
+            zeroh≡zeroh' ref
     -- The next case should be impossible.
     -- #TODO: write auxiliary lemma stating that, FIRST ON PAPER!
     multichoiceSuffix {L'} {L} {choose q lc} {root h} q'⊑q = {! !}
