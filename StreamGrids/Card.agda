@@ -305,6 +305,13 @@ thereIsOneZero
 thereIsOneZero {fin zero} ()
 thereIsOneZero {fin (suc n)} i (z<s) = refl
 thereIsOneZero {∞} i 0<n = refl
+
+thereIsOneZero'
+    : {n : ℕ∞}
+    → (h h' : fin ℕ.zero <∞ n)
+    → nonzeroCardToZeroElem h ≡ nonzeroCardToZeroElem h'
+thereIsOneZero' {fin (suc n)} (s≤s z≤n) (s≤s z≤n) = refl
+thereIsOneZero' {∞} h h' = refl
 --------------------------------------------------------------------------------
 -- Unimportant/unused lemmas
 --------------------------------------------------------------------------------

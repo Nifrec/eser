@@ -73,6 +73,9 @@ open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise)
 open import Data.List.Membership.Propositional using (_∈_ ; _∉_)
 open import Data.List.Relation.Unary.Any using (Any)
+open import Data.List.Relation.Binary.Pointwise.Properties renaming (refl to Pointwise-refl)
+open import Data.List.Relation.Binary.Suffix.Heterogeneous.Properties 
+    renaming (trans to Suffix-trans)
 
 -- Certainly used local imports.
 open import StreamGrids.NewSignoid
@@ -120,8 +123,24 @@ module SGStates
     data LegalChoices : Q → Set ℓ
     UpdateNFList : (q : Q) → LegalChoices q → NFList
       
-    -- `⊑` in Cornelis: `\sqsubseteq` or `\squb=`.
-    data _⊑_ : Rel Q ℓ
+    -- Strict Is-a-sub-ChoiceLog-of relation.
+    -- I made custom `\subst` binding in my nvim/Cornelis setup.
+    -- for the `⋤` symbol.
+    data _⋤_ : Rel Q ℓ
+
+    -- Is-a-sub-ChoiceLog-of relation.
+    -- A state/ChoiceLog q is a stack of choices,
+    -- and q' ⊑ q denotes simply that q' is a substack of q.
+    -- This relation forms a poset: reflexive, transitive, antisymmetric.
+    -- `⊑` in Cornelis: `\sqsubseteq` or `\squb=`. 
+    -- I made custom `\substeq` binding in my setup.
+    -- Note: for ℕ, < is defined in terms of ≤ as
+    -- m < n ≝ (S m) ≤ n.
+    -- This approach does NOT work here cuz if q' ⊑ q
+    -- then there typically are multiple possible direct successors of q'.
+    _⊑_ : Rel Q ℓ
+    q' ⊑ q = (q' ≡ q) ⊎ (q' ⋤ q)
+
     --record ForcedCoercion (q : SGState) : Set ℓ
     --record NoForcedCoercion (q : SGState ) : Set ℓ
     --NormalForms : SGState → Set ℓ
@@ -143,21 +162,20 @@ module SGStates
 --------------------------------------------------------------------------------
 -- Substack (sub-choice-log) relation ⊑.
 --------------------------------------------------------------------------------
-
-
-    -- Is-a-sub-ChoiceLog-of relation.
-    -- A state/ChoiceLog q is a stack of choices,
-    -- and q' ⊑ q denotes simply that q' is a substack of q.
-    -- This relation forms a poset: reflexive, transitive, antisymmetric.
-    data _⊑_ where
-        refl : (q : Q) → q ⊑ q
-        sub  : (q q' : Q)
-             → (lc : LegalChoices q)
-             → (q' ⊑ q)
-             → q' ⊑ (UpdateNFList q lc , choose q lc)
+    
+    data _⋤_ where
+        onechoice 
+            : (q : Q) 
+            → (lc : LegalChoices q)
+            → q ⋤ (UpdateNFList q lc , choose q lc)
+        multichoice
+            : (q' q : Q)
+            → (q' ⋤ q)
+            → (lc : LegalChoices q)
+            → q' ⋤ (UpdateNFList q lc , choose q lc)
 
     ⊑-refl : Reflexive _⊑_
-    ⊑-refl {q} = refl q
+    ⊑-refl {q} = ?
 
     -- #TODO: transitivity broke after changing the def of Q and _⊑_.
     --⊑-trans : Transitive _⊑_
@@ -313,15 +331,51 @@ module SGStates
     _≼_ : Rel NFList _
     L' ≼ L = Suffix (_≡_) L' L
 
+    ≼-refl : Reflexive _≼_
+    ≼-refl {L} = Suffix.here (Pointwise-refl _≡_.refl)
+
+    ≼-trans : Transitive _≼_
+    ≼-trans = Suffix-trans trans
+
+    -- Lemma A3 in my 12 Dec 2025 notes.
+    -- If q' ⋤ (L, choose q' lc), then L must be an extension
+    -- of the normal forms of q.
+    -- This is a special case (and auxiliary lemma) 
+    -- of `multichoiceSuffix` below.
+    onechoiceSuffix
+        : {L' : NFList}
+        → {s' : SGState L'}
+        → {lc : LegalChoices (L' , s')}
+        → (L' , s') ⋤ (UpdateNFList (L' , s') lc , choose (L' , s') lc)
+        → L' ≼ UpdateNFList (L' , s') lc
+    onechoiceSuffix {L'} {s'} {newNF s x} q'⊑q = Suffix.there ≼-refl
+    onechoiceSuffix {L'} {s'} {freeChoice s x x₁} q'⊑q = ≼-refl
+    onechoiceSuffix {L'} {s'} {forcedChoice s x} q'⊑q = ≼-refl
+
+
     -- When adding more choices to a choice log, the new list of normal forms
     -- is an extension of the original list. 
-    substackSublist
+    multichoiceSuffix
         : {L' L : NFList}
         → {s' : SGState L'}
         → {s  : SGState L}
         → (L' , s') ⊑ (L , s)
         → L' ≼ L
-    substackSublist {L'} {L} {s'} {s} q'⊑q = ?
+    -- Problem: Agda doesn't see that 
+    --      nonzeroCardToZeroElem h' = nonzeroCardToZeroElem h
+    --  #TODO: add a lemma for that!
+    multichoiceSuffix {L'} {L} {root h'} {root h} q'⊑q = 
+        let zeroh'≡zeroh = thereIsOneZero' {card} h' h in
+        let ref = ≼-refl {nonzeroCardToZeroElem h ∷ []} in
+        let goal = subst (λ k → Suffix _≡_ (k ∷ []) 
+                             (nonzeroCardToZeroElem h ∷ [])
+                             ) (sym zeroh'≡zeroh) ref
+        in goal
+        --{!≼-refl !}
+    -- The next case should be impossible.
+    -- #TODO: write auxiliary lemma stating that, FIRST ON PAPER!
+    multichoiceSuffix {L'} {L} {choose q lc} {root h} q'⊑q = {! !}
+    multichoiceSuffix {L'} {L} {s'} {choose q lc} q'⊑q = {! !}
         
     --syntax Suffix (_≡_) L' L = L' ≼ L
     
