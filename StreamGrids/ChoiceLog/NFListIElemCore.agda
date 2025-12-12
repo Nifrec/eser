@@ -68,11 +68,16 @@ open import Data.Fin.Properties
 open import Data.Unit
 open import Data.Empty
 open import Data.List
-open import Data.List.Membership.Propositional
+
+open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
+open import Data.List.Relation.Binary.Pointwise using (Pointwise)
+open import Data.List.Membership.Propositional using (_∈_ ; _∉_)
+open import Data.List.Relation.Unary.Any using (Any)
 
 -- Certainly used local imports.
 open import StreamGrids.NewSignoid
 open import StreamGrids.Card
+open import StreamGrids.Suffix
 
 module SGStates
     {ℓ : Level}
@@ -304,6 +309,22 @@ module SGStates
 --------------------------------------------------------------------------------
 -- Normal-form-computing algorithm.
 --------------------------------------------------------------------------------
+    
+    _≼_ : Rel NFList _
+    L' ≼ L = Suffix (_≡_) L' L
+
+    -- When adding more choices to a choice log, the new list of normal forms
+    -- is an extension of the original list. 
+    substackSublist
+        : {L' L : NFList}
+        → {s' : SGState L'}
+        → {s  : SGState L}
+        → (L' , s') ⊑ (L , s)
+        → L' ≼ L
+    substackSublist {L'} {L} {s'} {s} q'⊑q = ?
+        
+    --syntax Suffix (_≡_) L' L = L' ≼ L
+    
     nf  : {L : NFList}
         → {s : SGState L} 
         → (x : sElem (L , s)) 
@@ -314,7 +335,9 @@ module SGStates
     -- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
     --      or even only 0 ∈ L' is enough.
     nf {L} {s} ((L' , root h) , x⊑q) = ?    
-    nf {L} {s} ((L' , choose q' lc) , x⊑q) = {! !}
+    nf {L} {s} ((L' , choose (L'' , s'') (newNF s'' x)) , x⊑q) = {! !}
+    nf {L} {s} ((L' , choose (L'' , s'') (freeChoice s'' x x₁)) , x⊑q) = {! !}
+    nf {L} {s} ((L' , choose (L'' , s'') (forcedChoice s'' x)) , x⊑q) = {! !}
         where
             q : Q
             q = (L , s)
@@ -324,6 +347,8 @@ module SGStates
     -- that
     -- 1. Maps an iElem to an sElem.
     -- 2. Calls the sElem version of nf().
+    -- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
+    --  Find a better name.
     Inf 
         : {L : NFList}
         → {s : SGState L}

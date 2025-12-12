@@ -37,6 +37,8 @@ Other files of interest:
     For StreamGrid elements, it is the lexicographically least element
     in an equivalence class under the encoded congruence.
 * 'card' means 'cardinality'.
+* `L' ≼ L` means that `L'` is a 'suffix' of `L`',
+    i.e., `L'` are the oldest `n` element of `L` for some `n ≤ length L`.
 
 ### Nested lists
 In a list of lists `LS = [ L1 , L2 , L3 , ...]` 
@@ -65,6 +67,10 @@ might still confuse 'sublist' and 'lowlist'.
 * Update `Experimental` status in file headers.
 * Handle `#TODO`s in source files.
 * Remove superfluous imports.
+* Cleanup/update old stuff readme
+    - Nested lists
+    - Latest handwritten version
+
 
 ### To check if exists in library:
 * Definition of `monotone` (used in def `Signoid`).
