@@ -337,6 +337,14 @@ module SGStates
     ≼-trans : Transitive _≼_
     ≼-trans = Suffix-trans trans
 
+    -- #TODO: remove? this lemma is true but not used in the end.
+    rootHasNoSublog
+        : (q : Q)
+        → (lc : LegalChoices q)
+        → (h : (fin ℕ.zero) <∞ card)
+        → ¬ ((UpdateNFList q lc) , choose q lc ) ⋤ (nonzeroCardToZeroElem h ∷ [] , root h)
+    rootHasNoSublog q lc h ()
+
     -- Lemma A3 in my 12 Dec 2025 notes.
     -- If q' ⋤ (L, choose q' lc), then L must be an extension
     -- of the normal forms of q.
@@ -361,21 +369,52 @@ module SGStates
         → {s  : SGState L}
         → (L' , s') ⊑ (L , s)
         → L' ≼ L
-    -- Problem: Agda doesn't see that 
+    -- Easy case: given q'⊑q where both are the root,
+    -- we know both have as NFList simply [0].
+    -- Only hurdle is that Agda doesn't immediately see that 
     --      nonzeroCardToZeroElem h' = nonzeroCardToZeroElem h
-    --  #TODO: add a lemma for that!
     multichoiceSuffix {L'} {L} {root h'} {root h} q'⊑q = 
         let zeroh≡zeroh' = thereIsOneZero' {card} h h' in
         let ref = ≼-refl {nonzeroCardToZeroElem h ∷ []} in
         subst (λ k → Suffix _≡_ (k ∷ []) (nonzeroCardToZeroElem h ∷ [])) 
             zeroh≡zeroh' ref
-    -- The next case should be impossible.
-    -- #TODO: write auxiliary lemma stating that, FIRST ON PAPER!
-    multichoiceSuffix {L'} {L} {choose q lc} {root h} q'⊑q = {! !}
-    multichoiceSuffix {L'} {L} {s'} {choose q lc} q'⊑q = {! !}
+    -- Any q'⊑q where q has only the root element and q' at least
+    -- two elements (`choose` as topmost constructor) is impossible.
+    multichoiceSuffix {L'} {L} {choose q lc} {root h} (inj₁ ())
+    multichoiceSuffix {L'} {L} {choose q lc} {root h} (inj₂ ())
+    -- q'⊑q gives two cases. In the first case, q'≡q,
+    -- i.e., (L' , s'_ = (L , choose q lc).
+    -- Then trivially L' ≡ L as well, and ≼ is reflexive.
+    multichoiceSuffix {L'} {L} {s'} {choose q'' lc} (inj₁ refl) = ≼-refl
+    -- In the other case we have q`⋤q (strict sublog).
+    -- First subcase: q' = (L' , s') has only one choice fewer than q.
+    -- Hence we are in the onechoice situation, which we already proved above.
+    multichoiceSuffix {L'} {L} {s'} {choose (L' , s') lc} 
+        (inj₂ q'⋤q@(onechoice (L' , s') lc)) =
+        onechoiceSuffix {L'} {s'} {lc} q'⋤q
+    -- Second subcase: q has several choices on top of those in q'.
+    -- Then we have:
+    --      (1) q = choose q₁ lc
+    --      (2) q' ⊑ q₁
+    --      (3) q₁ = (L₁ , s₁)
+    --  First consider the case where (2) is q'⋤q.
+    --  We can recurse on (2) to obtain 
+    --      (4) L' ≼ L₁
+    --  and the onechoiceSuffix lemma on (1) will give
+    --      (5) L₁ ≼ L
+    --  Transitivity of ≼ on (4) and (5) then gives the desired
+    --      (6) L' ≼ L
+    multichoiceSuffix {L'} {L} {s'} {choose q'' lc} 
+        (inj₂ (multichoice q' (qₗ@(L₁ , s₁)) (inj₂ q'⋤q₁) lc₁)) = ?
+    -- In case (2) is q' ≡ q₁, we have 
+    --      (4') L' ≡ L₁
+    --  We can still obtain (5), and applying ≡-induction (subst)
+    --  will then yield (6).
+    multichoiceSuffix {L'} {L} {s'} {choose q'' lc} 
+        (inj₂ (multichoice q' (qₗ@(L₁ , s₁)) (inj₁ q'≡q₁) lc₁)) = ?
+        --let L'≼L₁ = multichoiceSuffix {L'} {L₁} {s'} {s₁} q'⋤q₁ in
+        --{! !}
         
-    --syntax Suffix (_≡_) L' L = L' ≼ L
-    
     nf  : {L : NFList}
         → {s : SGState L} 
         → (x : sElem (L , s)) 
