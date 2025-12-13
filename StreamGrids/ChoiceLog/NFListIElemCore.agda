@@ -397,23 +397,18 @@ module SGStates
     --      (1) q = choose q₁ lc
     --      (2) q' ⊑ q₁
     --      (3) q₁ = (L₁ , s₁)
-    --  First consider the case where (2) is q'⋤q.
     --  We can recurse on (2) to obtain 
     --      (4) L' ≼ L₁
     --  and the onechoiceSuffix lemma on (1) will give
     --      (5) L₁ ≼ L
     --  Transitivity of ≼ on (4) and (5) then gives the desired
     --      (6) L' ≼ L
-    multichoiceSuffix {L'} {L} {s'} {choose q'' lc} 
-        (inj₂ (multichoice q' (qₗ@(L₁ , s₁)) (inj₂ q'⋤q₁) lc₁)) = ?
-    -- In case (2) is q' ≡ q₁, we have 
-    --      (4') L' ≡ L₁
-    --  We can still obtain (5), and applying ≡-induction (subst)
-    --  will then yield (6).
-    multichoiceSuffix {L'} {L} {s'} {choose q'' lc} 
-        (inj₂ (multichoice q' (qₗ@(L₁ , s₁)) (inj₁ q'≡q₁) lc₁)) = ?
-        --let L'≼L₁ = multichoiceSuffix {L'} {L₁} {s'} {s₁} q'⋤q₁ in
-        --{! !}
+    multichoiceSuffix {L'} {L} {s'} {choose q₁ lc} 
+        (inj₂ (multichoice q' q₁@(L₁ , s₁) q'⋤q₁ lc)) = 
+        let q'⊑q₁ = inj₂ q'⋤q₁ in
+        let L'≼L₁ = multichoiceSuffix {L'} {L₁} {s'} {s₁} q'⊑q₁ in
+        let L₁≼L  = onechoiceSuffix {L₁} {s₁} {lc} (onechoice q₁ lc) in
+        ≼-trans L'≼L₁ L₁≼L
         
     nf  : {L : NFList}
         → {s : SGState L} 
