@@ -192,19 +192,19 @@ test = cardLower {fin 1} (aPredecIsNotMax (s≤s z≤n))
 test2 = cardToSuc (cardLower {fin 1} (aPredecIsNotMax (s≤s z≤n)))
 
 
-lemma
-        : {c : ℕ∞}
-        → {n : cardToSet (suc∞ c)} 
-        --^ If c is zero then the final type is not well-defined,
-        -- so we need to rule that out.
-        → (notMax : IsNotMax n)
-        → (notMax' : IsNotMax (cardToSuc n))
-        → cardToSuc (cardLower notMax) ≡ cardLower notMax'
-lemma {fin (suc c)} {zero} (s≤s z≤n) (s≤s (s≤s z≤n)) = {! refl!}
-    --^ Now recurse and decodate the recursion via cong with `s≤s`.
-    -- ... that won't work...
-lemma {fin (suc c)} {suc n} (s≤s notMax) notMax' = {! !}
-lemma {∞} {n} notMax notMax' = refl
+--lemma
+--        : {c : ℕ∞}
+--        → {n : cardToSet (suc∞ c)} 
+--        --^ If c is zero then the final type is not well-defined,
+--        -- so we need to rule that out.
+--        → (notMax : IsNotMax n)
+--        → (notMax' : IsNotMax (cardToSuc n))
+--        → cardToSuc (cardLower notMax) ≡ cardLower notMax'
+--lemma {fin (suc c)} {zero} (s≤s z≤n) (s≤s (s≤s z≤n)) = {! refl!}
+--    --^ Now recurse and decodate the recursion via cong with `s≤s`.
+--    -- ... that won't work...
+--lemma {fin (suc c)} {suc n} (s≤s notMax) notMax' = {! !}
+--lemma {∞} {n} notMax notMax' = refl
 
 sucOfLowerIsID 
         : {c : ℕ∞}

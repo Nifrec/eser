@@ -362,9 +362,24 @@ module SGStates
             f {q'} (onechoice q₁ lc) = ⋤-wellFounded q₁
             f {q'} (multichoice q' q₁ q'⋤q₁ lc) = 
                 let rec = acc-inverse (⋤-wellFounded q₁) in
-                -- Right, we first need to unwrap the `acc` constructor from
-                -- rec. Is this some sort of guardedness?
                 rec q'⋤q₁
+
+    -- #TODO: wfRec and wfRec-building from the standard library might
+    -- do this automatically. Skipped this for now.
+    -- Current implementation mimics the <-rec function defined in
+    -- the book "PROGRAM=PROOF" page 331 by Samuel Mimram (2025 version).
+    ⋤-rec
+        : (P : Q → Set _)
+        → ((q : Q) → ((q' : Q) → (q' ⋤ q) → P q') → P q)
+        -- ^ If you can compute P q provided that P q' can be computed
+        -- for all predecessors of q'...
+        → (q : Q) → (P q)
+        -- ^ ... then inductively we can compute P q for all q : Q.
+    ⋤-rec P recurse q = lemma q (⋤-wellFounded q)
+        where
+            lemma : (q : Q) → (Acc _⋤_ q) → P q
+            lemma q (acc allPredAcc) 
+                = recurse q (λ q' → (λ q'⋤q → (lemma q' (allPredAcc q'⋤q))))
 
     -- Lemma A3 in my 12 Dec 2025 notes.
     -- If q' ⋤ (L, choose q' lc), then L must be an extension
