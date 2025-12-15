@@ -337,13 +337,34 @@ module SGStates
     ≼-trans : Transitive _≼_
     ≼-trans = Suffix-trans trans
 
+
     -- #TODO: remove? this lemma is true but not used in the end.
+    --rootHasNoSublog
+    --    : (q : Q)
+    --    → (lc : LegalChoices q)
+    --    → (h : (fin ℕ.zero) <∞ card)
+    --    → ¬ ((UpdateNFList q lc) , choose q lc ) ⋤ (nonzeroCardToZeroElem h ∷ [] , root h)
+    --rootHasNoSublog q lc h ()
+
     rootHasNoSublog
-        : (q : Q)
-        → (lc : LegalChoices q)
-        → (h : (fin ℕ.zero) <∞ card)
-        → ¬ ((UpdateNFList q lc) , choose q lc ) ⋤ (nonzeroCardToZeroElem h ∷ [] , root h)
-    rootHasNoSublog q lc h ()
+        : {q : Q}
+        → {h : (fin ℕ.zero) <∞ card}
+        → ¬ (q ⋤ (nonzeroCardToZeroElem h ∷ [] , root h))
+    rootHasNoSublog ()
+
+    open import Induction.WellFounded as WF
+    ⋤-wellFounded : WellFounded _⋤_
+    ⋤-wellFounded (L , root h) = 
+        acc λ { q'⋤root → ⊥-elim (rootHasNoSublog q'⋤root) }
+    ⋤-wellFounded (L , choose q lc) = acc f
+        where
+            f : {q' : Q} → q' ⋤ (UpdateNFList q lc , choose q lc) → Acc _⋤_ q'
+            f {q'} (onechoice q₁ lc) = ⋤-wellFounded q₁
+            f {q'} (multichoice q' q₁ q'⋤q₁ lc) = 
+                let rec = acc-inverse (⋤-wellFounded q₁) in
+                -- Right, we first need to unwrap the `acc` constructor from
+                -- rec. Is this some sort of guardedness?
+                rec q'⋤q₁
 
     -- Lemma A3 in my 12 Dec 2025 notes.
     -- If q' ⋤ (L, choose q' lc), then L must be an extension
