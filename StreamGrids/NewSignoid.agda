@@ -56,9 +56,13 @@ record Signoid
         subrelat : (x y : A) → x ⊂ y → (cardTo< (elToIdx x) (elToIdx y))
         --^ This just says that _⊂_ is a subrelation of _«_, i.e.,
         -- that x ⊂ y → x « y. But _«_ is not defined yet here, see below.
-        coerc    : (y x : A) → x ⊂ y → (x' : A) → x' ⊂ x → Σ[ y' ∈ A ](
-            (cardTo< (elToIdx y') (elToIdx y)))
-        --^ As for the previous constructor, just `y' « y`.
+        coerc    : (y x : A) 
+                 → x ⊂ y 
+                 → (x' : A) 
+                 --^ Smaller alternative to x.
+                 → (cardTo< (elToIdx x') (elToIdx x))
+                 --^ Proof that x' is smaller than x: x' « x.
+                 → Σ[ y' ∈ A ]( (cardTo< (elToIdx y') (elToIdx y))) --^ y' « y
 
 enumOrder : 
     {ℓ : Level.Level} 
