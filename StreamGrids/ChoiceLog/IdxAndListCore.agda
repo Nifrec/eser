@@ -172,11 +172,6 @@ module SGStates
     _⊑_ : Rel Q ℓ
     q' ⊑ q = (q' ≡ q) ⊎ (q' ⋤ q)
 
-    --record ForcedCoercion (q : SGState) : Set ℓ
-    --record NoForcedCoercion (q : SGState ) : Set ℓ
-    --NormalForms : SGState → Set ℓ
-    --data _⊢_≈_ : SGState → A → A → Set ℓ
-
     data SGState where
         root 
             : (h : (fin ℕ.zero) <∞ card)
@@ -207,20 +202,6 @@ module SGStates
             → (h : IsNotMax (idx q))
             → (lc : LegalChoices q)
             → q' ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc)
-
-    ⊑-refl : Reflexive _⊑_
-    ⊑-refl {q} = ?
-
-    -- #TODO: transitivity broke after changing the def of Q and _⊑_.
-    --⊑-trans : Transitive _⊑_
-    --⊑-trans {q} {q} {r} (refl q) q⊑r = q⊑r
-    --⊑-trans {p} {q} {q} p⊑q (refl q) = p⊑q
-    --⊑-trans {p} {q} {r} (sub q' p ℓq p⊑q') (sub r' (choose q' ℓq) ℓr q⊑r') =
-    --    let q = choose q' ℓq in
-    --    let q'⊑q = sub q' q' ℓq (refl q') in
-    --    let p⊑q = ⊑-trans p⊑q' q'⊑q in
-    --    let p⊑r' = ⊑-trans p⊑q q⊑r' in
-    --    sub r' p ℓr p⊑r'
 
 --------------------------------------------------------------------------------
 -- Element representations.
@@ -379,14 +360,6 @@ module SGStates
     ≼-trans = Suffix-trans trans
 
 
-    -- #TODO: remove? this lemma is true but not used in the end.
-    --rootHasNoSublog
-    --    : (q : Q)
-    --    → (lc : LegalChoices q)
-    --    → (h : (fin ℕ.zero) <∞ card)
-    --    → ¬ ((UpdateNFList q lc) , choose q lc ) ⋤ (nonzeroCardToZeroElem h ∷ [] , root h)
-    --rootHasNoSublog q lc h ()
-
     rootHasNoSublog
         : {q : Q}
         → {h : (fin ℕ.zero) <∞ card}
@@ -490,39 +463,43 @@ module SGStates
         let L₁≼L  = onechoiceSuffix {i₁} {L₁} {s₁} {h} {lc} (onechoice q₁ h lc) in
         ≼-trans L'≼L₁ L₁≼L
         
-    nf  : {i : C}
-        → {L : NFList}
-        → {s : SGState i L} 
-        → (x : sElem (i , L , s)) 
-        → Indices L
-    -- We know that L' is [ 0 ].
-    -- Prove that L' is a sublist of L, then we know that 0 ∈ L.
-    -- * (SomeLemma x⊑q) should give L' ⊆ L.
-    -- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
-    --      or even only 0 ∈ L' is enough.
-    nf {i} {L} {s} ((i' , L' , root h) , x⊑q) = ?    
-    nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (newNF s'' x)) , x⊑q) = {! !}
-    nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (freeChoice s'' x x₁)) , x⊑q) = {! !}
-    nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (forcedChoice s'' x)) , x⊑q) = {! !}
-        where
-            q : Q
-            q = (i , L , s)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    -- #TODO: redefine nf. Define nfTransposed() and nf().
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    -- #TODO: better define this in terms of sElem first,
-    -- thereafter make iElem version (with type as below)
-    -- that
-    -- 1. Maps an iElem to an sElem.
-    -- 2. Calls the sElem version of nf().
-    -- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
-    --  Find a better name.
-    Inf 
-        : {i : C}
-        → {L : NFList}
-        → {s : SGState i L}
-        → (x : C)
-        → (x <C height (i , L , s))
-        → Indices L
-    Inf {L} {s} x x∈s = {! !}
+    --nf  : {i : C}
+    --    → {L : NFList}
+    --    → {s : SGState i L} 
+    --    → (x : sElem (i , L , s)) 
+    --    → Indices L
+    ---- We know that L' is [ 0 ].
+    ---- Prove that L' is a sublist of L, then we know that 0 ∈ L.
+    ---- * (SomeLemma x⊑q) should give L' ⊆ L.
+    ---- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
+    ----      or even only 0 ∈ L' is enough.
+    --nf {i} {L} {s} ((i' , L' , root h) , x⊑q) = ?    
+    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (newNF s'' x)) , x⊑q) = {! !}
+    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (freeChoice s'' x x₁)) , x⊑q) = {! !}
+    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (forcedChoice s'' x)) , x⊑q) = {! !}
+    --    where
+    --        q : Q
+    --        q = (i , L , s)
+
+    ---- #TODO: better define this in terms of sElem first,
+    ---- thereafter make iElem version (with type as below)
+    ---- that
+    ---- 1. Maps an iElem to an sElem.
+    ---- 2. Calls the sElem version of nf().
+    ---- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
+    ----  Find a better name.
+    --Inf 
+    --    : {i : C}
+    --    → {L : NFList}
+    --    → {s : SGState i L}
+    --    → (x : C)
+    --    → (x <C height (i , L , s))
+    --    → Indices L
+    --Inf {L} {s} x x∈s = {! !}
 
 
 
