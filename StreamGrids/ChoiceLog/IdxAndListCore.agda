@@ -479,6 +479,14 @@ module SGStates
 --------------------------------------------------------------------------------
 -- Auxiliary lemmas needed to compute normal forms.
 --------------------------------------------------------------------------------
+--#TODO: rename the lemmas. Current names are the ones used in my paper notes.
+
+    FC-a 
+        : {i : C}
+        → (h₁ : IsNotMax i)
+        → (h₂ : IsNotMax i)
+        → (idxSuc h₁ ≡ idxSuc h₂)
+    FC-a {i} h₁ h₂ = endoSucUnique h₁ h₂
 
     
     

@@ -154,6 +154,14 @@ endoSuc {fin (suc c)} {n} h =
     lower {2+ c} {suc c} sucn Sn<Sc
 endoSuc {∞} {n} h = ℕ.suc n
 
+endoSucUnique
+    : {c : ℕ∞}
+    → {n : cardToSet c}
+    → (h₁ h₂ : IsNotMax n)
+    → (endoSuc h₁ ≡ endoSuc h₂)
+endoSucUnique {fin (suc c)} {n} h₁ h₂ = refl
+endoSucUnique {∞} {n} h₁ h₂ = refl
+
 -- cardToPrec is a section of the successor function `ℕ.suc ∘ toℕ`,
 -- but only on numbers that are the successor of another.
 sucpredsuc≡suc
