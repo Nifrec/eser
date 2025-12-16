@@ -138,6 +138,22 @@ IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
 IsNotMax {∞} n = ⊤ 
     --^ Trivial: there is no maximal natural number.
 
+-- Compute the successor while staying in the set of the same cardinality.
+-- Of course, this is only possible if the input number 
+-- is not the max of a finite set.
+endoSuc
+    : {c : ℕ∞}
+    → {n : cardToSet c}
+    → (h : IsNotMax n)
+    → cardToSet c
+endoSuc {fin (suc c)} {n} h = 
+    let sucn = Fin.suc n in
+    let meh = toℕ-fromℕ c in
+    let n<c = subst (λ x → suc (toℕ n) Data.Nat.≤ x) meh h in
+    let Sn<Sc = s≤s n<c in
+    lower {2+ c} {suc c} sucn Sn<Sc
+endoSuc {∞} {n} h = ℕ.suc n
+
 -- cardToPrec is a section of the successor function `ℕ.suc ∘ toℕ`,
 -- but only on numbers that are the successor of another.
 sucpredsuc≡suc
