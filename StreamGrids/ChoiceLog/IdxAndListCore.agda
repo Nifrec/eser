@@ -143,8 +143,13 @@ module SGStates
     Q : Set _
     Q = Σ[ i ∈ C ](Σ[ L ∈ NFList ](SGState i L))
 
+    -- Get the enumeration-index of the last element added to a choicelog.
     idx : Q → C
     idx (i , _ , _) = i
+
+    -- Get the last element added to a choicelog.
+    el : Q → A
+    el q = idxToEl (idx q)
 
     data LegalChoices : Q → Set ℓ
     UpdateNFList : (q : Q) → LegalChoices q → NFList
