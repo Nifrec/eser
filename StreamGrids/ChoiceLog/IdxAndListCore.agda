@@ -118,6 +118,9 @@ module SGStates
         C : Set
         C = cardToSet card
 
+        idxSuc : {i : C} → (h : IsNotMax i) → C
+        idxSuc {i} h = endoSuc {card} {i} h
+
         -- Default _<_ relation on `C`, which is either Fin._<_
         -- or ℕ._<_ (or just ⊥ if card = zero).
         _<C_ : Rel C _
@@ -134,9 +137,15 @@ module SGStates
 
     -- These inductive types are defined via mutual induction,
     -- so we declare them all up front here.
-    data SGState : NFList → Set ℓ
+    data SGState : C → NFList → Set ℓ
+
+
     Q : Set _
-    Q = Σ[ L ∈ NFList ](SGState L)
+    Q = Σ[ i ∈ C ](Σ[ L ∈ NFList ](SGState i L))
+
+    idx : Q → C
+    idx (i , _ , _) = i
+
     data LegalChoices : Q → Set ℓ
     UpdateNFList : (q : Q) → LegalChoices q → NFList
       
@@ -167,14 +176,15 @@ module SGStates
         root 
             : (h : (fin ℕ.zero) <∞ card)
             --^ *If* at least one element exists,...
-            → SGState ((nonzeroCardToZeroElem h) ∷ [])
+            → SGState (nonzeroCardToZeroElem h) ((nonzeroCardToZeroElem h) ∷ [])
             --^ ...then there is a canonical root state with only that
             -- element explored (and the reflexive congruence on it).
             -- The list of normal forms is [ 0 ].
         choose 
             : (q : Q)
+            → (h : IsNotMax (idx q))
             → (lc : LegalChoices q )
-            → SGState (UpdateNFList q lc)
+            → SGState (idxSuc h) (UpdateNFList q lc)
 
 --------------------------------------------------------------------------------
 -- Substack (sub-choice-log) relation ⊑.
@@ -183,13 +193,15 @@ module SGStates
     data _⋤_ where
         onechoice 
             : (q : Q) 
+            → (h : IsNotMax (idx q))
             → (lc : LegalChoices q)
-            → q ⋤ (UpdateNFList q lc , choose q lc)
+            → q ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc)
         multichoice
             : (q' q : Q)
             → (q' ⋤ q)
+            → (h : IsNotMax (idx q))
             → (lc : LegalChoices q)
-            → q' ⋤ (UpdateNFList q lc , choose q lc)
+            → q' ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc)
 
     ⊑-refl : Reflexive _⊑_
     ⊑-refl {q} = ?
@@ -267,34 +279,37 @@ module SGStates
     -- of the next element for which to choose its equalities
     -- are normal forms.
     AllArgsNormal
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → Set _
-    AllArgsNormal {L} s = 
-                (x : sElem (L , s))
-                → ((getEl x) ⊂ (nextEl (L , s))) 
+    AllArgsNormal {i} {L} s = 
+                (x : sElem (i , L , s))
+                → ((getEl x) ⊂ (nextEl (i , L , s))) 
                 → (getIdx x) ∈ L
 
     -- Same as AllArgsNormal, but using the enumeration-index representation of
     -- elements.
     IAllArgsNormal
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → Set _
-    IAllArgsNormal {L} s = 
+    IAllArgsNormal {i} {L} s = 
                 (x : C)
-                → ((idxToEl x) ⊂ (nextEl (L , s))) 
+                → ((idxToEl x) ⊂ (nextEl (i , L , s))) 
                 → x ∈ L
 
     -- Predicate that the next element y has an x ⊂ y
     -- such that x is NOT a normal form.
     NormalisibleArg
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → Set _
-    NormalisibleArg {L} s
-            = Σ[ x ∈ sElem (L , s) ](
-                ((getEl x) ⊂ (nextEl (L , s)))
+    NormalisibleArg {i} {L} s
+            = Σ[ x ∈ sElem (i , L , s) ](
+                ((getEl x) ⊂ (nextEl (i , L , s)))
                 ×
                 (getIdx x) ∉ L
                 )
@@ -302,12 +317,13 @@ module SGStates
     -- Same as NormalisibleArg,
     -- but using the enumeration-index representation of elements.
     INormalisibleArg
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → Set _
-    INormalisibleArg {L} s
+    INormalisibleArg {i} {L} s
             = Σ[ x ∈ C ](
-                ((idxToEl x) ⊂ (nextEl (L , s)))
+                ((idxToEl x) ⊂ (nextEl (i , L , s)))
                 ×
                 (x ∉ L)
                 )
@@ -320,26 +336,29 @@ module SGStates
 
     data LegalChoices where
         newNF 
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → (IAllArgsNormal s)
-            → LegalChoices (L , s)
+            → LegalChoices (i , L , s)
         freeChoice
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → (IAllArgsNormal s)
             → (Indices L)
             --^ (Index of) normal form to which we set the next element equal.
-            → LegalChoices (L , s)
+            → LegalChoices (i , L , s)
         forcedChoice
-            : {L : NFList}
-            → (s : SGState L)
+            : {i : C}
+            → {L : NFList}
+            → (s : SGState i L)
             → (INormalisibleArg s)
-            → LegalChoices (L , s)
+            → LegalChoices (i , L , s)
 
-    UpdateNFList (L , s) (newNF s₁ x) = (nextIdx (L , s)) ∷ L
-    UpdateNFList (L , s) (freeChoice s₁ x x₁) = L
-    UpdateNFList (L , s) (forcedChoice s₁ x) = L
+    UpdateNFList (i , L , s) (newNF s₁ x) = (nextIdx (i , L , s)) ∷ L
+    UpdateNFList (i , L , s) (freeChoice s₁ x x₁) = L
+    UpdateNFList (i , L , s) (forcedChoice s₁ x) = L
 
 --------------------------------------------------------------------------------
 -- Normal-form-computing algorithm.
@@ -366,18 +385,18 @@ module SGStates
     rootHasNoSublog
         : {q : Q}
         → {h : (fin ℕ.zero) <∞ card}
-        → ¬ (q ⋤ (nonzeroCardToZeroElem h ∷ [] , root h))
+        → ¬ (q ⋤ (nonzeroCardToZeroElem h , nonzeroCardToZeroElem h ∷ [] , root h))
     rootHasNoSublog ()
 
     open import Induction.WellFounded as WF
     ⋤-wellFounded : WellFounded _⋤_
-    ⋤-wellFounded (L , root h) = 
+    ⋤-wellFounded (_ , L , root h) = 
         acc λ { q'⋤root → ⊥-elim (rootHasNoSublog q'⋤root) }
-    ⋤-wellFounded (L , choose q lc) = acc f
+    ⋤-wellFounded (_ , L , choose q h lc) = acc f
         where
-            f : {q' : Q} → q' ⋤ (UpdateNFList q lc , choose q lc) → Acc _⋤_ q'
-            f {q'} (onechoice q₁ lc) = ⋤-wellFounded q₁
-            f {q'} (multichoice q' q₁ q'⋤q₁ lc) = 
+            f : {q' : Q} → q' ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc) → Acc _⋤_ q'
+            f {q'} (onechoice q₁ h lc) = ⋤-wellFounded q₁
+            f {q'} (multichoice q' q₁ q'⋤q₁ h lc) = 
                 let rec = acc-inverse (⋤-wellFounded q₁) in
                 rec q'⋤q₁
 
@@ -404,47 +423,50 @@ module SGStates
     -- This is a special case (and auxiliary lemma) 
     -- of `multichoiceSuffix` below.
     onechoiceSuffix
-        : {L' : NFList}
-        → {s' : SGState L'}
-        → {lc : LegalChoices (L' , s')}
-        → (L' , s') ⋤ (UpdateNFList (L' , s') lc , choose (L' , s') lc)
-        → L' ≼ UpdateNFList (L' , s') lc
-    onechoiceSuffix {L'} {s'} {newNF s x} q'⊑q = Suffix.there ≼-refl
-    onechoiceSuffix {L'} {s'} {freeChoice s x x₁} q'⊑q = ≼-refl
-    onechoiceSuffix {L'} {s'} {forcedChoice s x} q'⊑q = ≼-refl
+        : {i : C}
+        → {L : NFList}
+        → {s : SGState i L}
+        → {h  : IsNotMax i}
+        → {lc : LegalChoices (i , L , s)}
+        → (i , L , s) ⋤ (idxSuc h , UpdateNFList (i , L , s) lc , choose (i , L , s) h lc)
+        → L ≼ UpdateNFList (i , L , s) lc
+    onechoiceSuffix {_} {L} {s} {_} {newNF s x} q⊑q = Suffix.there ≼-refl
+    onechoiceSuffix {_} {L} {s} {_} {freeChoice s x x₁} q⊑q = ≼-refl
+    onechoiceSuffix {_} {L} {s} {_} {forcedChoice s x} q⊑q = ≼-refl
 
 
     -- When adding more choices to a choice log, the new list of normal forms
     -- is an extension of the original list. 
     multichoiceSuffix
-        : {L' L : NFList}
-        → {s' : SGState L'}
-        → {s  : SGState L}
-        → (L' , s') ⊑ (L , s)
+        : {i' i : C}
+        → {L' L : NFList}
+        → {s' : SGState i' L'}
+        → {s  : SGState i L}
+        → (i' , L' , s') ⊑ (i , L , s)
         → L' ≼ L
     -- Easy case: given q'⊑q where both are the root,
     -- we know both have as NFList simply [0].
     -- Only hurdle is that Agda doesn't immediately see that 
     --      nonzeroCardToZeroElem h' = nonzeroCardToZeroElem h
-    multichoiceSuffix {L'} {L} {root h'} {root h} q'⊑q = 
+    multichoiceSuffix {i'} {i} {L'} {L} {root h'} {root h} q'⊑q = 
         let zeroh≡zeroh' = thereIsOneZero' {card} h h' in
         let ref = ≼-refl {nonzeroCardToZeroElem h ∷ []} in
         subst (λ k → Suffix _≡_ (k ∷ []) (nonzeroCardToZeroElem h ∷ [])) 
             zeroh≡zeroh' ref
     -- Any q'⊑q where q has only the root element and q' at least
     -- two elements (`choose` as topmost constructor) is impossible.
-    multichoiceSuffix {L'} {L} {choose q lc} {root h} (inj₁ ())
-    multichoiceSuffix {L'} {L} {choose q lc} {root h} (inj₂ ())
+    multichoiceSuffix {i'} {i} {L'} {L} {choose q h lc} {root k} (inj₁ ())
+    multichoiceSuffix {i'} {i} {L'} {L} {choose q h lc} {root k} (inj₂ ())
     -- q'⊑q gives two cases. In the first case, q'≡q,
     -- i.e., (L' , s'_ = (L , choose q lc).
     -- Then trivially L' ≡ L as well, and ≼ is reflexive.
-    multichoiceSuffix {L'} {L} {s'} {choose q'' lc} (inj₁ refl) = ≼-refl
+    multichoiceSuffix {i'} {i} {L'} {L} {s'} {choose q'' h lc} (inj₁ refl) = ≼-refl
     -- In the other case we have q`⋤q (strict sublog).
     -- First subcase: q' = (L' , s') has only one choice fewer than q.
     -- Hence we are in the onechoice situation, which we already proved above.
-    multichoiceSuffix {L'} {L} {s'} {choose (L' , s') lc} 
-        (inj₂ q'⋤q@(onechoice (L' , s') lc)) =
-        onechoiceSuffix {L'} {s'} {lc} q'⋤q
+    multichoiceSuffix {i'} {i} {L'} {L} {s'} {choose (i' , L' , s') h lc} 
+        (inj₂ q'⋤q@(onechoice (i' , L' , s') h' lc)) =
+        onechoiceSuffix {i'} {L'} {s'} {h'} {lc} q'⋤q
     -- Second subcase: q has several choices on top of those in q'.
     -- Then we have:
     --      (1) q = choose q₁ lc
@@ -456,29 +478,30 @@ module SGStates
     --      (5) L₁ ≼ L
     --  Transitivity of ≼ on (4) and (5) then gives the desired
     --      (6) L' ≼ L
-    multichoiceSuffix {L'} {L} {s'} {choose q₁ lc} 
-        (inj₂ (multichoice q' q₁@(L₁ , s₁) q'⋤q₁ lc)) = 
+    multichoiceSuffix {i'} {i} {L'} {L} {s'} {choose q₁ h lc} 
+        (inj₂ (multichoice q' q₁@(i₁ , L₁ , s₁) q'⋤q₁ h₁ lc)) = 
         let q'⊑q₁ = inj₂ q'⋤q₁ in
-        let L'≼L₁ = multichoiceSuffix {L'} {L₁} {s'} {s₁} q'⊑q₁ in
-        let L₁≼L  = onechoiceSuffix {L₁} {s₁} {lc} (onechoice q₁ lc) in
+        let L'≼L₁ = multichoiceSuffix {i'} {i₁} {L'} {L₁} {s'} {s₁} q'⊑q₁ in
+        let L₁≼L  = onechoiceSuffix {i₁} {L₁} {s₁} {h} {lc} (onechoice q₁ h lc) in
         ≼-trans L'≼L₁ L₁≼L
         
-    nf  : {L : NFList}
-        → {s : SGState L} 
-        → (x : sElem (L , s)) 
+    nf  : {i : C}
+        → {L : NFList}
+        → {s : SGState i L} 
+        → (x : sElem (i , L , s)) 
         → Indices L
     -- We know that L' is [ 0 ].
     -- Prove that L' is a sublist of L, then we know that 0 ∈ L.
     -- * (SomeLemma x⊑q) should give L' ⊆ L.
     -- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
     --      or even only 0 ∈ L' is enough.
-    nf {L} {s} ((L' , root h) , x⊑q) = ?    
-    nf {L} {s} ((L' , choose (L'' , s'') (newNF s'' x)) , x⊑q) = {! !}
-    nf {L} {s} ((L' , choose (L'' , s'') (freeChoice s'' x x₁)) , x⊑q) = {! !}
-    nf {L} {s} ((L' , choose (L'' , s'') (forcedChoice s'' x)) , x⊑q) = {! !}
+    nf {i} {L} {s} ((i' , L' , root h) , x⊑q) = ?    
+    nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (newNF s'' x)) , x⊑q) = {! !}
+    nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (freeChoice s'' x x₁)) , x⊑q) = {! !}
+    nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (forcedChoice s'' x)) , x⊑q) = {! !}
         where
             q : Q
-            q = (L , s)
+            q = (i , L , s)
 
     -- #TODO: better define this in terms of sElem first,
     -- thereafter make iElem version (with type as below)
@@ -488,12 +511,13 @@ module SGStates
     -- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
     --  Find a better name.
     Inf 
-        : {L : NFList}
-        → {s : SGState L}
-        → (i : C)
-        → (i <C height (L , s))
+        : {i : C}
+        → {L : NFList}
+        → {s : SGState i L}
+        → (x : C)
+        → (x <C height (i , L , s))
         → Indices L
-    Inf {L} {s} i i∈s = {! !}
+    Inf {L} {s} x x∈s = {! !}
 
 
 
