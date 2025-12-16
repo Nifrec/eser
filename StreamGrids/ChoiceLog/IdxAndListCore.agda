@@ -488,6 +488,22 @@ module SGStates
         → (idxSuc h₁ ≡ idxSuc h₂)
     FC-a {i} h₁ h₂ = endoSucUnique h₁ h₂
 
+    -- Lemma FC-b : if there is an enumeration-index i smaller than
+    -- the index of the last element added to choicelog q,
+    -- then there exists a STRICT subchoicelog 
+    -- of q where i was the last element added.
+    -- (Strict subchoicelog is stronger than an sElem: it uses ⋤ i.o. ⊑).
+    getSubLog
+        : (q : Q)
+        → (i : C)
+        → (i <C idx q)
+        → Σ[ q' ∈ Q ]( (q' ⋤ q) × (i ≡ idx q'))
+    -- #TODO: add sublemma that i < nonzeroCardToZeroElem h is impossible.
+    -- Move that lemma then to Card.agda.
+    getSubLog (iq , L , root h) i i<iq = {! !}
+    -- #TODO: prove that ≡ is decidable on cardToSet c for all cards c.
+    getSubLog (iq , L , choose q h lc) i i<iq = {! !}
+
     
     
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
