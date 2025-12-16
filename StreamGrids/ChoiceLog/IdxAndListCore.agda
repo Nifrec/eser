@@ -347,18 +347,8 @@ module SGStates
     UpdateNFList (i , L , s) (forcedChoice s₁ x) = L
 
 --------------------------------------------------------------------------------
--- Normal-form-computing algorithm.
+-- Well-foundedness of _⋤_ and recursion principle for _⋤_.
 --------------------------------------------------------------------------------
-    
-    _≼_ : Rel NFList _
-    L' ≼ L = Suffix (_≡_) L' L
-
-    ≼-refl : Reflexive _≼_
-    ≼-refl {L} = Suffix.here (Pointwise-refl _≡_.refl)
-
-    ≼-trans : Transitive _≼_
-    ≼-trans = Suffix-trans trans
-
 
     rootHasNoSublog
         : {q : Q}
@@ -395,6 +385,20 @@ module SGStates
             lemma q (acc allPredAcc) 
                 = recurse q (λ q' → (λ q'⋤q → (lemma q' (allPredAcc q'⋤q))))
 
+--------------------------------------------------------------------------------
+-- Suffix of normal-forms-list relation.
+--------------------------------------------------------------------------------
+    
+    _≼_ : Rel NFList _
+    L' ≼ L = Suffix (_≡_) L' L
+
+    ≼-refl : Reflexive _≼_
+    ≼-refl {L} = Suffix.here (Pointwise-refl _≡_.refl)
+
+    ≼-trans : Transitive _≼_
+    ≼-trans = Suffix-trans trans
+
+
     -- Lemma A3 in my 12 Dec 2025 notes.
     -- If q' ⋤ (L, choose q' lc), then L must be an extension
     -- of the normal forms of q.
@@ -411,7 +415,6 @@ module SGStates
     onechoiceSuffix {_} {L} {s} {_} {newNF s x} q⊑q = Suffix.there ≼-refl
     onechoiceSuffix {_} {L} {s} {_} {freeChoice s x x₁} q⊑q = ≼-refl
     onechoiceSuffix {_} {L} {s} {_} {forcedChoice s x} q⊑q = ≼-refl
-
 
     -- When adding more choices to a choice log, the new list of normal forms
     -- is an extension of the original list. 
@@ -460,12 +463,18 @@ module SGStates
         (inj₂ (multichoice q' q₁@(i₁ , L₁ , s₁) q'⋤q₁ h₁ lc)) = 
         let q'⊑q₁ = inj₂ q'⋤q₁ in
         let L'≼L₁ = multichoiceSuffix {i'} {i₁} {L'} {L₁} {s'} {s₁} q'⊑q₁ in
-        let L₁≼L  = onechoiceSuffix {i₁} {L₁} {s₁} {h} {lc} (onechoice q₁ h lc) in
+        let L₁≼L  = onechoiceSuffix {i₁} {L₁} {s₁} {h} {lc} (onechoice q₁ h lc) 
+        in
         ≼-trans L'≼L₁ L₁≼L
         
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    -- #TODO: redefine nf. Define nfTransposed() and nf().
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- #TODO: redefine nf. Define nfTransposed() and nf().
+--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+--------------------------------------------------------------------------------
+-- Auxiliary lemmas needed to compute normal forms.
+--------------------------------------------------------------------------------
+    
 
     --nf  : {i : C}
     --    → {L : NFList}
