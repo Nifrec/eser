@@ -348,10 +348,15 @@ module SGStates
 -- Well-foundedness of _⋤_ and recursion principle for _⋤_.
 --------------------------------------------------------------------------------
 
+    rootLog : (h : (fin ℕ.zero) <∞ card) → Q
+    rootLog h = ( nonzeroCardToZeroElem h 
+                , nonzeroCardToZeroElem h ∷ [] 
+                , root h)
+
     rootHasNoSublog
         : {q : Q}
         → {h : (fin ℕ.zero) <∞ card}
-        → ¬ (q ⋤ (nonzeroCardToZeroElem h , nonzeroCardToZeroElem h ∷ [] , root h))
+        → ¬ (q ⋤ rootLog h)
     rootHasNoSublog ()
 
     open import Induction.WellFounded as WF
@@ -360,7 +365,9 @@ module SGStates
         acc λ { q'⋤root → ⊥-elim (rootHasNoSublog q'⋤root) }
     ⋤-wellFounded (_ , L , choose q h lc) = acc f
         where
-            f : {q' : Q} → q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc) → Acc _⋤_ q'
+            f : {q' : Q} 
+              → q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc) 
+              → Acc _⋤_ q'
             f {q'} (onechoice q₁ h lc) = ⋤-wellFounded q₁
             f {q'} (multichoice q' q₁ q'⋤q₁ h lc) = 
                 let rec = acc-inverse (⋤-wellFounded q₁) in
@@ -408,7 +415,9 @@ module SGStates
         → {s : SGState i L}
         → {h  : IsNotMax i}
         → {lc : LegalChoices (i , L , s)}
-        → (i , L , s) ⋤ (idxSuc h , UpdateNFList (i , L , s) h lc , choose (i , L , s) h lc)
+        → (i , L , s) 
+          ⋤ 
+          (idxSuc h , UpdateNFList (i , L , s) h lc , choose (i , L , s) h lc)
         → L ≼ UpdateNFList (i , L , s) h lc
     onechoiceSuffix {_} {L} {s} {_} {newNF s _ x} q⊑q = Suffix.there ≼-refl
     onechoiceSuffix {_} {L} {s} {_} {freeChoice s _ x x₁} q⊑q = ≼-refl
@@ -439,7 +448,8 @@ module SGStates
     -- q'⊑q gives two cases. In the first case, q'≡q,
     -- i.e., (L' , s'_ = (L , choose q lc).
     -- Then trivially L' ≡ L as well, and ≼ is reflexive.
-    multichoiceSuffix {i'} {i} {L'} {L} {s'} {choose q'' h lc} (inj₁ refl) = ≼-refl
+    multichoiceSuffix {i'} {i} {L'} {L} {s'} {choose q'' h lc} (inj₁ refl) 
+        = ≼-refl
     -- In the other case we have q`⋤q (strict sublog).
     -- First subcase: q' = (L' , s') has only one choice fewer than q.
     -- Hence we are in the onechoice situation, which we already proved above.
