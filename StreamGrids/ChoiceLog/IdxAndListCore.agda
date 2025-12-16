@@ -152,7 +152,7 @@ module SGStates
     el q = idxToEl (idx q)
 
     data LegalChoices : Q → Set ℓ
-    UpdateNFList : (q : Q) → LegalChoices q → NFList
+    UpdateNFList : (q : Q) → (h : IsNotMax (idx q)) → LegalChoices q → NFList
       
     -- Strict Is-a-sub-ChoiceLog-of relation.
     -- I made custom `\subst` binding in my nvim/Cornelis setup.
@@ -184,7 +184,7 @@ module SGStates
             : (q : Q)
             → (h : IsNotMax (idx q))
             → (lc : LegalChoices q )
-            → SGState (idxSuc h) (UpdateNFList q lc)
+            → SGState (idxSuc h) (UpdateNFList q h lc)
 
 --------------------------------------------------------------------------------
 -- Substack (sub-choice-log) relation ⊑.
@@ -195,16 +195,18 @@ module SGStates
             : (q : Q) 
             → (h : IsNotMax (idx q))
             → (lc : LegalChoices q)
-            → q ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc)
+            → q ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc)
         multichoice
             : (q' q : Q)
             → (q' ⋤ q)
             → (h : IsNotMax (idx q))
             → (lc : LegalChoices q)
-            → q' ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc)
+            → q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
 --------------------------------------------------------------------------------
 -- Element representations.
+-- #TODO: everything below getState (until, not including, the next header
+-- comment) should be deprecated.
 --------------------------------------------------------------------------------
     
     -- Substack definition of element-already-chosen-in-a-state.
@@ -216,47 +218,36 @@ module SGStates
 
     getState : {q : Q} → sElem q → Q
     getState {q} (q' , q'⊑q) = q' -- Same as proj₁
-
-    -- Number of elements whose equalities have already been chosen in a
-    -- ChoiceLog.
-    height : Q → C
-    -- #TODO: this will require a lemma stating that the maximum
-    -- height is bounded by card. I.e., actual-height <∞ card.
-    height q = ? 
     
     -- Convert from sElem-representation of an element to the number
     -- it has in the enumeration of A.
     getIdx : {q : Q} → sElem q → C
-    getIdx {q} q' = height (getState (q'))
+    getIdx {q} q' = idx (getState (q'))
 
     -- Convert from sElem-representation of an element to the A-term
     -- it represents.
     getEl : {q : Q} → sElem q → A
     getEl {q} q' = Signoid.idxToEl S (getIdx q')
 
-    -- The relation _⊂_, but slightly modified to work on the sElem
-    -- representation of terms, rather than direct A terms.
-    sElem⊂ : {q : Q} → Rel (sElem q) _
-    sElem⊂ q' q'' = (getEl q') ⊂ (getEl q'')
+    ---- The relation _⊂_, but slightly modified to work on the sElem
+    ---- representation of terms, rather than direct A terms.
+    --sElem⊂ : {q : Q} → Rel (sElem q) _
+    --sElem⊂ q' q'' = (getEl q') ⊂ (getEl q'')
 
-    infix 30 sElem⊂
-    syntax sElem⊂ q' q'' = q' ⊂* q''
+    --infix 30 sElem⊂
+    --syntax sElem⊂ q' q'' = q' ⊂* q''
 
-    -- _⊂I_ is the relation _⊂_, 
-    -- but slightly modified to work on the enumeration-index
-    -- representation of terms, rather than direct A terms.
-    iElem⊂ : Rel C _
-    iElem⊂ i i' = (idxToEl i) ⊂ (idxToEl i')
+    ---- _⊂I_ is the relation _⊂_, 
+    ---- but slightly modified to work on the enumeration-index
+    ---- representation of terms, rather than direct A terms.
+    --iElem⊂ : Rel C _
+    --iElem⊂ i i' = (idxToEl i) ⊂ (idxToEl i')
 
-    infix 30 iElem⊂
-    syntax iElem⊂ i i' = i ⊂I i'
+    --infix 30 iElem⊂
+    --syntax iElem⊂ i i' = i ⊂I i'
 
-    nextEl : Q → A
-    nextEl q = idxToEl (height q)
-
-    nextIdx : Q → C
-    nextIdx q = height q
-
+    nextEl : {q : Q} → (h : IsNotMax (idx q)) → A
+    nextEl h = idxToEl (idxSuc h)
 --------------------------------------------------------------------------------
 -- Definitions of other auxiliary inductive types used in the construction
 -- of states.
@@ -268,10 +259,11 @@ module SGStates
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
+            → (h : IsNotMax i)
             → Set _
-    AllArgsNormal {i} {L} s = 
+    AllArgsNormal {i} {L} s h = 
                 (x : sElem (i , L , s))
-                → ((getEl x) ⊂ (nextEl (i , L , s))) 
+                → ((getEl x) ⊂ (nextEl {i , L , s} h)) 
                 → (getIdx x) ∈ L
 
     -- Same as AllArgsNormal, but using the enumeration-index representation of
@@ -280,10 +272,11 @@ module SGStates
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
+            → (h : IsNotMax i)
             → Set _
-    IAllArgsNormal {i} {L} s = 
+    IAllArgsNormal {i} {L} s h = 
                 (x : C)
-                → ((idxToEl x) ⊂ (nextEl (i , L , s))) 
+                → ((idxToEl x) ⊂ (nextEl {i , L , s} h))
                 → x ∈ L
 
     -- Predicate that the next element y has an x ⊂ y
@@ -292,10 +285,11 @@ module SGStates
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
+            → (h : IsNotMax i)
             → Set _
-    NormalisibleArg {i} {L} s
+    NormalisibleArg {i} {L} s h
             = Σ[ x ∈ sElem (i , L , s) ](
-                ((getEl x) ⊂ (nextEl (i , L , s)))
+                ((getEl x) ⊂ (nextEl {i , L , s} h))
                 ×
                 (getIdx x) ∉ L
                 )
@@ -306,10 +300,11 @@ module SGStates
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
+            → (h : IsNotMax i)
             → Set _
-    INormalisibleArg {i} {L} s
+    INormalisibleArg {i} {L} s h
             = Σ[ x ∈ C ](
-                ((idxToEl x) ⊂ (nextEl (i , L , s)))
+                ((idxToEl x) ⊂ (nextEl {i , L , s} h))
                 ×
                 (x ∉ L)
                 )
@@ -325,13 +320,15 @@ module SGStates
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
-            → (IAllArgsNormal s)
+            → (h : IsNotMax i)
+            → (IAllArgsNormal s h)
             → LegalChoices (i , L , s)
         freeChoice
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
-            → (IAllArgsNormal s)
+            → (h : IsNotMax i)
+            → (IAllArgsNormal s h)
             → (Indices L)
             --^ (Index of) normal form to which we set the next element equal.
             → LegalChoices (i , L , s)
@@ -339,12 +336,13 @@ module SGStates
             : {i : C}
             → {L : NFList}
             → (s : SGState i L)
-            → (INormalisibleArg s)
+            → (h : IsNotMax i)
+            → (INormalisibleArg s h)
             → LegalChoices (i , L , s)
 
-    UpdateNFList (i , L , s) (newNF s₁ x) = (nextIdx (i , L , s)) ∷ L
-    UpdateNFList (i , L , s) (freeChoice s₁ x x₁) = L
-    UpdateNFList (i , L , s) (forcedChoice s₁ x) = L
+    UpdateNFList (i , L , s) h (newNF s₁ _ x) = (idxSuc h) ∷ L
+    UpdateNFList (i , L , s) h (freeChoice s₁ _ x x₁) = L
+    UpdateNFList (i , L , s) h (forcedChoice s₁ _ x) = L
 
 --------------------------------------------------------------------------------
 -- Well-foundedness of _⋤_ and recursion principle for _⋤_.
@@ -362,7 +360,7 @@ module SGStates
         acc λ { q'⋤root → ⊥-elim (rootHasNoSublog q'⋤root) }
     ⋤-wellFounded (_ , L , choose q h lc) = acc f
         where
-            f : {q' : Q} → q' ⋤ (idxSuc h , UpdateNFList q lc , choose q h lc) → Acc _⋤_ q'
+            f : {q' : Q} → q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc) → Acc _⋤_ q'
             f {q'} (onechoice q₁ h lc) = ⋤-wellFounded q₁
             f {q'} (multichoice q' q₁ q'⋤q₁ h lc) = 
                 let rec = acc-inverse (⋤-wellFounded q₁) in
@@ -410,11 +408,11 @@ module SGStates
         → {s : SGState i L}
         → {h  : IsNotMax i}
         → {lc : LegalChoices (i , L , s)}
-        → (i , L , s) ⋤ (idxSuc h , UpdateNFList (i , L , s) lc , choose (i , L , s) h lc)
-        → L ≼ UpdateNFList (i , L , s) lc
-    onechoiceSuffix {_} {L} {s} {_} {newNF s x} q⊑q = Suffix.there ≼-refl
-    onechoiceSuffix {_} {L} {s} {_} {freeChoice s x x₁} q⊑q = ≼-refl
-    onechoiceSuffix {_} {L} {s} {_} {forcedChoice s x} q⊑q = ≼-refl
+        → (i , L , s) ⋤ (idxSuc h , UpdateNFList (i , L , s) h lc , choose (i , L , s) h lc)
+        → L ≼ UpdateNFList (i , L , s) h lc
+    onechoiceSuffix {_} {L} {s} {_} {newNF s _ x} q⊑q = Suffix.there ≼-refl
+    onechoiceSuffix {_} {L} {s} {_} {freeChoice s _ x x₁} q⊑q = ≼-refl
+    onechoiceSuffix {_} {L} {s} {_} {forcedChoice s _ x} q⊑q = ≼-refl
 
     -- When adding more choices to a choice log, the new list of normal forms
     -- is an extension of the original list. 
@@ -467,14 +465,16 @@ module SGStates
         in
         ≼-trans L'≼L₁ L₁≼L
         
---!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
--- #TODO: redefine nf. Define nfTransposed() and nf().
---!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 --------------------------------------------------------------------------------
 -- Auxiliary lemmas needed to compute normal forms.
 --------------------------------------------------------------------------------
+
     
+    
+--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+-- #TODO: redefine nf. Define nfTransposed() and nf().
+--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     --nf  : {i : C}
     --    → {L : NFList}
