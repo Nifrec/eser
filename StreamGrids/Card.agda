@@ -162,6 +162,29 @@ endoSucUnique
 endoSucUnique {fin (suc c)} {n} h₁ h₂ = refl
 endoSucUnique {∞} {n} h₁ h₂ = refl
 
+-- This lemma's primary purpose is to prove
+-- the lemma endoSucProjToNatSuc.
+endoSucLemma
+    : {c : ℕ}
+    → (n : cardToSet (fin (ℕ.suc c)))
+    → (h : IsNotMax n)
+    → toℕ (endoSuc (s≤s h)) ≡ ℕ.suc (toℕ (endoSuc h))
+endoSucLemma {suc c} n h = refl
+
+-- Computing the successor of a non-max element n in a finite set
+-- and injecting into ℕ is the same as injecting n first and using ℕ.suc.
+endoSucInjToNatSuc
+    : {c : ℕ}
+    → {n : cardToSet (fin (ℕ.suc c))}
+    → (h : IsNotMax n)
+    → toℕ (endoSuc h) ≡ ℕ.suc (toℕ n)
+endoSucInjToNatSuc {suc c} {zero} (s≤s z≤n) = refl
+endoSucInjToNatSuc {suc c} {suc n} (s≤s h) = 
+    let H = endoSucLemma {c} n h in
+    let rec = endoSucInjToNatSuc {c} {n} h in
+    let rec' = cong ℕ.suc rec in
+    trans H rec'
+
 -- cardToPrec is a section of the successor function `ℕ.suc ∘ toℕ`,
 -- but only on numbers that are the successor of another.
 sucpredsuc≡suc
@@ -258,6 +281,18 @@ sucOfLowerIsID {∞} {suc n} pn<n = refl
 cardInject : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n)
 cardInject {fin (suc n)} m = inject₁ m
 cardInject {∞} m = m
+
+-- Equality is decidable for sets of all cardinalities.
+cardToDecidableEq
+    : (c : ℕ∞)
+    → DecidableEquality (cardToSet c)
+cardToDecidableEq (fin (suc c)) = Data.Fin._≟_
+cardToDecidableEq ∞ = Data.Nat._≟_
+ 
+-- #TODO: cleanup or remove _≟_ below.
+--infix 4 _≟_
+--_≟_ : {c : ℕ∞} → (n m : cardToSet c) → Decidable (n ≡ m)
+--n ≟ m = cardToDecidableEq n m
 
 --------------------------------------------------------------------------------
 -- Inhabitedness and zero elements
