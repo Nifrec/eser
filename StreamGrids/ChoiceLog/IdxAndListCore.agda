@@ -488,6 +488,25 @@ module SGStates
         → (idxSuc h₁ ≡ idxSuc h₂)
     FC-a {i} h₁ h₂ = endoSucUnique h₁ h₂
 
+    zeroElemToNatZero
+        : {c : ℕ}
+        → (h : fin ℕ.zero <∞ (fin (ℕ.suc c)))
+        → toℕ (nonzeroCardToZeroElem h) ≡ ℕ.zero
+    zeroElemToNatZero {c} (s≤s z≤n) = refl
+    --zeroElemToNatZero {ℕ.suc c} (s≤s z≤n) = refl
+
+
+    nothingIs<0
+        : {c : ℕ∞}
+        → (n : cardToSet c)
+        → (h : fin ℕ.zero <∞ c)
+        → ¬ (cardTo< n (nonzeroCardToZeroElem h))
+    nothingIs<0 {fin (ℕ.suc c)} n h n<0 = 
+        let nonzeroh≡0 = zeroElemToNatZero {c} h in
+        let n<0' = subst (λ x → ℕ.suc (toℕ n) Data.Nat.≤ x) nonzeroh≡0 n<0 in
+        n≮0 n<0'
+    nothingIs<0 {∞} n h n<0 = n≮0 n<0
+
     -- Lemma FC-b : if there is an enumeration-index i smaller than
     -- the index of the last element added to choicelog q,
     -- then there exists a STRICT subchoicelog 
@@ -500,7 +519,7 @@ module SGStates
         → Σ[ q' ∈ Q ]( (q' ⋤ q) × (i ≡ idx q'))
     -- #TODO: add sublemma that i < nonzeroCardToZeroElem h is impossible.
     -- Move that lemma then to Card.agda.
-    getSubLog (iq , L , root h) i i<iq = {! !}
+    getSubLog (iq , L , root h) i i<iq = ⊥-elim (nothingIs<0 i h i<iq)
     -- #TODO: prove that ≡ is decidable on cardToSet c for all cards c.
     getSubLog (iq , L , choose q h lc) i i<iq = {! !}
 

@@ -280,6 +280,25 @@ nonzeroCardToZeroElem {fin zero} ()
 nonzeroCardToZeroElem {fin (suc n)} (s≤s z≤n) = Data.Fin.zero
 nonzeroCardToZeroElem {∞} _ = Data.Nat.zero
 
+-- In case of sets of finite cardinality,
+-- the output of `nonzeroCardToZeroElem` projects to 0 ∈ ℕ under toℕ.
+zeroElemToNatZero
+    : {c : ℕ}
+    → (h : fin ℕ.zero <∞ (fin (ℕ.suc c)))
+    → toℕ (nonzeroCardToZeroElem h) ≡ ℕ.zero
+zeroElemToNatZero {c} (s≤s z≤n) = refl
+
+nothingIs<0
+    : {c : ℕ∞}
+    → (n : cardToSet c)
+    → (h : fin ℕ.zero <∞ c)
+    → ¬ (cardTo< n (nonzeroCardToZeroElem h))
+nothingIs<0 {fin (ℕ.suc c)} n h n<0 = 
+    let nonzeroh≡0 = zeroElemToNatZero {c} h in
+    let n<0' = subst (λ x → ℕ.suc (toℕ n) Data.Nat.≤ x) nonzeroh≡0 n<0 in
+    n≮0 n<0'
+nothingIs<0 {∞} n h n<0 = n≮0 n<0
+
 
 -- If a cardinality is inhabited, then it is not the zero cardinality.
 inhToNonzero
