@@ -195,6 +195,38 @@ sucpredsuc≡suc {c} n =
     let sn≡sn = refl {x = toℕ (Fin.suc n)} in
     let P = (λ x → x ≡ toℕ (Fin.suc n)) in
     subst P (sym (toℕ-inject₁ (Fin.suc n))) sn≡sn
+
+-- 1+n ≤ 1+m then n ≤ m.
+-- #TODO: move this or replace this in `j<i<Sj-impossible`
+--        by something from the standard library?
+Sn≤Sm→n≤m
+    : {n m : ℕ}
+    → (ℕ.suc n) Data.Nat.≤ (ℕ.suc m)
+    → n Data.Nat.≤ m
+Sn≤Sm→n≤m {n} {m} (s≤s n≤m) = n≤m
+
+-- This is FC-g in my notes.
+j<i<Sj-impossible
+    : {c : ℕ∞}
+    → {i j : cardToSet c}
+    → {h : IsNotMax j}
+    → cardTo< i (endoSuc h) 
+    → cardTo< j i
+    → ⊥
+j<i<Sj-impossible {fin (ℕ.suc c)} {i} {j} {h} i<Sj j<i =
+    let SSj≤Si = s≤s j<i in
+    let SSj≤Sj = Data.Nat.Properties.≤-trans SSj≤Si i<Sj in
+    -- Need to tell Agda that toℕ (endoSuc h) = ℕ.suc (toN j).
+    let H = endoSucInjToNatSuc {c} h in
+    let SSj≤Sj' = subst (λ x → 2+ (toℕ j) Data.Nat.≤ x) H SSj≤Sj in
+    -- Above is almost correct, but only an ℕ.suc too much on both sides.
+    let K = Sn≤Sm→n≤m SSj≤Sj' in
+    1+n≰n {toℕ j} K
+j<i<Sj-impossible {∞} {i} {j} {h} i<Sj j<i = 
+    let SSj≤Si = s≤s j<i in
+    let SSj≤Sj = Data.Nat.Properties.≤-trans SSj≤Si i<Sj in
+    1+n≰n SSj≤Sj
+
     
 -- A number that is the predecessor of another number is never the maximum
 -- in a finite set.
