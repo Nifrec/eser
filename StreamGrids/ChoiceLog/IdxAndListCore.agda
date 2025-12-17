@@ -488,24 +488,37 @@ module SGStates
         → (idxSuc h₁ ≡ idxSuc h₂)
     FC-a {i} h₁ h₂ = endoSucUnique h₁ h₂
 
-    zeroElemToNatZero
-        : {c : ℕ}
-        → (h : fin ℕ.zero <∞ (fin (ℕ.suc c)))
-        → toℕ (nonzeroCardToZeroElem h) ≡ ℕ.zero
-    zeroElemToNatZero {c} (s≤s z≤n) = refl
-    --zeroElemToNatZero {ℕ.suc c} (s≤s z≤n) = refl
+    -- 1+n ≤ 1+m then n ≤ m.
+    -- #TODO: move this or replace this in `j<i<Sj-impossible`
+    -- by something from the standard library?
+    Sn≤Sm→n≤m
+        : {n m : ℕ}
+        → (ℕ.suc n) Data.Nat.≤ (ℕ.suc m)
+        → n Data.Nat.≤ m
+    Sn≤Sm→n≤m {n} {m} (s≤s n≤m) = n≤m
 
-
-    nothingIs<0
+    -- This is FC-g in my notes.
+    -- #TODO: move to Card.agda?
+    j<i<Sj-impossible
         : {c : ℕ∞}
-        → (n : cardToSet c)
-        → (h : fin ℕ.zero <∞ c)
-        → ¬ (cardTo< n (nonzeroCardToZeroElem h))
-    nothingIs<0 {fin (ℕ.suc c)} n h n<0 = 
-        let nonzeroh≡0 = zeroElemToNatZero {c} h in
-        let n<0' = subst (λ x → ℕ.suc (toℕ n) Data.Nat.≤ x) nonzeroh≡0 n<0 in
-        n≮0 n<0'
-    nothingIs<0 {∞} n h n<0 = n≮0 n<0
+        → {i j : cardToSet c}
+        → {h : IsNotMax j}
+        → cardTo< i (endoSuc h) 
+        → cardTo< j i
+        → ⊥
+    j<i<Sj-impossible {fin (ℕ.suc c)} {i} {j} {h} i<Sj j<i =
+        let SSj≤Si = s≤s j<i in
+        let SSj≤Sj = Data.Nat.Properties.≤-trans SSj≤Si i<Sj in
+        -- Need to tell Agda that toℕ (endoSuc h) = ℕ.suc (toN j).
+        let H = endoSucInjToNatSuc {c} h in
+        let SSj≤Sj' = subst (λ x → 2+ (toℕ j) Data.Nat.≤ x) H SSj≤Sj in
+        -- Above is almost correct, but only an ℕ.suc too much on both sides.
+        let K = Sn≤Sm→n≤m SSj≤Sj' in
+        1+n≰n {toℕ j} K
+    j<i<Sj-impossible {∞} {i} {j} {h} i<Sj j<i = 
+        let SSj≤Si = s≤s j<i in
+        let SSj≤Sj = Data.Nat.Properties.≤-trans SSj≤Si i<Sj in
+        1+n≰n SSj≤Sj
 
     -- Lemma FC-b : if there is an enumeration-index i smaller than
     -- the index of the last element added to choicelog q,
@@ -517,11 +530,25 @@ module SGStates
         → (i : C)
         → (i <C idx q)
         → Σ[ q' ∈ Q ]( (q' ⋤ q) × (i ≡ idx q'))
-    -- #TODO: add sublemma that i < nonzeroCardToZeroElem h is impossible.
-    -- Move that lemma then to Card.agda.
+    -- The hypothesis i<iq is impossible if q is a root log:
+    -- i < nonzeroCardToZeroElem h is impossible.
     getSubLog (iq , L , root h) i i<iq = ⊥-elim (nothingIs<0 i h i<iq)
-    -- #TODO: prove that ≡ is decidable on cardToSet c for all cards c.
-    getSubLog (iq , L , choose q h lc) i i<iq = {! !}
+    getSubLog (iq , L , choose q' h lc) i i<iq 
+        with cardToDecidableEq card i (idx q')
+    -- If i = iq' then q' itself is already the choicelog we seek!
+    ... | yes i≡iq' = (q' , onechoice q' h lc , i≡iq')
+    -- In the last case, i ≢ iq', so (1) i > iq' xor (2) i < iq'. 
+    -- But i < iq and iq = 1 + iq', so if i > iq' then 1 + iq' > i > iq',
+    -- which means that (1 + iq') is at least 2 greater than iq'; contradiction.
+    -- So only option (2) remains: i < iq'. Then we can recurse getSubLog
+    -- and use transitivity of ⋤ (a sublog of q' is also a sublog of q).
+    ... | no  i≢iq' = 
+        -- #TODO: (1) prove that < is decidable.
+        -- (2) use j<i<Sj-impossible to prove that the i > iq' case is
+        --      impossible.
+        -- (3) handle the i < iq' case via a recursive call as shown above.
+        let x = ? in
+        ?
 
     
     
