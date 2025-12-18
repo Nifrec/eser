@@ -90,6 +90,14 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
 
 ## Ideas for extensions and explanations
 
+### To prove
+* (Andrea's suggestion) on `T ::= ℕ | node(t , t')`, the equivalence
+    relation `node(t , 0) ≈ t`.
+* In context of a term algebra over a signature with constructor `c`
+    and arguments `x0`, `x1`, ..., `xn` that
+    `nf(c(x0, x1, ... , xn)) = nf(c(nf(x0), nf(x1), ..., nf(xn)))`.
+    (The RHS might be a normal form itself).
+
 ### Applications
 * Propositional truncation without HIITs.
 * Integers & rational numbers.
@@ -121,6 +129,8 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
 * PropTrunc:
     * List membership.
     * List permutation equivalence.
+* Some programming language with semantics given via normalisation of terms?
+    E.g., λ-calculus where terms are annotated with maximum recursion depth?
 
 ### Abstract ideas
 * **Directed StreamGrids**: see equalities as outgoing.
@@ -141,6 +151,9 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
     Q -> List Q
 * Kleisli composition of deciders.
 * Category of countable sets and (monotone?) functions between them?
+* **Piecewise-enumerable Signoids**: 
+    `enum : A → ℕ + 𝟙` needs not be full enumeration?
+    Perhaps an `enum` for every root that together form a full enumeration?
 
 ### Doubts
 * Do we really need to enumerate *all* elements of a type-of-raw-terms?
