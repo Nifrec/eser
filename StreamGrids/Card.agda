@@ -79,6 +79,33 @@ cardTo<Dec
 cardTo<Dec {fin (ℕ.suc n)} = Data.Fin.Properties._<?_ 
 cardTo<Dec {∞} = Data.Nat.Properties._<?_ 
 
+--#TODO: move this to a file with general lemmas?
+n≢m→toℕ[n]≢toℕ[m]
+    : {k : ℕ}
+    → {n m : Fin k}
+    → n ≢ m
+    → toℕ n ≢ toℕ m
+n≢m→toℕ[n]≢toℕ[m] {suc k} {n} {m} n≢m toℕ[n]≡toℕ[m] = 
+    let n≡m = toℕ-injective toℕ[n]≡toℕ[m] in
+    ⊥-elim (n≢m n≡m)
+
+n≮m→n≢m→m<n
+    : {c : ℕ∞}
+    → {n m : cardToSet c}
+    → ¬ (cardTo< n m)
+    → n ≢ m
+    → cardTo< m n
+n≮m→n≢m→m<n {fin (suc x)} {n} {m} n≮m n≢m = 
+    let m≤n = Data.Nat.Properties.≮⇒≥ n≮m in
+    -- Note: sym n≢m gives an inequality in a finite set,
+    -- but we need an inequality in ℕ.
+    let n≢m = n≢m→toℕ[n]≢toℕ[m] (n≢m) in
+    Data.Nat.Properties.≤∧≢⇒< m≤n (≢-sym n≢m)
+n≮m→n≢m→m<n {∞} {n} {m} n≮m n≢m =
+    let m≤n = Data.Nat.Properties.≮⇒≥ n≮m in
+    Data.Nat.Properties.≤∧≢⇒< m≤n (≢-sym n≢m)
+
+
 -- Get the default ≤ relation on a prefix of ℕ, or on ℕ.
 cardTo≤ : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
 cardTo≤ {fin 0} ()
