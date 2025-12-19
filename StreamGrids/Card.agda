@@ -19,14 +19,13 @@ open import Data.Nat.Properties
 open import Data.Product
 open import Data.Sum
 open import Data.Unit
-open import Data.Vec
 open import Level using (0ℓ)
 open import Relation.Binary.Core using (Rel)
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open ≡-Reasoning
 open import Relation.Nullary
-
+open import Data.Unit.Properties using (⊤-irrelevant)
 
 module StreamGrids.Card where
 
@@ -170,6 +169,15 @@ IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
     --^ The largest element of fin (1 + n) is fromℕ n.
 IsNotMax {∞} n = ⊤ 
     --^ Trivial: there is no maximal natural number.
+
+IsNotMax-irrel
+    : {c : ℕ∞}
+    → (m : cardToSet c)
+    → Relation.Nullary.Irrelevant (IsNotMax m)
+IsNotMax-irrel {fin (suc c)} m = Data.Fin.Properties.<-irrelevant 
+-- Last case is NOT Data.Nat.Properties.<-irrelevant since
+-- `IsNotMax m` for `m ∈ ℕ` (cardinality ∞) is defined as ⊤.
+IsNotMax-irrel {∞} m = ⊤-irrelevant
 
 -- Compute the successor while staying in the set of the same cardinality.
 -- Of course, this is only possible if the input number 
