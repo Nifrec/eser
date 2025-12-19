@@ -519,9 +519,9 @@ module SGStates
     -- and use transitivity of ⋤ (a sublog of q' is also a sublog of q).
     ... | no  i≢iq' with (cardTo<Dec {card} i (idx q'))
     ... | yes (i<iq') = 
-        let (q'' , q''⋤q') = getSubLog q' i i<iq' in
+        let (q'' , q''⋤q' , iq''≡i) = getSubLog q' i i<iq' in
         let q'⋤q = onechoice q' h lc in
-        {! (q'' , ⋤-trans q''⋤q' q'⋤q) !}
+        (q'' , ⋤-trans q''⋤q' q'⋤q , iq''≡i)
     -- The impossible case i > iq':
     ... | no  (i≮iq') = 
         let iq'<i = n≮m→n≢m→m<n i≮iq' i≢iq' in
