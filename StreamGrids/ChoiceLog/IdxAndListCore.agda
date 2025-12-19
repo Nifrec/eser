@@ -527,7 +527,25 @@ module SGStates
         let iq'<i = n≮m→n≢m→m<n i≮iq' i≢iq' in
         ⊥-elim (j<i<Sj-impossible {card} {i} {idx q'} {h} i<iq iq'<i)
 
-    
+    -- #TODO: remove if this does not turn out to be needed,
+    -- otherwise finish.
+    -- The index-index of a ChoiceLog corresponds 
+    -- to the enumeration-index of the last element added.
+    elToIdx∘el≡idx
+        : (q : Q)
+        → elToIdx (el q) ≡ idx q
+    elToIdx∘el≡idx (i , L , root h) = {! !}
+    elToIdx∘el≡idx (i , L , choose q h lc) = {! !}
+        
+
+    -- This is FC-e in my notes.
+    argSmallerIdx
+        : (q : Q)
+        → (x : A)
+        → (x ⊂ el q)
+        → elToIdx x <C elToIdx (el q)
+    argSmallerIdx q x x⊂q = 
+        Signoid.subrelat S x (el q) x⊂q
     
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- #TODO: redefine nf. Define nfTransposed() and nf().
