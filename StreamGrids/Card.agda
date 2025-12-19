@@ -73,6 +73,12 @@ cardTo<Trans
 cardTo<Trans {fin (ℕ.suc n)} = Data.Fin.Properties.<-trans
 cardTo<Trans {∞} = Data.Nat.Properties.<-trans
 
+cardTo<Dec
+    : {c : ℕ∞}
+    → Decidable (cardTo< {c})
+cardTo<Dec {fin (ℕ.suc n)} = Data.Fin.Properties._<?_ 
+cardTo<Dec {∞} = Data.Nat.Properties._<?_ 
+
 -- Get the default ≤ relation on a prefix of ℕ, or on ℕ.
 cardTo≤ : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
 cardTo≤ {fin 0} ()
