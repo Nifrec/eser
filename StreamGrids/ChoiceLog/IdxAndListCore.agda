@@ -135,6 +135,13 @@ module SGStates
         elToIdx : A → C
         elToIdx = Signoid.elToIdx S
 
+        invIdxElIdx
+            : (i : C)
+            → (elToIdx (idxToEl i)) ≡ i
+        invIdxElIdx i = 
+            let h = proj₂ (Signoid.inv S) in
+            h {i} {idxToEl i} refl
+
     -- These inductive types are defined via mutual induction,
     -- so we declare them all up front here.
     data SGState : C → NFList → Set ℓ
@@ -586,17 +593,62 @@ module SGStates
     -- element itself, and is always the first normal form in the ChoiceLog,
     -- so has index 0 in the NFList.
     nfTransposed (i' , L' , root h') recurse q q'⋤q = Fin.zero
-    nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
-    ... | newNF s h₁ x = {! !}
-    ... | freeChoice s h₁ x x₁ = {! !}
-    ... | forcedChoice {i''} {L''} s'' h'' (ix , x⊂nextq'' , ix∉L') = 
+    nfTransposed 
+        q'@(i' , L' , choose q'' h'' (newNF s h x)) 
+        recurse q q'⋤q = {! !}
+    nfTransposed 
+        q'@(i' , L' , choose q'' h'' (freeChoice s h x x₁)) 
+        recurse q q'⋤q = {! !}
+    nfTransposed 
+        q'@(i' , L' , choose q'' h'' 
+        (forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
+        recurse q q'⋤q = 
         let x = idxToEl ix in
         --let h''' = proj₁ q'⋤q in
-        let ix<iq' = Signoid.subrelat S x (el q') {! x⊂nextq'' !} in
-        let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ? in
-        let x' = recurse qx ? in
-        --let q* = Signoid.coerc 
+        let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
+        -- There is h'' and h''', which are not judgementally equal
+        -- but definitely propositionally equal since `IsNotMax i''` is a prop.
+        let x⊂nextq''h'' = subst (λ v → (x ⊂ nextEl {q''} v)) (h'''≡h'') x⊂nextq'' in
+        -- The LHS of the following term is actually 
+        -- elToIdx (idxToEl ix), not ix. However, these functions are inverse!
+        -- Same problem applies to the RHS.
+        let ix<iq'-almost = Signoid.subrelat S x (el q') x⊂nextq''h'' in
+        -- Remove the invese functions from the LHS:
+        let ixInv = invIdxElIdx ix in
+        let ix<iq'-2 = subst (λ i → cardTo< i _) ixInv ix<iq'-almost in
+        -- Now from the RHS:
+        let iq'Inv = invIdxElIdx (idxSuc h'') in
+        let ix<iq'-3 = subst (λ i → cardTo< _ i) iq'Inv ix<iq'-2 in
+        -- Get the subchoicelog corresponding to the element x.
+        let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ix<iq'-3 in
+        -- Get the normal form of x for any desired superlog of qx
+        -- (this is the type NFOUTx').
+        let NFOUTx' = recurse qx qx⋤q' in
+        -- Specialise to the superlog q', which will give us 
+        -- ix' as in index in L' (where L' is the NFList of qx, the choice log
+        -- with x as last choice).
+        -- From here we can prove that ix' < ix, 
+        -- which we need to call Signoid.coerc to coerce along NF(X) ≈ x.
+        let ix'-in-Lx = NFOUTx' q' qx⋤q' in 
+        -- #TODO: the above is the index of NF(x) in Lx, not in the enumeration
+        -- of A. This breaks the thing below, obviously.
+        let Lx≼L = ? in
+        let ix'-in-L = ? 
+        -- #TODO: query the L-element at index ix'-in-Lx : Indices Lx.
+        -- Might need to show embedding Indices Lx >-> Indices L.
+        let q* = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl ix'-in-Lx) ? in
         {! !}
+    --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
+    --... | newNF s h₁ x = {! !}
+    --... | freeChoice s h₁ x x₁ = {! !}
+    --... | forcedChoice {i''} {L''} s'' h'' (ix , x⊂nextq'' , ix∉L') = 
+    --    let x = idxToEl ix in
+    --    --let h''' = proj₁ q'⋤q in
+    --    let ix<iq' = Signoid.subrelat S x (el q') {! x⊂nextq'' !} in
+    --    let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ? in
+    --    let x' = recurse qx ? in
+    --    --let q* = Signoid.coerc 
+    --    {! !}
 
     --nf  : {i : C}
     --    → {L : NFList}
