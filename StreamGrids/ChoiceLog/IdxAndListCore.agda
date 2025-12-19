@@ -203,6 +203,13 @@ module SGStates
             → (lc : LegalChoices q)
             → q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
+    ⋤-trans : Transitive _⋤_
+    --⋤-trans {q₁} {q₂} {q₃} q₁⋤q₂ q₂⋤q₃ = ?
+    ⋤-trans {q₁} {q₂} {q₃@(i₃ , L₃ , s₃)} q₁⋤q₂ q₂⋤q₃@(onechoice q₂ h lc) = 
+        multichoice q₁ q₂ q₁⋤q₂ h lc
+    ⋤-trans {q₁} {q₂} {q₃@(i₃ , L₃ , s₃)} q₁⋤q₂ (multichoice q₂ q₄ q₂⋤q₄ h lc) =
+        multichoice q₁ q₄ (⋤-trans q₁⋤q₂ q₂⋤q₄) h lc 
+
 --------------------------------------------------------------------------------
 -- Element representations.
 -- #TODO: everything below getState (until, not including, the next header
@@ -510,13 +517,15 @@ module SGStates
     -- which means that (1 + iq') is at least 2 greater than iq'; contradiction.
     -- So only option (2) remains: i < iq'. Then we can recurse getSubLog
     -- and use transitivity of ⋤ (a sublog of q' is also a sublog of q).
-    ... | no  i≢iq' = 
-        -- #TODO: (1) prove that < is decidable.
-        -- (2) use j<i<Sj-impossible to prove that the i > iq' case is
-        --      impossible.
-        -- (3) handle the i < iq' case via a recursive call as shown above.
-        let x = ? in
-        ?
+    ... | no  i≢iq' with (cardTo<Dec {card} i (idx q'))
+    ... | yes (i<iq') = 
+        let (q'' , q''⋤q') = getSubLog q' i i<iq' in
+        let q'⋤q = onechoice q' h lc in
+        {! (q'' , ⋤-trans q''⋤q' q'⋤q) !}
+    -- The impossible case i > iq':
+    ... | no  (i≮iq') = 
+        let iq'<i = n≮m→n≢m→m<n i≮iq' i≢iq' in
+        ⊥-elim (j<i<Sj-impossible {card} {i} {idx q'} {h} i<iq iq'<i)
 
     
     
