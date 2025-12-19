@@ -546,10 +546,57 @@ module SGStates
         → elToIdx x <C elToIdx (el q)
     argSmallerIdx q x x⊂q = 
         Signoid.subrelat S x (el q) x⊂q
+
+    -- Incrementing the index of a ChoiceLog gives the same index
+    -- as adding a choice to the ChoiceLog and projecting the index.
+    -- #TODO: remove? This is completely trivial, at type level
+    -- Agda only allows me to write `idxSuc h` in the RHS and `idx` is just
+    -- `proj₁`...
+    nextIdxUnique
+        : (q' : Q)
+        → (h : IsNotMax (idx q'))
+        → (lc : LegalChoices q')
+        → idxSuc h ≡ idx (idxSuc h , UpdateNFList q' h lc , choose q' h lc)
+    nextIdxUnique q' h lc = refl
+
     
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- #TODO: redefine nf. Define nfTransposed() and nf().
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    -- Project the normal-forms list.
+    nflist : Q → NFList
+    nflist (_ , L , _) = L
+
+    -- #TODO: comment description...
+    NFOUT : Q → Set _
+    NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
+
+    nfTransposed 
+        : (q' : Q)
+        --^ Subchoicelog whose normal form we want.
+        -- The complete ChoiceLog q is hidden in NFOUT
+        -- (instead of being the first argument to this function)
+        -- hence the name `nfTransposed`.
+        → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
+        --^ Ability to make recursive calls.
+        → NFOUT q'
+    --nfTransposed q' recurse q q'⋤q = ?
+    -- The normal form of the root element is always the root
+    -- element itself, and is always the first normal form in the ChoiceLog,
+    -- so has index 0 in the NFList.
+    nfTransposed (i' , L' , root h') recurse q q'⋤q = Fin.zero
+    nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
+    ... | newNF s h₁ x = {! !}
+    ... | freeChoice s h₁ x x₁ = {! !}
+    ... | forcedChoice {i''} {L''} s'' h'' (ix , x⊂nextq'' , ix∉L') = 
+        let x = idxToEl ix in
+        --let h''' = proj₁ q'⋤q in
+        let ix<iq' = Signoid.subrelat S x (el q') {! x⊂nextq'' !} in
+        let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ? in
+        let x' = recurse qx ? in
+        --let q* = Signoid.coerc 
+        {! !}
 
     --nf  : {i : C}
     --    → {L : NFList}
