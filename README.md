@@ -70,6 +70,7 @@ might still confuse 'sublist' and 'lowlist'.
 * Cleanup/update old stuff readme
     - Nested lists
     - Latest handwritten version
+* Be consistent in doccomments: "ChoiceLog" or "choice-log" or "choicelog"?
 
 
 ### To check if exists in library:

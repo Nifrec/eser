@@ -88,7 +88,8 @@ open import Data.List
 
 open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
 open import Data.List.Relation.Binary.Pointwise using (Pointwise)
-open import Data.List.Membership.Propositional using (_∈_ ; _∉_)
+open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
+open import Data.List.Membership.Propositional.Properties using (∈-lookup)
 open import Data.List.Relation.Unary.Any using (Any)
 open import Data.List.Relation.Binary.Pointwise.Properties renaming (refl to Pointwise-refl)
 open import Data.List.Relation.Binary.Suffix.Heterogeneous.Properties 
@@ -154,6 +155,10 @@ module SGStates
     idx : Q → C
     idx (i , _ , _) = i
 
+    -- Get the list of normal forms of a choicelog.
+    nflist : Q → NFList
+    nflist (_ , L , _) = L
+
     -- Get the last element added to a choicelog.
     el : Q → A
     el q = idxToEl (idx q)
@@ -193,6 +198,16 @@ module SGStates
             → (lc : LegalChoices q )
             → SGState (idxSuc h) (UpdateNFList q h lc)
 
+    -- Macro.
+    -- Given the data for an SGState successor s+ for s in q = (i , L , s),
+    -- the index and NFList of s+ are already fixed as well.
+    QSucc
+        : {q : Q}
+        → (h : IsNotMax (idx q))
+        → (lc : LegalChoices q)
+        → Q
+    QSucc {q} h lc = (idxSuc h , UpdateNFList q h lc , choose q h lc)
+
 --------------------------------------------------------------------------------
 -- Substack (sub-choice-log) relation ⊑.
 --------------------------------------------------------------------------------
@@ -216,6 +231,22 @@ module SGStates
         multichoice q₁ q₂ q₁⋤q₂ h lc
     ⋤-trans {q₁} {q₂} {q₃@(i₃ , L₃ , s₃)} q₁⋤q₂ (multichoice q₂ q₄ q₂⋤q₄ h lc) =
         multichoice q₁ q₄ (⋤-trans q₁⋤q₂ q₂⋤q₄) h lc 
+
+    -- Analogous to natural numbers: m < 1+n means m ≤ n,
+    -- it holds q' ⋤ <some extension of q> → q' ⊑ q.
+    sublogLastChoice
+        : {q' q : Q}
+        → (h : IsNotMax (idx q))
+        → (lc : LegalChoices q)
+        → q' ⋤ QSucc h lc
+        -- #TODO: what is better, the above macro or the full def below?
+        --→ q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc)
+        → q' ⊑ q
+    sublogLastChoice {q'} {q} h lc (onechoice q h lc) = 
+        let q'≡q = refl in
+        inj₁ q'≡q
+    sublogLastChoice {q'} {q} h lc (multichoice q' q q'⋤q h lc) = inj₂ q'⋤q
+     
 
 --------------------------------------------------------------------------------
 -- Element representations.
@@ -489,6 +520,13 @@ module SGStates
         in
         ≼-trans L'≼L₁ L₁≼L
         
+    -- Same as above, but now with states wrapped into single elements.
+    multichoiceSuffix'
+        : {q' q : Q}
+        → q' ⊑ q
+        → (nflist q') ≼ (nflist q)
+    multichoiceSuffix' {i' , L' , s'} {i , L , s}
+        = multichoiceSuffix {i'} {i} {L'} {L} {s'} {s}
 
 --------------------------------------------------------------------------------
 -- Auxiliary lemmas needed to compute normal forms.
@@ -501,6 +539,7 @@ module SGStates
         → (h₂ : IsNotMax i)
         → (idxSuc h₁ ≡ idxSuc h₂)
     FC-a {i} h₁ h₂ = endoSucUnique h₁ h₂
+
 
     -- Lemma FC-b : if there is an enumeration-index i smaller than
     -- the index of the last element added to choicelog q,
@@ -533,6 +572,16 @@ module SGStates
     ... | no  (i≮iq') = 
         let iq'<i = n≮m→n≢m→m<n i≮iq' i≢iq' in
         ⊥-elim (j<i<Sj-impossible {card} {i} {idx q'} {h} i<iq iq'<i)
+    
+    -- #TODO: it is possbile to define a 'getWeakSubLog'
+    -- where the input is i ≤ (idx q) and the output
+    -- is q' ⊑ q (i.o., q' ⋤ q).
+    getWeakSubLog
+        : (q : Q)
+        → (i : C)
+        → (i ≤C idx q)
+        → Σ[ q' ∈ Q ]( (q' ⋤ q) × (i ≡ idx q'))
+    getWeakSubLog = ? -- #TODO: just remove this function if never needed.
 
     -- #TODO: remove if this does not turn out to be needed,
     -- otherwise finish.
@@ -566,14 +615,19 @@ module SGStates
         → idxSuc h ≡ idx (idxSuc h , UpdateNFList q' h lc , choose q' h lc)
     nextIdxUnique q' h lc = refl
 
+    -- The enumeration-indices in a NFList of a choice-log
+    -- are ≤ than the enum-idx of the last element added to the choice-log.
+    -- This is FC-i in my notes (notes FC3(3)).
+    nfsAre≤
+        : (q : Q)
+        → (j : C)
+        → j ∈ nflist q
+        → j ≡ (idx q) ⊎ (cardTo< j (idx q))
+    nfsAre≤ q j j∈L = ?
     
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- #TODO: redefine nf. Define nfTransposed() and nf().
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    -- Project the normal-forms list.
-    nflist : Q → NFList
-    nflist (_ , L , _) = L
 
     -- #TODO: comment description...
     NFOUT : Q → Set _
@@ -630,13 +684,23 @@ module SGStates
         -- From here we can prove that ix' < ix, 
         -- which we need to call Signoid.coerc to coerce along NF(X) ≈ x.
         let ix'-in-Lx = NFOUTx' q' qx⋤q' in 
+        let Lx = nflist qx in
+        let ix' = lookup Lx ix'-in-Lx in
+        let ix'∈Lx = ∈-lookup {xs = Lx} ix'-in-Lx in
+        let ix'≤ix = nfsAre≤ qx ix' ix'∈Lx in
+        -- ix' cannot be ix, because ix' ∈ Lx
+        -- but x is not a normal form, which was proven via ix ∉ Lx.
+        -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
+
+        let Lx≼L'' = multichoiceSuffix' {qx} {q''} (inj₂ {! qx⋤q'' !}) in
+        let ix∉Lx = ? in --#TODO: Use ix∉L'' and Lx≼L''.
+        let ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx) (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx) in
         -- #TODO: the above is the index of NF(x) in Lx, not in the enumeration
         -- of A. This breaks the thing below, obviously.
-        let Lx≼L = ? in
-        let ix'-in-L = ? 
+        let ix'-in-L = ? in
         -- #TODO: query the L-element at index ix'-in-Lx : Indices Lx.
         -- Might need to show embedding Indices Lx >-> Indices L.
-        let q* = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl ix'-in-Lx) ? in
+        let q* = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl {! ix'-in-Lx !}) ? in
         {! !}
     --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
     --... | newNF s h₁ x = {! !}
