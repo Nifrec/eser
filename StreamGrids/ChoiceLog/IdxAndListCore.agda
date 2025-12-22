@@ -87,13 +87,9 @@ open import Data.Empty
 open import Data.List
 
 open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
-open import Data.List.Relation.Binary.Pointwise using (Pointwise)
 open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
 open import Data.List.Membership.Propositional.Properties using (∈-lookup)
 open import Data.List.Relation.Unary.Any using (Any)
-open import Data.List.Relation.Binary.Pointwise.Properties renaming (refl to Pointwise-refl)
-open import Data.List.Relation.Binary.Suffix.Heterogeneous.Properties 
-    renaming (trans to Suffix-trans)
 
 -- Certainly used local imports.
 open import StreamGrids.NewSignoid
@@ -126,6 +122,10 @@ module SGStates
         -- or ℕ._<_ (or just ⊥ if card = zero).
         _<C_ : Rel C _
         _<C_ = cardTo< {card}
+
+        -- Idem for ≤.
+        _≤C_ : Rel C _
+        _≤C_ = cardTo≤ {card}
 
         NFList : Set
         NFList = List C
@@ -234,6 +234,7 @@ module SGStates
 
     -- Analogous to natural numbers: m < 1+n means m ≤ n,
     -- it holds q' ⋤ <some extension of q> → q' ⊑ q.
+    -- This is FC-j in my notes.
     sublogLastChoice
         : {q' q : Q}
         → (h : IsNotMax (idx q))
@@ -439,15 +440,6 @@ module SGStates
 -- Suffix of normal-forms-list relation.
 --------------------------------------------------------------------------------
     
-    _≼_ : Rel NFList _
-    L' ≼ L = Suffix (_≡_) L' L
-
-    ≼-refl : Reflexive _≼_
-    ≼-refl {L} = Suffix.here (Pointwise-refl _≡_.refl)
-
-    ≼-trans : Transitive _≼_
-    ≼-trans = Suffix-trans trans
-
 
     -- Lemma A3 in my 12 Dec 2025 notes.
     -- If q' ⋤ (L, choose q' lc), then L must be an extension
@@ -483,7 +475,7 @@ module SGStates
     --      nonzeroCardToZeroElem h' = nonzeroCardToZeroElem h
     multichoiceSuffix {i'} {i} {L'} {L} {root h'} {root h} q'⊑q = 
         let zeroh≡zeroh' = thereIsOneZero' {card} h h' in
-        let ref = ≼-refl {nonzeroCardToZeroElem h ∷ []} in
+        let ref = ≼-refl in
         subst (λ k → Suffix _≡_ (k ∷ []) (nonzeroCardToZeroElem h ∷ [])) 
             zeroh≡zeroh' ref
     -- Any q'⊑q where q has only the root element and q' at least
@@ -581,7 +573,9 @@ module SGStates
         → (i : C)
         → (i ≤C idx q)
         → Σ[ q' ∈ Q ]( (q' ⋤ q) × (i ≡ idx q'))
-    getWeakSubLog = ? -- #TODO: just remove this function if never needed.
+    -- #TODO: just remove this function if never needed.
+    -- Then also remove _≤C_ !!!
+    getWeakSubLog = ? 
 
     -- #TODO: remove if this does not turn out to be needed,
     -- otherwise finish.
@@ -655,8 +649,8 @@ module SGStates
         recurse q q'⋤q = {! !}
     nfTransposed 
         q'@(i' , L' , choose q'' h'' 
-        (forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
-        recurse q q'⋤q = 
+        lc''@(forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
+        recurse q q'⋤q =
         let x = idxToEl ix in
         --let h''' = proj₁ q'⋤q in
         let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
@@ -691,8 +685,8 @@ module SGStates
         -- ix' cannot be ix, because ix' ∈ Lx
         -- but x is not a normal form, which was proven via ix ∉ Lx.
         -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
-
-        let Lx≼L'' = multichoiceSuffix' {qx} {q''} (inj₂ {! qx⋤q'' !}) in
+        let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
+        let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
         let ix∉Lx = ? in --#TODO: Use ix∉L'' and Lx≼L''.
         let ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx) (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx) in
         -- #TODO: the above is the index of NF(x) in Lx, not in the enumeration

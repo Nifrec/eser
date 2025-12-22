@@ -29,11 +29,18 @@ module StreamGrids.Suffix where
 
 open import Data.List.Relation.Binary.Suffix.Heterogeneous
 open import Data.List.Relation.Binary.Pointwise
-open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Membership.Propositional using (_∈_ ; _∉_)
 open import Data.List
+open import Data.Empty
 open import Relation.Binary.PropositionalEquality
 open import Data.List.Relation.Unary.Any using (Any)
 open import Level
+open import Relation.Binary
+open import Relation.Binary.Definitions
+open import Data.List.Relation.Binary.Pointwise using (Pointwise)
+open import Data.List.Relation.Binary.Pointwise.Properties renaming (refl to Pointwise-refl)
+open import Data.List.Relation.Binary.Suffix.Heterogeneous.Properties 
+    renaming (trans to Suffix-trans)
 
 -- If two lists are pointwise equal then every element of the one list
 -- is also in the other list. 
@@ -69,3 +76,27 @@ suffixElemInclusion {ℓ} {A} {x} {L'} {L} (here L'≈L) x∈L' =
 suffixElemInclusion {ℓ} {A} {x} {L'} {z ∷ zs} (there L'≼ys) x∈L' = 
     Any.there (suffixElemInclusion {ℓ} {A} {x} {L'} {zs} L'≼ys x∈L')
 
+-- Syntax L' ≼ L means that L' is a suffix of L.
+PropEqSuffix : {ℓ : Level} {A : Set ℓ} (L' L : List A) → Set ℓ
+PropEqSuffix {ℓ} {A} L' L = Suffix {A = A} (_≡_) L' L
+--syntax PropEqSuffix L' L = L' ≼ L
+
+_≼_ : {ℓ : Level } {A : Set ℓ} → Rel (List A) ℓ
+(_≼_) {ℓ} {A} L' L = PropEqSuffix L' L
+
+≼-refl : {ℓ : Level } {A : Set ℓ} → Reflexive (_≼_ {ℓ} {A})
+≼-refl {L} = Suffix.here (Pointwise-refl _≡_.refl)
+
+≼-trans : {ℓ : Level } {A : Set ℓ} → Transitive (_≼_ {ℓ} {A})
+≼-trans = Suffix-trans trans
+
+-- A suffix of a list has no element that the whole list doesn't have.
+notInListThenNotInSuffix
+    : {A : Set}
+    → {a : A}
+    → {L' L : List A}
+    → L' ≼ L
+    → a ∉ L
+    → a ∉ L'
+notInListThenNotInSuffix {A} {L'} {L} L'≼L a∉L a∈L' = 
+    ⊥-elim (a∉L (suffixElemInclusion L'≼L a∈L'))
