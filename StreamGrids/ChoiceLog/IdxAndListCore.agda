@@ -687,7 +687,7 @@ module SGStates
         -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
         let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
         let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
-        let ix∉Lx = ? in --#TODO: Use ix∉L'' and Lx≼L''.
+        let ix∉Lx = {! notInListThenNotInSuffix Lx≼L'' ix∉L'' !} in --#TODO: Use ix∉L'' and Lx≼L''.
         let ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx) (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx) in
         -- #TODO: the above is the index of NF(x) in Lx, not in the enumeration
         -- of A. This breaks the thing below, obviously.
