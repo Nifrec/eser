@@ -618,6 +618,7 @@ module SGStates
         → (j : C)
         → j ∈ nflist q
         → j ≡ (idx q) ⊎ (cardTo< j (idx q))
+    --nfsAre≤ q j j∈L = ?
     nfsAre≤ q j j∈L = ?
     
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -670,6 +671,9 @@ module SGStates
         let ix<iq'-3 = subst (λ i → cardTo< _ i) iq'Inv ix<iq'-2 in
         -- Get the subchoicelog corresponding to the element x.
         let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ix<iq'-3 in
+        let idxqx : C
+            idxqx = idx qx
+        in
         -- Get the normal form of x for any desired superlog of qx
         -- (this is the type NFOUTx').
         let NFOUTx' = recurse qx qx⋤q' in
@@ -678,13 +682,21 @@ module SGStates
         -- with x as last choice).
         -- From here we can prove that ix' < ix, 
         -- which we need to call Signoid.coerc to coerce along NF(X) ≈ x.
-        let ix'-in-Lx = NFOUTx' q' qx⋤q' in 
-        let Lx = nflist qx in
-        let ix' = lookup Lx ix'-in-Lx in
-        let ix'∈Lx = ∈-lookup {xs = Lx} ix'-in-Lx in
+        let Lx : NFList
+            Lx = nflist qx
+        in
+        let ix'-in-Lx : Indices Lx
+            ix'-in-Lx = NFOUTx' q' qx⋤q' 
+        in 
+        let ix' : C
+            ix' = lookup Lx ix'-in-Lx
+        in
+        let ix'∈Lx : ix' ∈ Lx
+            ix'∈Lx = ∈-lookup {xs = Lx} ix'-in-Lx 
+        in
         -- This is `ix'≡ix ⊎ ix'<ix` (but using cardTo<)
         let ix'≤ix : (ix' ≡ ix) ⊎ (cardTo< ix' ix)
-            ix'≤ix = nfsAre≤ qx ix' ix'∈Lx
+            ix'≤ix = subst (λ k → ix' ≡ k ⊎ cardTo< ix' k) (sym ix≡idxqx) (nfsAre≤ qx ix' ix'∈Lx)
         in
         -- ix' cannot be ix, because ix' ∈ Lx
         -- but x is not a normal form, which was proven via ix ∉ L'
@@ -693,8 +705,12 @@ module SGStates
         -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
         --let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
         --let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
-        let Lx≼L' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q') in
-        let ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' in --#TODO: Use ix∉L'' and Lx≼L''.
+        let Lx≼L' : Lx ≼ L'
+            Lx≼:' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q')
+        in
+        let ix∉Lx : ix ∉ Lx
+            ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' 
+        in
         let ix'≢ix : ix' ≢ ix
             ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
         in
@@ -703,8 +719,32 @@ module SGStates
         let ix'<ix : cardTo< ix' ix
             ix'<ix = elimCaseLeft ix'≤ix ix'≢ix 
         in
-        let ix'<invix = subst _ (sym (invIdxElIdx ix)) ix'<ix in
-        let (q* , idxq*<idxnextq'') = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl ix') ix'<invix in
+        --let ix'<idxqx : cardTo< ix' idxqx
+        --    ix'<idxqx = subst (λ k → cardTo< ix' k) ix≡idxqx ix'<ix
+        --in
+        let invix' : C
+            invix' = elToIdx (idxToEl ix')
+        in
+        --let invix'<idxqx : cardTo< invix' idxqx
+        --    invix'<idxqx = subst (λ k → cardTo< k idxqx) (sym (invIdxElIdx ix')) ix'<idxqx
+        --in
+        -- Hole:
+        -- Goal: cardTo< (S .Signoid.elToIdx (idxToEl ix')) (S .Signoid.elToIdx x)
+        let ix'≡invix' : ix' ≡ invix'
+            ix'≡invix' = sym (invIdxElIdx ix')
+        in
+        let invix'<ix : cardTo< invix' ix
+            invix'<ix = subst (λ k  → cardTo< k ix) ix'≡invix' ix'<ix
+        in
+        let ix≡elToIdxx : ix ≡ (elToIdx x)
+            ix≡elToIdxx = sym (invIdxElIdx ix)
+        in
+        let invix'<elToIdxx : cardTo< invix' (elToIdx x)
+            invix'<elToIdxx = subst (λ k  → cardTo< invix' k) ix≡elToIdxx invix'<ix
+        in
+        let meh : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
+            meh = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl ix') invix'<elToIdxx in
+        let (q* , idxq*<idxnextq'') = meh in
         {! !}
     --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
     --... | newNF s h₁ x = {! !}
