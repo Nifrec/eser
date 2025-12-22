@@ -714,22 +714,12 @@ module SGStates
         let ix'≢ix : ix' ≢ ix
             ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
         in
-        --let ix'≢idxqx = λ ix'≡ix → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) in
-        --let ix'≢ix = subst _ ix≡idxqx ix'≢idxqx in
         let ix'<ix : cardTo< ix' ix
             ix'<ix = elimCaseLeft ix'≤ix ix'≢ix 
         in
-        --let ix'<idxqx : cardTo< ix' idxqx
-        --    ix'<idxqx = subst (λ k → cardTo< ix' k) ix≡idxqx ix'<ix
-        --in
         let invix' : C
             invix' = elToIdx (idxToEl ix')
         in
-        --let invix'<idxqx : cardTo< invix' idxqx
-        --    invix'<idxqx = subst (λ k → cardTo< k idxqx) (sym (invIdxElIdx ix')) ix'<idxqx
-        --in
-        -- Hole:
-        -- Goal: cardTo< (S .Signoid.elToIdx (idxToEl ix')) (S .Signoid.elToIdx x)
         let ix'≡invix' : ix' ≡ invix'
             ix'≡invix' = sym (invIdxElIdx ix')
         in
@@ -742,10 +732,35 @@ module SGStates
         let invix'<elToIdxx : cardTo< invix' (elToIdx x)
             invix'<elToIdxx = subst (λ k  → cardTo< invix' k) ix≡elToIdxx invix'<ix
         in
-        let meh : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
-            meh = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl ix') invix'<elToIdxx in
-        let (q* , idxq*<idxnextq'') = meh in
-        {! !}
+        let coercOut : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
+            coercOut = Signoid.coerc S (nextEl h'') 
+                x x⊂nextq''h'' (idxToEl ix') invix'<elToIdxx
+        in
+        let (y' , idxq*<idxnextq'') = coercOut in
+        let idxq* = elToIdx y' in
+        -- Missing subst: (Signoid.elToIdx S (nextEl h'')) != (endoSuc h'')
+        -- I think I got a lemma for this.
+        -- Yes I think FC-h should be it.
+        let (q* , q*⋤q' , idxq'≡idxq*) = getSubLog q' idxq* {!idxq*<idxnextq''!}
+        in
+        -- q* is the coercion of (y ≐ next q'') along (x ≈ nf(x) ≐ x')
+        -- We want to output the normal form of q*, not as subchoicelog
+        -- nor as A element, but as index in L'.
+        let q*⋤q'' : q* ⋤ q''
+            q*⋤q'' = ?
+        in
+        let q*⋤q'  : q* ⋤ q'
+            q*⋤q' = ⋤-trans q*⋤q'' {!q''⋤q'!}
+        in
+        let L* = nflist q* in
+        let iqn-in-L* : Indices L*
+            iqn-in-L* = (recurse q* {!q*⋤q''!}) q' q*⋤q' 
+        in
+        -- TODO: IMPLEMENT suffixIdxInclusion!!!
+        let iqn-in-L' : Indices L'
+            iqn-in-L' = suffixIdxInclusion {! L*≼L'!} iqn-in-L* 
+        in
+        iqn-in-L'
     --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
     --... | newNF s h₁ x = {! !}
     --... | freeChoice s h₁ x x₁ = {! !}

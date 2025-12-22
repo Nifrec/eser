@@ -76,10 +76,22 @@ suffixElemInclusion {ℓ} {A} {x} {L'} {L} (here L'≈L) x∈L' =
 suffixElemInclusion {ℓ} {A} {x} {L'} {z ∷ zs} (there L'≼ys) x∈L' = 
     Any.there (suffixElemInclusion {ℓ} {A} {x} {L'} {zs} L'≼ys x∈L')
 
+-- An index i in a suffix L' also exists as index in the superlist L
+-- (and has the same element, but that's not proven here).
+-- BUT elements are enumerated from newest to oldest (left-to-right)
+-- and a suffix is a right end, so some conversion is needed!
+suffixIdxInclusion 
+    : {ℓ : Level}
+    → {A : Set ℓ}
+    → {L' L : List A}
+    → (Suffix _≡_ L' L)
+    → Indices L'
+    → Indices L
+suffixIdxInclusion = ?
+
 -- Syntax L' ≼ L means that L' is a suffix of L.
 PropEqSuffix : {ℓ : Level} {A : Set ℓ} (L' L : List A) → Set ℓ
 PropEqSuffix {ℓ} {A} L' L = Suffix {A = A} (_≡_) L' L
---syntax PropEqSuffix L' L = L' ≼ L
 
 _≼_ : {ℓ : Level } {A : Set ℓ} → Rel (List A) ℓ
 (_≼_) {ℓ} {A} L' L = PropEqSuffix L' L
