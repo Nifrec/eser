@@ -95,6 +95,7 @@ open import Data.List.Relation.Unary.Any using (Any)
 open import StreamGrids.NewSignoid
 open import StreamGrids.Card
 open import StreamGrids.Suffix
+open import StreamGrids.Logic
 
 module SGStates
     {ℓ : Level}
@@ -681,20 +682,29 @@ module SGStates
         let Lx = nflist qx in
         let ix' = lookup Lx ix'-in-Lx in
         let ix'∈Lx = ∈-lookup {xs = Lx} ix'-in-Lx in
-        let ix'≤ix = nfsAre≤ qx ix' ix'∈Lx in
+        -- This is `ix'≡ix ⊎ ix'<ix` (but using cardTo<)
+        let ix'≤ix : (ix' ≡ ix) ⊎ (cardTo< ix' ix)
+            ix'≤ix = nfsAre≤ qx ix' ix'∈Lx
+        in
         -- ix' cannot be ix, because ix' ∈ Lx
-        -- but x is not a normal form, which was proven via ix ∉ Lx.
+        -- but x is not a normal form, which was proven via ix ∉ L'
+        -- (and x is an element in q', 
+        -- and qx the corresponding subchoicelog of q',  so Lx ≼ L')
         -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
-        let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
-        let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
-        let ix∉Lx = {! notInListThenNotInSuffix Lx≼L'' ix∉L'' !} in --#TODO: Use ix∉L'' and Lx≼L''.
-        let ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx) (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx) in
-        -- #TODO: the above is the index of NF(x) in Lx, not in the enumeration
-        -- of A. This breaks the thing below, obviously.
-        let ix'-in-L = ? in
-        -- #TODO: query the L-element at index ix'-in-Lx : Indices Lx.
-        -- Might need to show embedding Indices Lx >-> Indices L.
-        let q* = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl {! ix'-in-Lx !}) ? in
+        --let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
+        --let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
+        let Lx≼L' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q') in
+        let ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' in --#TODO: Use ix∉L'' and Lx≼L''.
+        let ix'≢ix : ix' ≢ ix
+            ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
+        in
+        --let ix'≢idxqx = λ ix'≡ix → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) in
+        --let ix'≢ix = subst _ ix≡idxqx ix'≢idxqx in
+        let ix'<ix : cardTo< ix' ix
+            ix'<ix = elimCaseLeft ix'≤ix ix'≢ix 
+        in
+        let ix'<invix = subst _ (sym (invIdxElIdx ix)) ix'<ix in
+        let (q* , idxq*<idxnextq'') = Signoid.coerc S (nextEl h'') x x⊂nextq''h'' (idxToEl ix') ix'<invix in
         {! !}
     --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
     --... | newNF s h₁ x = {! !}
