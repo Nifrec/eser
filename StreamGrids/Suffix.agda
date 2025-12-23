@@ -132,13 +132,10 @@ suffixIdxInclusion
 -- Use `cast` instead of `subst` to improve normalisability of the output.
 suffixIdxInclusion {ℓ} {A} {L'} {L} (here p) i 
     = cast (Pointwise-length p) i
-    -- This alternative definition also works, but it is harder to prove
-    -- something about it, as the output of dependent transport 
-    -- doesn't normalise that nicely.
-    --= subst (λ A → A) (pointwiseSameIndices p) i
 suffixIdxInclusion {ℓ} {A} {L'} {(a ∷ as)} (there L'≼as) i = 
-    -- First find the index in `as`. This is one too low cuz when we add
-    -- `a` all the indices shift by 1.
+    -- First find the index rec in `as`. 
+    -- This is one too low cuz when we concatenate
+    -- `a` all the indices shift by 1, so return the successor of rec.
     let rec : Indices as
         rec = suffixIdxInclusion {L' = L'} {L = as} L'≼as i
     in
