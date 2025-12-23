@@ -97,6 +97,24 @@ open import StreamGrids.Card
 open import StreamGrids.Suffix
 open import StreamGrids.Logic
 
+-- This lemma is hard to prove within the module `SGStates`
+-- in which `Signoid.card S` cannot be pattern-matched.
+-- This lemma is related to FC-h in my notes but not the same.
+-- The LHS is judgementally equal to `idxSuc h''`,
+-- and the RHS to (elToIdx (
+--nextEl h = idxToEl (idxSuc h)
+--nextIdxUniqueness
+--    : {ℓ : Level}
+--    → {A : Set ℓ}
+--    → {_⊂_ : Rel A ℓ}
+--    → (S : Signoid _⊂_)
+--    → {i : cardToSet (Signoid.card S)}
+--    → (h : IsNotMax i)
+--    → Signoid.elToIdx S (nextEl h) ≡ idxSuc h
+--nextIdxUniqueness {i} h with card
+--... | fin (suc n) = ?
+--... | ∞  = ?
+
 module SGStates
     {ℓ : Level}
     {A : Set ℓ}
@@ -615,6 +633,13 @@ module SGStates
     --nfsAre≤ q j j∈L = ?
     nfsAre≤ q j j∈L = ?
     
+    -- This lemma bottles down to elToIdx ∘ idxToEl = id.
+    -- The difficulty is that one needs to unfold the definitions to see this.
+    nextIdxUniqueness
+        : {i : cardToSet card}
+        → (h : IsNotMax i)
+        → Signoid.elToIdx S (nextEl h) ≡ idxSuc h
+    nextIdxUniqueness {i} h = invIdxElIdx (endoSuc h)
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- #TODO: redefine nf. Define nfTransposed() and nf().
 --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -652,7 +677,9 @@ module SGStates
         let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
         -- There is h'' and h''', which are not judgementally equal
         -- but definitely propositionally equal since `IsNotMax i''` is a prop.
-        let x⊂nextq''h'' = subst (λ v → (x ⊂ nextEl {q''} v)) (h'''≡h'') x⊂nextq'' in
+        let x⊂nextq''h'' = 
+                subst (λ v → (x ⊂ nextEl {q''} v)) (h'''≡h'') x⊂nextq'' 
+        in
         -- The LHS of the following term is actually 
         -- elToIdx (idxToEl ix), not ix. However, these functions are inverse!
         -- Same problem applies to the RHS.
@@ -690,7 +717,12 @@ module SGStates
         in
         -- This is `ix'≡ix ⊎ ix'<ix` (but using cardTo<)
         let ix'≤ix : (ix' ≡ ix) ⊎ (cardTo< ix' ix)
-            ix'≤ix = subst (λ k → ix' ≡ k ⊎ cardTo< ix' k) (sym ix≡idxqx) (nfsAre≤ qx ix' ix'∈Lx)
+            ix'≤ix = subst (λ k → ix' ≡ k ⊎ cardTo< ix' k) 
+                           (sym ix≡idxqx) (nfsAre≤ qx ix' ix'∈Lx)
+            --#TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --prove nfsAre≤
         in
         -- ix' cannot be ix, because ix' ∈ Lx
         -- but x is not a normal form, which was proven via ix ∉ L'
@@ -706,7 +738,8 @@ module SGStates
             ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' 
         in
         let ix'≢ix : ix' ≢ ix
-            ix'≢ix = λ ix'≡ix → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
+            ix'≢ix = λ ix'≡ix 
+                     → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
         in
         let ix'<ix : cardTo< ix' ix
             ix'<ix = elimCaseLeft ix'≤ix ix'≢ix 
@@ -724,7 +757,9 @@ module SGStates
             ix≡elToIdxx = sym (invIdxElIdx ix)
         in
         let invix'<elToIdxx : cardTo< invix' (elToIdx x)
-            invix'<elToIdxx = subst (λ k  → cardTo< invix' k) ix≡elToIdxx invix'<ix
+            invix'<elToIdxx = subst (λ k  → cardTo< invix' k) 
+                                    ix≡elToIdxx 
+                                    invix'<ix
         in
         let coercOut : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
             coercOut = Signoid.coerc S (nextEl h'') 
@@ -732,27 +767,23 @@ module SGStates
         in
         let (y' , idxq*<idxnextq'') = coercOut in
         let idxq* = elToIdx y' in
-        -- Missing subst: (Signoid.elToIdx S (nextEl h'')) != (endoSuc h'')
-        -- I think I got a lemma for this.
-        -- Yes I think FC-h should be it.
-        let (q* , q*⋤q' , idxq'≡idxq*) = getSubLog q' idxq* {!idxq*<idxnextq''!}
+        -- The A-is-enumerable bijection elToIdx ∘ idxToEl = id causes the
+        -- need a subst here: (Signoid.elToIdx S (nextEl h'')) != (endoSuc h'')
+        let k : cardTo< idxq* (idx q')
+            k = subst (λ j → cardTo< idxq* j) 
+                      (nextIdxUniqueness h'') idxq*<idxnextq''
         in
-        -- q* is the coercion of (y ≐ next q'') along (x ≈ nf(x) ≐ x')
-        -- We want to output the normal form of q*, not as subchoicelog
-        -- nor as A element, but as index in L'.
-        let q*⋤q'' : q* ⋤ q''
-            q*⋤q'' = ?
-        in
-        let q*⋤q'  : q* ⋤ q'
-            q*⋤q' = ⋤-trans q*⋤q'' {!q''⋤q'!}
+        let (q* , q*⋤q' , idxq'≡idxq*) = getSubLog q' idxq* k
         in
         let L* = nflist q* in
         let iqn-in-L* : Indices L*
-            iqn-in-L* = (recurse q* {!q*⋤q''!}) q' q*⋤q' 
+            iqn-in-L* = (recurse q* q*⋤q') q' q*⋤q' 
         in
-        -- TODO: IMPLEMENT suffixIdxInclusion!!!
+        let L*≼L' : L* ≼ L' 
+            L*≼L' = multichoiceSuffix' (inj₂ q*⋤q')
+        in
         let iqn-in-L' : Indices L'
-            iqn-in-L' = suffixIdxInclusion {! L*≼L'!} iqn-in-L* 
+            iqn-in-L' = suffixIdxInclusion L*≼L' iqn-in-L* 
         in
         iqn-in-L'
     --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
