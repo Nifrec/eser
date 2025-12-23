@@ -25,6 +25,7 @@
 --  Agda will complain it is of the wrong datatype.
 --  Use `Any.here` instead and all is fine.
 
+{-# OPTIONS --allow-unsolved-metas #-}
 module StreamGrids.Suffix where
 
 open import Data.List.Relation.Binary.Suffix.Heterogeneous
@@ -41,6 +42,14 @@ open import Data.List.Relation.Binary.Pointwise using (Pointwise)
 open import Data.List.Relation.Binary.Pointwise.Properties renaming (refl to Pointwise-refl)
 open import Data.List.Relation.Binary.Suffix.Heterogeneous.Properties 
     renaming (trans to Suffix-trans)
+open import Data.Fin
+
+-- Set of indices that exist for a given list.
+-- #TODO: maybe move this somewhere else? It is copied from
+-- StreamGrids/List.agda.
+Indices : {ℓ : Level} {X : Set ℓ} → List X → Set
+Indices L = Fin (length L)
+
 
 -- If two lists are pointwise equal then every element of the one list
 -- is also in the other list. 

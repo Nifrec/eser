@@ -356,12 +356,6 @@ module SGStates
                 (x ∉ L)
                 )
 
-    -- Set of indices that exist for a given list.
-    -- #TODO: maybe move this somewhere else? It is copied from
-    -- StreamGrids/List.agda.
-    Indices : {X : Set _} → List X → Set
-    Indices L = Fin (length L)
-
     data LegalChoices where
         newNF 
             : {i : C}
