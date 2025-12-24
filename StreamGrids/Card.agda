@@ -212,6 +212,80 @@ endoSucLemma
     → toℕ (endoSuc (s≤s h)) ≡ ℕ.suc (toℕ (endoSuc h))
 endoSucLemma {suc c} n h = refl
 
+-- toℕ commutes with suc (although it swaps Fin.suc with Nat.suc, of course).
+toℕ-suc
+    : {c : ℕ}
+    → (n : Fin c)
+    → toℕ (Fin.suc n) ≡ ℕ.suc (toℕ n)
+toℕ-suc {c} n = toℕ-↑ʳ 1 n
+
+lower-s≤s
+    : {c k : ℕ}
+    → (n : Fin c)
+    → (h : toℕ n Data.Nat.< k)
+    → Fin.suc (lower n h) ≡ lower (Fin.suc n) (s≤s h)
+lower-s≤s {suc c} zero (s≤s z≤n) = refl
+lower-s≤s {suc c} (suc n) (s≤s h) = refl
+
+-- #TODO: all the let-ins are superfluous, the proofs can be directly
+-- written inside the ⟨...⟩s.
+-- I used the let-ins to typecheck ideas step-by-step.
+toℕ-lower
+    : {c k : ℕ}
+    → (n : Fin c)
+    → (h : toℕ n Data.Nat.< k)
+    → toℕ (lower n h) ≡ toℕ n
+toℕ-lower {suc c} {suc k'} zero (s≤s z≤n) = refl
+toℕ-lower {c@(suc c')} {k@(suc k')} (suc n) h@(s≤s h') = 
+    let TLn≡Tn : toℕ (lower n h') ≡ toℕ n
+        TLn≡Tn = toℕ-lower {c'} {k'} n h'
+    in
+    let STLn≡STn : suc (toℕ (lower n h')) ≡ suc (toℕ n)
+        STLn≡STn = cong suc TLn≡Tn
+    in
+    let STn≡STn : suc (toℕ n) ≡ toℕ (Fin.suc n)
+        STn≡STn = toℕ-suc n
+    in
+    let STLn≡TSLn : suc (toℕ (lower n h')) ≡ toℕ (Fin.suc (lower n h'))
+        STLn≡TSLn = toℕ-suc (lower n h')
+    in
+    let TSLn≡TLSn : toℕ (Fin.suc (lower n h')) ≡ toℕ (lower (suc n) h)
+        TSLn≡TLSn = cong toℕ (lower-s≤s n h')
+    in
+    sym(
+    begin
+        toℕ (suc n) 
+        ≡⟨ toℕ-suc n ⟩
+        suc (toℕ n)
+        ≡⟨ sym STLn≡STn ⟩
+        suc (toℕ (lower n h'))
+        ≡⟨ STLn≡TSLn ⟩
+        toℕ (Fin.suc (lower n h'))
+        ≡⟨ TSLn≡TLSn ⟩
+        toℕ (lower (suc n) h)
+    ∎)
+
+endoSucBigger
+    : {c : ℕ∞}
+    → {n : cardToSet c}
+    → (h : IsNotMax n)
+    → cardTo< n (endoSuc h)
+endoSucBigger {fin (2+ c)} {zero} (s≤s z≤n) = s≤s z≤n
+    --let 1≤SucEndosuc : suc (toℕ zero) Data.Nat.≤ ℕ.suc (toℕ (endoSuc h))
+    --    1≤SucEndosuc = ?
+    --in
+    -- Now use lemma above to rewrite RHS
+endoSucBigger {fin (suc c)} {suc n} h = 
+    let n≤n : toℕ n Data.Nat.≤ toℕ n
+        n≤n = Data.Nat.Properties.≤-refl
+    in
+    let Sn≤Sn = s≤s n≤n in
+    -- Now swap lower and toℕ...
+    -- The stdlib gives toℕ-lower₁ but not for lower?
+    s≤s {! Sn≤Sn !}
+endoSucBigger {∞} {zero} tt = s≤s z≤n
+endoSucBigger {∞} {suc n} tt = s≤s (s≤s Data.Nat.Properties.≤-refl)
+
 -- Computing the successor of a non-max element n in a finite set
 -- and injecting into ℕ is the same as injecting n first and using ℕ.suc.
 endoSucInjToNatSuc
