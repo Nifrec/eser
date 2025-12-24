@@ -9,6 +9,17 @@ Other files of interest:
   encode.
 
 ## What is where
+* `StreamGrids/Card`
+    Tools for working with sets of different cardinality as a dependent type.
+    Basically multiplexing between (functions/lemmas about) `Fin n` and `ℕ`.
+* `StreamGrids/Logic`
+    Auxiliary lemmas about propositional logical reasoning.
+    (that I couldn't find in the stdlib!?)
+* `StreamGrids/Fin`
+    Auxiliary lemmas about finite sets.
+    (that I couldn't find in the stdlib!?)
+
+### Outdated
 * `StreamGrids/Fold`    
     Function to fold finite sets.
 * `StreamGrids/Algebra` 
