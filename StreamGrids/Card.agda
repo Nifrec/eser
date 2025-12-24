@@ -271,18 +271,30 @@ endoSucBigger
     → (h : IsNotMax n)
     → cardTo< n (endoSuc h)
 endoSucBigger {fin (2+ c)} {zero} (s≤s z≤n) = s≤s z≤n
-    --let 1≤SucEndosuc : suc (toℕ zero) Data.Nat.≤ ℕ.suc (toℕ (endoSuc h))
-    --    1≤SucEndosuc = ?
-    --in
-    -- Now use lemma above to rewrite RHS
 endoSucBigger {fin (suc c)} {suc n} h = 
+    -- In earlier attempts I used `h` instead of `h'`,
+    -- but that one has type `toℕ (suc n) < (toℕ (fromℕ c))`.
+    -- Then Agda complained that the term I produced
+    -- (`s≤s STn≤STLn`) was wrong
+    -- because `toℕ (fromℕ c) != c`. 
+    -- This was confusing since `c` does not appear in the type of STn≤STLn.
+    -- The problem is that `toℕ (lower (suc n) h) : Fin (toℕ (fromℕ c))`.
+    -- Replacing all instances of `h` by `h'` in the proof solved it.
+    let h' : toℕ (suc n) Data.Nat.< c
+        h' = subst (λ x → toℕ (suc n) Data.Nat.< x) (toℕ-fromℕ c) h
+    in
     let n≤n : toℕ n Data.Nat.≤ toℕ n
         n≤n = Data.Nat.Properties.≤-refl
     in
-    let Sn≤Sn = s≤s n≤n in
-    -- Now swap lower and toℕ...
-    -- The stdlib gives toℕ-lower₁ but not for lower?
-    s≤s {! Sn≤Sn !}
+    let STn≤STn : suc (toℕ n) Data.Nat.≤ suc (toℕ n)
+        STn≤STn = s≤s n≤n 
+    in
+    let STn≤TLSn : suc (toℕ n) Data.Nat.≤ toℕ (lower (suc n) h')
+        STn≤TLSn = subst (λ x → suc (toℕ n) Data.Nat.≤ x) 
+                         (sym (toℕ-lower (suc n) h')) 
+                         STn≤STn
+    in
+    s≤s (subst (λ x → suc (toℕ n) Data.Nat.≤ x) refl STn≤TLSn )
 endoSucBigger {∞} {zero} tt = s≤s z≤n
 endoSucBigger {∞} {suc n} tt = s≤s (s≤s Data.Nat.Properties.≤-refl)
 
