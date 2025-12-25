@@ -673,14 +673,21 @@ module SGStates
     lastNFIsBiggest (i , L , root k) h = (endoSucBigger h) All.∷ All.[]
     --lastNFIsBiggest (i , L , choose q' h' lc') h = {! !}
     lastNFIsBiggest (i , L , choose q' h' (newNF s h₁ x)) h =
+    -- h' and h₁
         let L' : NFList
             L' = nflist q'
         in
         let rec : All (_<C (idxSuc h')) L'
             rec = lastNFIsBiggest q' h'
         in
+        let ISh'<ISh : (idxSuc h') <C (idxSuc h)
+            ISh'<ISh = ?
+        in
+            
         -- Now need transitivity: (All ≤ x L) → (x ≤ y) → (All ≤ y L)...
-        (endoSucBigger h) All.∷ {!All-with-trans --WIP !}
+            (endoSucBigger h) 
+            All.∷ 
+            (All-with-trans {0ℓ} {C} {_<C_} {idxSuc h'} {idxSuc h} {L'} ISh'<ISh cardTo<Trans rec)
     lastNFIsBiggest (i , L , choose q' h' (freeChoice s h₁ x x₁)) h = {! !}
     lastNFIsBiggest (i , L , choose q' h' (forcedChoice s h₁ x)) h = {! !}
 
