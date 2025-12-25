@@ -819,24 +819,74 @@ module SGStates
         → AllPairs _>C_ (nflist q)
     nfListsSorted = ⋤-rec nfListsSortedOUT nfListsSortedRec
 
--- All below commented out to speed up Agda...
+    nfsAre≤OUT : Q → Set
+    nfsAre≤OUT q = (j : C) → (j ∈ nflist q) → (j ≡ idx q) ⊎ (cardTo< j (idx q))
 
---    -- The enumeration-indices in a NFList of a choice-log
---    -- are ≤ than the enum-idx of the last element added to the choice-log.
---    -- This is FC-i in my notes (notes FC3(3)).
---    nfsAre≤
---        : (q : Q)
---        → (j : C)
---        → j ∈ nflist q
---        → j ≡ (idx q) ⊎ (cardTo< j (idx q))
---    --nfsAre≤ q j j∈L = ?
---    nfsAre≤ (i , L , root h) j (Any.here j≡0) = inj₁ j≡0
---    nfsAre≤ (i , L , choose q h (newNF s h₁ x)) j (Any.here j≡idxSucH) 
---        = inj₁ j≡idxSucH
---    nfsAre≤ (i , L , choose q h (newNF s h₁ x)) j (Any.there j∈L) = {! !}
---    nfsAre≤ (i , L , choose q h (freeChoice s h₁ x x₁)) j j∈L = {! !}
---    nfsAre≤ (i , L , choose q h (forcedChoice s h₁ x)) j j∈L = {! !}
+    -- If an element is in a list, but it is not the first
+    -- element, then it must be in the suffix.
+    notFirstThenInSuffix
+        : {X : Set}
+        → {xs : List X}
+        → {a x : X}
+        → a ∈ (x ∷ xs)
+        → a ≢ x
+        → a ∈ xs
+    notFirstThenInSuffix {X} {xs} {a} {x} (Any.here a≡x) a≢x = ⊥-elim (a≢x a≡x)
+    notFirstThenInSuffix {X} {xs} {a} {x} (Any.there a∈xs) a≢x = a∈xs
     
+    nfsAre≤Rec 
+        : (q : Q)
+        → ( (q' : Q) → q' ⋤ q → nfsAre≤OUT q')
+        → nfsAre≤OUT q
+    nfsAre≤Rec (i , L , root h) recurse j (Any.here j≡0) = inj₁ j≡0
+    nfsAre≤Rec q@(i , L , choose q' h' lc@(newNF s' h₁ x)) recurse j j∈L 
+            with cardToDecidableEq card j (idxSuc h') -- idx q  ≐ idxSuc h
+    ... | yes j≡idxq = inj₁ j≡idxq
+    ... | no  j≢idxq = 
+            let j∈L' = notFirstThenInSuffix j∈L j≢idxq
+            in
+            let rec = recurse q' (onechoice q' h' lc) j j∈L'
+            in
+            -- WIP : now need a general lemma to handle the recursive case.
+            -- Will need to PAMA on rec, which we can't do easily in this
+            -- context.
+            {! rec !}
+    nfsAre≤Rec (i , L , choose q h (freeChoice s h₁ x x₁)) recurse = {! !}
+    nfsAre≤Rec (i , L , choose q h (forcedChoice s h₁ x)) recurse = {! !}
+
+
+
+
+    --nfsAre≤Rec 
+    --    : (q : Q)
+    --    → ( (q' : Q) → q' ⋤ q → nfsAre≤OUT q')
+    --    → nfsAre≤OUT q
+    --nfsAre≤Rec (i , [] , s) recurse j ()
+    --nfsAre≤Rec q@(i , L@(a ∷ as) , s) recurse j (Any.here j≡a) 
+    --        with cardToDecidableEq card a (idx q)
+    --... | yes a≡idxq = inj₁ (trans j≡a a≡idxq)
+    --... | no  a≢idxq = -- use AllPairs sortedness!
+    ---- No won't work cuz we don't know a == idx q. That might not hold.
+    ---- What to do?
+    ---- First split on s and then on L -> then get q' and call recurse.
+    --nfsAre≤Rec (i , L@(a ∷ as) , s) recurse j (Any.there j∈L) =
+    --    let rec : ? 
+    --        rec = ?
+    --    in
+    --    {! !}
+
+
+    -- The enumeration-indices in a NFList of a choice-log
+    -- are ≤ than the enum-idx of the last element added to the choice-log.
+    -- This is FC-i in my notes (notes FC3(3)).
+    nfsAre≤
+        : (q : Q)
+        → (j : C)
+        → j ∈ nflist q
+        → j ≡ (idx q) ⊎ (cardTo< j (idx q))
+    nfsAre≤ = ⋤-rec nfsAre≤OUT nfsAre≤Rec
+    
+-- All below commented out to speed up Agda...
 ----!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ---- #TODO: redefine nf. Define nfTransposed() and nf().
 ----!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
