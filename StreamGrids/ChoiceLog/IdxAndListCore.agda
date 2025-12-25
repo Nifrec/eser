@@ -144,6 +144,9 @@ module SGStates
         _<C_ : Rel C _
         _<C_ = cardTo< {card}
 
+        _>C_ : Rel C _
+        _>C_ = λ i → λ j → j <C i
+
         -- Idem for ≤.
         _≤C_ : Rel C _
         _≤C_ = cardTo≤ {card}
@@ -434,7 +437,7 @@ module SGStates
                 let rec = acc-inverse (⋤-wellFounded q₁) in
                 rec q'⋤q₁
 
-    -- #TODO: wfRec and wfRec-building from the standard library might
+    -- #TODO: wfRec and wfRec-builder from the standard library might
     -- do this automatically. Skipped this for now.
     -- Current implementation mimics the <-rec function defined in
     -- the book "PROGRAM=PROOF" page 331 by Samuel Mimram (2025 version).
@@ -644,7 +647,14 @@ module SGStates
 
     --<C-total : IsTotalOrder _<C_
     --<C-total = ?
-    
+
+--------------------------------------------------------------------------------
+-- Normal form lists are always sorted.
+--------------------------------------------------------------------------------
+
+    -- If all elements in a list are ≤ x,
+    -- and if x ≤ y, then all elements in the list are ≤ y
+    -- (provided _≤_ is transititive).
     All-with-trans
         : {ℓ : Level}
         → {A : Set ℓ}
@@ -655,7 +665,6 @@ module SGStates
         → Transitive _≤_
         → All (_≤ x) L
         → All (_≤ y) L
-    --All-with-trans {ℓ} {A} {_≤_} {x} {y} {L} All≤x = ?
     All-with-trans {ℓ} {A} {_≤_} {x} {y} {[]} _ _ All≤x = All.[]
     All-with-trans {ℓ} {A} {_≤_} {x} {y} {a ∷ L} x≤y trans (a≤x All.∷ All≤x) = 
         let rec : All (_≤ y) L
@@ -747,11 +756,25 @@ module SGStates
         → All (_<C (idxSuc h)) (nflist q)
     lastNFIsBiggest q h =  ⋤-rec lastNFIsBiggestOUT lastNFIsBiggestRec q h
 
-    nflistsSorted
+    -- Output type of WF-recursion of `nflistsSorted`.
+    -- Used as the `P` argument to `⋤-rec`.
+    nfListsSortedOUT : Q → Set
+    nfListsSortedOUT q = AllPairs (_>C_) (nflist q)
+
+    nfListsSortedRec
         : (q : Q)
-        → AllPairs _<C_ (nflist q)
-    nflistsSorted (i , L , root h) = All.[] AllPairs.∷ AllPairs.[]
-    nflistsSorted (i , L , choose q h lc) = {! !}
+        → ((q' : Q) → (q' ⋤ q) → nfListsSortedOUT q')
+        → nfListsSortedOUT q
+    nfListsSortedRec (i , L , root h) _ = All.[] AllPairs.∷ AllPairs.[]
+    nfListsSortedRec (i , L , choose q h lc) recurse = {! !}
+
+    -- Enumeration-indices of NF representatives of newer NFs are always greater
+    -- than that of earlier NF's representatives.
+    -- I.e. i <C j if j appears later in the NFList than i.
+    nfListsSorted
+        : (q : Q)
+        → AllPairs _>C_ (nflist q)
+    nfListsSorted = ⋤-rec nfListsSortedOUT nfListsSortedRec
 
 -- All below commented out to speed up Agda...
 
