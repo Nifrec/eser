@@ -684,6 +684,7 @@ module SGStates
         (h : IsNotMax (idx q)) → (All (_<C idxSuc h) (nflist q))
 
     -- Actual recursive implementation, to be fed into ⋤-rec.
+    -- #TODO: LOT of duplicate code between the different cases.
     lastNFIsBiggestRec
         : (q : Q)
         → (
@@ -761,12 +762,54 @@ module SGStates
     nfListsSortedOUT : Q → Set
     nfListsSortedOUT q = AllPairs (_>C_) (nflist q)
 
+    -- Helper function of `nfListsSorted` below.
+    -- #TODO: LOT of duplicate code between the different cases.
     nfListsSortedRec
         : (q : Q)
         → ((q' : Q) → (q' ⋤ q) → nfListsSortedOUT q')
         → nfListsSortedOUT q
     nfListsSortedRec (i , L , root h) _ = All.[] AllPairs.∷ AllPairs.[]
-    nfListsSortedRec (i , L , choose q h lc) recurse = {! !}
+    nfListsSortedRec q@(i , L , choose q' h' lc@(freeChoice s h x x₁)) recurse =
+        let L' : NFList 
+            L' = nflist q'
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let rec : AllPairs _>C_ L'
+            rec = recurse q' (q'⋤q)
+        in
+        rec -- Works because L' ≐ L in the freeChoice case.
+    -- The forcedChoice case uses exactly the same proof as the freeChoice case.
+    nfListsSortedRec q@(i , L , choose q' h' lc@(forcedChoice s h x)) recurse =
+        let L' : NFList 
+            L' = nflist q'
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let rec : AllPairs _>C_ L'
+            rec = recurse q' (q'⋤q)
+        in
+        rec
+    -- In the newNF case, there actually is a new element added to L'
+    -- to produce L. The lemma `lastNFIsBiggest` proves that this new element
+    -- is greater than the other elements,
+    -- and recursion will handle the tail of the list.
+    nfListsSortedRec q@(i , L , choose q' h' lc@(newNF s h x)) recurse = 
+        let L' : NFList 
+            L' = nflist q'
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let rec : AllPairs _>C_ L'
+            rec = recurse q' (q'⋤q)
+        in
+        let lastBig : All (_>C_ (endoSuc h')) L'
+            lastBig = lastNFIsBiggest q' h'
+        in
+        lastBig AllPairs.∷ rec
 
     -- Enumeration-indices of NF representatives of newer NFs are always greater
     -- than that of earlier NF's representatives.
