@@ -666,30 +666,86 @@ module SGStates
         in
         a≤y All.∷ rec
 
+    -- See lastNFIsBiggest below for the fa¢ade function that one should use in
+    -- practise. It is defined via ⋤-rec (WF-recursion on
+    -- subchoicelog-relation),
+    -- The type below is the `P` argument in ⋤-rec.
+    lastNFIsBiggestOUT : Q → Set _
+    lastNFIsBiggestOUT q = 
+        (h : IsNotMax (idx q)) → (All (_<C idxSuc h) (nflist q))
+
+    -- Actual recursive implementation, to be fed into ⋤-rec.
+    lastNFIsBiggestRec
+        : (q : Q)
+        → (
+            (q' : Q) → (q' ⋤ q) → lastNFIsBiggestOUT q'
+          )
+        → lastNFIsBiggestOUT q
+    lastNFIsBiggestRec (i , L , (root k)) _ h = (endoSucBigger h) All.∷ All.[]
+    --lastNFIsBiggestRec (i , L , choose q' h' lc') recurse h = {! !}
+    lastNFIsBiggestRec q@(i , L , choose q' h' lc@(newNF s h₁ x)) recurse h =
+    -- h' and h₁ both say that `IsNotMax (idx q')`, and could be contracted
+    -- together.
+        let L' : NFList
+            L' = nflist q'
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let rec : All (_<C (idxSuc h')) L'
+            rec = recurse q' q'⋤q h'
+        in
+        let ISh'<ISh : (idxSuc h') <C (idxSuc h)
+            ISh'<ISh = endoSucBigger h
+        in
+            (endoSucBigger h) 
+            All.∷ 
+            (All-with-trans {0ℓ} {C} {_<C_} {idxSuc h'} {idxSuc h} {L'} 
+                            ISh'<ISh (cardTo<Trans {card}) rec)
+    -- In the freeChoice and forcedChoice cases, the NFList is not updated,
+    -- so L' = L (definitional equality).
+    lastNFIsBiggestRec q@(i , L , choose q' h' lc@(freeChoice s h₁ x x₁)) 
+                       recurse h =
+        let L' : NFList
+            L' = nflist q'
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let rec : All (_<C (idxSuc h')) L
+            rec = recurse q' q'⋤q h'
+        in
+        let ISh'<ISh : (idxSuc h') <C (idxSuc h)
+            ISh'<ISh = endoSucBigger h
+        in
+        All-with-trans {0ℓ} {C} {_<C_} {idxSuc h'} {idxSuc h} {L'} 
+                            ISh'<ISh (cardTo<Trans {card}) rec
+    -- Proof of the forcedChoice case is *exactly* the same as the
+    -- freeChoice case.
+    lastNFIsBiggestRec q@(i , L , choose q' h' lc@(forcedChoice s h₁ x))
+                    recurse h = 
+        let L' : NFList
+            L' = nflist q'
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let rec : All (_<C (idxSuc h')) L
+            rec = recurse q' q'⋤q h'
+        in
+        let ISh'<ISh : (idxSuc h') <C (idxSuc h)
+            ISh'<ISh = endoSucBigger h
+        in
+        All-with-trans {0ℓ} {C} {_<C_} {idxSuc h'} {idxSuc h} {L'} 
+                            ISh'<ISh (cardTo<Trans {card}) rec
+
+    -- The most recently added NF-representative has a greater
+    -- enumeration-index than the representatives of all earlier NFs.
     lastNFIsBiggest
         : (q : Q)
         → (h : IsNotMax (idx q))
         → All (_<C (idxSuc h)) (nflist q)
-    lastNFIsBiggest (i , L , root k) h = (endoSucBigger h) All.∷ All.[]
-    --lastNFIsBiggest (i , L , choose q' h' lc') h = {! !}
-    lastNFIsBiggest (i , L , choose q' h' (newNF s h₁ x)) h =
-    -- h' and h₁
-        let L' : NFList
-            L' = nflist q'
-        in
-        let rec : All (_<C (idxSuc h')) L'
-            rec = lastNFIsBiggest q' h'
-        in
-        let ISh'<ISh : (idxSuc h') <C (idxSuc h)
-            ISh'<ISh = ?
-        in
-            
-        -- Now need transitivity: (All ≤ x L) → (x ≤ y) → (All ≤ y L)...
-            (endoSucBigger h) 
-            All.∷ 
-            (All-with-trans {0ℓ} {C} {_<C_} {idxSuc h'} {idxSuc h} {L'} ISh'<ISh cardTo<Trans rec)
-    lastNFIsBiggest (i , L , choose q' h' (freeChoice s h₁ x x₁)) h = {! !}
-    lastNFIsBiggest (i , L , choose q' h' (forcedChoice s h₁ x)) h = {! !}
+    lastNFIsBiggest q h =  ⋤-rec lastNFIsBiggestOUT lastNFIsBiggestRec q h
 
     nflistsSorted
         : (q : Q)
