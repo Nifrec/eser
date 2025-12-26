@@ -851,6 +851,33 @@ module SGStates
         → AllPairs _>C_ (nflist q)
     nfListsSorted = ⋤-rec nfListsSortedOUT nfListsSortedRec
 
+--------------------------------------------------------------------------------
+-- All representatives x of normal forms, as they occur in a NFList
+-- of a state q, have `x ≤ (idx q)`.
+--
+-- This is proven via well-founded induction via ⋤-rec with P ≔ nfsAre≤OUT.
+--------------------------------------------------------------------------------
+
+    -- If m ≡ n or m < n, and n < k, then always m < k as well.
+    leqSmallerTrans
+        : {c : ℕ∞}
+        → {m n k : cardToSet c}
+        → (m ≡ n ⊎ cardTo< m n)
+        → cardTo< n k
+        → cardTo< m k
+    leqSmallerTrans {_} {m} {n} {k} (inj₁ m≡n) n<k = 
+        subst (λ x → cardTo< x k) (sym m≡n) n<k
+    leqSmallerTrans {fin (ℕ.suc x)} {m} {n} {k} (inj₂ m<n) n<k = 
+        let m≤Sm : (toℕ m) Data.Nat.≤ ℕ.suc (toℕ m)
+            m≤Sm = Data.Nat.Properties.n≤1+n (toℕ m)
+        in
+        let Sm≤Sn : ℕ.suc (toℕ m) Data.Nat.≤ ℕ.suc (toℕ n)
+            Sm≤Sn = s≤s (Data.Nat.Properties.≤-trans m≤Sm m<n)
+        in
+        Data.Nat.Properties.≤-trans Sm≤Sn n<k
+    leqSmallerTrans {∞} {m} {n} {k} (inj₂ m<n) n<k =
+        Data.Nat.Properties.<-trans m<n n<k
+
     nfsAre≤OUT : Q → Set
     nfsAre≤OUT q = (j : C) → (j ∈ nflist q) → (j ≡ idx q) ⊎ (cardTo< j (idx q))
 
