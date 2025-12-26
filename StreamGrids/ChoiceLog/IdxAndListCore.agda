@@ -939,27 +939,27 @@ module SGStates
     NFOUT : Q → Set _
     NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
 
-    nfTransposed 
+    nfTransposedRec 
         : (q' : Q)
         --^ Subchoicelog whose normal form we want.
         -- The complete ChoiceLog q is hidden in NFOUT
         -- (instead of being the first argument to this function)
-        -- hence the name `nfTransposed`.
+        -- hence the name `nfTransposedRec`.
         → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
         --^ Ability to make recursive calls.
         → NFOUT q'
-    --nfTransposed q' recurse q q'⋤q = ?
+    --nfTransposedRec q' recurse q q'⋤q = ?
     -- The normal form of the root element is always the root
     -- element itself, and is always the first normal form in the ChoiceLog,
     -- so has index 0 in the NFList.
-    nfTransposed (i' , L' , root h') recurse q q'⋤q = Fin.zero
-    nfTransposed 
+    nfTransposedRec (i' , L' , root h') recurse q q'⋤q = Fin.zero
+    nfTransposedRec 
         q'@(i' , L' , choose q'' h'' (newNF s h x)) 
         recurse q q'⋤q = {! !}
-    nfTransposed 
+    nfTransposedRec 
         q'@(i' , L' , choose q'' h'' (freeChoice s h x x₁)) 
         recurse q q'⋤q = {! !}
-    nfTransposed 
+    nfTransposedRec 
         q'@(i' , L' , choose q'' h'' 
         lc''@(forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
         recurse q q'⋤q =
