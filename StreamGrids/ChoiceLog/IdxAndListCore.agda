@@ -881,15 +881,20 @@ module SGStates
             with cardToDecidableEq card j (idxSuc h') -- idx q  ≐ idxSuc h
     ... | yes j≡idxq = inj₁ j≡idxq
     ... | no  j≢idxq = 
+            let q'⋤q : q' ⋤ q
+                q'⋤q = onechoice q' h' lc
+            in
             let j∈L' = notFirstThenInSuffix j∈L j≢idxq
             in
-            let j≤idxq' = recurse q' (onechoice q' h' lc) j j∈L'
+            let j≤idxq' = recurse q' q'⋤q j j∈L'
             in
-            -- WIP : now need a general lemma to handle the recursive case.
-            -- Will need to PAMA on rec, which we can't do easily in this
-            -- context.
-            let j<idxq = 
-            {! rec !}
+            let idxq'<idxq : (idx q') <C (idx q)
+                idxq'<idxq = sublogSmallerIdx q'⋤q
+            in
+            let j<idxq : j <C (idx q)
+                j<idxq = leqSmallerTrans j≤idxq' idxq'<idxq 
+            in
+            inj₂ j<idxq
     nfsAre≤Rec (i , L , choose q h (freeChoice s h₁ x x₁)) recurse = {! !}
     nfsAre≤Rec (i , L , choose q h (forcedChoice s h₁ x)) recurse = {! !}
 
