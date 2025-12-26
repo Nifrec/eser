@@ -935,217 +935,217 @@ module SGStates
 ---- #TODO: redefine nf. Define nfTransposed() and nf().
 ----!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
---    -- #TODO: comment description...
---    NFOUT : Q → Set _
---    NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
+    -- #TODO: comment description...
+    NFOUT : Q → Set _
+    NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
 
---    nfTransposed 
---        : (q' : Q)
---        --^ Subchoicelog whose normal form we want.
---        -- The complete ChoiceLog q is hidden in NFOUT
---        -- (instead of being the first argument to this function)
---        -- hence the name `nfTransposed`.
---        → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
---        --^ Ability to make recursive calls.
---        → NFOUT q'
---    --nfTransposed q' recurse q q'⋤q = ?
---    -- The normal form of the root element is always the root
---    -- element itself, and is always the first normal form in the ChoiceLog,
---    -- so has index 0 in the NFList.
---    nfTransposed (i' , L' , root h') recurse q q'⋤q = Fin.zero
---    nfTransposed 
---        q'@(i' , L' , choose q'' h'' (newNF s h x)) 
---        recurse q q'⋤q = {! !}
---    nfTransposed 
---        q'@(i' , L' , choose q'' h'' (freeChoice s h x x₁)) 
---        recurse q q'⋤q = {! !}
---    nfTransposed 
---        q'@(i' , L' , choose q'' h'' 
---        lc''@(forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
---        recurse q q'⋤q =
---        let x = idxToEl ix in
---        --let h''' = proj₁ q'⋤q in
---        let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
---        -- There is h'' and h''', which are not judgementally equal
---        -- but definitely propositionally equal since `IsNotMax i''` is a prop.
---        let x⊂nextq''h'' = 
---                subst (λ v → (x ⊂ nextEl {q''} v)) (h'''≡h'') x⊂nextq'' 
---        in
---        -- The LHS of the following term is actually 
---        -- elToIdx (idxToEl ix), not ix. However, these functions are inverse!
---        -- Same problem applies to the RHS.
---        let ix<iq'-almost = Signoid.subrelat S x (el q') x⊂nextq''h'' in
---        -- Remove the invese functions from the LHS:
---        let ixInv = invIdxElIdx ix in
---        let ix<iq'-2 = subst (λ i → cardTo< i _) ixInv ix<iq'-almost in
---        -- Now from the RHS:
---        let iq'Inv = invIdxElIdx (idxSuc h'') in
---        let ix<iq'-3 = subst (λ i → cardTo< _ i) iq'Inv ix<iq'-2 in
---        -- Get the subchoicelog corresponding to the element x.
---        let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ix<iq'-3 in
---        let idxqx : C
---            idxqx = idx qx
---        in
---        -- Get the normal form of x for any desired superlog of qx
---        -- (this is the type NFOUTx').
---        let NFOUTx' = recurse qx qx⋤q' in
---        -- Specialise to the superlog q', which will give us 
---        -- ix' as in index in L' (where L' is the NFList of qx, the choice log
---        -- with x as last choice).
---        -- From here we can prove that ix' < ix, 
---        -- which we need to call Signoid.coerc to coerce along NF(X) ≈ x.
---        let Lx : NFList
---            Lx = nflist qx
---        in
---        let ix'-in-Lx : Indices Lx
---            ix'-in-Lx = NFOUTx' q' qx⋤q' 
---        in 
---        let ix' : C
---            ix' = lookup Lx ix'-in-Lx
---        in
---        let ix'∈Lx : ix' ∈ Lx
---            ix'∈Lx = ∈-lookup {xs = Lx} ix'-in-Lx 
---        in
---        -- This is `ix'≡ix ⊎ ix'<ix` (but using cardTo<)
---        let ix'≤ix : (ix' ≡ ix) ⊎ (cardTo< ix' ix)
---            ix'≤ix = subst (λ k → ix' ≡ k ⊎ cardTo< ix' k) 
---                           (sym ix≡idxqx) (nfsAre≤ qx ix' ix'∈Lx)
---            --#TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
---            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
---            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
---            --prove nfsAre≤
---        in
---        -- ix' cannot be ix, because ix' ∈ Lx
---        -- but x is not a normal form, which was proven via ix ∉ L'
---        -- (and x is an element in q', 
---        -- and qx the corresponding subchoicelog of q',  so Lx ≼ L')
---        -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
---        --let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
---        --let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
---        let Lx≼L' : Lx ≼ L'
---            Lx≼:' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q')
---        in
---        let ix∉Lx : ix ∉ Lx
---            ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' 
---        in
---        let ix'≢ix : ix' ≢ ix
---            ix'≢ix = λ ix'≡ix 
---                     → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
---        in
---        let ix'<ix : cardTo< ix' ix
---            ix'<ix = elimCaseLeft ix'≤ix ix'≢ix 
---        in
---        let invix' : C
---            invix' = elToIdx (idxToEl ix')
---        in
---        let ix'≡invix' : ix' ≡ invix'
---            ix'≡invix' = sym (invIdxElIdx ix')
---        in
---        let invix'<ix : cardTo< invix' ix
---            invix'<ix = subst (λ k  → cardTo< k ix) ix'≡invix' ix'<ix
---        in
---        let ix≡elToIdxx : ix ≡ (elToIdx x)
---            ix≡elToIdxx = sym (invIdxElIdx ix)
---        in
---        let invix'<elToIdxx : cardTo< invix' (elToIdx x)
---            invix'<elToIdxx = subst (λ k  → cardTo< invix' k) 
---                                    ix≡elToIdxx 
---                                    invix'<ix
---        in
---        let coercOut : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
---            coercOut = Signoid.coerc S (nextEl h'') 
---                x x⊂nextq''h'' (idxToEl ix') invix'<elToIdxx
---        in
---        let (y' , idxq*<idxnextq'') = coercOut in
---        let idxq* = elToIdx y' in
---        -- The A-is-enumerable bijection elToIdx ∘ idxToEl = id causes the
---        -- need a subst here: (Signoid.elToIdx S (nextEl h'')) != (endoSuc h'')
---        let k : cardTo< idxq* (idx q')
---            k = subst (λ j → cardTo< idxq* j) 
---                      (nextIdxUnique2 h'') idxq*<idxnextq''
---        in
---        let (q* , q*⋤q' , idxq'≡idxq*) = getSubLog q' idxq* k
---        in
---        let L* = nflist q* in
---        let iqn-in-L* : Indices L*
---            iqn-in-L* = (recurse q* q*⋤q') q' q*⋤q' 
---        in
---        let L*≼L' : L* ≼ L' 
---            L*≼L' = multichoiceSuffix' (inj₂ q*⋤q')
---        in
---        let iqn-in-L' : Indices L'
---            iqn-in-L' = suffixIdxInclusion L*≼L' iqn-in-L* 
---        in
---        iqn-in-L'
---    --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
---    --... | newNF s h₁ x = {! !}
---    --... | freeChoice s h₁ x x₁ = {! !}
---    --... | forcedChoice {i''} {L''} s'' h'' (ix , x⊂nextq'' , ix∉L') = 
---    --    let x = idxToEl ix in
---    --    --let h''' = proj₁ q'⋤q in
---    --    let ix<iq' = Signoid.subrelat S x (el q') {! x⊂nextq'' !} in
---    --    let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ? in
---    --    let x' = recurse qx ? in
---    --    --let q* = Signoid.coerc 
---    --    {! !}
+    nfTransposed 
+        : (q' : Q)
+        --^ Subchoicelog whose normal form we want.
+        -- The complete ChoiceLog q is hidden in NFOUT
+        -- (instead of being the first argument to this function)
+        -- hence the name `nfTransposed`.
+        → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
+        --^ Ability to make recursive calls.
+        → NFOUT q'
+    --nfTransposed q' recurse q q'⋤q = ?
+    -- The normal form of the root element is always the root
+    -- element itself, and is always the first normal form in the ChoiceLog,
+    -- so has index 0 in the NFList.
+    nfTransposed (i' , L' , root h') recurse q q'⋤q = Fin.zero
+    nfTransposed 
+        q'@(i' , L' , choose q'' h'' (newNF s h x)) 
+        recurse q q'⋤q = {! !}
+    nfTransposed 
+        q'@(i' , L' , choose q'' h'' (freeChoice s h x x₁)) 
+        recurse q q'⋤q = {! !}
+    nfTransposed 
+        q'@(i' , L' , choose q'' h'' 
+        lc''@(forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
+        recurse q q'⋤q =
+        let x = idxToEl ix in
+        --let h''' = proj₁ q'⋤q in
+        let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
+        -- There is h'' and h''', which are not judgementally equal
+        -- but definitely propositionally equal since `IsNotMax i''` is a prop.
+        let x⊂nextq''h'' = 
+                subst (λ v → (x ⊂ nextEl {q''} v)) (h'''≡h'') x⊂nextq'' 
+        in
+        -- The LHS of the following term is actually 
+        -- elToIdx (idxToEl ix), not ix. However, these functions are inverse!
+        -- Same problem applies to the RHS.
+        let ix<iq'-almost = Signoid.subrelat S x (el q') x⊂nextq''h'' in
+        -- Remove the invese functions from the LHS:
+        let ixInv = invIdxElIdx ix in
+        let ix<iq'-2 = subst (λ i → cardTo< i _) ixInv ix<iq'-almost in
+        -- Now from the RHS:
+        let iq'Inv = invIdxElIdx (idxSuc h'') in
+        let ix<iq'-3 = subst (λ i → cardTo< _ i) iq'Inv ix<iq'-2 in
+        -- Get the subchoicelog corresponding to the element x.
+        let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ix<iq'-3 in
+        let idxqx : C
+            idxqx = idx qx
+        in
+        -- Get the normal form of x for any desired superlog of qx
+        -- (this is the type NFOUTx').
+        let NFOUTx' = recurse qx qx⋤q' in
+        -- Specialise to the superlog q', which will give us 
+        -- ix' as in index in L' (where L' is the NFList of qx, the choice log
+        -- with x as last choice).
+        -- From here we can prove that ix' < ix, 
+        -- which we need to call Signoid.coerc to coerce along NF(X) ≈ x.
+        let Lx : NFList
+            Lx = nflist qx
+        in
+        let ix'-in-Lx : Indices Lx
+            ix'-in-Lx = NFOUTx' q' qx⋤q' 
+        in 
+        let ix' : C
+            ix' = lookup Lx ix'-in-Lx
+        in
+        let ix'∈Lx : ix' ∈ Lx
+            ix'∈Lx = ∈-lookup {xs = Lx} ix'-in-Lx 
+        in
+        -- This is `ix'≡ix ⊎ ix'<ix` (but using cardTo<)
+        let ix'≤ix : (ix' ≡ ix) ⊎ (cardTo< ix' ix)
+            ix'≤ix = subst (λ k → ix' ≡ k ⊎ cardTo< ix' k) 
+                           (sym ix≡idxqx) (nfsAre≤ qx ix' ix'∈Lx)
+            --#TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            --prove nfsAre≤
+        in
+        -- ix' cannot be ix, because ix' ∈ Lx
+        -- but x is not a normal form, which was proven via ix ∉ L'
+        -- (and x is an element in q', 
+        -- and qx the corresponding subchoicelog of q',  so Lx ≼ L')
+        -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
+        --let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
+        --let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
+        let Lx≼L' : Lx ≼ L'
+            Lx≼:' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q')
+        in
+        let ix∉Lx : ix ∉ Lx
+            ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' 
+        in
+        let ix'≢ix : ix' ≢ ix
+            ix'≢ix = λ ix'≡ix 
+                     → ⊥-elim (ix∉Lx (subst (λ j → j ∈ Lx) ix'≡ix ix'∈Lx)) 
+        in
+        let ix'<ix : cardTo< ix' ix
+            ix'<ix = elimCaseLeft ix'≤ix ix'≢ix 
+        in
+        let invix' : C
+            invix' = elToIdx (idxToEl ix')
+        in
+        let ix'≡invix' : ix' ≡ invix'
+            ix'≡invix' = sym (invIdxElIdx ix')
+        in
+        let invix'<ix : cardTo< invix' ix
+            invix'<ix = subst (λ k  → cardTo< k ix) ix'≡invix' ix'<ix
+        in
+        let ix≡elToIdxx : ix ≡ (elToIdx x)
+            ix≡elToIdxx = sym (invIdxElIdx ix)
+        in
+        let invix'<elToIdxx : cardTo< invix' (elToIdx x)
+            invix'<elToIdxx = subst (λ k  → cardTo< invix' k) 
+                                    ix≡elToIdxx 
+                                    invix'<ix
+        in
+        let coercOut : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
+            coercOut = Signoid.coerc S (nextEl h'') 
+                x x⊂nextq''h'' (idxToEl ix') invix'<elToIdxx
+        in
+        let (y' , idxq*<idxnextq'') = coercOut in
+        let idxq* = elToIdx y' in
+        -- The A-is-enumerable bijection elToIdx ∘ idxToEl = id causes the
+        -- need a subst here: (Signoid.elToIdx S (nextEl h'')) != (endoSuc h'')
+        let k : cardTo< idxq* (idx q')
+            k = subst (λ j → cardTo< idxq* j) 
+                      (nextIdxUnique2 h'') idxq*<idxnextq''
+        in
+        let (q* , q*⋤q' , idxq'≡idxq*) = getSubLog q' idxq* k
+        in
+        let L* = nflist q* in
+        let iqn-in-L* : Indices L*
+            iqn-in-L* = (recurse q* q*⋤q') q' q*⋤q' 
+        in
+        let L*≼L' : L* ≼ L' 
+            L*≼L' = multichoiceSuffix' (inj₂ q*⋤q')
+        in
+        let iqn-in-L' : Indices L'
+            iqn-in-L' = suffixIdxInclusion L*≼L' iqn-in-L* 
+        in
+        iqn-in-L'
+    --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
+    --... | newNF s h₁ x = {! !}
+    --... | freeChoice s h₁ x x₁ = {! !}
+    --... | forcedChoice {i''} {L''} s'' h'' (ix , x⊂nextq'' , ix∉L') = 
+    --    let x = idxToEl ix in
+    --    --let h''' = proj₁ q'⋤q in
+    --    let ix<iq' = Signoid.subrelat S x (el q') {! x⊂nextq'' !} in
+    --    let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ? in
+    --    let x' = recurse qx ? in
+    --    --let q* = Signoid.coerc 
+    --    {! !}
 
---    --nf  : {i : C}
---    --    → {L : NFList}
---    --    → {s : SGState i L} 
---    --    → (x : sElem (i , L , s)) 
---    --    → Indices L
---    ---- We know that L' is [ 0 ].
---    ---- Prove that L' is a sublist of L, then we know that 0 ∈ L.
---    ---- * (SomeLemma x⊑q) should give L' ⊆ L.
---    ---- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
---    ----      or even only 0 ∈ L' is enough.
---    --nf {i} {L} {s} ((i' , L' , root h) , x⊑q) = ?    
---    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (newNF s'' x)) , x⊑q) = {! !}
---    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (freeChoice s'' x x₁)) , x⊑q) = {! !}
---    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (forcedChoice s'' x)) , x⊑q) = {! !}
---    --    where
---    --        q : Q
---    --        q = (i , L , s)
+    --nf  : {i : C}
+    --    → {L : NFList}
+    --    → {s : SGState i L} 
+    --    → (x : sElem (i , L , s)) 
+    --    → Indices L
+    ---- We know that L' is [ 0 ].
+    ---- Prove that L' is a sublist of L, then we know that 0 ∈ L.
+    ---- * (SomeLemma x⊑q) should give L' ⊆ L.
+    ---- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
+    ----      or even only 0 ∈ L' is enough.
+    --nf {i} {L} {s} ((i' , L' , root h) , x⊑q) = ?    
+    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (newNF s'' x)) , x⊑q) = {! !}
+    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (freeChoice s'' x x₁)) , x⊑q) = {! !}
+    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (forcedChoice s'' x)) , x⊑q) = {! !}
+    --    where
+    --        q : Q
+    --        q = (i , L , s)
 
---    ---- #TODO: better define this in terms of sElem first,
---    ---- thereafter make iElem version (with type as below)
---    ---- that
---    ---- 1. Maps an iElem to an sElem.
---    ---- 2. Calls the sElem version of nf().
---    ---- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
---    ----  Find a better name.
---    --Inf 
---    --    : {i : C}
---    --    → {L : NFList}
---    --    → {s : SGState i L}
---    --    → (x : C)
---    --    → (x <C height (i , L , s))
---    --    → Indices L
---    --Inf {L} {s} x x∈s = {! !}
+    ---- #TODO: better define this in terms of sElem first,
+    ---- thereafter make iElem version (with type as below)
+    ---- that
+    ---- 1. Maps an iElem to an sElem.
+    ---- 2. Calls the sElem version of nf().
+    ---- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
+    ----  Find a better name.
+    --Inf 
+    --    : {i : C}
+    --    → {L : NFList}
+    --    → {s : SGState i L}
+    --    → (x : C)
+    --    → (x <C height (i , L , s))
+    --    → Indices L
+    --Inf {L} {s} x x∈s = {! !}
 
 
 
     
-----------------------------------------------------------------------------------
----- Maybe keep, maybe move, maybe remove.
-----------------------------------------------------------------------------------
---    --next : {n : StateIndices} → IsNotMax n → A
---    --next {n} notMax = Signoid.enum S (cardLower notMax)
+--------------------------------------------------------------------------------
+-- Maybe keep, maybe move, maybe remove.
+--------------------------------------------------------------------------------
+    --next : {n : StateIndices} → IsNotMax n → A
+    --next {n} notMax = Signoid.enum S (cardLower notMax)
 
---    --⊑-antisym : Antisymmetric _≡_ _⊑_
---    --⊑-antisym {q} {q} (refl q) q⊑q = refl
---    --⊑-antisym {q} {q} q⊑q (refl q) = refl
---    --⊑-antisym {p} {q} (sub q' p ℓq p⊑q') (sub p' q ℓp q⊑p') = 
---    --    let p'⊑p = sub p' p' ℓp (refl p') in
---    --    let p'⊑q' = ⊑-trans p'⊑p p⊑q' in
---    --    let q'⊑q = sub q' q' ℓq (refl q') in
---    --    let q'⊑p' = ⊑-trans q'⊑q q⊑p' in
---    --    let p'≡q' = ⊑-antisym p'⊑q' q'⊑p' in
---    --     Still need ℓp = ℓq, given that we could
---    --     apply cong pm p'≡q' with (λ x → choose x ℓp), and then subst the
---    --     right occurrence of ℓp via ℓp=ℓq.
---    --    let pℓp≡qℓp = cong (λ x → choose x) p'≡q' (refl (choose p')) in
---    --    {!  !}
+    --⊑-antisym : Antisymmetric _≡_ _⊑_
+    --⊑-antisym {q} {q} (refl q) q⊑q = refl
+    --⊑-antisym {q} {q} q⊑q (refl q) = refl
+    --⊑-antisym {p} {q} (sub q' p ℓq p⊑q') (sub p' q ℓp q⊑p') = 
+    --    let p'⊑p = sub p' p' ℓp (refl p') in
+    --    let p'⊑q' = ⊑-trans p'⊑p p⊑q' in
+    --    let q'⊑q = sub q' q' ℓq (refl q') in
+    --    let q'⊑p' = ⊑-trans q'⊑q q⊑p' in
+    --    let p'≡q' = ⊑-antisym p'⊑q' q'⊑p' in
+    --     Still need ℓp = ℓq, given that we could
+    --     apply cong pm p'≡q' with (λ x → choose x ℓp), and then subst the
+    --     right occurrence of ℓp via ℓp=ℓq.
+    --    let pℓp≡qℓp = cong (λ x → choose x) p'≡q' (refl (choose p')) in
+    --    {!  !}
 
---    -- #TODO: conjecture: Totality and decidability of _⊑_ can also be proven.
+    -- #TODO: conjecture: Totality and decidability of _⊑_ can also be proven.
 
