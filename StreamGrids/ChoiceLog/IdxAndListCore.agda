@@ -872,53 +872,53 @@ module SGStates
     notFirstThenInSuffix {X} {xs} {a} {x} (Any.here a≡x) a≢x = ⊥-elim (a≢x a≡x)
     notFirstThenInSuffix {X} {xs} {a} {x} (Any.there a∈xs) a≢x = a∈xs
     
+    -- Lemma for nfsAre≤Rec below.
+    -- It handles all the cases where j∈L implies j∈L'
+    -- (where L' = nflist q', and q' is the choicelog without the last choice).
+    nfsAre≤RecLemma
+        : (j  : C)
+        → (q' : Q)
+        → (h' : IsNotMax (idx q'))
+        → (lc : LegalChoices q')
+        → (j ∈ (nflist q'))
+        → ( (q* : Q) → q* ⋤ (QSucc h' lc) → nfsAre≤OUT q*)
+        → (j ≡ idx (QSucc h' lc)) ⊎ (j <C idx (QSucc h' lc))
+    nfsAre≤RecLemma j q' h' lc j∈L' recurse = 
+        let q : Q
+            q = QSucc h' lc
+        in
+        let q'⋤q : q' ⋤ q
+            q'⋤q = onechoice q' h' lc
+        in
+        let j≤idxq' = recurse q' q'⋤q j j∈L'
+        in
+        let idxq'<idxq : (idx q') <C (idx q)
+            idxq'<idxq = sublogSmallerIdx q'⋤q
+        in
+        let j<idxq : j <C (idx q)
+            j<idxq = leqSmallerTrans j≤idxq' idxq'<idxq 
+        in
+        inj₂ j<idxq
+
     nfsAre≤Rec 
         : (q : Q)
         → ( (q' : Q) → q' ⋤ q → nfsAre≤OUT q')
         → nfsAre≤OUT q
     nfsAre≤Rec (i , L , root h) recurse j (Any.here j≡0) = inj₁ j≡0
     nfsAre≤Rec q@(i , L , choose q' h' lc@(newNF s' h₁ x)) recurse j j∈L 
-            with cardToDecidableEq card j (idxSuc h') -- idx q  ≐ idxSuc h
+            -- Make case distinction on whether `j ≡ head L` or not.
+            -- Note that (head L) ≐ idxSuc h' ≐ idx q by def of UpdateNFList.
+            with cardToDecidableEq card j (idxSuc h')
     ... | yes j≡idxq = inj₁ j≡idxq
     ... | no  j≢idxq = 
-            let q'⋤q : q' ⋤ q
-                q'⋤q = onechoice q' h' lc
-            in
             let j∈L' = notFirstThenInSuffix j∈L j≢idxq
             in
-            let j≤idxq' = recurse q' q'⋤q j j∈L'
-            in
-            let idxq'<idxq : (idx q') <C (idx q)
-                idxq'<idxq = sublogSmallerIdx q'⋤q
-            in
-            let j<idxq : j <C (idx q)
-                j<idxq = leqSmallerTrans j≤idxq' idxq'<idxq 
-            in
-            inj₂ j<idxq
-    nfsAre≤Rec (i , L , choose q h (freeChoice s h₁ x x₁)) recurse = {! !}
-    nfsAre≤Rec (i , L , choose q h (forcedChoice s h₁ x)) recurse = {! !}
-
-
-
-
-    --nfsAre≤Rec 
-    --    : (q : Q)
-    --    → ( (q' : Q) → q' ⋤ q → nfsAre≤OUT q')
-    --    → nfsAre≤OUT q
-    --nfsAre≤Rec (i , [] , s) recurse j ()
-    --nfsAre≤Rec q@(i , L@(a ∷ as) , s) recurse j (Any.here j≡a) 
-    --        with cardToDecidableEq card a (idx q)
-    --... | yes a≡idxq = inj₁ (trans j≡a a≡idxq)
-    --... | no  a≢idxq = -- use AllPairs sortedness!
-    ---- No won't work cuz we don't know a == idx q. That might not hold.
-    ---- What to do?
-    ---- First split on s and then on L -> then get q' and call recurse.
-    --nfsAre≤Rec (i , L@(a ∷ as) , s) recurse j (Any.there j∈L) =
-    --    let rec : ? 
-    --        rec = ?
-    --    in
-    --    {! !}
-
+            nfsAre≤RecLemma j q' h' lc j∈L' recurse
+    -- The last two cases are easier since L' = L, so j∈L → j∈L' already.
+    nfsAre≤Rec (_ , L , choose q' h' lc@(freeChoice _ _ _ _)) recurse j j∈L =
+            nfsAre≤RecLemma j q' h' lc j∈L recurse
+    nfsAre≤Rec (_ , L , choose q' h' lc@(forcedChoice _ _ _)) recurse j j∈L =
+            nfsAre≤RecLemma j q' h' lc j∈L recurse
 
     -- The enumeration-indices in a NFList of a choice-log
     -- are ≤ than the enum-idx of the last element added to the choice-log.
