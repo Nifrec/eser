@@ -271,7 +271,6 @@ module SGStates
         let q'≡q = refl in
         inj₁ q'≡q
     sublogLastChoice {q'} {q} h lc (multichoice q' q q'⋤q h lc) = inj₂ q'⋤q
-     
 
 --------------------------------------------------------------------------------
 -- Element representations.
@@ -453,6 +452,39 @@ module SGStates
             lemma : (q : Q) → (Acc _⋤_ q) → P q
             lemma q (acc allPredAcc) 
                 = recurse q (λ q' → (λ q'⋤q → (lemma q' (allPredAcc q'⋤q))))
+     
+--------------------------------------------------------------------------------
+-- Indices (first projections) of sublogs are smaller than of the superlog.
+--
+-- This is proven via ⋤-rec with P ≔ sublogSmallerIdxOUT.
+-- See `sublogSmallerIdx` for the fa¢ade function that is to be used in
+-- practice.
+--------------------------------------------------------------------------------
+
+    sublogSmallerIdxOUT : Q → Set _
+    sublogSmallerIdxOUT q = (q' : Q) → (q' ⋤ q) → (idx q') <C (idx q)
+
+    sublogSmallerIdxRec
+        : (q : Q)
+        → ( (q' : Q) → (q' ⋤ q) → (sublogSmallerIdxOUT q'))
+        → sublogSmallerIdxOUT q
+    sublogSmallerIdxRec q _ q' (onechoice q₁ h lc) = endoSucBigger h
+    sublogSmallerIdxRec q recurse q' q'⋤q@(multichoice q' q₁ q'⋤q₁ h lc) = 
+        let rec = recurse q₁ (onechoice q₁ h lc)
+        in
+        let idxq'<idxq₁ = rec q' q'⋤q₁
+        in 
+        let idxq₁<idxq : (idx q₁) <C (idx q)
+            idxq₁<idxq = endoSucBigger h
+        in
+        cardTo<Trans {card} idxq'<idxq₁ idxq₁<idxq
+
+    sublogSmallerIdx
+        : {q' q : Q}
+        → q' ⋤ q
+        → (idx q') <C (idx q)
+    sublogSmallerIdx {q'} {q} q'⋤q = 
+        ⋤-rec sublogSmallerIdxOUT sublogSmallerIdxRec q q' q'⋤q
 
 --------------------------------------------------------------------------------
 -- Suffix of normal-forms-list relation.
