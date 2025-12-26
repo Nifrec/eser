@@ -74,6 +74,27 @@ cardTo<Trans
 cardTo<Trans {fin (ℕ.suc n)} = Data.Fin.Properties.<-trans
 cardTo<Trans {∞} = Data.Nat.Properties.<-trans
 
+-- If m ≡ n or m < n, and n < k, then always m < k as well.
+leqSmallerTrans
+    : {c : ℕ∞}
+    → {m n k : cardToSet c}
+    → (m ≡ n ⊎ cardTo< m n)
+    → cardTo< n k
+    → cardTo< m k
+leqSmallerTrans {_} {m} {n} {k} (inj₁ m≡n) n<k = 
+    subst (λ x → cardTo< x k) (sym m≡n) n<k
+leqSmallerTrans {fin (ℕ.suc x)} {m} {n} {k} (inj₂ m<n) n<k = 
+    let m≤Sm : (toℕ m) Data.Nat.≤ ℕ.suc (toℕ m)
+        m≤Sm = Data.Nat.Properties.n≤1+n (toℕ m)
+    in
+    let Sm≤Sn : ℕ.suc (toℕ m) Data.Nat.≤ ℕ.suc (toℕ n)
+        Sm≤Sn = s≤s (Data.Nat.Properties.≤-trans m≤Sm m<n)
+    in
+    Data.Nat.Properties.≤-trans Sm≤Sn n<k
+leqSmallerTrans {∞} {m} {n} {k} (inj₂ m<n) n<k =
+    Data.Nat.Properties.<-trans m<n n<k
+
+
 cardTo<Dec
     : {c : ℕ∞}
     → Decidable (cardTo< {c})
