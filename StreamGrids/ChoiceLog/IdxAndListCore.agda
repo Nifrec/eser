@@ -867,14 +867,14 @@ module SGStates
 --------------------------------------------------------------------------------
 
     NFOUT : Q → Set _
-    NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
+    NFOUT q' = Indices (nflist q')
 
-    nfTransposedRec 
+    nfRec 
         : (q' : Q)
         --^ Subchoicelog whose normal form we want.
         -- The complete ChoiceLog q is hidden in NFOUT
         -- (instead of being the first argument to this function)
-        -- hence the name `nfTransposedRec`.
+        -- hence the name `nfRec`.
         → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
         --^ Ability to make recursive calls.
         → NFOUT q'
@@ -882,19 +882,19 @@ module SGStates
     -- The normal form of the root element is always the root
     -- element itself, and is always the first normal form in the ChoiceLog,
     -- so has index 0 in the NFList.
-    nfTransposedRec (i' , L' , root h') recurse q q'⋤q = Fin.zero
+    nfRec (i' , L' , root h') recurse = Fin.zero
     -- newNF case is easy: the element itself is already in normal form,
     -- and the most recent entry in the NFList.
     -- Agda knows that L' is of the form (y ∷ L'') by definition
     -- of UpdateNFList, so we don't need to prove that L' is nonempty.
-    nfTransposedRec 
+    nfRec 
         q'@(i' , L' , choose q'' h'' (newNF s h noCoerc)) 
-        recurse q q'⋤q = Fin.zero
+        recurse = Fin.zero
     -- freeChoice case is easy, since the freeChoice constructor
     -- already stores the desired index.
-    nfTransposedRec 
+    nfRec 
         q'@(i' , L' , choose q'' h'' (freeChoice s h noCoerc iₙ)) 
-        recurse q q'⋤q = iₙ
+        recurse = iₙ
     -- The forcedChoice case is the hardest.
     -- Let y be the most recent element added to q'.
     -- Input: witness x ⊂ y s.t. x is not in normal form.
@@ -904,10 +904,10 @@ module SGStates
     --  2. Use the coerc attribute of the Signoid to get y' 
     --      (represented by q* in code below).
     --  3. Recurse again to normalise y'.
-    nfTransposedRec 
+    nfRec 
         q'@(i' , L' , choose q'' h'' 
         lc''@(forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
-        recurse q q'⋤q =
+        recurse =
         let x = idxToEl ix in
         let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
         -- There is h'' and h''', which are not judgementally equal
@@ -932,7 +932,6 @@ module SGStates
         in
         -- Get the normal form of x for any desired superlog of qx
         -- (this is the type NFOUTx').
-        let NFOUTx' = recurse qx qx⋤q' in
         -- Specialise to the superlog q', which will give us 
         -- ix' as in index in L' (where L' is the NFList of qx, the choice log
         -- with x as last choice).
@@ -942,7 +941,7 @@ module SGStates
             Lx = nflist qx
         in
         let ix'-in-Lx : Indices Lx
-            ix'-in-Lx = NFOUTx' q' qx⋤q' 
+            ix'-in-Lx = recurse qx qx⋤q'
         in 
         let ix' : C
             ix' = lookup Lx ix'-in-Lx
@@ -1007,7 +1006,7 @@ module SGStates
         in
         let L* = nflist q* in
         let iqn-in-L* : Indices L*
-            iqn-in-L* = (recurse q* q*⋤q') q' q*⋤q' 
+            iqn-in-L* = recurse q* q*⋤q'
         in
         let L*≼L' : L* ≼ L' 
             L*≼L' = multichoiceSuffix' (inj₂ q*⋤q')
@@ -1017,3 +1016,4 @@ module SGStates
         in
         iqn-in-L'
 
+    
