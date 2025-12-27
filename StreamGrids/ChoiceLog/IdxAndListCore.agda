@@ -936,6 +936,8 @@ module SGStates
 ---- #TODO: redefine nf. Define nfTransposed() and nf().
 ----!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    
+
     -- #TODO: comment description...
     NFOUT : Q → Set _
     NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
@@ -949,23 +951,37 @@ module SGStates
         → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
         --^ Ability to make recursive calls.
         → NFOUT q'
-    --nfTransposedRec q' recurse q q'⋤q = ?
+
     -- The normal form of the root element is always the root
     -- element itself, and is always the first normal form in the ChoiceLog,
     -- so has index 0 in the NFList.
     nfTransposedRec (i' , L' , root h') recurse q q'⋤q = Fin.zero
+    -- newNF case is easy: the element itself is already in normal form,
+    -- and the most recent entry in the NFList.
+    -- Agda knows that L' is of the form (y ∷ L'') by definition
+    -- of UpdateNFList, so we don't need to prove that L' is nonempty.
     nfTransposedRec 
-        q'@(i' , L' , choose q'' h'' (newNF s h x)) 
-        recurse q q'⋤q = {! !}
+        q'@(i' , L' , choose q'' h'' (newNF s h noCoerc)) 
+        recurse q q'⋤q = Fin.zero
+    -- freeChoice case is easy, since the freeChoice constructor
+    -- already stores the desired index.
     nfTransposedRec 
-        q'@(i' , L' , choose q'' h'' (freeChoice s h x x₁)) 
-        recurse q q'⋤q = {! !}
+        q'@(i' , L' , choose q'' h'' (freeChoice s h noCoerc iₙ)) 
+        recurse q q'⋤q = iₙ
+    -- The forcedChoice case is the hardest.
+    -- Let y be the most recent element added to q'.
+    -- Input: witness x ⊂ y s.t. x is not in normal form.
+    -- Desired output: the normal form of y' ≔ coerc(y, x, nf(x)).
+    -- Do:
+    --  1. Recurse to compute nf(x).
+    --  2. Use the coerc attribute of the Signoid to get y' 
+    --      (represented by q* in code below).
+    --  3. Recurse again to normalise y'.
     nfTransposedRec 
         q'@(i' , L' , choose q'' h'' 
         lc''@(forcedChoice {i''} {L''} s'' h''' (ix , x⊂nextq'' , ix∉L') )) 
         recurse q q'⋤q =
         let x = idxToEl ix in
-        --let h''' = proj₁ q'⋤q in
         let h'''≡h'' = IsNotMax-irrel i'' h''' h'' in
         -- There is h'' and h''', which are not judgementally equal
         -- but definitely propositionally equal since `IsNotMax i''` is a prop.
@@ -1075,54 +1091,6 @@ module SGStates
             iqn-in-L' = suffixIdxInclusion L*≼L' iqn-in-L* 
         in
         iqn-in-L'
-    --nfTransposed q'@(i' , L' , choose q'' h'' lc) recurse q q'⋤q with lc
-    --... | newNF s h₁ x = {! !}
-    --... | freeChoice s h₁ x x₁ = {! !}
-    --... | forcedChoice {i''} {L''} s'' h'' (ix , x⊂nextq'' , ix∉L') = 
-    --    let x = idxToEl ix in
-    --    --let h''' = proj₁ q'⋤q in
-    --    let ix<iq' = Signoid.subrelat S x (el q') {! x⊂nextq'' !} in
-    --    let (qx , qx⋤q' , ix≡idxqx) = getSubLog q' ix ? in
-    --    let x' = recurse qx ? in
-    --    --let q* = Signoid.coerc 
-    --    {! !}
-
-    --nf  : {i : C}
-    --    → {L : NFList}
-    --    → {s : SGState i L} 
-    --    → (x : sElem (i , L , s)) 
-    --    → Indices L
-    ---- We know that L' is [ 0 ].
-    ---- Prove that L' is a sublist of L, then we know that 0 ∈ L.
-    ---- * (SomeLemma x⊑q) should give L' ⊆ L.
-    ---- * (SomeOtherLemma (L' , root h)) should give L' = [ 0 ],
-    ----      or even only 0 ∈ L' is enough.
-    --nf {i} {L} {s} ((i' , L' , root h) , x⊑q) = ?    
-    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (newNF s'' x)) , x⊑q) = {! !}
-    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (freeChoice s'' x x₁)) , x⊑q) = {! !}
-    --nf {i} {L} {s} ((i' , L' , choose (i'' , L'' , s'') h (forcedChoice s'' x)) , x⊑q) = {! !}
-    --    where
-    --        q : Q
-    --        q = (i , L , s)
-
-    ---- #TODO: better define this in terms of sElem first,
-    ---- thereafter make iElem version (with type as below)
-    ---- that
-    ---- 1. Maps an iElem to an sElem.
-    ---- 2. Calls the sElem version of nf().
-    ---- #TODO: 'Inf' stands for iElem-nf, but sounds like "infinite" as well.
-    ----  Find a better name.
-    --Inf 
-    --    : {i : C}
-    --    → {L : NFList}
-    --    → {s : SGState i L}
-    --    → (x : C)
-    --    → (x <C height (i , L , s))
-    --    → Indices L
-    --Inf {L} {s} x x∈s = {! !}
-
-
-
     
 --------------------------------------------------------------------------------
 -- Maybe keep, maybe move, maybe remove.
