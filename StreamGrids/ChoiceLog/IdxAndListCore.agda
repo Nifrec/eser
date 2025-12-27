@@ -862,19 +862,33 @@ module SGStates
 --------------------------------------------------------------------------------
 -- Normal form computation algorithm
 --
--- Defined via Well-Founded induction on ⋤,
+-- Functions for computing the normal forms of already-chosen elements
+-- in a partially constructed quotient type (i.e., in a state in `Q`).
+--
+-- The practically usefull fa¢ade functions are:
+-- * nfLastEl : compute the NF of the most recently chosen element.
+-- * nfSublog : compute the NF of an element represented as a subchoicelog.
+-- * nfIdx    : compute the NF of an element represented by its
+--      enumeration-index.
+--
+-- (For `x : A` one can use `nfIdx` with input `elToIdx x`.
+-- One still needs to prove that `x` has already been chosen though).
+--
+-- nfLastEl is defined via Well-Founded induction on ⋤,
 -- using  ⋤-rec with P ≔ NFOUT.
+-- The other functions are defined via nfLastEl.
 --------------------------------------------------------------------------------
 
+    -- Output type P used in ⋤-rec.
     NFOUT : Q → Set _
     NFOUT q' = Indices (nflist q')
 
+    -- Helper function for defining the normalisation alg via ⋤-rec.
     nfRec 
         : (q' : Q)
         --^ Subchoicelog whose normal form we want.
-        -- The complete ChoiceLog q is hidden in NFOUT
-        -- (instead of being the first argument to this function)
-        -- hence the name `nfRec`.
+        -- The complete ChoiceLog q is not needed to be in scope for nfRec to
+        -- work.
         → ((q'' : Q) → q'' ⋤ q' → NFOUT q'')
         --^ Ability to make recursive calls.
         → NFOUT q'
@@ -1017,3 +1031,67 @@ module SGStates
         iqn-in-L'
 
     
+    -- Compute normal form of most recent element in a ChoiceLog.
+    -- Or -- equivalently -- compute the normal form of the element
+    -- represented by a subchoicelog q' ⊑ q, as represented
+    -- by an index in `nflist q'` (which proves the nf is ≤C than the most
+    -- enumeration-index of the most recent element).
+    -- (q does not need to be given as an argument at all).
+    nfLastEl
+        : (q' : Q)
+        --^ Subchoicelog whose normal form we want.
+        -- The complete ChoiceLog q (such that q' ⊑ q) 
+        -- does not need to be in scope.
+        → Indices (nflist q')
+        --^ Index of the normal form of the most recent element of q.
+    nfLastEl = ⋤-rec NFOUT nfRec
+
+    -- Compute the normal form of an element represented by a subchoicelog
+    -- q' ⊑ q as a normal form in q (i.e., as an term in `Indices (nflist q)`).
+    nfSublog
+        : {q' q : Q}
+        → q' ⊑ q 
+        → Indices (nflist q)
+    --nfSublog {q'} {q} (inj₁ q'≡q) = 
+    --    let sameIndices : length (nflist q') ≡ length (nflist q)
+    --        sameIndices = cong (λ q₁ → length (nflist q₁)) q'≡q
+    --    in
+    --    Data.Fin.cast sameIndices (nfLastEl q')
+    --nfSublog {q'} {q} (inj₂ q'⋤q) = 
+    --    let nf-in-q' : Indices (nflist q')
+    --        nf-in-q' = nfLastEl q'
+    --    in
+    --    let L'≼L : (nflist q') ≼ (nflist q)
+    --        L'≼L = multichoiceSuffix' (inj₂ q'⋤q)
+    --    in
+    --    suffixIdxInclusion L'≼L nf-in-q'
+    nfSublog {q'} {q} q'⊑q = 
+        let nf-in-q' : Indices (nflist q')
+            nf-in-q' = nfLastEl q'
+        in
+        let L'≼L : (nflist q') ≼ (nflist q)
+            L'≼L = multichoiceSuffix' q'⊑q
+        in
+        suffixIdxInclusion L'≼L nf-in-q'
+
+    card≤to⊎
+        : {c : ℕ∞}
+        → {n m : cardToSet c}
+        → cardTo≤ {c} n m
+        → (n ≡ m) ⊎ (cardTo< n m)
+    card≤to⊎ {fin (suc c)} {n} {m} n≤m =
+        --let meh = Data.Sum.swap (Data.Nat.Properties.m<1+n⇒m<n∨m≡n n≤m)
+        --in
+        ?
+    card≤to⊎ {∞} {n} {m} n≤m =
+        Data.Sum.swap (Data.Nat.Properties.m<1+n⇒m<n∨m≡n n≤m)
+
+    -- Compute the normal form of an element represented 
+    -- by an enumeration-index i (that is ≤ than that of the most 
+    -- recent element in q, i.e., `i ≤ idx q`).
+    nfIdx
+        : {q : Q}
+        → {i : C}
+        → cardTo≤ i (idx q)
+        → Indices (nflist q)
+    nfIdx {q} {i} i≤idxq = ?
