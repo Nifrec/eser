@@ -315,7 +315,7 @@ module SGStates
     --infix 30 iElem⊂
     --syntax iElem⊂ i i' = i ⊂I i'
 
-    nextEl : {q : Q} → (h : IsNotMax (idx q)) → A
+    nextEl : {i : C} → (h : IsNotMax i) → A
     nextEl h = idxToEl (idxSuc h)
 --------------------------------------------------------------------------------
 -- Definitions of other auxiliary inductive types used in the construction
@@ -332,7 +332,7 @@ module SGStates
             → Set _
     AllArgsNormal {i} {L} s h = 
                 (x : sElem (i , L , s))
-                → ((getEl x) ⊂ (nextEl {i , L , s} h)) 
+                → ((getEl x) ⊂ (nextEl h)) 
                 → (getIdx x) ∈ L
 
     -- Same as AllArgsNormal, but using the enumeration-index representation of
@@ -345,7 +345,7 @@ module SGStates
             → Set _
     IAllArgsNormal {i} {L} s h = 
                 (x : C)
-                → ((idxToEl x) ⊂ (nextEl {i , L , s} h))
+                → ((idxToEl x) ⊂ (nextEl h))
                 → x ∈ L
 
     -- Predicate that the next element y has an x ⊂ y
@@ -358,7 +358,7 @@ module SGStates
             → Set _
     NormalisibleArg {i} {L} s h
             = Σ[ x ∈ sElem (i , L , s) ](
-                ((getEl x) ⊂ (nextEl {i , L , s} h))
+                ((getEl x) ⊂ (nextEl h))
                 ×
                 (getIdx x) ∉ L
                 )
@@ -373,7 +373,7 @@ module SGStates
             → Set _
     INormalisibleArg {i} {L} s h
             = Σ[ x ∈ C ](
-                ((idxToEl x) ⊂ (nextEl {i , L , s} h))
+                ((idxToEl x) ⊂ (nextEl h))
                 ×
                 (x ∉ L)
                 )
@@ -441,7 +441,8 @@ module SGStates
     -- Current implementation mimics the <-rec function defined in
     -- the book "PROGRAM=PROOF" page 331 by Samuel Mimram (2025 version).
     ⋤-rec
-        : (P : Q → Set _)
+        : {ℓ : Level}
+        → (P : Q → Set ℓ)
         → ((q : Q) → ((q' : Q) → (q' ⋤ q) → P q') → P q)
         -- ^ If you can compute P q provided that P q' can be computed
         -- for all predecessors of q'...
@@ -461,7 +462,7 @@ module SGStates
 -- practice.
 --------------------------------------------------------------------------------
 
-    sublogSmallerIdxOUT : Q → Set _
+    sublogSmallerIdxOUT : Q → Set ℓ
     sublogSmallerIdxOUT q = (q' : Q) → (q' ⋤ q) → (idx q') <C (idx q)
 
     sublogSmallerIdxRec
@@ -690,7 +691,7 @@ module SGStates
     All-with-trans
         : {ℓ : Level}
         → {A : Set ℓ}
-        → {_≤_ : Rel A _} 
+        → {_≤_ : Rel A ℓ} 
         → {x y : A}
         → {L : List A}
         → x ≤ y
@@ -969,7 +970,7 @@ module SGStates
         -- There is h'' and h''', which are not judgementally equal
         -- but definitely propositionally equal since `IsNotMax i''` is a prop.
         let x⊂nextq''h'' = 
-                subst (λ v → (x ⊂ nextEl {q''} v)) (h'''≡h'') x⊂nextq'' 
+                subst (λ v → (x ⊂ nextEl v)) (h'''≡h'') x⊂nextq'' 
         in
         -- The LHS of the following term is actually 
         -- elToIdx (idxToEl ix), not ix. However, these functions are inverse!
@@ -1010,10 +1011,6 @@ module SGStates
         let ix'≤ix : (ix' ≡ ix) ⊎ (cardTo< ix' ix)
             ix'≤ix = subst (λ k → ix' ≡ k ⊎ cardTo< ix' k) 
                            (sym ix≡idxqx) (nfsAre≤ qx ix' ix'∈Lx)
-            --#TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            --!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            --prove nfsAre≤
         in
         -- ix' cannot be ix, because ix' ∈ Lx
         -- but x is not a normal form, which was proven via ix ∉ L'
@@ -1023,7 +1020,7 @@ module SGStates
         --let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
         --let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
         let Lx≼L' : Lx ≼ L'
-            Lx≼:' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q')
+            Lx≼L' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q')
         in
         let ix∉Lx : ix ∉ Lx
             ix∉Lx = notInListThenNotInSuffix Lx≼L' ix∉L' 
@@ -1052,7 +1049,8 @@ module SGStates
                                     ix≡elToIdxx 
                                     invix'<ix
         in
-        let coercOut : Σ[ y' ∈ A ](cardTo< (elToIdx y') (elToIdx (nextEl h'')))
+        let coercOut : Σ[ y' ∈ A ](
+                cardTo< (elToIdx y') (elToIdx (nextEl h'')))
             coercOut = Signoid.coerc S (nextEl h'') 
                 x x⊂nextq''h'' (idxToEl ix') invix'<elToIdxx
         in
