@@ -99,24 +99,6 @@ open import StreamGrids.Card
 open import StreamGrids.Suffix
 open import StreamGrids.Logic
 
--- This lemma is hard to prove within the module `SGStates`
--- in which `Signoid.card S` cannot be pattern-matched.
--- This lemma is related to FC-h in my notes but not the same.
--- The LHS is judgementally equal to `idxSuc h''`,
--- and the RHS to (elToIdx (
---nextEl h = idxToEl (idxSuc h)
---nextIdxUniqueness
---    : {ℓ : Level}
---    → {A : Set ℓ}
---    → {_⊂_ : Rel A ℓ}
---    → (S : Signoid _⊂_)
---    → {i : cardToSet (Signoid.card S)}
---    → (h : IsNotMax i)
---    → Signoid.elToIdx S (nextEl h) ≡ idxSuc h
---nextIdxUniqueness {i} h with card
---... | fin (suc n) = ?
---... | ∞  = ?
-
 module SGStates
     {ℓ : Level}
     {A : Set ℓ}
@@ -274,8 +256,6 @@ module SGStates
 
 --------------------------------------------------------------------------------
 -- Element representations.
--- #TODO: everything below getState (until, not including, the next header
--- comment) should be deprecated.
 --------------------------------------------------------------------------------
     
     -- Substack definition of element-already-chosen-in-a-state.
@@ -297,23 +277,6 @@ module SGStates
     -- it represents.
     getEl : {q : Q} → sElem q → A
     getEl {q} q' = Signoid.idxToEl S (getIdx q')
-
-    ---- The relation _⊂_, but slightly modified to work on the sElem
-    ---- representation of terms, rather than direct A terms.
-    --sElem⊂ : {q : Q} → Rel (sElem q) _
-    --sElem⊂ q' q'' = (getEl q') ⊂ (getEl q'')
-
-    --infix 30 sElem⊂
-    --syntax sElem⊂ q' q'' = q' ⊂* q''
-
-    ---- _⊂I_ is the relation _⊂_, 
-    ---- but slightly modified to work on the enumeration-index
-    ---- representation of terms, rather than direct A terms.
-    --iElem⊂ : Rel C _
-    --iElem⊂ i i' = (idxToEl i) ⊂ (idxToEl i')
-
-    --infix 30 iElem⊂
-    --syntax iElem⊂ i i' = i ⊂I i'
 
     nextEl : {i : C} → (h : IsNotMax i) → A
     nextEl h = idxToEl (idxSuc h)
@@ -616,29 +579,6 @@ module SGStates
         let iq'<i = n≮m→n≢m→m<n i≮iq' i≢iq' in
         ⊥-elim (j<i<Sj-impossible {card} {i} {idx q'} {h} i<iq iq'<i)
     
-    -- #TODO: it is possbile to define a 'getWeakSubLog'
-    -- where the input is i ≤ (idx q) and the output
-    -- is q' ⊑ q (i.o., q' ⋤ q).
-    getWeakSubLog
-        : (q : Q)
-        → (i : C)
-        → (i ≤C idx q)
-        → Σ[ q' ∈ Q ]( (q' ⋤ q) × (i ≡ idx q'))
-    -- #TODO: just remove this function if never needed.
-    -- Then also remove _≤C_ !!!
-    getWeakSubLog = ? 
-
-    -- #TODO: remove if this does not turn out to be needed,
-    -- otherwise finish.
-    -- The index-index of a ChoiceLog corresponds 
-    -- to the enumeration-index of the last element added.
-    elToIdx∘el≡idx
-        : (q : Q)
-        → elToIdx (el q) ≡ idx q
-    elToIdx∘el≡idx (i , L , root h) = {! !}
-    elToIdx∘el≡idx (i , L , choose q h lc) = {! !}
-        
-
     -- This is FC-e in my notes.
     argSmallerIdx
         : (q : Q)
@@ -667,19 +607,6 @@ module SGStates
         → (h : IsNotMax i)
         → Signoid.elToIdx S (nextEl h) ≡ idxSuc h
     nextIdxUnique2 {i} h = invIdxElIdx (endoSuc h)
-
-    -- All older normal forms in an NFList are smaller than the most recent
-    -- added normal form. Since suffices are again NFLists, this is some sort of
-    -- "NFLists-are-sorted" statement.
-    --nflistsSortOfSorted
-    --    : (q : Q)
-    --    → (j : C)
-    --    → j ∈ tail (nflist q)
-    --    → cardTo< j (idx q)
-    --nflistsSortOfSorted
-
-    --<C-total : IsTotalOrder _<C_
-    --<C-total = ?
 
 --------------------------------------------------------------------------------
 -- Normal form lists are always sorted.
@@ -931,14 +858,14 @@ module SGStates
         → j ≡ (idx q) ⊎ (cardTo< j (idx q))
     nfsAre≤ = ⋤-rec nfsAre≤OUT nfsAre≤Rec
     
--- All below commented out to speed up Agda...
-----!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
----- #TODO: redefine nf. Define nfTransposed() and nf().
-----!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    
+--------------------------------------------------------------------------------
+-- Normal form computation algorithm
+--
+-- Defined via Well-Founded induction on ⋤,
+-- using  ⋤-rec with P ≔ NFOUT.
+--------------------------------------------------------------------------------
 
-    -- #TODO: comment description...
     NFOUT : Q → Set _
     NFOUT q' = (q : Q) → q' ⋤ q → Indices (nflist q')
 
@@ -1033,8 +960,6 @@ module SGStates
         -- (and x is an element in q', 
         -- and qx the corresponding subchoicelog of q',  so Lx ≼ L')
         -- So ix' ≡ ix would give ix ∈ Lx, a contradiction.
-        --let qx⊑q'' = sublogLastChoice {qx} {q''} h'' lc'' qx⋤q' in
-        --let Lx≼L'' = multichoiceSuffix' {qx} {q''} qx⊑q'' in
         let Lx≼L' : Lx ≼ L'
             Lx≼L' = multichoiceSuffix' {qx} {q'} (inj₂ qx⋤q')
         in
@@ -1091,27 +1016,4 @@ module SGStates
             iqn-in-L' = suffixIdxInclusion L*≼L' iqn-in-L* 
         in
         iqn-in-L'
-    
---------------------------------------------------------------------------------
--- Maybe keep, maybe move, maybe remove.
---------------------------------------------------------------------------------
-    --next : {n : StateIndices} → IsNotMax n → A
-    --next {n} notMax = Signoid.enum S (cardLower notMax)
-
-    --⊑-antisym : Antisymmetric _≡_ _⊑_
-    --⊑-antisym {q} {q} (refl q) q⊑q = refl
-    --⊑-antisym {q} {q} q⊑q (refl q) = refl
-    --⊑-antisym {p} {q} (sub q' p ℓq p⊑q') (sub p' q ℓp q⊑p') = 
-    --    let p'⊑p = sub p' p' ℓp (refl p') in
-    --    let p'⊑q' = ⊑-trans p'⊑p p⊑q' in
-    --    let q'⊑q = sub q' q' ℓq (refl q') in
-    --    let q'⊑p' = ⊑-trans q'⊑q q⊑p' in
-    --    let p'≡q' = ⊑-antisym p'⊑q' q'⊑p' in
-    --     Still need ℓp = ℓq, given that we could
-    --     apply cong pm p'≡q' with (λ x → choose x ℓp), and then subst the
-    --     right occurrence of ℓp via ℓp=ℓq.
-    --    let pℓp≡qℓp = cong (λ x → choose x) p'≡q' (refl (choose p')) in
-    --    {!  !}
-
-    -- #TODO: conjecture: Totality and decidability of _⊑_ can also be proven.
 
