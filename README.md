@@ -61,18 +61,15 @@ might still confuse 'sublist' and 'lowlist'.
     
 
 ## TODOs
+* Rename "decider" to "chooser".
 * Everywhere I call `_⊂_` a *subterm* relation, while it is a 
     *is-a-direct-argument* relation!
 * Why do we keep `_«_` in Signoids?
     It is just the `_<_` on indices in the enumeration anyway!
     More precisely, `_«_` is the relation
     `x, y -> cardTo< (getIdx x) (getIdx y)`.
-* Document the types in `ChoiceLog.Core.agda`.
 * Finish stuff in `Signoid.agda`.
-* Remove/archive deprecated source files.
-* Update What-is-Where.
 * Write better README.
-* Rename 'algebra' to 'signature'.
 * Update `Experimental` status in file headers.
 * Handle `#TODO`s in source files.
 * Remove superfluous imports.
