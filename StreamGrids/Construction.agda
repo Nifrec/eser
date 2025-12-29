@@ -49,6 +49,9 @@ module LowLvl
     open SignoidShortcuts
 
 
+    dist : {n m : ℕ} → n Data.Nat.< m → ℕ
+    dist {n} {m} n<m = ? -- #TODO: check stdlib first?
+
     Decider : Set _
     Decider = (q : Q) → IsNotMax (idx q) → LegalChoices q
 
@@ -64,6 +67,37 @@ module LowLvl
             lc = D q h
         in
         (idxSuc h , UpdateNFList q h lc , choose q h lc)
+
+    -- Add choices to a choicelog q until the enumeration-index
+    -- of the most recently chosen element is i.
+    -- Of course, this is only possible if i has not been chosen in q already.
+    iterFromTill
+        : Decider
+        → (q : Q)
+        → (i : C)
+        → (h : IsNotMax (idx q))
+        -- #TODO This does not typecheck. missing arg to `dist`,
+        -- namely toℕ idx q < toℕ i. Replace h by an arg of this type.
+        -- Prove that h can be inferred from it.
+        → (f : ℕ)
+        --^ "Fuel", is decreased every iteration, used to please Agda's
+        -- termination checker.
+        → (dist (toℕ (idx q)) (toℕ i)) Data.Nat.≤ f
+        → Σ[ q* ∈ Q ]( idx q* ≡ i )
+    iterFromTill D q i h f d with (cardToDecidableEq (idxSuc h) i)
+    ... | yes p = (nextState D q h , p)
+    ... | no  p = ?
+        where
+            q+ : Q
+            q+ = nextState D q h
+
+    -- #TODO: finish and move to Card.agda
+    -- If `cardToSet c` is inhabited, then c cannot be zero.
+    elToNonempty
+        : {c : ℕ∞}
+        → cardToSuc c
+        → fin ℕ.zero <∞ c
+    elToNonempty {c} i = ?
 
     -- Compute the choicelog containing the first i element
     -- with choices made according to a given decider.
