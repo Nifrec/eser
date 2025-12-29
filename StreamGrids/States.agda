@@ -1,5 +1,5 @@
--- Module      : StreamGrids.ChoiceLog.Core
--- Description : Core definitions and functions
+-- Module      : StreamGrids.States
+-- Description : StreamGrid states: definitions and normalisation algorithm.
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -66,9 +66,7 @@
 -- for normal forms). This gives enough information to quickly check if another
 -- element can be added or not.
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
-module StreamGrids.ChoiceLog.IdxAndListCore where
+module StreamGrids.States where
 
 -- Certainly used standard library imports.
 open import Level
@@ -94,7 +92,7 @@ open import Data.List.Membership.Propositional.Properties using (∈-lookup)
 open import Data.List.Relation.Unary.Any using (Any)
 
 -- Certainly used local imports.
-open import StreamGrids.NewSignoid
+open import StreamGrids.Signoid
 open import StreamGrids.Card
 open import StreamGrids.Suffix
 open import StreamGrids.Logic
