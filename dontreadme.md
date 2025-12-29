@@ -1,5 +1,23 @@
 **This part of the README is not very relevant anymore!**
 
+## Outdated 'What-is-where's
+* `StreamGrids/Algebra` 
+    Representation of finite-arity algebras/signatures.
+* `StreamGrids/Practise`
+    No library functions; just experiments with Agda, 
+    to try out what is possible.
+* `StreamGrids/Enumeration`
+    Predicate telling that a set is enumerable.
+* `StreamGrids/Chain`
+    Definition of total linear order relations.
+* `StreamGrids/Examples`
+    Example instantiations of abstract definitions,
+    also functions as test cases.
+    `StreamGrids.Examples.Foo` contains the examples for
+    module `StreamGrids.Foo`.
+* `StreamGrids/Practise`
+    Informal personal practise to get better acquainted with Agda.
+
 # Alphabet representation issues
 
 ## Philosophically: what is an alphabet?

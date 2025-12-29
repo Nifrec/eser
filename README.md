@@ -9,6 +9,16 @@ Other files of interest:
   encode.
 
 ## What is where
+* `StreamGrids/Signoid`
+    Definition of Signoids.
+* `StreamGrids/States`
+    - Definition of StreamGrid states. 
+        There represent are partially constructucted quotient types.
+    - Definition/computation allowed successor states.
+    - Functions to compute the normal forms of elements in states.
+* `StreamGrids/Suffix`
+    Tools for working with suffices of lists (that were not already in the
+    stdlib).
 * `StreamGrids/Card`
     Tools for working with sets of different cardinality as a dependent type.
     Basically multiplexing between (functions/lemmas about) `Fin n` and `ℕ`.
@@ -18,26 +28,14 @@ Other files of interest:
 * `StreamGrids/Fin`
     Auxiliary lemmas about finite sets.
     (that I couldn't find in the stdlib!?)
-
-### Outdated
 * `StreamGrids/Fold`    
     Function to fold finite sets.
-* `StreamGrids/Algebra` 
-    Representation of finite-arity algebras/signatures.
-* `StreamGrids/Practise`
-    No library functions; just experiments with Agda, 
-    to try out what is possible.
-* `StreamGrids/Enumeration`
-    Predicate telling that a set is enumerable.
-* `StreamGrids/Chain`
-    Definition of total linear order relations.
-* `StreamGrids/Examples`
-    Example instantiations of abstract definitions,
-    also functions as test cases.
-    `StreamGrids.Examples.Foo` contains the examples for
-    module `StreamGrids.Foo`.
-* `StreamGrids/Practise`
-    Informal personal practise to get better acquainted with Agda.
+
+### Outdated
+There is a lot of outdated stuff in `deprecated/`, actually most code written
+for this project ended up here.
+It contains alternative definitions, unused lemmas, unfinished conjectures,
+practise, examples, etc.
 
 ## Naming conventions
 
