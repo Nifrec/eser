@@ -134,6 +134,27 @@ cardTo≤ {fin 0} ()
 cardTo≤ {fin (suc n)} = Data.Fin._≤_
 cardTo≤ {∞} = Data.Nat._≤_
 
+
+-- Given n ≤ m, we know that either n ≡ m OR n < m.
+card≤to⊎
+    : {c : ℕ∞}
+    → {n m : cardToSet c}
+    → cardTo≤ {c} n m
+    → (n ≡ m) ⊎ (cardTo< n m)
+card≤to⊎ {∞} {n} {m} n≤m =
+    Data.Sum.swap (Data.Nat.Properties.m<1+n⇒m<n∨m≡n (s≤s n≤m))
+card≤to⊎ {fin (suc c)} {n} {m} n≤m =
+    makeFin (Data.Sum.swap (Data.Nat.Properties.m<1+n⇒m<n∨m≡n (s≤s n≤m)))
+        where
+            -- m<1+n⇒m<n∨m≡n proves the property for the images under the
+            -- embedding from Fin (1+c) into ℕ.
+            -- `makeFin` reflects it back to Fin (1+c).
+            makeFin 
+                : (toℕ n ≡ toℕ m) ⊎ (toℕ n Data.Nat.< toℕ m) 
+                → (n ≡ m)  ⊎ (cardTo< n m) 
+            makeFin (inj₁ Tn≡Tm) = inj₁ (toℕ-injective Tn≡Tm)
+            makeFin (inj₂ Tn<Tm) = inj₂ Tn<Tm
+
 -- Get the zero element of a set of one cardinality greater.
 -- Only defined for `suc∞ n` since things with cardinality zero have
 -- no elements.
