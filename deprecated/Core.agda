@@ -5,198 +5,37 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
--- Contents of this file:
 
+{-# OPTIONS --allow-unsolved-metas #-}
 module StreamGrids.Core where
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
 open import Data.Empty
-open import Data.Fin
+open import Data.Fin hiding (_<_)
 open import Function using (Inverseᵇ)
 open import Data.List
-open import Data.Nat
+open import Data.Nat hiding (_<_)
 open import Data.Nat.Properties
 open import Data.Product
-open import Data.String
 open import Data.Sum
 open import Data.Unit
-open import Data.Vec
 open import Level using (0ℓ)
 open import Relation.Binary.Core using (Rel)
 open import Relation.Binary.Definitions
-open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 
+-- The ones below are certainly needed.
+open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Data.List.Relation.Unary.All using (All)
+open import Data.List.Relation.Unary.Linked using (Linked)
+-- Implementation note: Data.List.Relation.Unary.Sorted.TotalOrder
+-- gives `Sorted` instead of `Linked`, but it only works with reflexive
+-- total orders, and _«_ is always irreflexive.
+
 open import StreamGrids.Chain
-open import StreamGrids.Enumeration
-
---------------------------------------------------------------------------------
--- Auxiliary definitions
---------------------------------------------------------------------------------
--- Biimplication A ←→ B : two types can prove each other.
-_iff_ : {ℓ : Level.Level} → (A B : Set ℓ) → Set ℓ
-A iff B = (A → B) × (B → A)
-
---------------------------------------------------------------------------------
--- Signoids
--- The raw "strings" that we later (when building a StreamGrid on top of it)
--- will quotient by equalities to obtain our desired type.
---
--- For example, a finitely generated monoid over {a, b} is (1) a signature
--- with three nullary constructors (the unit, a and b),
--- and one binary constructor _·_ ,
--- together with (2) equalities between the signature's terms
--- (e.g., ensuring (a·a)·b ≈ a·(a·b), which are *not* equal signature terms,
--- but equal as monoid elements.
---
--- Signoids are generalisation of, among others, the following things:
---  * Strings over a fixed alphabet.
---  * Signatures with finitely many constructors of finite arity.
---  * Enumerable inductive types.
---
--- There are two ways to give a signoid A.
--- Both ways give an enumeration `enum : ℕ → A` and a 'subterm relation'
--- `_⊂_ : A → A → Type` such that `x ⊂ y` ensures `enum x < enum y`.
--- (I.e., subterms have lower numbers).
--- The last piece is either
--- 1. an inverse to `enum`.
--- or
--- 2. a relation _<_ that is a Chain and a superrelation of _⊂_,
---  s.t. `enum` is also monotone in _<_.
---
--- The data pieces 1. and 2. can be constructed from each other,
--- so only one of the two is strictly necessary.
--- However, these canonical constructions are not efficiently implemented:
--- they are brute-force enumerate till you found the desired number,
--- and `(x, y) ↦ enum x < enum y`, respectively.
--- Therefore we allow the user is allowed to 
--- provide custom (optimised) implementations for both if they so desire.
---------------------------------------------------------------------------------
-
-
-
--- Map a cardinality in Bigℕ to the prefix of the natural numbers
--- with that cardinality.
-cardToSet : ℕ∞ → Set
-cardToSet (fin 0) = ⊥
-cardToSet (fin (suc n)) = Fin (suc n) -- Fin 0 cannot be constructed!
-cardToSet ∞ = ℕ
- 
--- Get the default < relation on a prefix of ℕ.
-cardTo< : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
-cardTo< {fin 0} ()
-cardTo< {fin (suc n)} = Data.Fin._<_
-cardTo< {∞} = Data.Nat._<_
-
-cardToSuc : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n) 
-cardToSuc {fin 0} ()
-cardToSuc {fin (suc n)} m = Data.Fin.suc m
-cardToSuc {∞} m = Data.Nat.suc m
-
--- Return one lower number if it exists, but return 0 as predecessor of 0.
-cardToPred : {n : ℕ∞} → (m : cardToSet n) → cardToSet n
-cardToPred {fin 0} ()
-cardToPred {fin (suc n)} zero = zero
-cardToPred {fin (suc n)} (suc m) = inject₁ m
-cardToPred {∞} zero = zero
-cardToPred {∞} (suc m) = m
-
---------------------------------------------------------------------------------
--- Subterm relations
---------------------------------------------------------------------------------
--- Intuition in the context of signatures:
--- if `c(a)` is a term consisting of constructor `c` 
--- taking argument `a` (a tree),
--- and there exist a smaller tree `a'`, then `c(a')` is also an existing term,
--- and in the lexicographical order we have `c(a') < c(a)`.
--- In general, _⊂_ is a subterm relation of _<_ if:
--- (1) it is a subrelation,
--- (2) it has the subterm property:
---      if `x ⊂ y` and `x' < x`, then there exists a `y'` with the same
---      ⊂-children as `y`, except for also having `x'` and possibly not `x`,
---      and `y' < y`.
-
--- There is a definiton `SubRelation` in `Relation.Binary.Reasoning.Syntax`
--- but it is notationally too cumbersome (_S_ would be hidden in a 
--- huge record, making it difficult to get an infix _S_ without pattern-matching
--- the whole record every time).
-IsSubRelat 
-    : {ℓ : Level.Level}
-    → {A : Set ℓ}
-    → Rel A ℓ 
-    → Rel A ℓ
-    → Set ℓ
-IsSubRelat {ℓ} {A} _R_ _S_ = {x y : A} → x S y → x R y
-
-HasSubTermProp
-    : {ℓ : Level.Level}
-    → {A : Set ℓ} 
-    → (_<_ : Rel A ℓ)
-    → (_⊂_ : Rel A ℓ)
-    → Set ℓ
-HasSubTermProp {ℓ} {A} _<_ _⊂_ =
-    {x y x' : A} → (x ⊂ y) → (x' < x) → Σ[ y' ∈ A ](
-        (y' < y)
-        ×
-        (x' ⊂ y')
-        ×
-        ({x'' : A} → (x'' ≢ x) → (x'' ≢ x') → ((x'' ⊂ y) iff (x'' ⊂ y')))
-        -- `y'` same subterms as `y` except possibly not `x` and extra `x'`.
-        )
-
---------------------------------------------------------------------------------
--- Actual definition of Signoid and constuction methods.
---------------------------------------------------------------------------------
-
-record Signoid 
-    {ℓ : Level.Level} 
-    {A : Set ℓ} 
-    (_<_ : Rel A ℓ) 
-    (_⊂_ : Rel A ℓ) 
-    : Set ℓ where
-    field
-        numEl    : ℕ∞
-        enum     : (cardToSet numEl) → A
-        mono : Monotonic₁ (cardTo<) (_<_) enum
-        surj     : (a : A) → Σ[ n ∈ cardToSet numEl ]( enum n ≡ a)
-        chain : Chain _<_
-        subrelat : IsSubRelat _<_ _⊂_
-        subterm : HasSubTermProp _<_ _⊂_ 
-        getIdx : A → cardToSet numEl
-        inv : Inverseᵇ _≡_ _≡_ enum getIdx
-
--- The `getIdx` and `inv` fields can be distilled from the other data,
--- just brute force enumerate until you found the desired term.
-record ChainPreSignoid 
-    {ℓ : Level.Level} 
-    {A : Set ℓ} 
-    (_<_ _⊂_ : Rel A ℓ) 
-    : Set ℓ where
-    field
-        numEl    : ℕ∞
-        enum     : (cardToSet numEl) → A
-        mono : Monotonic₁ (cardTo<) (_<_) enum
-        surj     : (a : A) → Σ[ n ∈ cardToSet numEl ]( enum n ≡ a)
-        chain : Chain _<_
-        subrelat : IsSubRelat _<_ _⊂_
-        subterm : HasSubTermProp _<_ _⊂_ 
-
-chainPreToSignoid 
-    : {ℓ : Level.Level} {A : Set ℓ} {_<_ _⊂_ : Rel A ℓ}
-    → ChainPreSignoid _<_ _⊂_ 
-    → Signoid _<_ _⊂_
-chainPreToSignoid sig = record { 
-    numEl = ChainPreSignoid.numEl sig ; 
-    enum = ChainPreSignoid.enum sig ; 
-    mono = ChainPreSignoid.mono sig ;
-    surj = ChainPreSignoid.surj sig ;
-    chain = ChainPreSignoid.chain sig ;
-    subrelat = ChainPreSignoid.subrelat sig ;
-    subterm = ChainPreSignoid.subterm sig ;
-    getIdx = {! !} ;
-    inv = {! !} 
-    }
+open import StreamGrids.Card
+open import StreamGrids.List
 
 --------------------------------------------------------------------------------
 -- StreamGrids
@@ -213,62 +52,203 @@ chainPreToSignoid sig = record {
 -- theoretic sense, so a StreamGrid is an hSet and `x ≡ y` and hProp).
 --------------------------------------------------------------------------------
 
--- Partially explored StreamGrid.
-SGState : 
+-- Canonical PrefixList of A: just [e(0), e(1), e(2), ..., e(n-1)].
+prefix : {ℓ : Level.Level} {A : Set ℓ} → (e : ℕ → A) → (n : ℕ) → List A
+prefix _ zero = []
+prefix e (suc n) = (e (suc n)) ∷ (prefix e n)
+
+---- A list `L` is an n-prefix of an enumeration of a type `A`
+---- if 
+---- (1) it contains the first n A-elements exactly once 
+---- and
+---- (2) it contains nothing else
+--PrefixList : {A : Set _} → (e : ℕ → A) → (n : ℕ) → List A → Set _
+--PrefixList e n = (prefix e n)  (fold L _++_ []) 
+
+module SGStates
     {ℓ : Level.Level}
     {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    → Signoid _<_ _⊂_
-    → Set ℓ
-SGState = ?
+    {_«_ _⊂_ : Rel A ℓ}
+    (S : Signoid _«_ _⊂_)
+    where
+    
+    private 
+        card : ℕ∞
+        card = Signoid.numEl S
 
----- Use case: we have a function `f : List A → A`
---data listToType
+        -- Existing indices in the enumeration of A.
+        -- That's ℕ if A has infinitely many elements
+        -- and Fin n otherwise.
+        SIndices : Set
+        SIndices = cardToSet card
+
+        -- The associated '<' relation on the indices of A.
+        _<S_ : Rel SIndices 0ℓ
+        _<S_ = cardTo< {Signoid.numEl S}
+
+    -- All of the first n elements of A occur in L.
+    IsPrefix : (L : List (List A)) → SIndices → Set _
+    IsPrefix L n 
+        = ((a : A) → ((Signoid.getIdx S a) <S n) → a ∈∈ L)
+        --^ Every of the first n elements of A occurs in L...
+        × ℕequalsCardToSetElem (flatLength L) n
+        --^ ...and L has excatly n elements in total.
+
+    -- #TODO: the above relation is, (after fixing L), an equivalence relation.
+    -- If the need arises, prove refl sym trans.
+        
+    -- If two subterms x' < x are deemed equivalent in L,
+    -- then any superterm must have been coerced along this x' ≈ x relation.
+    -- (In case of constructors, we must have c(x) ≈ c(x') if we have x ≈ x').
+    IsCongruence : (L : List (List A)) → Set _
+    IsCongruence L 
+        = (y x x' : A)
+        → (x⊂y : x ⊂ y)
+        → (x'«x : x' « x)
+        → L ⊢ x' ≈ x
+        → L ⊢ y ≈ proj₁ (Signoid.coercion S {y} {x} {x'} x⊂y x'«x)
+
+
+    ---- Partially explored StreamGrid.
+    ---- `Linked _«_` means just 'sorted according to _«_'.
+    --SGState : Set ℓ
+    --SGState = 
+    --    Σ[ n ∈ SIndices ](
+    --    Σ[ L ∈ List (List A)](
+    --        (IsPrefix L n)
+    --    ×
+    --    (Linked _«_ (firstElem L))
+    --    ×
+    --    (All (λ as → Linked _«_ as) L)
+    --    ×
+    --    (IsCongruence L)
+    --    )
+    --    )
+
+    -- Partially explored StreamGrid.
+    -- The equivalences between the first n raw terms have been decided
+    -- and form an congruence.
+    -- Note: `Linked _«_` means just 'sorted according to _«_'.
+    SGState : (n : SIndices) → Set ℓ
+    SGState n = 
+        Σ[ L ∈ List (List A)](
+        (IsPrefix L n)
+        ×
+        (Linked _«_ (firstElem L))
+        ×
+        (All (λ as → Linked _«_ as) L)
+        ×
+        (IsCongruence L)
+        )
+
+    next : (n : SIndices) → (h : IsNotMax n) → A
+    next n h = Signoid.enum S (cardToClipSuc n)
+
+    -- Predicate expressing that the next element y to explore, 
+    -- contains a subterm x that is equivalent to some smaller element x'.
+    -- (This implies that, to preserve congruence consistenct,
+    -- y must equal its x ≈ x' coercion in the only allowed successor state).
+    -- #TODO: h is not used -- remove it?
+    CongrConstrApplies
+        : {n : SIndices}
+        → (h : IsNotMax n) 
+        --^ Otherwise the predicate makes no sense.
+        → (q : SGState n)
+        → Set _
+    CongrConstrApplies {n} h (L , Lprops) 
+        = (x x' : A) 
+        → x ∈∈ L 
+        → x' ∈∈ L 
+        → x' « x 
+        → (L ⊢ x' ≈ x )
+        → x ⊂ next n h
+    
+    -- #TODO: h is not used -- remove it?
+    addToIdx
+        : {n : SIndices}
+        → (q : SGState n)
+        → (i : Indices (proj₁ q))
+        → (h1 : IsNotMax n)
+        --^ Proof that there actually exists a next element in A to add.
+        → (h2 : ¬ (CongrConstrApplies h1 q))
+        --^ Proof that the choice of equality for next element to add is not
+        -- constrained by the congruence condition.
+        → SGState (cardToClipSuc n)
+    addToIdx {n} (L , pref , linked , subLinked , congr) i h1 h2 = 
+        let subI = L ,, i in
+        let L' = L [ i ]%= (λ as → (next n h1) ∷ as) in
+        --^ Add next element to sublist with index i.
+        let prefComplete = (λ a a<n → ?) in
+        let pref' = (prefComplete , {! !}) in
+        let linked' = ? in
+        let subLinked' = ? in
+        let congr' = ? in
+        L' , pref' , linked' , subLinked' , congr'
+
+    allFreeChoices 
+        : {n : SIndices} 
+        → SGState n 
+        → List (SGState (cardToClipSuc n))
+    allFreeChoices {n} q = ?
+
+    sucStatesList 
+        : {n : SIndices} 
+        → SGState n  
+        → List (SGState (cardToClipSuc n))
+    -- Algorithm sketch:
+    -- if <n is max>
+    -- then
+    --      <we're already done;
+    --      return a list only containing the current state>
+    -- elif <congruence constraint apply> 
+    -- then 
+    --      <singleton q a> 
+    -- else 
+    --      <allFreeChoices q a>
+    -- where
+    --      <a = nextToChoose q>
+    -- Well, in practise both `singleton` and `allFreeChoices` know which
+    -- element `a` must be. 
+    sucStatesList q = ? 
+
+    -- Wrapping the sucStatesList into a type.
+    -- First I considered using some ListToType {B} {L : List B} → Set,
+    -- but just using the indices avoids introducing new definitions
+    -- and encodes exactly the same data anyway.
+    SucStates : {n : SIndices} → SGState n → Set _
+    SucStates q = Indices (sucStatesList q)
+
+
+
+    ---- Allowed successor StreamGrid states.
+    ---- These contain the same raw terms in the same nested lists,
+    ---- but also the lexicographically next term in one allowed position.
+    --sucState : 
+    --    {ℓ : Level.Level}
+    --    {A : Set ℓ}
+    --    {_<_ _⊂_ : Rel A ℓ}
+    --    {sig : Signoid _<_ _⊂_}
+    --    → SGState sig 
+    --    → List (SGState sig)
+    --sucState {sig} s = ?
+
+open SGStates
+
+
+--SGDecider : 
 --    {ℓ : Level.Level}
 --    {A : Set ℓ}
---    → List A
+--    {_<_ _⊂_ : Rel A ℓ}
+--    → Signoid _<_ _⊂_
 --    → Set ℓ
+--SGDecider sig = (L : SGStates.sucState sig) → Σ[ s' ∈ SGStates.SGState sig ]( s' ∈ L )
 
-
--- Allowed successor StreamGrid states.
--- These contain the same raw terms in the same nested lists,
--- but also the lexicographically next term in one allowed position.
-sucState : 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    {sig : Signoid _<_ _⊂_}
-    → SGState sig 
-    → List (SGState sig)
-sucState {sig} s = ?
-
--- Testing list membership.
-_∈_ : {A : Set _} → A → List A → Set _
-_ ∈ [] = ⊥
-a ∈ (x ∷ xs) = (a ≡ x) ⊎ (a ∈ xs)
-
-_∈?_ : Decidable _∈_
-a ∈? xs = ?
-
-data ListToType {A : Set _} (L : List A) : (Set _) where
-    first : (a : A) → ListToType #TODO WIP
-    cons  : (a : A) (as : List A) → ListToType (a ∷ as)
-    inj   : (a : A) (as : List A) (v : ListToType as) → ListToType (a ∷ as)
-
-SGDecider : 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    → Signoid _<_ _⊂_
-    → Set ℓ
-SGDecider sig = (L : sucState sig) → Σ[ s' ∈ SGState sig ]( s' ∈ L )
-
-record StreamGrid 
-    {ℓ : Level.Level}
-    {A : Set ℓ}
-    {_<_ _⊂_ : Rel A ℓ}
-    : Set ℓ 
-    where
-    field
-        signoid : Signoid _<_ _⊂_
-        decider : SGDecider signoid
+--record StreamGrid 
+--    {ℓ : Level.Level}
+--    {A : Set ℓ}
+--    {_<_ _⊂_ : Rel A ℓ}
+--    : Set ℓ 
+--    where
+--    field
+--        signoid : Signoid _<_ _⊂_
+--        decider : SGDecider signoid

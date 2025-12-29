@@ -1,5 +1,5 @@
--- Module      : StreamGrids.NewSignoid
--- Description : Updated definition (8 Dec 2025 version) of Signoids
+-- Module      : StreamGrids.Signoid
+-- Description : Definition (8 Dec 2025 version) of Signoids
 -- Copyright   : (c) Lulof Pirée, 2025
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -7,7 +7,7 @@
 --------------------------------------------------------------------------------
 
 {-# OPTIONS --allow-unsolved-metas #-}
-module StreamGrids.NewSignoid where
+module StreamGrids.Signoid where
 
 -- TODO: probably not all of these are needed.
 open import Data.Bool hiding (_≤_; _≤?_)
@@ -33,11 +33,9 @@ open import Data.List.Relation.Unary.Linked using (Linked)
 -- gives `Sorted` instead of `Linked`, but it only works with reflexive
 -- total orders, and _«_ is always irreflexive.
 
-open import StreamGrids.Chain
 open import StreamGrids.Card
---open import StreamGrids.List
 
--- #TODO: import and update and extend relevant comments from old Signoid.agda.
+-- #TODO: import and update and extend relevant comments from OldSignoid.agda.
 -- #TODO: while doing so, rename 'subterm-relation' → 'argument-relation'.
 --------------------------------------------------------------------------------
 -- Actual definition of Signoid 
