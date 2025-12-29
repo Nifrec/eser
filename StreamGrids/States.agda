@@ -105,7 +105,7 @@ module SGStates
 
     -- Setting some abbreviations for some of the data of the Signoid
     -- for better readability.
-    private 
+    module SignoidShortcuts where
         card : ℕ∞
         card = Signoid.card S
 
@@ -145,6 +145,8 @@ module SGStates
         invIdxElIdx i = 
             let h = proj₂ (Signoid.inv S) in
             h {i} {idxToEl i} refl
+
+    open SignoidShortcuts
 
     -- These inductive types are defined via mutual induction,
     -- so we declare them all up front here.
