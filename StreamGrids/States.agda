@@ -83,7 +83,6 @@ open import Data.Fin.Properties
 open import Data.Unit
 open import Data.Empty
 open import Data.List
---open import Data.List.Relation.Unary.Sorted.TotalOrder
 open import Data.List.Relation.Unary.AllPairs using (AllPairs)
 open import Data.List.Relation.Unary.All using (All)
 open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
