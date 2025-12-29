@@ -1052,19 +1052,6 @@ module SGStates
         : {q' q : Q}
         → q' ⊑ q 
         → Indices (nflist q)
-    --nfSublog {q'} {q} (inj₁ q'≡q) = 
-    --    let sameIndices : length (nflist q') ≡ length (nflist q)
-    --        sameIndices = cong (λ q₁ → length (nflist q₁)) q'≡q
-    --    in
-    --    Data.Fin.cast sameIndices (nfLastEl q')
-    --nfSublog {q'} {q} (inj₂ q'⋤q) = 
-    --    let nf-in-q' : Indices (nflist q')
-    --        nf-in-q' = nfLastEl q'
-    --    in
-    --    let L'≼L : (nflist q') ≼ (nflist q)
-    --        L'≼L = multichoiceSuffix' (inj₂ q'⋤q)
-    --    in
-    --    suffixIdxInclusion L'≼L nf-in-q'
     nfSublog {q'} {q} q'⊑q = 
         let nf-in-q' : Indices (nflist q')
             nf-in-q' = nfLastEl q'
@@ -1074,18 +1061,6 @@ module SGStates
         in
         suffixIdxInclusion L'≼L nf-in-q'
 
-    card≤to⊎
-        : {c : ℕ∞}
-        → {n m : cardToSet c}
-        → cardTo≤ {c} n m
-        → (n ≡ m) ⊎ (cardTo< n m)
-    card≤to⊎ {fin (suc c)} {n} {m} n≤m =
-        --let meh = Data.Sum.swap (Data.Nat.Properties.m<1+n⇒m<n∨m≡n n≤m)
-        --in
-        ?
-    card≤to⊎ {∞} {n} {m} n≤m =
-        Data.Sum.swap (Data.Nat.Properties.m<1+n⇒m<n∨m≡n n≤m)
-
     -- Compute the normal form of an element represented 
     -- by an enumeration-index i (that is ≤ than that of the most 
     -- recent element in q, i.e., `i ≤ idx q`).
@@ -1094,4 +1069,10 @@ module SGStates
         → {i : C}
         → cardTo≤ i (idx q)
         → Indices (nflist q)
-    nfIdx {q} {i} i≤idxq = ?
+    nfIdx {q} {i} i≤idxq with (card≤to⊎ {card} i≤idxq)
+    -- First case is easy: we want the normal form of the most recent element.
+    ... | inj₁ i≡idxq = nfLastEl q
+    -- Second case: get the strict sublog representing the element i.
+    ... | inj₂ i<idxq = 
+        let (q' , q'⋤q , i≡idxq') = getSubLog q i i<idxq in
+        nfSublog (inj₂ q'⋤q)
