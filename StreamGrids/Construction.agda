@@ -49,12 +49,31 @@ module LowLvl
     open SignoidShortcuts
 
 
-    -- #TODO: maybe add isnotempty?
     Decider : Set _
-    Decider = (q : Q) → LegalChoices q
+    Decider = (q : Q) → IsNotMax (idx q) → LegalChoices q
 
-    iterTill : Decider → C → Q
-    iterTill = ?
+    -- Add one choice to a choicelog using a given decider.
+    -- This chooses the equivalence class for the next element.
+    nextState
+        : Decider
+        → (q : Q)
+        → (h : IsNotMax (idx q))
+        → Q
+    nextState D q h = 
+        let lc : LegalChoices q
+            lc = D q h
+        in
+        (idxSuc h , UpdateNFList q h lc , choose q h lc)
+
+    -- Compute the choicelog containing the first i element
+    -- with choices made according to a given decider.
+    iterTill 
+        : Decider 
+        → C 
+        → Q
+    -- #TODO: do we need an argument (h : (fin ℕ.zero) <∞ card)?
+    -- I think not, since `i : C` already implies that A is not the empty set.
+    iterTill D i = ?
 
     -- Compute the normal form of any element of A.
     -- This is well defined, since every element will eventually
@@ -62,7 +81,22 @@ module LowLvl
     -- choicelogs induces by a decider, at which point its normal form is well
     -- defined. Furthermore, the normal form will remain the same in successor
     -- choicelogs.
+    nfGlobalIdx : Decider → C → C
+    nfGlobalIdx D i = 
+        let q : Q
+            q = iterTill D i
+        in
+        lookup (nflist q) (nfLastEl q)
+
+    -- Element version of nfGlobalIdx (represent elements as A terms,
+    -- instead of by their enumeration-index).
     nfGlobal : Decider → A → A
+    nfGlobal D x =
+        let ix : C
+            ix = elToIdx x
+        in
+        idxToEl (nfGlobalIdx D ix)
+
 
     IsNF : Decider → A → Set
     IsNF D x = ⊥ -- #TODO
