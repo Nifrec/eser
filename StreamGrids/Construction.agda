@@ -56,6 +56,14 @@ module LowLvl
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
     dist {n} {m} n<m = ∣ n - m ∣ -- |_-_| is given in the stdlib Data.Nat.Base.
 
+    -- Mimicks |_-_| from Data.Nat.Base.
+    -- Ofc one could also use | toℕ_ - toℕ_ | but this seems more convenient in
+    -- proofs.
+    finDist : {c : ℕ} → Fin c → Fin c → ℕ 
+    finDist Fin.zero m = toℕ m
+    finDist n Fin.zero = toℕ n
+    finDist (Fin.suc n) (Fin.suc m) = ℕ.suc (finDist n m)
+
     -- Same as dist, but generalised to work for both ℕ and finite sets.
     distCard 
         : {c : ℕ∞}
@@ -64,6 +72,15 @@ module LowLvl
         → ℕ
     distCard {∞} {n} {m} n<m = dist n<m
     distCard {fin (suc c)} {n} {m} n<m = dist n<m
+    
+    -- Same as dist, but generalised to work for both ℕ and finite sets.
+    newDistCard 
+        : {c : ℕ∞}
+        → {n m : cardToSet c}
+        → cardTo< n m
+        → ℕ
+    newDistCard {∞} {n} {m} n<m = dist n<m
+    newDistCard {fin (suc c)} {n} {m} n<m = finDist n m
 
     -- If n<m then |n-m| > 0.
     nonzeroDist
@@ -125,6 +142,39 @@ module LowLvl
         in
         (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
+
+    --Incrementing the lower of two numbers decreases the distance by 1.
+    decrDist
+        : {c : ℕ∞}
+        → {j k : cardToSet c}
+        → (j<k : cardTo< j k)
+        → (Sj<k : cardTo< (endoSuc (biggerToIsNotMax j<k)) k)
+        → ℕ.suc (newDistCard {c} Sj<k) ≡ newDistCard {c} j<k
+    decrDist {∞} {ℕ.zero} {ℕ.suc k} 0<Sk 1<Sk = refl
+    decrDist {∞} {ℕ.suc j} {ℕ.suc k} Sj<Sk SSj<Sk = 
+        decrDist {∞} {j} {k} (s≤s⁻¹ Sj<Sk) (s≤s⁻¹ SSj<Sk)
+    --decrDist {fin (ℕ.suc c)} {j} {k} j<k Sj<k = 
+    --    let meh = ? -- use Sj<k
+    --    in
+    --    decrDist {∞} {toℕ j} {toℕ k} j<k meh
+    decrDist {fin (ℕ.suc c)} {Fin.zero} {Fin.suc k} (s≤s z≤n) (s≤s 1<Sk) = refl {x = toℕ k}
+        --let t1 : distCard {fin (ℕ.suc c)} (s≤s (z≤n {toℕ k})) 
+        --         ≡ ∣ toℕ (Data.Fin.lower (Fin.zero {ℕ.suc c}) (z<s)) - toℕ k ∣
+        --    t1 = refl
+        --in
+        --?
+        --let meh = sym (lemma (Fin.suc k))
+        --in
+        --{! meh !}
+        where
+            lemma 
+                : {n : ℕ} 
+                → (k : Fin (ℕ.suc n)) 
+                → ∣ toℕ (Data.Fin.lower (Fin.zero {n}) (z<s {n})) - toℕ k ∣ ≡ toℕ k
+            lemma {n} Fin.zero = refl
+            lemma {n} (Fin.suc k) = refl
+    decrDist {fin (ℕ.suc c)} {Fin.suc j} {k} j<k Sj<k = {! !}
+
     -- Add choices to a choicelog q until the enumeration-index
     -- of the most recently chosen element is i.
     -- Of course, this is only possible if i has not been chosen in q already.
@@ -152,7 +202,7 @@ module LowLvl
     iterFromTill D q i idxq<i (suc f) d 
         with (cardToDecidableEq card (idxSuc (biggerToIsNotMax idxq<i)) i)
     ... | yes p = let h = biggerToIsNotMax idxq<i in (nextState D q h , p)
-    ... | no  p = 
+    ... | no  idxq+≢i = 
         let h : IsNotMax (idx q)
             h = biggerToIsNotMax idxq<i
         in
@@ -161,12 +211,48 @@ module LowLvl
         in
         -- Note: idx q+ ≐ idxSuc h.
         let idxq+<i : cardTo< (idx q+) i
-            idxq+<i = ?
+            -- See 'where' clause below for lemma
+            idxq+<i = lemma idxq<i idxq+≢i 
         in
         let d+ : (distCard {card} idxq+<i) Data.Nat.≤ f
             d+ = ?
         in
         iterFromTill D q+ i idxq+<i f d+
+        where
+            lemma 
+                : {c : ℕ∞}
+                → { j k : cardToSet c}
+                → (j<k : cardTo< j  k)
+                → endoSuc (biggerToIsNotMax j<k) ≢ k
+                → cardTo< (endoSuc (biggerToIsNotMax j<k)) k
+            lemma {∞} {j} {k} j<k Sj≢k = 
+                let Sj<k⊎Sj≡k = m≤n⇒m<n∨m≡n j<k 
+                in
+                let Sj<k : cardTo< (endoSuc (biggerToIsNotMax j<k)) k
+                    Sj<k = elimCaseRight Sj<k⊎Sj≡k Sj≢k
+                in
+                Sj<k
+            lemma {fin (suc c)} {j} {k} j<k Sj≢k =
+                let h = biggerToIsNotMax j<k
+                in
+                let STj≡TSj : ℕ.suc (toℕ j) ≡ toℕ (endoSuc h)
+                    STj≡TSj = sym (endoSucInjToNatSuc {c} {j} h)
+                in
+                let Sj<k⊎Sj≡k : toℕ (endoSuc h) Data.Nat.< toℕ k 
+                                ⊎ toℕ (endoSuc h) ≡ toℕ k
+                    Sj<k⊎Sj≡k = subst (λ x → x Data.Nat.< toℕ k ⊎ x ≡ toℕ k)
+                        STj≡TSj (m≤n⇒m<n∨m≡n j<k)
+                in
+                -- We got Sj≢k, but we need toℕ(Sj)≢toℕ(k). Luckily, toℕ is
+                -- injective.
+                let TSj≢Tk : toℕ (endoSuc h) ≢ toℕ k
+                    TSj≢Tk TSj≡Tk = Sj≢k (toℕ-injective TSj≡Tk)
+                in
+                let Sj<k : cardTo< (endoSuc h) k
+                    Sj<k = elimCaseRight Sj<k⊎Sj≡k TSj≢Tk
+                in
+                Sj<k
+
 
     -- #TODO: finish and move to Card.agda
     -- If `cardToSet c` is inhabited, then c cannot be zero.
