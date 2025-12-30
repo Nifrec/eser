@@ -49,8 +49,45 @@ module LowLvl
     open SignoidShortcuts
 
 
+    -- #TODO: move next few funs to other file?
+
+    -- Compute distance from one number to a greater one.
+    -- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
     dist {n} {m} n<m = ? -- #TODO: check stdlib first?
+
+    distCard 
+        : {c : ℕ∞}
+        → {n m : cardToSet c}
+        → cardTo< n m
+        → ℕ
+    distCard {∞} {n} {m} n<m = dist n<m
+    distCard {fin (suc c)} {n} {m} n<m = dist n<m
+
+    biggerToIsNotMax
+        : {c : ℕ∞}
+        → {n m : cardToSet c}
+        → cardTo< n m
+        → IsNotMax n
+    biggerToIsNotMax {fin (suc c)} {n} {m} n<m = 
+        let Sm≤Sc : ℕ.suc (toℕ m) Data.Nat.≤ ℕ.suc c
+            Sm≤Sc = toℕ<n m
+        in
+        let
+            m≤c : toℕ m Data.Nat.≤ c
+            m≤c = s≤s⁻¹ Sm≤Sc
+        in
+        let
+            c≡TFc : c ≡ toℕ (fromℕ c)
+            c≡TFc = sym (toℕ-fromℕ c)
+        in
+        let
+            m≤TFc : toℕ m Data.Nat.≤ (toℕ (fromℕ c))
+            m≤TFc = subst (λ x → toℕ m Data.Nat.≤ x) c≡TFc m≤c
+        in
+        Data.Nat.Properties.≤-trans n<m m≤TFc
+    biggerToIsNotMax {∞} {n} {m} n<m = tt
+
 
     Decider : Set _
     Decider = (q : Q) → IsNotMax (idx q) → LegalChoices q
@@ -75,27 +112,28 @@ module LowLvl
         : Decider
         → (q : Q)
         → (i : C)
-        → (h : IsNotMax (idx q))
+        → (idxq<i : cardTo< (idx q) i)
         -- #TODO This does not typecheck. missing arg to `dist`,
         -- namely toℕ idx q < toℕ i. Replace h by an arg of this type.
         -- Prove that h can be inferred from it.
         → (f : ℕ)
         --^ "Fuel", is decreased every iteration, used to please Agda's
         -- termination checker.
-        → (dist (toℕ (idx q)) (toℕ i)) Data.Nat.≤ f
+        → (distCard idxq<i) Data.Nat.≤ f
         → Σ[ q* ∈ Q ]( idx q* ≡ i )
-    iterFromTill D q i h f d with (cardToDecidableEq (idxSuc h) i)
-    ... | yes p = (nextState D q h , p)
+    iterFromTill D q i idxq<i f d 
+        with (cardToDecidableEq card (idxSuc (biggerToIsNotMax idxq<i)) i)
+    ... | yes p = let h = biggerToIsNotMax idxq<i in (nextState D q h , p)
     ... | no  p = ?
         where
             q+ : Q
-            q+ = nextState D q h
+            q+ = nextState D q {! h !}
 
     -- #TODO: finish and move to Card.agda
     -- If `cardToSet c` is inhabited, then c cannot be zero.
     elToNonempty
         : {c : ℕ∞}
-        → cardToSuc c
+        → cardToSet c
         → fin ℕ.zero <∞ c
     elToNonempty {c} i = ?
 
