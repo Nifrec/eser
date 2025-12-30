@@ -56,7 +56,7 @@ module LowLvl
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
     dist {n} {m} n<m = ∣ n - m ∣ -- |_-_| is given in the stdlib Data.Nat.Base.
 
-    -- Same as dist, but lifted to work for both ℕ and finite sets.
+    -- Same as dist, but generalised to work for both ℕ and finite sets.
     distCard 
         : {c : ℕ∞}
         → {n m : cardToSet c}
@@ -72,6 +72,15 @@ module LowLvl
         → ℕ.zero Data.Nat.< dist n<m 
     nonzeroDist {ℕ.zero} {ℕ.suc m} (s≤s z≤n) = s≤s Data.Nat.z≤n
     nonzeroDist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = nonzeroDist n<m
+
+    -- nonzeroDist generalised to work with both ℕ and finite sets.
+    nonzeroDistCard
+        : {c : ℕ∞}
+        → {n m : cardToSet c}
+        → (n<m : cardTo< n m)
+        → ℕ.zero Data.Nat.< distCard {c} n<m
+    nonzeroDistCard {∞} {n} {m} n<m = nonzeroDist n<m
+    nonzeroDistCard {fin (ℕ.suc c)} {n} {m} n<m = nonzeroDist n<m
 
     -- If a bigger element than n exists in a finite set,
     -- then n is not the maximum element of the set.
@@ -133,10 +142,13 @@ module LowLvl
         → (distCard {card} idxq<i) Data.Nat.≤ f
         → Σ[ q* ∈ Q ]( idx q* ≡ i )
     iterFromTill D q i idxq<i zero d = 
-        let contra : ⊥
-            contra = ?
+        let z<dist : ℕ.zero Data.Nat.< distCard {card} idxq<i 
+            z<dist = nonzeroDistCard {card} idxq<i
         in
-        ⊥-elim contra
+        let z<z : ℕ.zero Data.Nat.< ℕ.zero
+            z<z = <-≤-trans z<dist d -- Note that d : dist < 0,
+        in
+        ⊥-elim (n≮n ℕ.zero z<z)
     iterFromTill D q i idxq<i (suc f) d 
         with (cardToDecidableEq card (idxSuc (biggerToIsNotMax idxq<i)) i)
     ... | yes p = let h = biggerToIsNotMax idxq<i in (nextState D q h , p)
