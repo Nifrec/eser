@@ -65,6 +65,14 @@ module LowLvl
     distCard {∞} {n} {m} n<m = dist n<m
     distCard {fin (suc c)} {n} {m} n<m = dist n<m
 
+    -- If n<m then |n-m| > 0.
+    nonzeroDist
+        : {n m : ℕ}
+        → (n<m : n Data.Nat.< m)
+        → ℕ.zero Data.Nat.< dist n<m 
+    nonzeroDist {ℕ.zero} {ℕ.suc m} (s≤s z≤n) = s≤s Data.Nat.z≤n
+    nonzeroDist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = nonzeroDist n<m
+
     -- If a bigger element than n exists in a finite set,
     -- then n is not the maximum element of the set.
     biggerToIsNotMax
@@ -124,7 +132,11 @@ module LowLvl
         -- termination checker.
         → (distCard {card} idxq<i) Data.Nat.≤ f
         → Σ[ q* ∈ Q ]( idx q* ≡ i )
-    iterFromTill D q i idxq<i zero d = ⊥-elim ? --#TODO: cannot happen cuz d.
+    iterFromTill D q i idxq<i zero d = 
+        let contra : ⊥
+            contra = ?
+        in
+        ⊥-elim contra
     iterFromTill D q i idxq<i (suc f) d 
         with (cardToDecidableEq card (idxSuc (biggerToIsNotMax idxq<i)) i)
     ... | yes p = let h = biggerToIsNotMax idxq<i in (nextState D q h , p)
