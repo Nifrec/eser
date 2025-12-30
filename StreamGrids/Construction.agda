@@ -54,8 +54,9 @@ module LowLvl
     -- Compute distance from one number to a greater one.
     -- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
-    dist {n} {m} n<m = ? -- #TODO: check stdlib first?
+    dist {n} {m} n<m = ∣ n - m ∣ -- |_-_| is given in the stdlib Data.Nat.Base.
 
+    -- Same as dist, but lifted to work for both ℕ and finite sets.
     distCard 
         : {c : ℕ∞}
         → {n m : cardToSet c}
@@ -64,6 +65,8 @@ module LowLvl
     distCard {∞} {n} {m} n<m = dist n<m
     distCard {fin (suc c)} {n} {m} n<m = dist n<m
 
+    -- If a bigger element than n exists in a finite set,
+    -- then n is not the maximum element of the set.
     biggerToIsNotMax
         : {c : ℕ∞}
         → {n m : cardToSet c}
@@ -119,15 +122,27 @@ module LowLvl
         → (f : ℕ)
         --^ "Fuel", is decreased every iteration, used to please Agda's
         -- termination checker.
-        → (distCard idxq<i) Data.Nat.≤ f
+        → (distCard {card} idxq<i) Data.Nat.≤ f
         → Σ[ q* ∈ Q ]( idx q* ≡ i )
-    iterFromTill D q i idxq<i f d 
+    iterFromTill D q i idxq<i zero d = ⊥-elim ? --#TODO: cannot happen cuz d.
+    iterFromTill D q i idxq<i (suc f) d 
         with (cardToDecidableEq card (idxSuc (biggerToIsNotMax idxq<i)) i)
     ... | yes p = let h = biggerToIsNotMax idxq<i in (nextState D q h , p)
-    ... | no  p = ?
-        where
-            q+ : Q
-            q+ = nextState D q {! h !}
+    ... | no  p = 
+        let h : IsNotMax (idx q)
+            h = biggerToIsNotMax idxq<i
+        in
+        let q+ : Q
+            q+ = nextState D q h
+        in
+        -- Note: idx q+ ≐ idxSuc h.
+        let idxq+<i : cardTo< (idx q+) i
+            idxq+<i = ?
+        in
+        let d+ : (distCard {card} idxq+<i) Data.Nat.≤ f
+            d+ = ?
+        in
+        iterFromTill D q+ i idxq+<i f d+
 
     -- #TODO: finish and move to Card.agda
     -- If `cardToSet c` is inhabited, then c cannot be zero.
