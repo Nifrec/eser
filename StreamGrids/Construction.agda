@@ -5,6 +5,23 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
+-- Termination for iterFromTill was an annoyance.
+-- Imperically it is obvious:
+-- ```
+-- q := root h
+-- for j = 0 to i
+--      q := add decider's next choice to q
+-- return q
+-- ```
+-- Doing it functional is a bit confusing. The distance from (idx q) to i
+-- decreases every iteration, so that should give termination.
+-- Initially I defined distance as
+-- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
+-- dist : {n m : ℕ} → n Data.Nat.< m → ℕ
+-- dist {n} {m} n<m = ∣ n - m ∣
+-- Noting that |_-_| is given in the stdlib Data.Nat.Base.
+-- It was difficult to prove the required properties of this, when generalised
+-- to work with finite sets (using toℕ to inject to ℕ).
 open import Level
 open import Relation.Binary
 open import Relation.Nullary
@@ -54,15 +71,12 @@ module LowLvl
     -- Compute distance from one number to a greater one.
     -- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
-    dist {n} {m} n<m = ∣ n - m ∣ -- |_-_| is given in the stdlib Data.Nat.Base.
+    dist {ℕ.zero} {m} 0<m = m
+    dist {ℕ.suc n} {ℕ.suc m} Sn<Sm = dist {n} {m} (s≤s⁻¹ Sn<Sm)
 
-    -- Mimicks |_-_| from Data.Nat.Base.
-    -- Ofc one could also use | toℕ_ - toℕ_ | but this seems more convenient in
-    -- proofs.
-    finDist : {c : ℕ} → Fin c → Fin c → ℕ 
-    finDist Fin.zero m = toℕ m
-    finDist n Fin.zero = toℕ n
-    finDist (Fin.suc n) (Fin.suc m) = ℕ.suc (finDist n m)
+    -- Same as dist, but for finite sets,
+    finDist : {c : ℕ} → {n m : Fin c} → (n<m : n Data.Fin.< m) → ℕ 
+    finDist n<m = dist n<m
 
     -- Same as dist, but generalised to work for both ℕ and finite sets.
     distCard 
@@ -72,32 +86,23 @@ module LowLvl
         → ℕ
     distCard {∞} {n} {m} n<m = dist n<m
     distCard {fin (suc c)} {n} {m} n<m = dist n<m
-    
-    -- Same as dist, but generalised to work for both ℕ and finite sets.
-    newDistCard 
-        : {c : ℕ∞}
-        → {n m : cardToSet c}
-        → cardTo< n m
-        → ℕ
-    newDistCard {∞} {n} {m} n<m = dist n<m
-    newDistCard {fin (suc c)} {n} {m} n<m = finDist n m
 
-    -- If n<m then |n-m| > 0.
-    nonzeroDist
-        : {n m : ℕ}
-        → (n<m : n Data.Nat.< m)
-        → ℕ.zero Data.Nat.< dist n<m 
-    nonzeroDist {ℕ.zero} {ℕ.suc m} (s≤s z≤n) = s≤s Data.Nat.z≤n
-    nonzeroDist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = nonzeroDist n<m
+    ---- If n<m then |n-m| > 0.
+    --nonzeroDist
+    --    : {n m : ℕ}
+    --    → (n<m : n Data.Nat.< m)
+    --    → ℕ.zero Data.Nat.< dist n<m 
+    --nonzeroDist {ℕ.zero} {ℕ.suc m} (s≤s z≤n) = s≤s Data.Nat.z≤n
+    --nonzeroDist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = nonzeroDist n<m
 
-    -- nonzeroDist generalised to work with both ℕ and finite sets.
-    nonzeroDistCard
-        : {c : ℕ∞}
-        → {n m : cardToSet c}
-        → (n<m : cardTo< n m)
-        → ℕ.zero Data.Nat.< distCard {c} n<m
-    nonzeroDistCard {∞} {n} {m} n<m = nonzeroDist n<m
-    nonzeroDistCard {fin (ℕ.suc c)} {n} {m} n<m = nonzeroDist n<m
+    ---- nonzeroDist generalised to work with both ℕ and finite sets.
+    --nonzeroDistCard
+    --    : {c : ℕ∞}
+    --    → {n m : cardToSet c}
+    --    → (n<m : cardTo< n m)
+    --    → ℕ.zero Data.Nat.< distCard {c} n<m
+    --nonzeroDistCard {∞} {n} {m} n<m = nonzeroDist n<m
+    --nonzeroDistCard {fin (ℕ.suc c)} {n} {m} n<m = nonzeroDist n<m
 
     -- If a bigger element than n exists in a finite set,
     -- then n is not the maximum element of the set.
@@ -142,6 +147,16 @@ module LowLvl
         in
         (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
+    lemma'
+        : {n : ℕ}
+        → {j k : Fin (ℕ.suc n)}
+        → (j<k : j Data.Fin.< k)
+        → (Sj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ k))
+        → ℕ.suc (distCard {∞} Sj<k) ≡ distCard {fin (ℕ.suc n)} j<k
+    --lemma' {n} {j} {k} j<k Sj<k = ?
+    lemma' {n} {Fin.zero} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = refl
+    lemma' {ℕ.suc n} {Fin.suc j} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = 
+        let rec = lemma' j<k Sj<k in rec
 
     --Incrementing the lower of two numbers decreases the distance by 1.
     decrDist
@@ -149,31 +164,35 @@ module LowLvl
         → {j k : cardToSet c}
         → (j<k : cardTo< j k)
         → (Sj<k : cardTo< (endoSuc (biggerToIsNotMax j<k)) k)
-        → ℕ.suc (newDistCard {c} Sj<k) ≡ newDistCard {c} j<k
-    decrDist {∞} {ℕ.zero} {ℕ.suc k} 0<Sk 1<Sk = refl
-    decrDist {∞} {ℕ.suc j} {ℕ.suc k} Sj<Sk SSj<Sk = 
-        decrDist {∞} {j} {k} (s≤s⁻¹ Sj<Sk) (s≤s⁻¹ SSj<Sk)
-    --decrDist {fin (ℕ.suc c)} {j} {k} j<k Sj<k = 
-    --    let meh = ? -- use Sj<k
-    --    in
-    --    decrDist {∞} {toℕ j} {toℕ k} j<k meh
-    decrDist {fin (ℕ.suc c)} {Fin.zero} {Fin.suc k} (s≤s z≤n) (s≤s 1<Sk) = refl {x = toℕ k}
-        --let t1 : distCard {fin (ℕ.suc c)} (s≤s (z≤n {toℕ k})) 
-        --         ≡ ∣ toℕ (Data.Fin.lower (Fin.zero {ℕ.suc c}) (z<s)) - toℕ k ∣
-        --    t1 = refl
-        --in
-        --?
-        --let meh = sym (lemma (Fin.suc k))
-        --in
-        --{! meh !}
-        where
-            lemma 
-                : {n : ℕ} 
-                → (k : Fin (ℕ.suc n)) 
-                → ∣ toℕ (Data.Fin.lower (Fin.zero {n}) (z<s {n})) - toℕ k ∣ ≡ toℕ k
-            lemma {n} Fin.zero = refl
-            lemma {n} (Fin.suc k) = refl
-    decrDist {fin (ℕ.suc c)} {Fin.suc j} {k} j<k Sj<k = {! !}
+        → ℕ.suc (distCard {c} Sj<k) ≡ distCard {c} j<k
+    decrDist {∞} {ℕ.zero} {k} (s≤s z≤n) 1<k = refl
+    decrDist {∞} {ℕ.suc j} {ℕ.suc k} (s≤s j<k) (s≤s Sj<k) =
+        decrDist {∞} {j} {k} (j<k) (Sj<k)
+    decrDist {fin (suc c)} {j} {k} j<k Sj<k =
+        let h = biggerToIsNotMax j<k in
+        let STj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ k) 
+            STj<k = subst (λ x → x Data.Nat.< (toℕ k)) 
+                         (endoSucInjToNatSuc h)
+                         Sj<k
+        in
+        let meh :  ℕ.suc (distCard {∞} STj<k) ≡ distCard {fin (ℕ.suc c)} j<k
+            meh = lemma' j<k STj<k
+        in
+        -- #TODO: maybe remove, unused?
+        let Sj<k≡STj<k : Sj<k ≡ (subst (λ x → x Data.Nat.< toℕ k)
+                                        (sym (endoSucInjToNatSuc h))
+                                        STj<k)
+            Sj<k≡STj<k = Data.Nat.Properties.≤-irrelevant _ _
+        in
+        let
+            geh : distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
+            geh = ?
+        in
+        trans (cong ℕ.suc geh) meh
+        ------ Use cong and lemma ℕ.suc <-> endosuc to finish.
+        --subst (λ x → 
+        --    ℕ.suc (distCard {fin (ℕ.suc c)} x) ≡ distCard {fin (ℕ.suc c)} j<k) 
+        --    (sym Sj<k≡STj<k) meh
 
     -- Add choices to a choicelog q until the enumeration-index
     -- of the most recently chosen element is i.
@@ -193,7 +212,7 @@ module LowLvl
         → Σ[ q* ∈ Q ]( idx q* ≡ i )
     iterFromTill D q i idxq<i zero d = 
         let z<dist : ℕ.zero Data.Nat.< distCard {card} idxq<i 
-            z<dist = nonzeroDistCard {card} idxq<i
+            z<dist = {! nonzeroDistCard {card} idxq<i!}
         in
         let z<z : ℕ.zero Data.Nat.< ℕ.zero
             z<z = <-≤-trans z<dist d -- Note that d : dist < 0,
