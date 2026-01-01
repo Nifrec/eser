@@ -49,6 +49,7 @@ open import StreamGrids.Signoid
 open import StreamGrids.Card
 open import StreamGrids.Suffix
 open import StreamGrids.Logic
+open import StreamGrids.Fin
 
 
 module StreamGrids.Construction where
@@ -70,9 +71,12 @@ module LowLvl
 
     -- Compute distance from one number to a greater one.
     -- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
+    --dist : {n m : ℕ} → n Data.Nat.< m → ℕ
+    --dist {ℕ.zero} {m} 0<m = m
+    --dist {ℕ.suc n} {ℕ.suc m} Sn<Sm = dist {n} {m} (s≤s⁻¹ Sn<Sm)
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
-    dist {ℕ.zero} {m} 0<m = m
-    dist {ℕ.suc n} {ℕ.suc m} Sn<Sm = dist {n} {m} (s≤s⁻¹ Sn<Sm)
+    dist {ℕ.zero} {m} (s≤s z≤n) = m
+    dist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = dist {n} {m} (n<m)
 
     -- Same as dist, but for finite sets,
     finDist : {c : ℕ} → {n m : Fin c} → (n<m : n Data.Fin.< m) → ℕ 
@@ -147,6 +151,17 @@ module LowLvl
         in
         (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
+    --distUnfold
+    --    : {c : ℕ}
+    --    → {j k : Fin (ℕ.suc c)}
+    --    → (j<k : (toℕ j) Data.Nat.< (toℕ k))
+    --    → (Sj<k : (toℕ (
+    --    → ℕ.suc (dist j<k) ≡ dist (s≤s j<k)
+    --distUnfold {ℕ.zero} {Fin.zero} {Fin.zero} ()
+    --distUnfold {ℕ.zero} {Fin.zero} {Fin.suc ()} (s≤s z≤n)
+    --distUnfold {ℕ.suc c} {Fin.zero} {Fin.suc k} (s≤s z≤n) = refl
+    --distUnfold {ℕ.suc c} {Fin.suc j} {k} j<k = {! !}
+
     lemma'
         : {n : ℕ}
         → {j k : Fin (ℕ.suc n)}
@@ -154,9 +169,90 @@ module LowLvl
         → (Sj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ k))
         → ℕ.suc (distCard {∞} Sj<k) ≡ distCard {fin (ℕ.suc n)} j<k
     --lemma' {n} {j} {k} j<k Sj<k = ?
-    lemma' {n} {Fin.zero} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = refl
+    lemma' {n} {Fin.zero} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = ?
     lemma' {ℕ.suc n} {Fin.suc j} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = 
         let rec = lemma' j<k Sj<k in rec
+
+    --destrFin 
+    --    : {c : ℕ}
+    --    → {k : Fin (ℕ.suc c)}
+    --    → 1 Data.Nat.≤ toℕ k
+    --    → Σ[ n ∈ ℕ ] (toℕ k ≡ ℕ.suc n)
+    --destrFin
+
+    -- Distance d from 1 to k is k-1, or equivalently, d+1 is k.
+    lemma'''
+        : {c : ℕ}
+        → {k : Fin (ℕ.suc c)}
+        → (0<k : Data.Fin.zero {ℕ.suc c} Data.Fin.< k)
+        → (S0<k : toℕ (endoSuc (biggerToIsNotMax 0<k)) Data.Nat.< (toℕ k))
+        → ℕ.suc (distCard {fin (ℕ.suc c)} S0<k) ≡ toℕ k
+    lemma''' {ℕ.zero} {Fin.zero} () S0<k
+    lemma''' {ℕ.zero} {Fin.suc ()} (s≤s z≤n) (s≤s S0<k)
+    lemma''' {c@(ℕ.suc (ℕ.suc c''))} {Fin.suc (Fin.suc k)} (s≤s z≤n) p@(s≤s 0<Sk) = 
+        let v : toℕ (Fin.suc Fin.zero) Data.Nat.< toℕ (Fin.suc (Fin.suc k))
+            v = s≤s (s≤s z≤n)
+        in
+        let u : cardTo< {fin (ℕ.suc c)} (Fin.suc Fin.zero) (Fin.suc (Fin.suc k)) 
+            u = s≤s (s≤s z≤n)
+        in
+        let p≡u : p ≡ u
+            p≡u = Data.Nat.Properties.≤-irrelevant (s≤s 0<Sk) u
+        in
+        let realAns : ℕ
+            realAns = distCard {fin (ℕ.suc c)} u
+        in
+        let realOutp : realAns ≡ (ℕ.suc (toℕ k))
+            realOutp = refl
+        in
+        let outp≡outu : distCard {fin (ℕ.suc c)} p ≡ realAns
+            outp≡outu = cong (distCard {fin (ℕ.suc c)}) p≡u
+        in
+        -- Something went wrong -- the output is too small!
+        -- Yes of course YOU **** IDIOT!!!!!!!!!!!!!!
+        -- THE DISTANCE FROM 1 to K is k-1 NOT k.
+        -- FAAAAAAAAAAACCCCCCCCCCCCCCCCCCEEEEEEEEEEEEEPAAAAAAAAALLLLLLLLLLMM
+        cong ℕ.suc (trans outp≡outu realOutp)
+        --let real≡actual : distCard {fin (ℕ.suc c)} v ≡ distCard {fin (ℕ.suc c)} 0<Sk
+        --    real≡actual = cong (λ x → distCard {fin (ℕ.suc c)} x) (sym S0<k≡v)
+        --in
+        --{! trans (sym real≡actual) test !}
+        --{! cong ℕ.suc test !}
+
+    lemma''
+        : {c : ℕ}
+        → {j k : Fin (ℕ.suc c)}
+        → (j<k : j Data.Fin.< k)
+        → (STj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ (Fin.suc k)))
+        → (Sj<k : toℕ (endoSuc (biggerToIsNotMax j<k)) Data.Nat.< (toℕ k))
+        → distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
+    lemma'' {c} {Fin.zero} {Fin.suc k} (s≤s z≤n) STj<k@(s≤s (s≤s z≤n)) (s≤s Sj<k) =
+        let LHS = ℕ.suc (toℕ k)
+        in
+        let _ = distCard {fin (ℕ.suc c)} (s≤s Sj<k)
+        in
+        let RHS = distCard {∞} STj<k
+        in
+        let check : RHS ≡ toℕ (Fin.suc k)
+            check = refl
+        in
+        -- We got ℕ.suc (toℕ (Data.Fin.lower Fin.zero _)) Data.Nat.≤ toℕ k
+        let test : ℕ.suc (toℕ (Data.Fin.lower Fin.zero (s≤s z≤n))) Data.Nat.≤ toℕ k
+            test = {! Sj<k !}
+        in
+        let test2 : ℕ.zero Data.Nat.≤ toℕ k
+            test2 = {! Sj<k !}
+        in
+        let test3 = subst (λ x → (ℕ.suc x) Data.Nat.≤ toℕ k) 
+                (toℕ-lower Fin.zero _) Sj<k
+        in
+        --let meh = subst _ (StreamGrids.Fin.toℕ-lower ) Sj<k 
+        --in
+        ?
+    lemma'' {ℕ.suc c} {Fin.suc j} {Fin.suc k} (s≤s j<k) (s≤s STj<k) (s≤s Sj<k) =
+        let rec = lemma'' {c} {j} {k} j<k STj<k Sj<k
+        in
+        rec
 
     --Incrementing the lower of two numbers decreases the distance by 1.
     decrDist
@@ -165,7 +261,7 @@ module LowLvl
         → (j<k : cardTo< j k)
         → (Sj<k : cardTo< (endoSuc (biggerToIsNotMax j<k)) k)
         → ℕ.suc (distCard {c} Sj<k) ≡ distCard {c} j<k
-    decrDist {∞} {ℕ.zero} {k} (s≤s z≤n) 1<k = refl
+    decrDist {∞} {ℕ.zero} {k} (s≤s z≤n) 1<k = ?
     decrDist {∞} {ℕ.suc j} {ℕ.suc k} (s≤s j<k) (s≤s Sj<k) =
         decrDist {∞} {j} {k} (j<k) (Sj<k)
     decrDist {fin (suc c)} {j} {k} j<k Sj<k =
