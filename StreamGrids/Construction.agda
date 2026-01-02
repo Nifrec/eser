@@ -223,32 +223,30 @@ module LowLvl
         : {c : ℕ}
         → {j k : Fin (ℕ.suc c)}
         → (j<k : j Data.Fin.< k)
-        → (STj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ (Fin.suc k)))
+        → (STj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ k))
         → (Sj<k : toℕ (endoSuc (biggerToIsNotMax j<k)) Data.Nat.< (toℕ k))
         → distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
-    lemma'' {c} {Fin.zero} {Fin.suc k} (s≤s z≤n) STj<k@(s≤s (s≤s z≤n)) (s≤s Sj<k) =
-        let LHS = ℕ.suc (toℕ k)
+    lemma'' {c} {Fin.zero} {Fin.suc k@(Fin.suc k')} (s≤s z≤n) STj<k@(s≤s (s≤s z≤n)) (s≤s Sj<k) =
+        let LHS = distCard {fin (ℕ.suc c)} (s≤s Sj<k)
+        in
+        -- The LHS does not reduce to a value automatically, but we have a lemma
+        -- for that. It just needs 
+        let LHSvalueAlmost : ℕ.suc LHS ≡ toℕ (Fin.suc k)
+            LHSvalueAlmost = lemma''' (s≤s z≤n) (s≤s Sj<k)
+        in
+        let LHSvalue : LHS ≡ toℕ k
+            LHSvalue = Data.Nat.Properties.suc-injective LHSvalueAlmost
+        in
+        let call = lemma''' (s≤s z≤n) (s≤s Sj<k)
         in
         let _ = distCard {fin (ℕ.suc c)} (s≤s Sj<k)
         in
         let RHS = distCard {∞} STj<k
         in
-        let check : RHS ≡ toℕ (Fin.suc k)
-            check = refl
+        let RHSvalue : RHS ≡ toℕ k -- The RHS computes nicely. 
+            RHSvalue = refl
         in
-        -- We got ℕ.suc (toℕ (Data.Fin.lower Fin.zero _)) Data.Nat.≤ toℕ k
-        let test : ℕ.suc (toℕ (Data.Fin.lower Fin.zero (s≤s z≤n))) Data.Nat.≤ toℕ k
-            test = {! Sj<k !}
-        in
-        let test2 : ℕ.zero Data.Nat.≤ toℕ k
-            test2 = {! Sj<k !}
-        in
-        let test3 = subst (λ x → (ℕ.suc x) Data.Nat.≤ toℕ k) 
-                (toℕ-lower Fin.zero _) Sj<k
-        in
-        --let meh = subst _ (StreamGrids.Fin.toℕ-lower ) Sj<k 
-        --in
-        ?
+        trans LHSvalue (sym RHSvalue)
     lemma'' {ℕ.suc c} {Fin.suc j} {Fin.suc k} (s≤s j<k) (s≤s STj<k) (s≤s Sj<k) =
         let rec = lemma'' {c} {j} {k} j<k STj<k Sj<k
         in
@@ -261,7 +259,7 @@ module LowLvl
         → (j<k : cardTo< j k)
         → (Sj<k : cardTo< (endoSuc (biggerToIsNotMax j<k)) k)
         → ℕ.suc (distCard {c} Sj<k) ≡ distCard {c} j<k
-    decrDist {∞} {ℕ.zero} {k} (s≤s z≤n) 1<k = ?
+    decrDist {∞} {ℕ.zero} {ℕ.suc k} (s≤s z≤n) (s≤s (s≤s z≤n)) = refl
     decrDist {∞} {ℕ.suc j} {ℕ.suc k} (s≤s j<k) (s≤s Sj<k) =
         decrDist {∞} {j} {k} (j<k) (Sj<k)
     decrDist {fin (suc c)} {j} {k} j<k Sj<k =
@@ -282,13 +280,23 @@ module LowLvl
         in
         let
             geh : distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
-            geh = ?
+            geh = lemma'' j<k STj<k Sj<k
         in
         trans (cong ℕ.suc geh) meh
-        ------ Use cong and lemma ℕ.suc <-> endosuc to finish.
-        --subst (λ x → 
-        --    ℕ.suc (distCard {fin (ℕ.suc c)} x) ≡ distCard {fin (ℕ.suc c)} j<k) 
-        --    (sym Sj<k≡STj<k) meh
+
+    -- distCard requires j<k, so the distance from j to k is always greater than
+    -- zero.
+    distCardNonZero
+        : {c : ℕ∞}
+        → {j k : cardToSet c}
+        → (j<k : cardTo< {c} j k)
+        → ℕ.zero Data.Nat.< distCard {c} j<k
+    distCardNonZero {fin (ℕ.suc c)} {Fin.zero} {Fin.suc k} (s≤s z≤n) = s≤s z≤n
+    distCardNonZero {fin (ℕ.suc (ℕ.suc c))} {Fin.suc j} {Fin.suc k} (s≤s j<k) = 
+        distCardNonZero {fin (ℕ.suc c)} {j} {k} j<k
+    distCardNonZero {∞} {ℕ.zero} {ℕ.suc k} (s≤s z≤n) = s≤s z≤n
+    distCardNonZero {∞} {ℕ.suc j} {ℕ.suc k} (s≤s j<k) = 
+        distCardNonZero {∞} {j} {k} j<k
 
     -- Add choices to a choicelog q until the enumeration-index
     -- of the most recently chosen element is i.
@@ -308,7 +316,7 @@ module LowLvl
         → Σ[ q* ∈ Q ]( idx q* ≡ i )
     iterFromTill D q i idxq<i zero d = 
         let z<dist : ℕ.zero Data.Nat.< distCard {card} idxq<i 
-            z<dist = {! nonzeroDistCard {card} idxq<i!}
+            z<dist = distCardNonZero {card} idxq<i
         in
         let z<z : ℕ.zero Data.Nat.< ℕ.zero
             z<z = <-≤-trans z<dist d -- Note that d : dist < 0,
@@ -330,7 +338,10 @@ module LowLvl
             idxq+<i = lemma idxq<i idxq+≢i 
         in
         let d+ : (distCard {card} idxq+<i) Data.Nat.≤ f
-            d+ = ?
+            d+ = s≤s⁻¹ ( subst (λ x → x Data.Nat.≤ ℕ.suc f) 
+                               (sym (decrDist {card} idxq<i idxq+<i)) 
+                               d
+                       )
         in
         iterFromTill D q+ i idxq+<i f d+
         where
