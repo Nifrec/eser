@@ -71,9 +71,6 @@ module LowLvl
 
     -- Compute distance from one number to a greater one.
     -- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
-    --dist : {n m : ℕ} → n Data.Nat.< m → ℕ
-    --dist {ℕ.zero} {m} 0<m = m
-    --dist {ℕ.suc n} {ℕ.suc m} Sn<Sm = dist {n} {m} (s≤s⁻¹ Sn<Sm)
     dist : {n m : ℕ} → n Data.Nat.< m → ℕ
     dist {ℕ.zero} {m} (s≤s z≤n) = m
     dist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = dist {n} {m} (n<m)
@@ -90,23 +87,6 @@ module LowLvl
         → ℕ
     distCard {∞} {n} {m} n<m = dist n<m
     distCard {fin (suc c)} {n} {m} n<m = dist n<m
-
-    ---- If n<m then |n-m| > 0.
-    --nonzeroDist
-    --    : {n m : ℕ}
-    --    → (n<m : n Data.Nat.< m)
-    --    → ℕ.zero Data.Nat.< dist n<m 
-    --nonzeroDist {ℕ.zero} {ℕ.suc m} (s≤s z≤n) = s≤s Data.Nat.z≤n
-    --nonzeroDist {ℕ.suc n} {ℕ.suc m} (s≤s n<m) = nonzeroDist n<m
-
-    ---- nonzeroDist generalised to work with both ℕ and finite sets.
-    --nonzeroDistCard
-    --    : {c : ℕ∞}
-    --    → {n m : cardToSet c}
-    --    → (n<m : cardTo< n m)
-    --    → ℕ.zero Data.Nat.< distCard {c} n<m
-    --nonzeroDistCard {∞} {n} {m} n<m = nonzeroDist n<m
-    --nonzeroDistCard {fin (ℕ.suc c)} {n} {m} n<m = nonzeroDist n<m
 
     -- If a bigger element than n exists in a finite set,
     -- then n is not the maximum element of the set.
@@ -134,7 +114,6 @@ module LowLvl
         Data.Nat.Properties.≤-trans n<m m≤TFc
     biggerToIsNotMax {∞} {n} {m} n<m = tt
 
-
     Decider : Set _
     Decider = (q : Q) → IsNotMax (idx q) → LegalChoices q
 
@@ -151,34 +130,15 @@ module LowLvl
         in
         (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
-    --distUnfold
-    --    : {c : ℕ}
-    --    → {j k : Fin (ℕ.suc c)}
-    --    → (j<k : (toℕ j) Data.Nat.< (toℕ k))
-    --    → (Sj<k : (toℕ (
-    --    → ℕ.suc (dist j<k) ≡ dist (s≤s j<k)
-    --distUnfold {ℕ.zero} {Fin.zero} {Fin.zero} ()
-    --distUnfold {ℕ.zero} {Fin.zero} {Fin.suc ()} (s≤s z≤n)
-    --distUnfold {ℕ.suc c} {Fin.zero} {Fin.suc k} (s≤s z≤n) = refl
-    --distUnfold {ℕ.suc c} {Fin.suc j} {k} j<k = {! !}
-
     lemma'
         : {n : ℕ}
         → {j k : Fin (ℕ.suc n)}
         → (j<k : j Data.Fin.< k)
         → (Sj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ k))
         → ℕ.suc (distCard {∞} Sj<k) ≡ distCard {fin (ℕ.suc n)} j<k
-    --lemma' {n} {j} {k} j<k Sj<k = ?
-    lemma' {n} {Fin.zero} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = ?
+    lemma' {n} {Fin.zero} {Fin.suc (Fin.suc k)} (s≤s z≤n) (s≤s (s≤s z≤n)) = refl
     lemma' {ℕ.suc n} {Fin.suc j} {Fin.suc k} (s≤s j<k) (s≤s Sj<k) = 
         let rec = lemma' j<k Sj<k in rec
-
-    --destrFin 
-    --    : {c : ℕ}
-    --    → {k : Fin (ℕ.suc c)}
-    --    → 1 Data.Nat.≤ toℕ k
-    --    → Σ[ n ∈ ℕ ] (toℕ k ≡ ℕ.suc n)
-    --destrFin
 
     -- Distance d from 1 to k is k-1, or equivalently, d+1 is k.
     lemma'''
@@ -189,35 +149,26 @@ module LowLvl
         → ℕ.suc (distCard {fin (ℕ.suc c)} S0<k) ≡ toℕ k
     lemma''' {ℕ.zero} {Fin.zero} () S0<k
     lemma''' {ℕ.zero} {Fin.suc ()} (s≤s z≤n) (s≤s S0<k)
-    lemma''' {c@(ℕ.suc (ℕ.suc c''))} {Fin.suc (Fin.suc k)} (s≤s z≤n) p@(s≤s 0<Sk) = 
-        let v : toℕ (Fin.suc Fin.zero) Data.Nat.< toℕ (Fin.suc (Fin.suc k))
-            v = s≤s (s≤s z≤n)
-        in
+    lemma''' {c@(ℕ.suc c'@(ℕ.suc c''))} 
+             {Fin.suc (Fin.suc k)} 
+             (s≤s z≤n) 
+             p@(s≤s 0<Sk) = 
         let u : cardTo< {fin (ℕ.suc c)} (Fin.suc Fin.zero) (Fin.suc (Fin.suc k)) 
             u = s≤s (s≤s z≤n)
         in
         let p≡u : p ≡ u
             p≡u = Data.Nat.Properties.≤-irrelevant (s≤s 0<Sk) u
         in
-        let realAns : ℕ
-            realAns = distCard {fin (ℕ.suc c)} u
+        let normalOutp : ℕ
+            normalOutp = distCard {fin (ℕ.suc c)} u
         in
-        let realOutp : realAns ≡ (ℕ.suc (toℕ k))
-            realOutp = refl
+        let outpValue : normalOutp ≡ (ℕ.suc (toℕ k))
+            outpValue = refl
         in
-        let outp≡outu : distCard {fin (ℕ.suc c)} p ≡ realAns
+        let outp≡outu : distCard {fin (ℕ.suc c)} p ≡ normalOutp
             outp≡outu = cong (distCard {fin (ℕ.suc c)}) p≡u
         in
-        -- Something went wrong -- the output is too small!
-        -- Yes of course YOU **** IDIOT!!!!!!!!!!!!!!
-        -- THE DISTANCE FROM 1 to K is k-1 NOT k.
-        -- FAAAAAAAAAAACCCCCCCCCCCCCCCCCCEEEEEEEEEEEEEPAAAAAAAAALLLLLLLLLLMM
-        cong ℕ.suc (trans outp≡outu realOutp)
-        --let real≡actual : distCard {fin (ℕ.suc c)} v ≡ distCard {fin (ℕ.suc c)} 0<Sk
-        --    real≡actual = cong (λ x → distCard {fin (ℕ.suc c)} x) (sym S0<k≡v)
-        --in
-        --{! trans (sym real≡actual) test !}
-        --{! cong ℕ.suc test !}
+        cong ℕ.suc (trans outp≡outu outpValue)
 
     lemma''
         : {c : ℕ}
@@ -226,7 +177,8 @@ module LowLvl
         → (STj<k : (ℕ.suc (toℕ j)) Data.Nat.<  (toℕ k))
         → (Sj<k : toℕ (endoSuc (biggerToIsNotMax j<k)) Data.Nat.< (toℕ k))
         → distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
-    lemma'' {c} {Fin.zero} {Fin.suc k@(Fin.suc k')} (s≤s z≤n) STj<k@(s≤s (s≤s z≤n)) (s≤s Sj<k) =
+    lemma'' {c} {Fin.zero} {Fin.suc k@(Fin.suc k')} (s≤s z≤n) 
+            STj<k@(s≤s (s≤s z≤n)) (s≤s Sj<k) =
         let LHS = distCard {fin (ℕ.suc c)} (s≤s Sj<k)
         in
         -- The LHS does not reduce to a value automatically, but we have a lemma
@@ -269,23 +221,17 @@ module LowLvl
                          (endoSucInjToNatSuc h)
                          Sj<k
         in
-        let meh :  ℕ.suc (distCard {∞} STj<k) ≡ distCard {fin (ℕ.suc c)} j<k
-            meh = lemma' j<k STj<k
-        in
-        -- #TODO: maybe remove, unused?
-        let Sj<k≡STj<k : Sj<k ≡ (subst (λ x → x Data.Nat.< toℕ k)
-                                        (sym (endoSucInjToNatSuc h))
-                                        STj<k)
-            Sj<k≡STj<k = Data.Nat.Properties.≤-irrelevant _ _
+        let H₁ :  ℕ.suc (distCard {∞} STj<k) ≡ distCard {fin (ℕ.suc c)} j<k
+            H₁ = lemma' j<k STj<k
         in
         let
-            geh : distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
-            geh = lemma'' j<k STj<k Sj<k
+            H₂ : distCard {fin (ℕ.suc c)} Sj<k ≡ distCard {∞} STj<k
+            H₂ = lemma'' j<k STj<k Sj<k
         in
-        trans (cong ℕ.suc geh) meh
+        trans (cong ℕ.suc H₂) H₁
 
-    -- distCard requires j<k, so the distance from j to k is always greater than
-    -- zero.
+    -- distCard requires to prove that j<k, 
+    -- so the distance from j to k is always greater than zero.
     distCardNonZero
         : {c : ℕ∞}
         → {j k : cardToSet c}
@@ -301,14 +247,15 @@ module LowLvl
     -- Add choices to a choicelog q until the enumeration-index
     -- of the most recently chosen element is i.
     -- Of course, this is only possible if i has not been chosen in q already.
+    -- To please the termination checker, the function also takes some fuel `f`
+    -- that is at least as great as the number of choices still to add to q to
+    -- get to i. This decreases every recursive call, because we extend q by one
+    -- choice every time until we arrive at i.
     iterFromTill
         : Decider
         → (q : Q)
         → (i : C)
         → (idxq<i : cardTo< (idx q) i)
-        -- #TODO This does not typecheck. missing arg to `dist`,
-        -- namely toℕ idx q < toℕ i. Replace h by an arg of this type.
-        -- Prove that h can be inferred from it.
         → (f : ℕ)
         --^ "Fuel", is decreased every iteration, used to please Agda's
         -- termination checker.
@@ -379,24 +326,28 @@ module LowLvl
                 in
                 Sj<k
 
-
     -- #TODO: finish and move to Card.agda
     -- If `cardToSet c` is inhabited, then c cannot be zero.
     elToNonempty
         : {c : ℕ∞}
         → cardToSet c
         → fin ℕ.zero <∞ c
-    elToNonempty {c} i = ?
+    elToNonempty {fin (ℕ.suc c)} i = s≤s z≤n
+    elToNonempty {∞} i = tt
 
     -- Compute the choicelog containing the first i element
     -- with choices made according to a given decider.
+    -- This starts from an empty choicelog, and hence constructs the root first.
+    -- (The constructor of the root requires a nonemptyness proof of the
+    -- enumerated set, but i already witnesses nonemptyness anyway).
     iterTill 
         : Decider 
         → C 
         → Q
-    -- #TODO: do we need an argument (h : (fin ℕ.zero) <∞ card)?
-    -- I think not, since `i : C` already implies that A is not the empty set.
-    iterTill D i = ?
+    iterTill D i = 
+        let nonempty = elToNonempty i
+        in
+        rootLog nonempty
 
     -- Compute the normal form of any element of A.
     -- This is well defined, since every element will eventually
