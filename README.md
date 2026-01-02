@@ -9,6 +9,9 @@ Other files of interest:
   encode.
 
 ## What is where
+* `StreamGrids/Construction`
+    Definitions & functions to build a type out of 
+    Signoid with a relation-Decider.
 * `StreamGrids/Signoid`
     Definition of Signoids.
 * `StreamGrids/States`
@@ -30,6 +33,9 @@ Other files of interest:
     (that I couldn't find in the stdlib!?)
 * `StreamGrids/Fold`    
     Function to fold finite sets.
+* `StreamGrids/Distance`
+    Tools for working with decreasing distances between numerical
+    arguments (e.g., `f(i, j)` recurses to `f(i+1, j)` while `i < i+1 < j`).
 
 ### Outdated
 There is a lot of outdated stuff in `deprecated/`, actually most code written
