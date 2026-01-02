@@ -199,6 +199,14 @@ cardToClipSuc {fin 0} ()
 cardToClipSuc {fin (suc n)} m = clipSuc m
 cardToClipSuc {∞} m = suc m
 
+-- If `cardToSet c` is inhabited, then c cannot be zero.
+elToNonempty
+    : {c : ℕ∞}
+    → cardToSet c
+    → fin ℕ.zero <∞ c
+elToNonempty {fin (ℕ.suc c)} i = s≤s z≤n
+elToNonempty {∞} i = tt
+
 -- Compare a natural number for equality n to a number m in (cardToSet c).
 ℕequalsCardToSetElem : {c : ℕ∞} → ℕ → (m : cardToSet c) → Set
 ℕequalsCardToSetElem {fin (suc c)} n m  = (toℕ m) ≡ n
@@ -213,6 +221,33 @@ IsNotMax {fin (suc n)} m = m Data.Fin.< (fromℕ n)
     --^ The largest element of fin (1 + n) is fromℕ n.
 IsNotMax {∞} n = ⊤ 
     --^ Trivial: there is no maximal natural number.
+
+-- If a bigger element than n exists in a finite set,
+-- then n is not the maximum element of the set.
+biggerToIsNotMax
+    : {c : ℕ∞}
+    → {n m : cardToSet c}
+    → cardTo< n m
+    → IsNotMax n
+biggerToIsNotMax {fin (suc c)} {n} {m} n<m = 
+    let Sm≤Sc : ℕ.suc (toℕ m) Data.Nat.≤ ℕ.suc c
+        Sm≤Sc = toℕ<n m
+    in
+    let
+        m≤c : toℕ m Data.Nat.≤ c
+        m≤c = s≤s⁻¹ Sm≤Sc
+    in
+    let
+        c≡TFc : c ≡ toℕ (fromℕ c)
+        c≡TFc = sym (toℕ-fromℕ c)
+    in
+    let
+        m≤TFc : toℕ m Data.Nat.≤ (toℕ (fromℕ c))
+        m≤TFc = subst (λ x → toℕ m Data.Nat.≤ x) c≡TFc m≤c
+    in
+    Data.Nat.Properties.≤-trans n<m m≤TFc
+biggerToIsNotMax {∞} {n} {m} n<m = tt
+
 
 IsNotMax-irrel
     : {c : ℕ∞}
@@ -313,6 +348,7 @@ sucpredsuc≡suc {c} n =
     let sn≡sn = refl {x = toℕ (Fin.suc n)} in
     let P = (λ x → x ≡ toℕ (Fin.suc n)) in
     subst P (sym (toℕ-inject₁ (Fin.suc n))) sn≡sn
+    
 
 -- 1+n ≤ 1+m then n ≤ m.
 -- #TODO: move this or replace this in `j<i<Sj-impossible`
