@@ -203,15 +203,23 @@ module LowLvl
         idxToEl (nfGlobalIdx D ix)
 
 
-    -- An element is a normal form IFF the subchoicelog in which it is the most 
-    -- recent choice uses the root constructor or the combination of 
-    -- the choose & newNF constructors.
+    -- Predicate whether the most recent element is a normal form,
+    -- which it is iff constructed via the `root _` or `choose ... newNf ...`
+    -- constructors.
+    IsNFState : Q → Set
+    IsNFState (_ , _ , root h) = ⊤
+    IsNFState (_ , _ , choose _ _ (newNF _ _ _)) = ⊤
+    IsNFState (_ , _ , choose _ _ (freeChoice _ _ _ _)) = ⊥
+    IsNFState (_ , _ , choose _ _ (forcedChoice _ _ _)) = ⊥
+
+    -- Check if an element becomes a normal form in the choice log
+    -- generated inductively from the empty choice log by the given decider.
+    -- Construct the choice log up to the point where x is the most recent
+    -- added, then check if it uses the `root` or `choose ... newNf ...`
+    -- constructors.
     IsNF : Decider → A → Set
-    IsNF D x with sgstate (iterTill D (elToIdx x))
-    ... | root _ = ⊤
-    ... | choose _ _ (newNF _ _ _) = ⊤
-    ... | choose _ _ (freeChoice _ _ _ _) = ⊥
-    ... | choose _ _ (forcedChoice _ _ _ _) = ⊥
+    IsNF D x = IsNFState (iterTill D (elToIdx x))
+
 
 data AsType 
     {ℓ : Level}
