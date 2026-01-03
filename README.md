@@ -84,6 +84,18 @@ might still confuse 'sublist' and 'lowlist'.
     - Latest handwritten version
 * Be consistent in doccomments: "ChoiceLog" or "choice-log" or "choicelog"?
 
+### Proofs to write/formalise
+* `AsType S D` is an hSet, which follows from the facts:
+    1. `A` has decidable equality because it is enumerable:
+        `x ≡ y` iff `idx(x) ≡ idx(y)`, and the latter equality in ℕ
+        is decidable, and we can go back to equality in `A` via `el : ℕ -> A`.
+    2. Any type with decidable equality is an hSet (Hedberg's theorem, see
+       Egbert Rijke's book 145 T12.3.5 P145).
+    3. Two elements in `AsType S D` are equal iff their elements are equal
+        and their normality proofs are equal (this may need a lemma).
+    4. Proofs of normality are hProps (this needs a lemma but is obivous).
+    5. Element equality is also an hProp by 1-2-3, since `A` is an hSet
+        and the elements live in `A`.
 
 ### To check if exists in library:
 * Definition of `monotone` (used in def `Signoid`).
