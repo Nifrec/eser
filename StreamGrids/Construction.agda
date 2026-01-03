@@ -203,11 +203,15 @@ module LowLvl
         idxToEl (nfGlobalIdx D ix)
 
 
+    -- An element is a normal form IFF the subchoicelog in which it is the most 
+    -- recent choice uses the root constructor or the combination of 
+    -- the choose & newNF constructors.
     IsNF : Decider → A → Set
-    IsNF D x = ⊥ -- #TODO
-        -- Idea: iter till x is topmost element in choicelog.
-        -- Then just pattern match on the legalChoice: if not newNF
-        -- then ⊥ else ⊤. Easy!
+    IsNF D x with sgstate (iterTill D (elToIdx x))
+    ... | root _ = ⊤
+    ... | choose _ _ (newNF _ _ _) = ⊤
+    ... | choose _ _ (freeChoice _ _ _ _) = ⊥
+    ... | choose _ _ (forcedChoice _ _ _ _) = ⊥
 
 data AsType 
     {ℓ : Level}

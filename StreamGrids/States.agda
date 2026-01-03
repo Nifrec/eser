@@ -164,6 +164,10 @@ module SGStates
     nflist : Q → NFList
     nflist (_ , L , _) = L
 
+    -- Get the SGState component of a choicelog.
+    sgstate : (q : Q) → SGState (idx q) (nflist q)
+    sgstate (i , L , s) = s
+
     -- Get the last element added to a choicelog.
     el : Q → A
     el q = idxToEl (idx q)
