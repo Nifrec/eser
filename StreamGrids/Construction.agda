@@ -175,10 +175,19 @@ module LowLvl
         : Decider 
         → C 
         → Q
+    iterTill D zero = 
+        let nonempty = elToNonempty zero
+        in
+        rootLog nonempty
     iterTill D i = 
         let nonempty = elToNonempty i
         in
-        rootLog nonempty
+        let qroot = rootLog nonempty
+        in
+        let f = i
+        in
+        let 
+        proj₁ (iterFromTill D qroot i f a)
 
     -- Compute the normal form of any element of A.
     -- This is well defined, since every element will eventually
@@ -221,12 +230,38 @@ module LowLvl
     IsNF D x = IsNFState (iterTill D (elToIdx x))
 
 
+-- The constructed quotient as a type, actually as an hSet.
+-- The constructed equality relation is simply ≡ on this type.
 data AsType 
     {ℓ : Level}
     {A : Set ℓ}
     {_⊂_ : Rel A ℓ}
     (S : Signoid _⊂_)
-    (D : LowLvl.Decider S) : Set ℓ
+    (D : LowLvl.Decider S) 
+    : Set ℓ
     where
     fromNF : (x : A) → (LowLvl.IsNF S D x) → AsType S D
+
+quotientMap :
+    {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    → (S : Signoid _⊂_)
+    → (D : LowLvl.Decider S) 
+    → (A → AsType S D)
+quotientMap x = fromNF (LowLvl.nfGlobal x)
     
+-- Two elements are related by the constructed equivalence relation
+-- iff they have the same normal form.
+data AsRelat
+    {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (S : Signoid _⊂_)
+    (D : LowLvl.Decider S) 
+    : Rel A ℓ
+    where
+    sameNF 
+        : (x y : A) 
+        → (LowLvl.nfGlobal S D x) ≡ (LowLvl.nfGlobal S D y) 
+        → AsRelat S D x y

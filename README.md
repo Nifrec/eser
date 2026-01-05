@@ -54,6 +54,9 @@ practise, examples, etc.
 * 'card' means 'cardinality'.
 * `L' ≼ L` means that `L'` is a 'suffix' of `L`',
     i.e., `L'` are the oldest `n` element of `L` for some `n ≤ length L`.
+* **hSet** : type whose equality types are propositions, i.e., proof-irrelevant.
+* **hProp** (proposition) : proof-irrelevant type, 
+    i.e., with equalities between all pairs of elements.
 
 ### Nested lists
 In a list of lists `LS = [ L1 , L2 , L3 , ...]` 
