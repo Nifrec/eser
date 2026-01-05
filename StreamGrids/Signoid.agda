@@ -1,10 +1,12 @@
 -- Module      : StreamGrids.Signoid
 -- Description : Definition (8 Dec 2025 version) of Signoids
--- Copyright   : (c) Lulof Pirée, 2025
+-- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
+-- #TODO: import and update and extend relevant comments from OldSignoid.agda.
+-- #TODO: while doing so, rename 'subterm-relation' → 'argument-relation'.
 
 {-# OPTIONS --allow-unsolved-metas #-}
 module StreamGrids.Signoid where
@@ -35,8 +37,6 @@ open import Data.List.Relation.Unary.Linked using (Linked)
 
 open import StreamGrids.Card
 
--- #TODO: import and update and extend relevant comments from OldSignoid.agda.
--- #TODO: while doing so, rename 'subterm-relation' → 'argument-relation'.
 --------------------------------------------------------------------------------
 -- Actual definition of Signoid 
 --------------------------------------------------------------------------------
@@ -62,6 +62,10 @@ record Signoid
                  --^ Proof that x' is smaller than x: x' « x.
                  → Σ[ y' ∈ A ]( (cardTo< (elToIdx y') (elToIdx y))) --^ y' « y
 
+-- Relation _«_ defined as:
+--      x « y 
+-- iff 
+--      the index of x in the enumeration of A is smaller than that of y.
 enumOrder : 
     {ℓ : Level.Level} 
     {A : Set ℓ} 

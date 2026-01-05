@@ -94,6 +94,14 @@ leqSmallerTrans {fin (ℕ.suc x)} {m} {n} {k} (inj₂ m<n) n<k =
 leqSmallerTrans {∞} {m} {n} {k} (inj₂ m<n) n<k =
     Data.Nat.Properties.<-trans m<n n<k
 
+-- Elements of sets of any allowed cardinality can be injected into ℕ,
+-- since that is the greatest cardinality we allow.
+cardToℕ
+    : {c : ℕ∞}
+    → cardToSet c
+    → ℕ
+cardToℕ {∞} n = n
+cardToℕ {fin (suc c)} n = toℕ n
 
 cardTo<Dec
     : {c : ℕ∞}

@@ -165,29 +165,78 @@ module LowLvl
                     Sj<k = elimCaseRight Sj<k⊎Sj≡k TSj≢Tk
                 in
                 Sj<k
+-- The next function is not in a module environment because it needs
+-- to pattern match on the cardinality of the Signoid.
 
-    -- Compute the choicelog containing the first i element
-    -- with choices made according to a given decider.
-    -- This starts from an empty choicelog, and hence constructs the root first.
-    -- (The constructor of the root requires a nonemptyness proof of the
-    -- enumerated set, but i already witnesses nonemptyness anyway).
-    iterTill 
-        : Decider 
-        → C 
-        → Q
-    iterTill D zero = 
-        let nonempty = elToNonempty zero
-        in
-        rootLog nonempty
-    iterTill D i = 
+-- Compute the choicelog containing the first i element
+-- with choices made according to a given decider.
+-- This starts from an empty choicelog, and hence constructs the root first.
+-- (The constructor of the root requires a nonemptyness proof of the
+-- enumerated set, but i already witnesses nonemptyness anyway).
+iterTill : 
+    {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (S : Signoid _⊂_)
+    → LowLvl.Decider S
+    → SGStates.SignoidShortcuts.C S
+    → SGStates.Q S
+iterTill S@(record {card = ∞}) D ℕ.zero =
+    let nonempty = elToNonempty ℕ.zero
+    in
+    SGStates.rootLog S nonempty
+iterTill S@(record {card = fin (suc c)}) D Fin.zero =
+    let nonempty = elToNonempty Fin.zero
+    in
+    SGStates.rootLog S nonempty
+-- The next two cases have EXACTLY the same proof, but are difficult
+-- to merge into one case since the i-arguments live in different sets
+-- (namely ℕ vs Fin (suc card)).
+-- #TODO: can this redundancy be reduced?
+iterTill S@(record {card = ∞}) D i@(ℕ.suc i') = 
         let nonempty = elToNonempty i
         in
-        let qroot = rootLog nonempty
+        let q : SGStates.Q S
+            q = SGStates.rootLog S nonempty
         in
-        let f = i
+        let
+            idxq<i : cardTo< {Signoid.card S} (SGStates.idx S q) i
+            idxq<i = s≤s z≤n
         in
-        let 
-        proj₁ (iterFromTill D qroot i f a)
+        let f : ℕ
+            f = cardToℕ i
+        in
+        let |0,i|≤f : (distCard {Signoid.card S} idxq<i) Data.Nat.≤ f
+            |0,i|≤f = s≤s (Data.Nat.Properties.≤-refl)
+        in
+        proj₁ (LowLvl.iterFromTill S D q i idxq<i f |0,i|≤f)
+iterTill S@(record {card = fin (ℕ.suc c)}) D i@(Fin.suc i') =
+        let nonempty = elToNonempty i
+        in
+        let q : SGStates.Q S
+            q = SGStates.rootLog S nonempty
+        in
+        let
+            idxq<i : cardTo< {Signoid.card S} (SGStates.idx S q) i
+            idxq<i = s≤s z≤n
+        in
+        let f : ℕ
+            f = cardToℕ i
+        in
+        let |0,i|≤f : (distCard {Signoid.card S} idxq<i) Data.Nat.≤ f
+            |0,i|≤f = s≤s (Data.Nat.Properties.≤-refl)
+        in
+        proj₁ (LowLvl.iterFromTill S D q i idxq<i f |0,i|≤f)
+
+module GlobalNF
+    {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (S : Signoid _⊂_)
+    where
+    open SGStates {ℓ} {A} {_⊂_} S
+    open LowLvl {ℓ} {A} {_⊂_} S
+    open SignoidShortcuts
 
     -- Compute the normal form of any element of A.
     -- This is well defined, since every element will eventually
@@ -198,7 +247,7 @@ module LowLvl
     nfGlobalIdx : Decider → C → C
     nfGlobalIdx D i = 
         let q : Q
-            q = iterTill D i
+            q = iterTill S D i
         in
         lookup (nflist q) (nfLastEl q)
 
@@ -227,7 +276,9 @@ module LowLvl
     -- added, then check if it uses the `root` or `choose ... newNf ...`
     -- constructors.
     IsNF : Decider → A → Set
-    IsNF D x = IsNFState (iterTill D (elToIdx x))
+    IsNF D x = IsNFState (iterTill S D (elToIdx x))
+
+open GlobalNF
 
 
 -- The constructed quotient as a type, actually as an hSet.
@@ -240,7 +291,7 @@ data AsType
     (D : LowLvl.Decider S) 
     : Set ℓ
     where
-    fromNF : (x : A) → (LowLvl.IsNF S D x) → AsType S D
+    fromNF : (x : A) → (IsNF S D x) → AsType S D
 
 quotientMap :
     {ℓ : Level}
@@ -249,7 +300,7 @@ quotientMap :
     → (S : Signoid _⊂_)
     → (D : LowLvl.Decider S) 
     → (A → AsType S D)
-quotientMap x = fromNF (LowLvl.nfGlobal x)
+quotientMap x = {! fromNF (nfGlobal x) !}
     
 -- Two elements are related by the constructed equivalence relation
 -- iff they have the same normal form.
@@ -263,5 +314,5 @@ data AsRelat
     where
     sameNF 
         : (x y : A) 
-        → (LowLvl.nfGlobal S D x) ≡ (LowLvl.nfGlobal S D y) 
+        → (nfGlobal S D x) ≡ (nfGlobal S D y) 
         → AsRelat S D x y
