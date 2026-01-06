@@ -136,3 +136,20 @@ module StreamGrids.SubLogProperties
         → (idx q') ∈ (nflist q)
         → (idx q') ∈ (nflist q')
     nflistEntry {q'} {q} q'⋤q idxq'∈L = ⋤-rec P nflistEntryRec q q' q'⋤q idxq'∈L
+
+    nflistEntrySmaller
+        : (q : Q)
+        → (j : C)
+        → (j<i : cardTo< j (idx q))
+        → j ∈ (nflist q)
+        → j ∈ nflist (proj₁ (getSubLog q j j<i))
+    nflistEntrySmaller q j j<i j∈L = 
+        let (q' , q'⋤q , j≡idxq') = getSubLog q j j<i
+        in
+        let idxq'∈L : idx q' ∈ nflist q
+            idxq'∈L = subst (λ x → x ∈ nflist q) j≡idxq' j∈L
+        in
+        let meh : idx q' ∈ nflist q'
+            meh = nflistEntry {q'} {q} q'⋤q idxq'∈L
+        in
+        subst (λ x → x ∈ nflist q') (sym j≡idxq') meh
