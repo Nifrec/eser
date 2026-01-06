@@ -153,3 +153,17 @@ module StreamGrids.SubLogProperties
             meh = nflistEntry {q'} {q} q'⋤q idxq'∈L
         in
         subst (λ x → x ∈ nflist q') (sym j≡idxq') meh
+
+    -- The graph of the relation ⋤ has the form of a tree.
+    -- But the indices (the proj₁ images of Q elements) of states
+    -- correspond to their height, and consequently,
+    -- every state has *exactly one* predecessor of a given height smaller than
+    -- its own.
+    predecUnique
+        : {q q₁ q₂ : Q}
+        → q₁ ⋤ q
+        → q₂ ⋤ q
+        → idx q₁ ≡ idx q₂
+        → q₁ ≡ q₂
+    predecUnique q q₁ q₂ q₁⋤q q₂⋤q i₁≡i₂ = ?
+
