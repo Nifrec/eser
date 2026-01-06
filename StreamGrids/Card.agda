@@ -389,6 +389,15 @@ j<i<Sj-impossible {∞} {i} {j} {h} i<Sj j<i =
     let SSj≤Sj = Data.Nat.Properties.≤-trans SSj≤Si i<Sj in
     1+n≰n SSj≤Sj
 
+<And≡Impossible
+    : {c : ℕ∞}
+    → {n m : cardToSet c}
+    → cardTo< n m
+    → n ≡ m
+    → ⊥
+<And≡Impossible {∞} {n} {m} n<m n≡m = Data.Nat.Properties.<⇒≢ n<m n≡m
+<And≡Impossible {fin (ℕ.suc c)} {n} {m} n<m n≡m = 
+    Data.Nat.Properties.<⇒≢ n<m (cong toℕ n≡m)
     
 -- A number that is the predecessor of another number is never the maximum
 -- in a finite set.
