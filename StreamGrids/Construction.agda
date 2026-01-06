@@ -46,6 +46,7 @@ open import Data.List.Relation.Unary.Any using (Any)
 -- Certainly used local imports.
 open import StreamGrids.States
 open import StreamGrids.Signoid
+open import StreamGrids.SubLogProperties
 open import StreamGrids.Card
 open import StreamGrids.Suffix
 open import StreamGrids.Logic
@@ -279,7 +280,7 @@ module GlobalNF
     -- The predicate "IsListNF" is a proposition, i.e., proof-irrelevant,
     -- i.e., for given arguments it is either a singleton type xor uninhabited.
     IsNFIsAProp
-        : {D : Decider}
+        : (D : Decider)
         → (i : C)
         → Irrelevant (IsListNF D i)
     IsNFIsAProp = ?
@@ -289,6 +290,43 @@ module GlobalNF
     -- if one can show `Unique (nflist q)` for all `q : Q`,
     -- which ought to be easily provable.
 
+    nfGlobalIsNF
+        : (D : Decider)
+        → (i : C)
+        → IsListNF D (nfGlobalIdx D i)
+    nfGlobalIsNF D i = 
+        let q : Q
+            q = iterTill S D i
+        in
+        let i* : C
+            i* = (lookup (nflist q) (nfLastEl q)) -- Def of nfGlobalIdx
+        in
+        let goallist : List C
+            goallist = nflist ( iterTill S D i* )
+        in
+        -- This gives membership in the NFList of q ≐ iterTill S D i,
+        -- not in iterTill S D i*. The latter is required by definition of
+        -- IsListNFlj
+        let almost : (lookup (nflist q) (nfLastEl q)) ∈ (nflist q)
+            almost = ∈-lookup {xs = nflist q} (nfLastEl q)
+        in
+        let desired : i* ∈ goallist
+            desired = nflistEntry S {iterTill S D i*} {q} ? almost
+        in
+        desired
+        --let q : Q
+        --    q = iterTill S D i
+        --in
+        --let check : nfGlobalIdx D i ≡ lookup (nflist q) (nfLastEl q)
+        --    check = refl
+        --in
+        --let list : List C
+        --    list = nflist (iterTill S D i)
+        --in 
+        --let desired : (nfGlobalIdx D i) ∈ list
+        --    desired = sol
+        --in
+        --desired
 
 open GlobalNF
 
