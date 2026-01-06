@@ -1,6 +1,11 @@
 # A taxonomy of "IsNF"
 5 January 2026, writing out thoughts and reflections on normal forms.
 
+**Update 6 Jan 2026: deprecated NF-via-constructors**
+See `deprecated/OldIsNF.agda` for these definitions' Agda implementation.
+Better scroll further down, where I define `IsListNF`, which is currently used
+in the production code.
+
 ## Defining NF via constuctors used in the choice
 An element is a normal form if it is either the root choicelog
 or added to the choicelog via the `choose h lc` constructor

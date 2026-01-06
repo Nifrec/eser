@@ -1,6 +1,6 @@
 -- Module      : StreamGrids.Construction
 -- Description : Tools to construct types and relations via StreamGrids
--- Copyright   : (c) Lulof Pirée, 2025
+-- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
@@ -23,7 +23,7 @@
 -- It was difficult to prove the required properties of this, when generalised
 -- to work with finite sets (using toℕ to inject to ℕ).
 open import Level
-open import Relation.Binary
+open import Relation.Binary hiding (Irrelevant)
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
@@ -261,62 +261,34 @@ module GlobalNF
         idxToEl (nfGlobalIdx D ix)
 
 
-    -- Predicate whether the most recent element is a normal form,
-    -- which it is iff constructed via the `root _` or `choose ... newNf ...`
-    -- constructors.
-    IsNFState : Q → Set
-    IsNFState (_ , _ , root h) = ⊤
-    IsNFState (_ , _ , choose _ _ (newNF _ _ _)) = ⊤
-    IsNFState (_ , _ , choose _ _ (freeChoice _ _ _ _)) = ⊥
-    IsNFState (_ , _ , choose _ _ (forcedChoice _ _ _)) = ⊥
-
-    IsNFInState
-        : (q : Q)
-        → (i : C)
-        → (i<idxq : i <C q)
-        → Set
-    IsNFInState q i i<idxq = IsNFState (proj₁ (SGStates.getSubLog q i i<idxq))
-
-    -- Check if an element becomes a normal form in the choice log
-    -- generated inductively from the empty choice log by the given decider.
-    -- Construct the choice log up to the point where x is the most recent
-    -- added, then check if it uses the `root` or `choose ... newNf ...`
-    -- constructors.
-    IsNFInSG : Decider → A → Set
-    IsNFInSG D x = IsNFState (iterTill S D (elToIdx x))
-
+    -- An element x is in NF w.r.t. a given decider D
+    -- if it is will eventually the NFList of the choicelog 
+    -- that the decider iteratively builds up.
+    -- "Eventually" is the point in the enumeration corresponding to x,
+    -- in which case x is either the last element in the NFList and stays there,
+    -- or will never appear in the NFList.
+    -- See `NormalFormTaxonomy.md` for a discussion of definitions of "isNF".
     IsListNF : Decider → C → Set
     IsListNF D i = i ∈ (nflist (iterTill S D i))
+
+    -- Element representation version of IsNF (i.o. enumeration-index
+    -- representation).
+    IsListNFEl : Decider → A → Set
+    IsListNFEl D x = IsListNF D (elToIdx x)
+
+    -- The predicate "IsListNF" is a proposition, i.e., proof-irrelevant,
+    -- i.e., for given arguments it is either a singleton type xor uninhabited.
+    IsNFIsAProp
+        : {D : Decider}
+        → (i : C)
+        → Irrelevant (IsListNF D i)
+    IsNFIsAProp = ?
+
     -- #TODO: this is still a proposition.
     -- It is using `Data.List.Membership.Setoid.Properties.unique⇒irrelevant`
     -- if one can show `Unique (nflist q)` for all `q : Q`,
     -- which ought to be easily provable.
 
-    -- #TODO: rename, maybe move
-    sublemma
-        : (i : C)
-        → (j : Indices (nflist (iterTill i))
-        → IsNF ( lookup (nflist (iterTill i)) j)
-    sublemma 
-
-    -- The next theorem asserts that the output of nfGlobalIdx (and hence
-    -- nfGlobal as well) is indeed always a normal form.
-    --
-    -- It is very specific to this way of computing the normal form,
-    -- since nfGlobal assumes no choice log has been given in advance,
-    -- and builds up a new choicelog from an empty start.
-    -- #TODO: it would also be convenient to prove that all elements
-    -- of the nflist of any given preexisting choicelog are normal 
-    -- -- but then cannot be normal w.r.t.
-    -- to a Decider cuz the choicelog might have been build by multiple deciders
-    -- alternatingly. 
-    -- This would require a strip-down definition of `IsNF` that digs into a
-    -- given choicelog until it finds the desired element,
-    -- and checks there how it has been constructed.
-    nfGlobalIsNF
-        : ( i : C)
-        → IsNF (nfGlobalIdx i)
-    nfGlobalIsNF i = ?
 
 open GlobalNF
 
@@ -331,7 +303,7 @@ data AsType
     (D : LowLvl.Decider S) 
     : Set ℓ
     where
-    fromNF : (x : A) → (IsNF S D x) → AsType S D
+    fromNF : (x : A) → (IsListNFEl S D x) → AsType S D
 
 quotientMap :
     {ℓ : Level}
