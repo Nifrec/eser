@@ -159,11 +159,42 @@ module StreamGrids.SubLogProperties
     -- correspond to their height, and consequently,
     -- every state has *exactly one* predecessor of a given height smaller than
     -- its own.
+    -- This is 'conjecture A4' in my notes.
+    -- The proof mostly consists of careful pattern matching; the constraints 
+    -- on the constructors imply the theorem for the greatest part directly.
     predecUnique
         : {q q₁ q₂ : Q}
         → q₁ ⋤ q
         → q₂ ⋤ q
         → idx q₁ ≡ idx q₂
         → q₁ ≡ q₂
-    predecUnique q q₁ q₂ q₁⋤q q₂⋤q i₁≡i₂ = ?
+    -- Easy case: q is a one-step extension both of q₁ and of q₂.
+    -- The only matching pattern has q₁ and q₂ judgementally equal already.
+    predecUnique {q} {q₁} {q₁} (onechoice q₁ h lc) 
+                               (onechoice q₁ h lc) i₁≡i₂ = refl
+    -- Mixed case 1: q is a one-step upgrade of q₁. 
+    -- q₂ is any sublog of the one-step-downgrade q' of q.
+    -- So q' ≐ q₁. So q₂ is a sublog of q₁, which implies i₂ < i₁.
+    -- But i₁ ≡ i₂, contradiction!
+    predecUnique {q} {q₁} {q₂} (onechoice q₁ h₁ lc₁) 
+                               (multichoice q₂ q₁ q₂⋤q₁ h₂ lc₂) i₁≡i₂ = 
+        let i₂<i₁ : idx q₂ <C idx q₁
+            i₂<i₁ = sublogSmallerIdx q₂⋤q₁
+        in
+        ⊥-elim (<And≡Impossible i₂<i₁ (sym i₁≡i₂))
+    -- Mixed case 2: symmetric but with roles of q₁ and q₂ interchanged.
+    predecUnique {q} {q₁} {q₂} (multichoice q₁ q₂ q₁⋤q₂ h₁ lc₂) 
+                               (onechoice q₂ h₂ lc₂) i₁≡i₂ =
+        let i₁<i₂ : idx q₁ <C idx q₂
+            i₁<i₂ = sublogSmallerIdx q₁⋤q₂
+        in
+        ⊥-elim (<And≡Impossible i₁<i₂ i₁≡i₂)
+    -- Multistep case: q is a one-step extension of q',
+    -- and both q₁ and q₂ are sublogs of q'.
+    -- Recurse on q'. 
+    -- (Luckily, we don't even need ⋤-rec, probably because we are 
+    -- performing structural recursion on ⋤-proofs already.)
+    predecUnique {q} {q₁} {q₂} (multichoice q₁ q' q₁⋤q' h₁ lc₁) 
+                               (multichoice q₂ q' q₂⋤q' h₂ lc₂) i₁≡i₂ =
+        predecUnique {q'} {q₁} {q₂} q₁⋤q' q₂⋤q' i₁≡i₂
 
