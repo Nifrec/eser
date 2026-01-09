@@ -15,31 +15,14 @@
 -- of numbers that can be added to j without overshooting
 -- the finite set `Fin (suc c')` in which j and j+a live.
 
-open import Level
-open import Relation.Binary hiding (Irrelevant)
-open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning
-open import Data.Product
 open import Data.Nat
 open import Data.Nat.Properties
-open import Data.Sum
 open import Data.Fin
 open import Data.Fin.Properties
-open import Data.Unit
-open import Data.Empty
-open import Data.List
-open import Data.List.Relation.Unary.AllPairs using (AllPairs)
-open import Data.List.Relation.Unary.All using (All)
-open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
-open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
-open import Data.List.Membership.Propositional.Properties using (∈-lookup)
-open import Data.List.Relation.Unary.Any using (Any)
 
 -- Local imports.
 open import StreamGrids.Card
-open import StreamGrids.Logic
-open import StreamGrids.Fin
 
 
 module StreamGrids.Addibles where
