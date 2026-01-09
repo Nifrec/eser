@@ -47,18 +47,20 @@ module StreamGrids.Addibles where
     Addibles : (c : ℕ∞) → (n : cardToSet c) → Set
     Addibles ∞ n = ℕ
     Addibles (fin zero) ()
-    Addibles (fin (suc c)) n = Fin (toℕ (opposite n))
+    Addibles (fin (ℕ.suc c)) n = Fin (ℕ.suc c ∸ toℕ n)
 
     -- Add an addible to n while staying in `cardToSet c`.
     add : (c : ℕ∞) → (n : cardToSet c) → Addibles c n → cardToSet c
     add ∞ n m = n Data.Nat.+ m
     add (fin zero) ()
     add (fin (suc c)) n m = 
-        -- toℕ (opposite n) ≡ ℕ.suc c - ℕ.suc (toℕ n)
-        let m' : Fin (ℕ.suc c ∸ ℕ.suc (toℕ n))
-            m' = cast (Data.Fin.Properties.opposite-prop {ℕ.suc c} n) m
+        let meh : toℕ n Data.Nat.≤ ℕ.suc c
+            meh = Data.Fin.Properties.toℕ≤n n
         in
-        let out = n Data.Fin.+ m'
+        let lemma : toℕ n Data.Nat.+ (ℕ.suc c ∸ toℕ n) ≡ ℕ.suc c
+            lemma = Data.Nat.Properties.m+[n∸m]≡n meh
         in
-
-        {! (n Data.Fin.+ m) !}
+        let out : Fin (ℕ.suc c)
+            out = cast lemma (n Data.Fin.+ m) 
+        in
+        out
