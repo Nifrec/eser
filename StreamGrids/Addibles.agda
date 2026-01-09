@@ -47,3 +47,10 @@ module StreamGrids.Addibles where
             out = cast lemma (n Data.Fin.+ m) 
         in
         out
+
+    addℕzero : (n : ℕ) → add ∞ n ℕ.zero ≡ n
+    addℕzero n = Data.Nat.Properties.+-identityʳ n
+
+    -- Maybe prove all addibles are of form (suc c ∸ toℕ n) ≡ suc k
+    -- and cast Fin.zero from Fin (suc k) to (suc c ∸ toℕ n)?
+    --addFinzero : (c : ℕ) → (n : Fin (ℕ.suc c)) → add (fin (ℕ.suc c)) n Fin.zero ≡ Fin.zero

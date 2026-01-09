@@ -52,6 +52,7 @@ open import StreamGrids.Suffix
 open import StreamGrids.Logic
 open import StreamGrids.Fin
 open import StreamGrids.Distance
+open import StreamGrids.Addibles
 
 
 module StreamGrids.Construction where
@@ -229,6 +230,92 @@ iterTill S@(record {card = fin (ℕ.suc c)}) D i@(Fin.suc i') =
         in
         proj₁ (LowLvl.iterFromTill S D q i idxq<i f |0,i|≤f)
 
+iterTillIdx
+    : {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (S : Signoid _⊂_)
+    → (D : LowLvl.Decider S)
+    → (i : SGStates.SignoidShortcuts.C S)
+    → proj₁ (iterTill S D i) ≡ i
+iterTillIdx = ?
+    
+-- #TODO: this would be much more readable if we could just use infix _⋤_
+-- and not all the SGStates.<sth> S notations. 
+-- But we need to pattern match on the cardinality of S.
+-- Maybe make the cardinality of S a parameter rather than a field?
+iterTillSublog
+    : {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (S : Signoid _⊂_)
+    → (D : LowLvl.Decider S)
+    → (i : SGStates.SignoidShortcuts.C S)
+    → (a : Addibles (Signoid.card S) i)
+    → (SGStates._⊑_ S) (iterTill S D i) (iterTill S D (add (Signoid.card S) i a))
+iterTillSublog S@(record {card = ∞}) D i ℕ.zero = 
+    let lemma : i ≡ add ∞ i ℕ.zero
+        lemma = sym (addℕzero i)
+    in
+    inj₁ (cong (λ x → iterTill S D x) lemma)
+iterTillSublog S@(record {card = ∞}) D i (ℕ.suc a) = 
+    let _⊑_ = SGStates._⊑_ S
+    in
+    let _⋤_ = SGStates._⋤_ S
+    in
+    let rec : (iterTill S D i) ⊑ (iterTill S D (add ∞ i a))
+        rec = iterTillSublog S D i a
+    in
+    let lemma : add ∞ i (ℕ.suc a) ≡ ℕ.suc (add ∞ i a)
+        lemma = ?
+    in
+    let q = iterTill S D (add ∞ i a)
+    in
+    let h : IsNotMax (add ∞ i a)
+        h = tt -- Cuz we are doing the ℕ case where not max exists!
+    in
+    let lc : SGStates.LegalChoices S q
+        lc = D q h
+    in
+    let s' : SGStates.SGState S (endoSuc {∞} {add ∞ i a} h) (SGStates.UpdateNFList S q h lc)
+        s' = SGStates.choose q h lc
+    in
+    let q' : SGStates.Q S
+        q' = (endoSuc {∞} {add ∞ i a} h , SGStates.UpdateNFList S q h lc , s')
+    in
+    let geh : q ⋤ q'
+        geh = SGStates.onechoice q h lc
+    in
+    -- It should be provable that proj₁ (iterTill i) ≡ i always hold.
+    -- Then in the next statement, both sides are `endoSuc h`.
+    let keypointIdx : proj₁ q' ≡ proj₁ (iterTill S D (endoSuc {∞} {add ∞ i a} h))
+        --keypoint = cong (λ x → (x , (SGStates.UpdateNFList S q h lc) , s')) ?
+        keypointIdx = iterTillIdx S D (endoSuc h)
+    in
+    let keypointList : proj₂ q' ≡ proj₂ (iterTill S D (endoSuc {∞} {add ∞ i a} h))
+        keypointList = refl
+    in
+    let meh : (iterTill S D (add ∞ i a)) ⋤ iterTill S D (ℕ.suc (add ∞ i a))
+        -- Problem: Agda does not see that this increases the index of the state
+        -- by 1. 
+        meh = ? --SGStates.onechoice ? ? ?
+    in
+    ?
+iterTillSublog S@(record {card = fin zero}) D ()
+iterTillSublog S@record { card = (fin (ℕ.suc c))} D Fin.zero Fin.zero = inj₁ refl
+iterTillSublog S@record { card = (fin (ℕ.suc c))} D Fin.zero (Fin.suc a) = {!  !}
+iterTillSublog S@record { card = (fin (ℕ.suc c))} D (Fin.suc i) a = {! !}
+
+--iterTillSublog
+--    : {ℓ : Level}
+--    {A : Set ℓ}
+--    {_⊂_ : Rel A ℓ}
+--    (S : Signoid _⊂_)
+--    → (D : LowLvl.Decider S)
+--    → (i a : SGStates.SignoidShortcuts.C)
+--    → iterTill i SGStates.⊑ iterTill (i + a)
+--iterTillSublog
+
 module GlobalNF
     {ℓ : Level}
     {A : Set ℓ}
@@ -311,7 +398,10 @@ module GlobalNF
             almost = ∈-lookup {xs = nflist q} (nfLastEl q)
         in
         let desired : i* ∈ goallist
-            desired = nflistEntry S {iterTill S D i*} {q} ? almost
+            desired = {! nflistEntry S {iterTill S D i*} {q} ? almost !}
+            -- We know i*≤i. Case i*≡i is easy. Case i*<i can use
+            -- nflistEntrySmaller. Only remains to show that the sublog q'
+            -- must equal iterTill i*. This requires A4.
         in
         desired
         --let q : Q
