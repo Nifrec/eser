@@ -290,6 +290,25 @@ endoSucUnique
 endoSucUnique {fin (suc c)} {n} h₁ h₂ = refl
 endoSucUnique {∞} {n} h₁ h₂ = refl
 
+-- The successors of two equal numbers are also equal.
+endoSucPresvEquality
+    : {c : ℕ∞}
+    → {a b : cardToSet c}
+    → (a ≡ b)
+    → (h : IsNotMax a)
+    → (k : IsNotMax b)
+    → endoSuc h ≡ endoSuc k
+endoSucPresvEquality {fin ℕ.zero} {()}
+endoSucPresvEquality {∞} {a} {b} refl tt tt = refl
+endoSucPresvEquality {fin (ℕ.suc c)} {a} {a} refl h k = 
+    -- Path induction (assuming refl : a ≡ a) allows to equate 
+    -- h and k, because they are now both of the same type `IsNotMax a`:
+    let h≡k : h ≡ k
+        h≡k = IsNotMax-irrel a h k
+    in
+    cong endoSuc h≡k
+
+
 -- This lemma's primary purpose is to prove
 -- the lemma endoSucProjToNatSuc.
 endoSucLemma
@@ -306,6 +325,27 @@ endoSucNatSuc
     → (h : IsNotMax n)
     → endoSuc {∞} {n} h ≡ ℕ.suc n
 endoSucNatSuc {n} h = refl
+
+-- When working in Fin (suc c) then endoSuc 'is' Fin.suc.
+-- We only need to include an additional `inject₁` to make things well-typed
+-- (since n and Fin.suc n do not have the same type).
+endoSucFinSuc
+    : {c : ℕ}
+    → (n : Fin c)
+    → (h : IsNotMax (inject₁ n))
+    → endoSuc {fin (ℕ.suc c)} {inject₁ n} h ≡ Fin.suc n
+endoSucFinSuc {c} zero (s≤s z≤n) = refl
+endoSucFinSuc {ℕ.suc c} (Fin.suc n) (s≤s h) = 
+    let rec : endoSuc h ≡ Fin.suc n
+        rec = endoSucFinSuc {c} n h
+    in
+    let H₁ : toℕ (endoSuc (s≤s h)) ≡ toℕ (Fin.suc (endoSuc h))
+        H₁ = endoSucLemma (inject₁ n) h
+    in
+    let H₂ : endoSuc (s≤s h) ≡ Fin.suc (endoSuc h)
+        H₂ = Data.Fin.Properties.toℕ-injective H₁
+    in
+    trans H₂ (cong Fin.suc rec)
 
 endoSucBigger
     : {c : ℕ∞}
