@@ -151,13 +151,25 @@ iterTill S@(record {card = fin (ℕ.suc c)}) D Fin.zero =
     let nonempty = elToNonempty Fin.zero
     in
     (SGStates.rootLog S nonempty , refl)
+-- Last case: Fin.suc i.
+-- Problem: C ≐ Fin (suc (suc c)) but i lives in Fin (suc c) instead.
+-- So we must use inject₁ i in the recursive call, which demands the input
+-- to be in C. But `inject₁ i` is NOT a direct subterm of `Fin.suc i`,
+-- so the termination checker does not like this.
+-- Luckily, it holds that Fin.< is well-founded and
+-- `inject₁ i < Fin.suc i`, which proves termination.
 iterTill S@(record {card = fin (ℕ.suc (ℕ.suc c))}) D (Fin.suc i) = 
+    let lemma : i Data.Fin.< Fin.suc i 
+        lemma = Data.Nat.Properties.n<1+n (toℕ i)
+    in
+    let lemma' : ℕ.suc (toℕ (inject₁ i)) ≡ ℕ.suc (toℕ i)
+        lemma' = cong ℕ.suc (Data.Fin.Properties.toℕ-inject₁ i)
+    in
+    let inj-i<Si : (inject₁ i) Data.Fin.< (Fin.suc i)
+        inj-i<Si = subst (λ x → x Data.Nat.≤ toℕ (Fin.suc i)) (sym lemma') lemma
+    in
     let idx = SGStates.idx S
     in
-    -- Problem: C = Fin (suc (suc c))
-    -- but i lives in Fin (suc c) ≠ C.
-    -- So we must use inject₁ i in the recursive call, which demands the input
-    -- to be in C.
     let iterAlmostThere = Σ[ q ∈ SGStates.Q S ](idx q ≡ inject₁ i)
         iterAlmostThere = iterTill S D (inject₁ i)
     in
@@ -167,15 +179,6 @@ iterTill S@(record {card = fin (ℕ.suc (ℕ.suc c))}) D (Fin.suc i) =
     in
     let idxq≡i : idxq ≡ inject₁ i
         idxq≡i = proj₂ iterAlmostThere
-    in
-    let lemma : i Data.Fin.< Fin.suc i 
-        lemma = Data.Nat.Properties.n<1+n (toℕ i)
-    in
-    let lemma' : ℕ.suc (toℕ (inject₁ i)) ≡ ℕ.suc (toℕ i)
-        lemma' = cong ℕ.suc (Data.Fin.Properties.toℕ-inject₁ i)
-    in
-    let inj-i<Si : (inject₁ i) Data.Fin.< (Fin.suc i)
-        inj-i<Si = subst (λ x → x Data.Nat.≤ toℕ (Fin.suc i)) (sym lemma') lemma
     in
     let h : IsNotMax (inject₁ i) 
         h = biggerToIsNotMax inj-i<Si
