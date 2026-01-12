@@ -213,15 +213,50 @@ iterTill S@(record {card = fin (ℕ.suc c)}) D =
             (proj₁ choiceAdded , H)
 
 
---iterTillSublog
---    : {ℓ : Level}
---    {A : Set ℓ}
---    {_⊂_ : Rel A ℓ}
---    (S : Signoid _⊂_)
---    → (D : LowLvl.Decider S)
---    → (i a : SGStates.SignoidShortcuts.C)
---    → iterTill i SGStates.⊑ iterTill (i + a)
---iterTillSublog
+-- Intuition: if i ≤ j then (iterTill i) ⊑ (iterTill j).
+-- But proving this requires induction, so we prove
+-- (iterTill i) ⊑ (iterTill (i + a)) for "all a we can still add to i"
+-- by induction on a.
+-- The type of such a's is all of ℕ in case of infinite cardinality, 
+-- and a finite set in case A is finite; in both cases we can indeed to
+-- induction on a.
+iterTillSublog
+    : {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (S : Signoid _⊂_)
+    → (D : LowLvl.Decider S)
+    → (i : SGStates.SignoidShortcuts.C S)
+    → (a : Addibles (Signoid.card S) i)
+    → SGStates._⊑_ S (proj₁ (iterTill S D i)) 
+                     (proj₁ (iterTill S D (add (Signoid.card S) i a)))
+iterTillSublog {ℓ} S@(record {card = ∞}) D i ℕ.zero = 
+    let P : SGStates.SignoidShortcuts.C S → Set ℓ
+        P x = SGStates._⊑_ S (proj₁ (iterTill S D i)) 
+                             (proj₁ (iterTill S D x))
+    in
+    subst P (sym (addℕzero i)) (inj₁ refl)
+iterTillSublog S@(record {card = ∞}) D i (ℕ.suc a) = 
+    let rec : SGStates._⊑_ S (proj₁ (iterTill S D i)) 
+                             (proj₁ (iterTill S D (add (Signoid.card S) i a)))
+        rec = iterTillSublog S D i a
+    in
+    let q = proj₁ (iterTill S D (add (Signoid.card S) i a))
+    in
+    -- Last iteration step that iterTill performs, when inspecting its
+    -- implementation.
+    let lastStep = LowLvl.addChoice S D q tt
+    in
+    let q+ = proj₁ lastStep
+    in
+    -- We also know idx q+ = endoSuc idx q
+    let q⋤q+ : q ⋤ q+
+        q⋤q+ = proj₁ (proj₂ lastStep)
+    in
+    ⊑-trans rec (inj₂ q⋤q+)
+-- Agda does not see that Addibles card i can never be the empty type.
+-- (It never is, because we can *always* add 0 to i).
+iterTillSublog S@(record {card = fin (ℕ.suc c)}) D i a = ?
 
 module GlobalNF
     {ℓ : Level}
