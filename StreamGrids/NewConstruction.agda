@@ -146,8 +146,58 @@ iterTill S@(record {card = ∞}) D (ℕ.suc i) =
             ∎
     in
     (proj₁  choiceAdded , H)
-iterTill S@(record {card = fin (ℕ.suc c)}) D Fin.zero = ?
-iterTill S@(record {card = fin (ℕ.suc c)}) D (Fin.suc i) = ?
+-- The cases for Fin.zero and ℕ.zero have practically the same proof.
+iterTill S@(record {card = fin (ℕ.suc c)}) D Fin.zero = 
+    let nonempty = elToNonempty Fin.zero
+    in
+    (SGStates.rootLog S nonempty , refl)
+iterTill S@(record {card = fin (ℕ.suc (ℕ.suc c))}) D (Fin.suc i) = 
+    let idx = SGStates.idx S
+    in
+    -- Problem: C = Fin (suc (suc c))
+    -- but i lives in Fin (suc c) ≠ C.
+    -- So we must use inject₁ i in the recursive call, which demands the input
+    -- to be in C.
+    let iterAlmostThere = Σ[ q ∈ SGStates.Q S ](idx q ≡ inject₁ i)
+        iterAlmostThere = iterTill S D (inject₁ i)
+    in
+    let q = proj₁ iterAlmostThere
+    in
+    let idxq = idx q
+    in
+    let idxq≡i : idxq ≡ inject₁ i
+        idxq≡i = proj₂ iterAlmostThere
+    in
+    let lemma : i Data.Fin.< Fin.suc i 
+        lemma = Data.Nat.Properties.n<1+n (toℕ i)
+    in
+    let lemma' : ℕ.suc (toℕ (inject₁ i)) ≡ ℕ.suc (toℕ i)
+        lemma' = cong ℕ.suc (Data.Fin.Properties.toℕ-inject₁ i)
+    in
+    let inj-i<Si : (inject₁ i) Data.Fin.< (Fin.suc i)
+        inj-i<Si = subst (λ x → x Data.Nat.≤ toℕ (Fin.suc i)) (sym lemma') lemma
+    in
+    let h : IsNotMax (inject₁ i) 
+        h = biggerToIsNotMax inj-i<Si
+    in
+    let h' : IsNotMax (idxq)
+        h' = subst IsNotMax (sym idxq≡i) h
+    in
+    let choiceAdded = (LowLvl.addChoice S D q h')
+    in
+    let H : idx (proj₁ choiceAdded) ≡ Fin.suc i
+        H = begin
+                idx (proj₁ choiceAdded) 
+                ≡⟨ sym (proj₂ (proj₂ choiceAdded)) ⟩
+                endoSuc h'
+                ≡⟨ endoSucPresvEquality idxq≡i h' h ⟩
+                endoSuc h 
+                ≡⟨ endoSucFinSuc i h ⟩
+                Fin.suc i
+            ∎
+    in
+    (proj₁ choiceAdded , H)
+
 
 --iterTillSublog
 --    : {ℓ : Level}
