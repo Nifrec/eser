@@ -33,6 +33,7 @@ open import Data.Nat.Properties
 open import Data.Sum
 open import Data.Fin
 open import Data.Fin.Properties
+open import Data.Fin.Induction
 open import Data.Unit
 open import Data.Empty
 open import Data.List
@@ -146,60 +147,70 @@ iterTill S@(record {card = ∞}) D (ℕ.suc i) =
             ∎
     in
     (proj₁  choiceAdded , H)
--- The cases for Fin.zero and ℕ.zero have practically the same proof.
-iterTill S@(record {card = fin (ℕ.suc c)}) D Fin.zero = 
-    let nonempty = elToNonempty Fin.zero
-    in
-    (SGStates.rootLog S nonempty , refl)
--- Last case: Fin.suc i.
--- Problem: C ≐ Fin (suc (suc c)) but i lives in Fin (suc c) instead.
+-- Finite set case.
+-- While i ≐ Fin.zero can be done like ℕ.zero,
+-- the case Fin.suc i gave the following problem:
+-- Problem: C ≐ Fin (suc c) but i lives in Fin c instead.
 -- So we must use inject₁ i in the recursive call, which demands the input
 -- to be in C. But `inject₁ i` is NOT a direct subterm of `Fin.suc i`,
 -- so the termination checker does not like this.
 -- Luckily, it holds that Fin.< is well-founded and
 -- `inject₁ i < Fin.suc i`, which proves termination.
-iterTill S@(record {card = fin (ℕ.suc (ℕ.suc c))}) D (Fin.suc i) = 
-    let lemma : i Data.Fin.< Fin.suc i 
-        lemma = Data.Nat.Properties.n<1+n (toℕ i)
-    in
-    let lemma' : ℕ.suc (toℕ (inject₁ i)) ≡ ℕ.suc (toℕ i)
-        lemma' = cong ℕ.suc (Data.Fin.Properties.toℕ-inject₁ i)
-    in
-    let inj-i<Si : (inject₁ i) Data.Fin.< (Fin.suc i)
-        inj-i<Si = subst (λ x → x Data.Nat.≤ toℕ (Fin.suc i)) (sym lemma') lemma
-    in
-    let idx = SGStates.idx S
-    in
-    let iterAlmostThere = Σ[ q ∈ SGStates.Q S ](idx q ≡ inject₁ i)
-        iterAlmostThere = iterTill S D (inject₁ i)
-    in
-    let q = proj₁ iterAlmostThere
-    in
-    let idxq = idx q
-    in
-    let idxq≡i : idxq ≡ inject₁ i
-        idxq≡i = proj₂ iterAlmostThere
-    in
-    let h : IsNotMax (inject₁ i) 
-        h = biggerToIsNotMax inj-i<Si
-    in
-    let h' : IsNotMax (idxq)
-        h' = subst IsNotMax (sym idxq≡i) h
-    in
-    let choiceAdded = (LowLvl.addChoice S D q h')
-    in
-    let H : idx (proj₁ choiceAdded) ≡ Fin.suc i
-        H = begin
-                idx (proj₁ choiceAdded) 
-                ≡⟨ sym (proj₂ (proj₂ choiceAdded)) ⟩
-                endoSuc h'
-                ≡⟨ endoSucPresvEquality idxq≡i h' h ⟩
-                endoSuc h 
-                ≡⟨ endoSucFinSuc i h ⟩
-                Fin.suc i
-            ∎
-    in
-    (proj₁ choiceAdded , H)
+iterTill S@(record {card = fin (ℕ.suc c)}) D =
+    Data.Fin.Induction.<-weakInduction P zeroCase recurseCase
+    where
+        X = Fin (ℕ.suc c)
+        P : (i : X) → Set _
+        P i = Σ[ q ∈ SGStates.Q S ](SGStates.idx S q ≡ i)
+        zeroCase : P Fin.zero
+        zeroCase = 
+            let nonempty = elToNonempty Fin.zero
+            in
+            (SGStates.rootLog S nonempty , refl)
+        recurseCase : ∀ i → (P (inject₁ i)) → P (Fin.suc i)
+        recurseCase i rec =
+            let lemma : i Data.Fin.< Fin.suc i 
+                lemma = Data.Nat.Properties.n<1+n (toℕ i)
+            in
+            let lemma' : ℕ.suc (toℕ (inject₁ i)) ≡ ℕ.suc (toℕ i)
+                lemma' = cong ℕ.suc (Data.Fin.Properties.toℕ-inject₁ i)
+            in
+            let inj-i<Si : (inject₁ i) Data.Fin.< (Fin.suc i)
+                inj-i<Si = subst (λ x → x Data.Nat.≤ toℕ (Fin.suc i)) 
+                                 (sym lemma') lemma
+            in
+            let idx = SGStates.idx S
+            in
+            let iterAlmostThere = Σ[ q ∈ SGStates.Q S ](idx q ≡ inject₁ i)
+                iterAlmostThere = rec 
+            in
+            let q = proj₁ iterAlmostThere
+            in
+            let idxq = idx q
+            in
+            let idxq≡i : idxq ≡ inject₁ i
+                idxq≡i = proj₂ iterAlmostThere
+            in
+            let h : IsNotMax (inject₁ i) 
+                h = biggerToIsNotMax inj-i<Si
+            in
+            let h' : IsNotMax (idxq)
+                h' = subst IsNotMax (sym idxq≡i) h
+            in
+            let choiceAdded = (LowLvl.addChoice S D q h')
+            in
+            let H : idx (proj₁ choiceAdded) ≡ Fin.suc i
+                H = begin
+                        idx (proj₁ choiceAdded) 
+                        ≡⟨ sym (proj₂ (proj₂ choiceAdded)) ⟩
+                        endoSuc h'
+                        ≡⟨ endoSucPresvEquality idxq≡i h' h ⟩
+                        endoSuc h 
+                        ≡⟨ endoSucFinSuc i h ⟩
+                        Fin.suc i
+                    ∎
+            in
+            (proj₁ choiceAdded , H)
 
 
 --iterTillSublog
