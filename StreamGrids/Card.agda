@@ -299,6 +299,14 @@ endoSucLemma
     → toℕ (endoSuc (s≤s h)) ≡ ℕ.suc (toℕ (endoSuc h))
 endoSucLemma {suc c} n h = refl
 
+-- When working in ℕ (i.e., if the cardinality is ∞)
+-- then endoSuc is just ℕ.suc.
+endoSucNatSuc
+    : {n : cardToSet ∞}
+    → (h : IsNotMax n)
+    → endoSuc {∞} {n} h ≡ ℕ.suc n
+endoSucNatSuc {n} h = refl
+
 endoSucBigger
     : {c : ℕ∞}
     → {n : cardToSet c}

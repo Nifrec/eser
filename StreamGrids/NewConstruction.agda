@@ -114,23 +114,41 @@ iterTill S@(record {card = ∞}) D ℕ.zero =
     in
     (SGStates.rootLog S nonempty , refl)
 iterTill S@(record {card = ∞}) D (ℕ.suc i) = 
-    let iterAlmostThere = Σ[ q ∈ SGStates.Q S ](SGStates.idx S q ≡ i)
+    let idx = SGStates.idx S
+    in
+    let iterAlmostThere = Σ[ q ∈ SGStates.Q S ](idx q ≡ i)
         iterAlmostThere = iterTill S D i
     in
     let q = proj₁ iterAlmostThere
     in
-    let h : IsNotMax i
+    let idxq = idx q
+    in
+    let idxq≡i : idxq ≡ i
+        idxq≡i = proj₂ iterAlmostThere
+    in
+    -- In context of natural numbers n : ℕ, it holds that IsNotMax n ≐ ⊤.
+    -- So tt can both be typed as `IsNotMax idxq` and `IsNotMax i`.
+    -- This is exploited in the `subst` of H₂.
+    let h : IsNotMax idxq 
         h = tt
     in
     let choiceAdded = (LowLvl.addChoice S D q h)
     in
-    let meh : SGStates.idx S (proj₁ choiceAdded) ≡ endoSuc h
-        meh = sym (proj₂ (proj₂ choiceAdded))
+    let H₁ : idx (proj₁ choiceAdded) ≡ endoSuc {∞} {idxq} h
+        H₁ = sym (proj₂ (proj₂ choiceAdded))
     in
-    let geh : SGStates.idx S (proj₁ choiceAdded) ≡ ℕ.suc i
-        geh = subst (λ x → ℕ.suc x) (proj₂ iterAlmostThere) meh
+    let H₂ : idx (proj₁ choiceAdded) ≡ endoSuc {∞} {i} h 
+        H₂ = subst 
+            (λ x → idx (proj₁ choiceAdded) ≡ endoSuc {∞} {x} h) 
+            idxq≡i H₁
     in
-    (proj₁  choiceAdded , meh)
+    let H₃ : endoSuc {∞} {i} h ≡ ℕ.suc i
+        H₃ = endoSucNatSuc h
+    in
+    let H₄ : idx (proj₁ choiceAdded) ≡ ℕ.suc i
+        H₄ = trans H₂ H₃
+    in
+    (proj₁  choiceAdded , H₄)
 iterTill S@(record {card = fin (ℕ.suc c)}) D Fin.zero = ?
 iterTill S@(record {card = fin (ℕ.suc c)}) D (Fin.suc i) = ?
 
