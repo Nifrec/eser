@@ -128,27 +128,24 @@ iterTill S@(record {card = ∞}) D (ℕ.suc i) =
     in
     -- In context of natural numbers n : ℕ, it holds that IsNotMax n ≐ ⊤.
     -- So tt can both be typed as `IsNotMax idxq` and `IsNotMax i`.
-    -- This is exploited in the `subst` of H₂.
+    -- This is exploited in the `cong` below.
     let h : IsNotMax idxq 
         h = tt
     in
     let choiceAdded = (LowLvl.addChoice S D q h)
     in
-    let H₁ : idx (proj₁ choiceAdded) ≡ endoSuc {∞} {idxq} h
-        H₁ = sym (proj₂ (proj₂ choiceAdded))
+    let H : idx (proj₁ choiceAdded) ≡ ℕ.suc i
+        H = begin
+                idx (proj₁ choiceAdded) 
+                ≡⟨ sym (proj₂ (proj₂ choiceAdded)) ⟩
+                endoSuc {∞} {idxq} h
+                ≡⟨ cong (λ x → endoSuc {∞} {x} h) idxq≡i  ⟩
+                endoSuc {∞} {i} h 
+                ≡⟨ endoSucNatSuc h ⟩
+                ℕ.suc i
+            ∎
     in
-    let H₂ : idx (proj₁ choiceAdded) ≡ endoSuc {∞} {i} h 
-        H₂ = subst 
-            (λ x → idx (proj₁ choiceAdded) ≡ endoSuc {∞} {x} h) 
-            idxq≡i H₁
-    in
-    let H₃ : endoSuc {∞} {i} h ≡ ℕ.suc i
-        H₃ = endoSucNatSuc h
-    in
-    let H₄ : idx (proj₁ choiceAdded) ≡ ℕ.suc i
-        H₄ = trans H₂ H₃
-    in
-    (proj₁  choiceAdded , H₄)
+    (proj₁  choiceAdded , H)
 iterTill S@(record {card = fin (ℕ.suc c)}) D Fin.zero = ?
 iterTill S@(record {card = fin (ℕ.suc c)}) D (Fin.suc i) = ?
 
