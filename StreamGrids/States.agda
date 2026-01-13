@@ -235,11 +235,17 @@ module SGStates
             → q' ⋤ (idxSuc h , UpdateNFList q h lc , choose q h lc)
 
     ⋤-trans : Transitive _⋤_
-    --⋤-trans {q₁} {q₂} {q₃} q₁⋤q₂ q₂⋤q₃ = ?
     ⋤-trans {q₁} {q₂} {q₃@(i₃ , L₃ , s₃)} q₁⋤q₂ q₂⋤q₃@(onechoice q₂ h lc) = 
         multichoice q₁ q₂ q₁⋤q₂ h lc
     ⋤-trans {q₁} {q₂} {q₃@(i₃ , L₃ , s₃)} q₁⋤q₂ (multichoice q₂ q₄ q₂⋤q₄ h lc) =
         multichoice q₁ q₄ (⋤-trans q₁⋤q₂ q₂⋤q₄) h lc 
+
+    ⊑-trans : Transitive _⊑_
+    ⊑-trans {q₂} {q₂} {q₃} (inj₁ refl) q₂⊑q₃ = q₂⊑q₃
+    ⊑-trans {q₁} {q₂} {q₂} q₁⊑q₂ (inj₁ refl) = q₁⊑q₂
+    ⊑-trans {q₁} {q₂} {q₃} (inj₂ q₁⋤q₂) (inj₂ q₂⋤q₃) = 
+        inj₂ (⋤-trans q₁⋤q₂ q₂⋤q₃)
+
 
     -- Analogous to natural numbers: m < 1+n means m ≤ n,
     -- it holds q' ⋤ <some extension of q> → q' ⊑ q.
