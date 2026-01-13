@@ -194,7 +194,8 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
     Maybe not as flexible as allowing partial enumerations, but let's keep
     bijective enumerations `ℕ → A` for now to keep things simpler.
 
-### To explain
+### To explain in paper
+* Why choicelogs instead of nested lists.
 * Why states are annotated with a list of normal forms.
     - To avoid circular definitions: do define `LegalChoices`,
     we need to know whether there is a forced coercion, which occurs
@@ -204,6 +205,9 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
     since it would require pattern matching the index state, 
     which also requires pattern matching `LegalChoices`, 
     which in turn depend on something being normal or not...
+* And why also annotated with heights of the choice logs.
+* Why I really needed to give internal proofs of invariants in `iterTill`
+    and `chooseNext`.
 * Why signatures with constructors with external args from external
     finite sets are *not* a generalisation: one can add more constructors
     instead, one for each pair of external arguments.
@@ -212,6 +216,11 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
   congruence that you need to extend. It might not be recursively be generated
   by yourself (in practise it is, but you don't know). 
   See LL journal 14 Nov.
+* Addibles 
+    `Addibles (fin (ℕ.suc c)) n = Fin (ℕ.suc c ∸ toℕ n)`
+    versus
+    `Addibles (fin (ℕ.suc c)) n = Fin (ℕ.suc (c ∸ toℕ n))`
+    and the black magic with `cast` and `FinAddiblesRec`.
 
 # Lessons learned
 
