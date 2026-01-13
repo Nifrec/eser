@@ -237,23 +237,52 @@ iterTillSublog {ℓ} S@(record {card = ∞}) D i ℕ.zero =
     in
     subst P (sym (addℕzero i)) (inj₁ refl)
 iterTillSublog S@(record {card = ∞}) D i (ℕ.suc a) = 
-    let rec : SGStates._⊑_ S (proj₁ (iterTill S D i)) 
-                             (proj₁ (iterTill S D (add (Signoid.card S) i a)))
-        rec = iterTillSublog S D i a
+    let _⊑_ = SGStates._⊑_ S
     in
-    let q = proj₁ (iterTill S D (add (Signoid.card S) i a))
+    let _⋤_ = SGStates._⋤_ S
+    in
+    let q = (proj₁ (iterTill S D i)) 
+    in
+    let q+ = (proj₁ (iterTill S D (add (Signoid.card S) i a)))
+    in
+    let q⊑q+ : q ⊑ q+
+        q⊑q+ = iterTillSublog S D i a
     in
     -- Last iteration step that iterTill performs, when inspecting its
     -- implementation.
-    let lastStep = LowLvl.addChoice S D q tt
+    let lastStep = LowLvl.addChoice S D q+ tt
     in
-    let q+ = proj₁ lastStep
+    let q++ = proj₁ lastStep
     in
     -- We also know idx q+ = endoSuc idx q
-    let q⋤q+ : q ⋤ q+
-        q⋤q+ = proj₁ (proj₂ lastStep)
+    let q+⋤q++ : q+ ⋤ q++
+        q+⋤q++ = proj₁ (proj₂ lastStep)
     in
-    ⊑-trans rec (inj₂ q⋤q+)
+    let q+⊑q++ : q+ ⊑ q++
+        q+⊑q++ = inj₂ q+⋤q++
+    in
+    let q⊑q++ : q ⊑ q++
+        q⊑q++ = SGStates.⊑-trans S q⊑q+ q+⊑q++
+    in
+    let q* = proj₁ (iterTill S D (add (Signoid.card S) i (ℕ.suc a)))
+    in
+    -- Small technicality: the goal is q* and equals q++,
+    -- but not definitionally because q++ iters until 
+    --      ℕ.suc (add (Signoid.card S) i a)
+    -- whereas q* is defined as iterating until
+    --      add (Signoid.card S) i (ℕ.suc a)
+    let check : q++ ≡ proj₁ (iterTill S D (ℕ.suc (add (Signoid.card S) i a)))
+        check = refl
+    in
+    let lemma : (ℕ.suc (add (Signoid.card S) i a))
+                ≡
+                (add (Signoid.card S) i (ℕ.suc a))        
+        lemma = sym (addSucCommℕ i a))
+    in
+    let q++≡q* : q++ ≡ q*
+        q++≡q* = cong (λ x → proj₁ (iterTill S D x)) lemma
+    in
+    subst (λ x → q ⊑ x) q++≡q* q⊑q++
 -- Agda does not see that Addibles card i can never be the empty type.
 -- (It never is, because we can *always* add 0 to i).
 iterTillSublog S@(record {card = fin (ℕ.suc c)}) D i a = ?

@@ -51,6 +51,15 @@ module StreamGrids.Addibles where
     addℕzero : (n : ℕ) → add ∞ n ℕ.zero ≡ n
     addℕzero n = Data.Nat.Properties.+-identityʳ n
 
+    -- Adding the successor of an addible a (if it exists)
+    -- is the same as adding a first and then taking the successor of the
+    -- output.
+    addSucCommℕ
+        : (n : ℕ)
+        → (a : ℕ)
+        → add ∞ n (ℕ.suc a) ≡ ℕ.suc (add ∞ n a)
+    addSucCommℕ n m = Data.Nat.Properties.+-suc n m
+
     -- Maybe prove all addibles are of form (suc c ∸ toℕ n) ≡ suc k
     -- and cast Fin.zero from Fin (suc k) to (suc c ∸ toℕ n)?
     --addFinzero : (c : ℕ) → (n : Fin (ℕ.suc c)) → add (fin (ℕ.suc c)) n Fin.zero ≡ Fin.zero
