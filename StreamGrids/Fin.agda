@@ -73,12 +73,14 @@ toℕ-lower {c@(suc c')} {k@(suc k')} (suc n) h@(s≤s h') =
     ∎)
 
 --------------------------------------------------------------------------------
--- Addition in Fin sets
+-- Addition in Finite sets
 --
 -- Theorems about how it behaves with respect to Fin.suc, toℕ and cast.
 -- Namely:
 -- 1. toℕ (Fin.suc (x F+ y)) ≡ toℕ ( Fin.suc x F+ y)
+--      (this actually holds already definitionally, in hindsight)
 -- 2. toℕ (x F+ y) ≡ toℕ x ℕ+ toℕ y
+-- 3. Fin.suc (cast z (x F+ y)) ≡ cast Sz (Fin.suc x F+ y)
 --------------------------------------------------------------------------------
 
 _F+_ = Data.Fin._+_
@@ -88,12 +90,14 @@ toℕ-suc-+
     : {c : ℕ}
     → (x y : Fin (ℕ.suc c))
     → toℕ (Fin.suc (x F+ y)) ≡ toℕ ( Fin.suc x F+ y)
-toℕ-suc-+ {c} x y = refl -- No idea why refl works, but I'm not complaining!
+-- This holds by definition because of the recursive definition of + in Fin:
+--      (Fin.suc x) + y ≐ Fin.suc (x + y)
+toℕ-suc-+ {c} x y = refl 
 
 toℕ-+-comm
-    : {c c' : ℕ}
-    → (x : Fin (ℕ.suc c))
-    → (y : Fin (ℕ.suc c'))
+    : {c k : ℕ}
+    → (x : Fin c)
+    → (y : Fin k)
     → toℕ (x F+ y) ≡ toℕ x ℕ+ toℕ y
 toℕ-+-comm {c} zero zero = refl
 toℕ-+-comm {c} zero (suc y) = refl
@@ -110,3 +114,33 @@ toℕ-+-comm {ℕ.suc c} (suc x) y =
     ∎
     )
     
+cast-suc-comm
+    : {c k : ℕ}
+    → (x : Fin (ℕ.suc c))
+    → (y : Fin k)
+    → (z : toℕ x ℕ+ k ≡ ℕ.suc c)
+    -- #TODO: the existence of Sz is implied by z, and this type is proof
+    -- irrelevant anyway, so the argument Sz is superfluous.
+    → (Sz : toℕ (Fin.suc x) ℕ+ k ≡ ℕ.suc (ℕ.suc c))
+    → Fin.suc (cast z (x F+ y)) ≡ cast Sz (Fin.suc x F+ y)
+cast-suc-comm x y z Sz = 
+    let lemma : toℕ( Fin.suc (cast z (x F+ y))) ≡ toℕ( cast Sz (Fin.suc x F+ y))
+        lemma = begin 
+                toℕ( Fin.suc (cast z (x F+ y)))
+                ≡⟨ refl ⟩
+                ℕ.suc (toℕ( cast z (x F+ y)))
+                ≡⟨ cong ℕ.suc (toℕ-cast z (x F+ y)) ⟩
+                ℕ.suc (toℕ( x F+ y ))
+                ≡⟨ cong ℕ.suc (toℕ-+-comm x y)  ⟩
+                ℕ.suc (toℕ x ℕ+ toℕ y)
+                ≡⟨ refl ⟩ -- Definition of ℕ+ backward.
+                ℕ.suc (toℕ x)  ℕ+ toℕ y
+                ≡⟨ refl ⟩
+                toℕ (Fin.suc x) ℕ+ toℕ y
+                ≡⟨ sym (toℕ-+-comm (Fin.suc x) y)  ⟩
+                toℕ (Fin.suc x F+ y)
+                ≡⟨ sym (toℕ-cast Sz (Fin.suc x F+ y)) ⟩
+                toℕ( cast Sz (Fin.suc x F+ y))
+                ∎
+    in
+    toℕ-injective lemma
