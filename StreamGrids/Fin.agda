@@ -81,6 +81,11 @@ toℕ-lower {c@(suc c')} {k@(suc k')} (suc n) h@(s≤s h') =
 --      (this actually holds already definitionally, in hindsight)
 -- 2. toℕ (x F+ y) ≡ toℕ x ℕ+ toℕ y
 -- 3. Fin.suc (cast z (x F+ y)) ≡ cast Sz (Fin.suc x F+ y)
+-- 4. toℕ n ℕ+ (ℕ.suc (c ∸ toℕ n)) ≡ ℕ.suc c
+--  (this gives a sufficient condition for a cast to be possible: 
+--  if `n : Fin (ℕ.suc c)` and `m : Fin (ℕ.suc (c ∸ toℕ n))` 
+--  then one can cast `n F+ m` back into n's original type `Fin (ℕ.suc c)`).
+-- 5. i ≡ cast z (i F+ (Fin.zero {c ∸ toℕ i}))
 --------------------------------------------------------------------------------
 
 _F+_ = Data.Fin._+_
@@ -144,3 +149,63 @@ cast-suc-comm x y z Sz =
                 ∎
     in
     toℕ-injective lemma
+
+-- This lemma exists in Data.Nat.Properties
+-- as `∸-suc`, but my Agda installation fails
+-- to accept any definitions whose name contains `∸`.
+minus-suc : (m n : ℕ) →  m Data.Nat.≤ n → ℕ.suc n ∸ m ≡  ℕ.suc (n ∸ m)
+minus-suc m n z≤n       = refl
+minus-suc (ℕ.suc m) (ℕ.suc n) (s≤s m≤n) = minus-suc m n m≤n
+
+
+-- Useful to know: if given `n : Fin (ℕ.suc c)`,
+-- then one can add any `m : Fin (ℕ.suc (c ∸ toℕ n))`
+-- while staying in `Fin (ℕ.suc c)`, in the sense that
+-- `n F+ m : Fin (toℕ n + ℕ.suc (c ∸ toℕ n))`,
+-- but that type is ≡ to `Fin (ℕ.suc c)`,
+-- so one has 
+--      `cast (castabilityTheorem c n) (n F+ m) : Fin (ℕ.suc c)`,
+--      i.e., add something to `n` while staying *within* `Fin (ℕ.suc c)`.
+-- (Note: (ℕ.suc c) ∸ toℕ n ≡ ℕ.suc (c ∸ toℕ n)`,
+-- but the RHS makes Agda see at type level that a finite set with that
+-- cardinality has at least the element Fin.zero, which can sometimes be
+-- convenient.)
+castabilityTheorem
+    : (c : ℕ)
+    → (n : Fin (ℕ.suc c))
+    → toℕ n ℕ+ (ℕ.suc (c ∸ toℕ n)) ≡ ℕ.suc c
+castabilityTheorem c n = 
+    let meh : toℕ n Data.Nat.≤ ℕ.suc c
+        meh = Data.Fin.Properties.toℕ≤n n
+    in
+    let lemma : toℕ n Data.Nat.+ (ℕ.suc c ∸ toℕ n) ≡ ℕ.suc c
+        lemma = Data.Nat.Properties.m+[n∸m]≡n meh
+    in
+    let Tn≤Sc : toℕ n Data.Nat.≤ c
+        Tn≤Sc = s≤s⁻¹ (toℕ<n n)
+    in
+    let H : ℕ.suc c ∸ toℕ n ≡ ℕ.suc (c ∸ toℕ n)
+        H =  (minus-suc (toℕ n) c Tn≤Sc)
+    in
+    trans (cong (λ x → toℕ n Data.Nat.+ x) (sym H)) lemma
+
+addFinZeroCasted
+    : (c : ℕ) 
+    → (i : Fin (ℕ.suc c))
+    → (z : toℕ i ℕ+ ℕ.suc (c ∸ toℕ i) ≡ ℕ.suc c)
+    → i ≡ cast z (i F+ (Fin.zero {c ∸ toℕ i}))
+addFinZeroCasted c Fin.zero refl = refl
+addFinZeroCasted (ℕ.suc c) (Fin.suc i) z = 
+    let z1 : toℕ i ℕ+ ℕ.suc (c ∸ toℕ i) ≡ ℕ.suc c
+        z1 = castabilityTheorem c i
+    in
+    let H₁ : i ≡ cast z1 (i F+ Fin.zero)
+        H₁ = addFinZeroCasted c i z1
+    in
+    let H₂ : Fin.suc i ≡ Fin.suc (cast z1 (i F+ Fin.zero))
+        H₂ = cong Fin.suc H₁
+    in
+    let H₃ : Fin.suc i ≡ (cast z (Fin.suc i F+ Fin.zero))
+        H₃ = trans H₂ (cast-suc-comm i Fin.zero z1 z)
+    in
+    H₃
