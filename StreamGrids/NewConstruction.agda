@@ -290,6 +290,7 @@ iterTillSublog {ℓ} S@(record {card = fin (ℕ.suc c)}) D i =
     where
         _⊑_ = SGStates._⊑_ S
         _⋤_ = SGStates._⋤_ S
+        idx = SGStates.idx S
         P : cardToSet (fin (ℕ.suc c)) → Set ℓ
         P i+a = (proj₁ (iterTill S D i)) ⊑ (proj₁ (iterTill S D i+a))
         rec 
@@ -303,14 +304,6 @@ iterTillSublog {ℓ} S@(record {card = fin (ℕ.suc c)}) D i =
             let W : SGStates.SignoidShortcuts.C S → Set ℓ
                 W = λ j → (proj₁ (iterTill S D i)) ⊑ (proj₁ (iterTill S D j))
             in
-            -- The expression below gives
-            -- iterTill S D i ⊑ iterTill S D (add (fin (ℕ.suc c)) i Fin.zero)
-            -- but the goal is
-            -- iterTill S D i ⊑ iterTill S D (cast _ (i Data.Fin.+ Fin.zero))
-            --{! subst W (sym (addFinZero c i)) (inj₁ refl) !}
-            --let z : toℕ i ℕ+ (ℕ.suc (c ∸ toℕ i)) ≡ ℕ.suc c
-            --    z = castabilityTheorem c i
-            --in
             let H₁ : i ≡ cast z (i F+ (Fin.zero {x}) )
                 H₁ = addFinZeroCasted c x i z
             in
@@ -318,33 +311,93 @@ iterTillSublog {ℓ} S@(record {card = fin (ℕ.suc c)}) D i =
                 H₂ = inj₁ refl
             in
             subst W H₁ H₂
-        rec x (Fin.suc a) z = {! !}
---iterTillSublog S@(record {card = fin (ℕ.suc c)}) D i a =
---    let numAddibles : ℕ
---        numAddibles = ((ℕ.suc c) ∸ (toℕ i))
---    in
---    ?
-----... | ℕ.zero = ⊥-elim a
-----... | ℕ.suc (ℕ.zero) = ?
-----... | ℕ.suc (ℕ.suc k) = ?
---    where
---        _⊑_ = SGStates._⊑_ S
---        _⋤_ = SGStates._⋤_ S
+        rec x@(ℕ.suc (ℕ.suc x'')) (Fin.suc a) z = 
+            let q = (proj₁ (iterTill S D i)) 
+            in
+            -- +-suc allows to rewrite (toℕ i ℕ+ (ℕ.suc (ℕ.suc x'')))
+            -- into the following form, which has ℕ.suc as outermost on both
+            -- hands.
+            let z' : ℕ.suc (toℕ i ℕ+ (ℕ.suc x'')) ≡ ℕ.suc c
+                z' = trans (sym (+-suc (toℕ i) (ℕ.suc x''))) z
+            in
+            let z1 : toℕ i ℕ+ (ℕ.suc x'') ≡ c
+                z1 = Data.Nat.Properties.suc-injective z'
+            in
+            --let j : Fin c
+            --    j = cast z1 (i F+ a)
+            --in
+            --let q+ = proj₁ (iterTill S D (inject₁ j))
+            --in
+            --let idxq+≡Ij : idx q+ ≡ inject₁ j
+            --    idxq+≡Ij = proj₂ (iterTill S D (inject₁ j))
+            --in
+            let j : Fin (ℕ.suc c)
+                j = cast z (i F+ inject₁ a)
+            in
+            let q+ = proj₁ (iterTill S D j)
+            in
+            let idxq+≡j : idx q+ ≡ j
+                idxq+≡j = proj₂ (iterTill S D j)
+            in
+            -- TODO: termination issue! But I solved this before via WF rec.
+            -- in iterTill or so. Can do the same trick again!
+            let q⊑q+ : q ⊑ q+
+                q⊑q+ = rec x (inject₁ a) z
+            in
+            let h : IsNotMax j
+                h = ?
+            in
+            let h' : IsNotMax (idx q+)
+                h' = subst IsNotMax (sym idxq+≡j) h
+            in
+            let lastStep = LowLvl.addChoice S D q+ h'
+            in
+            let q++ = proj₁ lastStep
+            in
+            let q+⊑q++ : q+ ⊑ q++
+                q+⊑q++ = inj₂ (proj₁ (proj₂ lastStep))
+            in
+            let idxq++≡Sj : idx q++ ≡ endoSuc h'
+                idxq++≡Sj = proj₂ (proj₂ lastStep)
+            in
+            let q⊑q++ : q ⊑ q++
+                q⊑q++ = SGStates.⊑-trans S q⊑q+ q+⊑q++
+            in
+            let i+Sa = (cast z (i F+ Fin.suc a))
+            in 
+            let q* = proj₁ (iterTill S D i+Sa)
+            in
+            let idxq*≡i+Sa : idx q* ≡ i+Sa
+                idxq*≡i+Sa = proj₂ (iterTill S D i+Sa)
+            in
+            -- TODO: puzzle a bit more here
+            -- TODO: first rewrite i+Sa?
+            let meh : i+Sa ≡ Fin.suc (cast z1 (i F+ a))
+                meh = {! sym (cast-suc-comm ? ? ? ?) !}
+            in
+            -- TODO: above equality doesn't give it. 
+            let lemma : i+Sa ≡ endoSuc h'
+                lemma = {! trans meh (endoSucFinSuc h') !}
+            in
+            let q++≡q* : q++ ≡ q*
+                q++≡q* = {! cong (λ x → proj₁ (iterTill S D x)) lemma !}
+            in
+            subst (λ x → q ⊑ x) q++≡q* q⊑q++
 
-iterTillSublogFinCase
-    : {ℓ : Level}
-    {A : Set ℓ}
-    {_⊂_ : Rel A ℓ}
-    (c : ℕ)
-    (S : FinSignoid _⊂_ c)
-    → (D : LowLvl.Decider (fromFinSignoid _⊂_ c S))
-    → (i : SGStates.SignoidShortcuts.C (fromFinSignoid _⊂_ c S))
-    → (a : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i)
-    → (bullshit : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i ≡ Fin ℕ.zero)
-    → SGStates._⊑_ (fromFinSignoid _⊂_ c S) 
-                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D i)) 
-                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D (add (fin (ℕ.suc c)) i a)))
-iterTillSublogFinCase c S D i a bullshit = ?
+--iterTillSublogFinCase
+--    : {ℓ : Level}
+--    {A : Set ℓ}
+--    {_⊂_ : Rel A ℓ}
+--    (c : ℕ)
+--    (S : FinSignoid _⊂_ c)
+--    → (D : LowLvl.Decider (fromFinSignoid _⊂_ c S))
+--    → (i : SGStates.SignoidShortcuts.C (fromFinSignoid _⊂_ c S))
+--    → (a : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i)
+--    → (bullshit : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i ≡ Fin ℕ.zero)
+--    → SGStates._⊑_ (fromFinSignoid _⊂_ c S) 
+--                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D i)) 
+--                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D (add (fin (ℕ.suc c)) i a)))
+--iterTillSublogFinCase c S D i a bullshit = ?
 
 --iterTillSublogFinCaseOneAddible
 --    : {ℓ : Level}
