@@ -71,3 +71,42 @@ toℕ-lower {c@(suc c')} {k@(suc k')} (suc n) h@(s≤s h') =
         ≡⟨ TSLn≡TLSn ⟩
         toℕ (lower (suc n) h)
     ∎)
+
+--------------------------------------------------------------------------------
+-- Addition in Fin sets
+--
+-- Theorems about how it behaves with respect to Fin.suc, toℕ and cast.
+-- Namely:
+-- 1. toℕ (Fin.suc (x F+ y)) ≡ toℕ ( Fin.suc x F+ y)
+-- 2. toℕ (x F+ y) ≡ toℕ x ℕ+ toℕ y
+--------------------------------------------------------------------------------
+
+_F+_ = Data.Fin._+_
+_ℕ+_ = Data.Nat._+_
+
+toℕ-suc-+
+    : {c : ℕ}
+    → (x y : Fin (ℕ.suc c))
+    → toℕ (Fin.suc (x F+ y)) ≡ toℕ ( Fin.suc x F+ y)
+toℕ-suc-+ {c} x y = refl -- No idea why refl works, but I'm not complaining!
+
+toℕ-+-comm
+    : {c c' : ℕ}
+    → (x : Fin (ℕ.suc c))
+    → (y : Fin (ℕ.suc c'))
+    → toℕ (x F+ y) ≡ toℕ x ℕ+ toℕ y
+toℕ-+-comm {c} zero zero = refl
+toℕ-+-comm {c} zero (suc y) = refl
+toℕ-+-comm {ℕ.suc c} (suc x) y =
+    sym (
+    begin 
+    toℕ (suc x) ℕ+ toℕ y
+    ≡⟨ refl ⟩
+    ℕ.suc (toℕ x ℕ+ toℕ y)
+    ≡⟨ cong ℕ.suc (sym (toℕ-+-comm x y)) ⟩
+    ℕ.suc (toℕ (x F+ y))
+    ≡⟨ refl ⟩
+    toℕ (suc x F+ y)
+    ∎
+    )
+    
