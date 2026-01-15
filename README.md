@@ -127,7 +127,17 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
     (The RHS might be a normal form itself).
 
 ### Applications
-* Propositional truncation without HIITs.
+* Quotient isomorphisms.
+* Images of functions `f : A -> B`. (via relat `x ~ x'` iff `f(x) = f(x')`),
+    `A` should be enumerable, B does not need to.
+    Enumerate `A ⊎ B`:
+    0 -> a0
+    1 -> f(a0)
+    2 -> a1
+    3 -> f(a1)
+    etc.
+* Chain-images `A0 -f0> A1 -f1> A2 -f2> A3 -f3> ...`
+* Cellular automata (or STAMs in general).
 * Integers & rational numbers.
 * Other HIITs / more complicated inductive types / advanced grids.
 * Prove that `SGToType` is an hSet.
