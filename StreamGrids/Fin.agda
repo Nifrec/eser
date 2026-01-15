@@ -189,18 +189,45 @@ castabilityTheorem c n =
     in
     trans (cong (λ x → toℕ n Data.Nat.+ x) (sym H)) lemma
 
+
+-- The closest thing one can show in Fin to "i + 0 ≡ i".
 addFinZeroCasted
+    : (c x : ℕ) 
+    → (i : Fin (ℕ.suc c))
+    → (z : toℕ i ℕ+ ℕ.suc x ≡ ℕ.suc c)
+    → i ≡ cast z (i F+ (Fin.zero {x}))
+addFinZeroCasted c x Fin.zero refl = refl
+addFinZeroCasted (ℕ.suc c) (x) (Fin.suc i) z = 
+    let z1 : toℕ i ℕ+ (ℕ.suc (x)) ≡ ℕ.suc c
+        z1 = Data.Nat.Properties.suc-injective z
+    in
+    let H₁ : i ≡ cast z1 (i F+ (Fin.zero {x}))
+        H₁ = addFinZeroCasted c (x) i z1
+    in
+    let H₂ : Fin.suc i ≡ Fin.suc (cast z1 (i F+ Fin.zero))
+        H₂ = cong Fin.suc H₁
+    in
+    let H₃ : Fin.suc i ≡ (cast z (Fin.suc i F+ Fin.zero))
+        H₃ = trans H₂ (cast-suc-comm i Fin.zero z1 z)
+    in
+    H₃
+
+-- Alternative theorem stating i + 0 ≡ i,
+-- using a canonical proof of castability to the same finite set.
+-- ('Canonical' means via the castabilityTheorem).
+addFinZeroCastedCanonical
     : (c : ℕ) 
     → (i : Fin (ℕ.suc c))
-    → (z : toℕ i ℕ+ ℕ.suc (c ∸ toℕ i) ≡ ℕ.suc c)
-    → i ≡ cast z (i F+ (Fin.zero {c ∸ toℕ i}))
-addFinZeroCasted c Fin.zero refl = refl
-addFinZeroCasted (ℕ.suc c) (Fin.suc i) z = 
+    → i ≡ cast (castabilityTheorem c i) (i F+ (Fin.zero {c ∸ toℕ i}))
+addFinZeroCastedCanonical c Fin.zero = refl
+addFinZeroCastedCanonical (ℕ.suc c) (Fin.suc i) = 
     let z1 : toℕ i ℕ+ ℕ.suc (c ∸ toℕ i) ≡ ℕ.suc c
         z1 = castabilityTheorem c i
     in
+    let z = castabilityTheorem (ℕ.suc c) (Fin.suc i)
+    in
     let H₁ : i ≡ cast z1 (i F+ Fin.zero)
-        H₁ = addFinZeroCasted c i z1
+        H₁ = addFinZeroCastedCanonical c i
     in
     let H₂ : Fin.suc i ≡ Fin.suc (cast z1 (i F+ Fin.zero))
         H₂ = cong Fin.suc H₁
