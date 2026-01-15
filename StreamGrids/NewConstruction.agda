@@ -277,7 +277,7 @@ iterTillSublog S@(record {card = ∞}) D i (ℕ.suc a) =
     let lemma : (ℕ.suc (add (Signoid.card S) i a))
                 ≡
                 (add (Signoid.card S) i (ℕ.suc a))        
-        lemma = sym (addSucCommℕ i a))
+        lemma = sym (addSucCommℕ i a)
     in
     let q++≡q* : q++ ≡ q*
         q++≡q* = cong (λ x → proj₁ (iterTill S D x)) lemma
@@ -285,7 +285,103 @@ iterTillSublog S@(record {card = ∞}) D i (ℕ.suc a) =
     subst (λ x → q ⊑ x) q++≡q* q⊑q++
 -- Agda does not see that Addibles card i can never be the empty type.
 -- (It never is, because we can *always* add 0 to i).
-iterTillSublog S@(record {card = fin (ℕ.suc c)}) D i a = ?
+iterTillSublog {ℓ} S@(record {card = fin (ℕ.suc c)}) D i =
+    FinAddiblesRec c i P rec
+    where
+        _⊑_ = SGStates._⊑_ S
+        _⋤_ = SGStates._⋤_ S
+        P : cardToSet (fin (ℕ.suc c)) → Set ℓ
+        P i+a = (proj₁ (iterTill S D i)) ⊑ (proj₁ (iterTill S D i+a))
+        rec 
+            : (x : ℕ) 
+            → (a : Fin x)
+            → (z : toℕ i ℕ+ x ≡ ℕ.suc c)
+            → P (cast z (i F+ a))
+        -- All the indirection above is just to be able to pattern match on `a`
+        -- here.
+        rec (ℕ.suc x) Fin.zero z =
+            let W : SGStates.SignoidShortcuts.C S → Set ℓ
+                W = λ j → (proj₁ (iterTill S D i)) ⊑ (proj₁ (iterTill S D j))
+            in
+            -- The expression below gives
+            -- iterTill S D i ⊑ iterTill S D (add (fin (ℕ.suc c)) i Fin.zero)
+            -- but the goal is
+            -- iterTill S D i ⊑ iterTill S D (cast _ (i Data.Fin.+ Fin.zero))
+            --{! subst W (sym (addFinZero c i)) (inj₁ refl) !}
+            --let z : toℕ i ℕ+ (ℕ.suc (c ∸ toℕ i)) ≡ ℕ.suc c
+            --    z = castabilityTheorem c i
+            --in
+            let H₁ : i ≡ cast z (i F+ (Fin.zero {x}) )
+                H₁ = addFinZeroCasted c x i z
+            in
+            let H₂ : (proj₁ (iterTill S D i)) ⊑ (proj₁ (iterTill S D i))
+                H₂ = inj₁ refl
+            in
+            subst W H₁ H₂
+        rec x (Fin.suc a) z = {! !}
+--iterTillSublog S@(record {card = fin (ℕ.suc c)}) D i a =
+--    let numAddibles : ℕ
+--        numAddibles = ((ℕ.suc c) ∸ (toℕ i))
+--    in
+--    ?
+----... | ℕ.zero = ⊥-elim a
+----... | ℕ.suc (ℕ.zero) = ?
+----... | ℕ.suc (ℕ.suc k) = ?
+--    where
+--        _⊑_ = SGStates._⊑_ S
+--        _⋤_ = SGStates._⋤_ S
+
+iterTillSublogFinCase
+    : {ℓ : Level}
+    {A : Set ℓ}
+    {_⊂_ : Rel A ℓ}
+    (c : ℕ)
+    (S : FinSignoid _⊂_ c)
+    → (D : LowLvl.Decider (fromFinSignoid _⊂_ c S))
+    → (i : SGStates.SignoidShortcuts.C (fromFinSignoid _⊂_ c S))
+    → (a : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i)
+    → (bullshit : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i ≡ Fin ℕ.zero)
+    → SGStates._⊑_ (fromFinSignoid _⊂_ c S) 
+                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D i)) 
+                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D (add (fin (ℕ.suc c)) i a)))
+iterTillSublogFinCase c S D i a bullshit = ?
+
+--iterTillSublogFinCaseOneAddible
+--    : {ℓ : Level}
+--    {A : Set ℓ}
+--    {_⊂_ : Rel A ℓ}
+--    (c : ℕ)
+--    (S : FinSignoid _⊂_ c)
+--    → (D : LowLvl.Decider (fromFinSignoid _⊂_ c S))
+--    → (iWithOneAddible :
+--        Σ[ i ∈ SGStates.SignoidShortcuts.C (fromFinSignoid _⊂_ c S)) ]
+--        (ℕ.suc c ∸ toℕ i ≡ 1)
+
+--    → (i : SGStates.SignoidShortcuts.C (fromFinSignoid _⊂_ c S))
+--    → (oneAddibles : ℕ.suc c ∸ toℕ i ≡ 1)
+--    --→ (oneAddible : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i ≡ Fin 1)
+--    → (a : Addibles (Signoid.card (fromFinSignoid _⊂_ c S)) i)
+--    → SGStates._⊑_ (fromFinSignoid _⊂_ c S) 
+--                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D i)) 
+--                     (proj₁ (iterTill (fromFinSignoid _⊂_ c S) D (add (fin (ℕ.suc c)) i a)))
+--iterTillSublogFinCaseOneAddible c S D i refl (Fin.suc Fin.zero) = ?
+
+--noAddiblesCase
+--    : {ℓ : Level}
+--    {A : Set ℓ}
+--    {_⊂_ : Rel A ℓ}
+--    → (c : ℕ)
+--    → (S' : FinCardSignoid _⊂_ c)
+--    → (D : LowLvl.Decider (proj₁ S'))
+--    → (i : cardToSet (Signoid.card (proj₁ S'))) 
+--    --→ (i : Fin (ℕ.suc c)) -- This is cardToSet (Signoid.card S)
+--    → (a : Addibles (Signoid.card (proj₁ S')) i)
+--    → (noAddibles : ℕ.suc c ∸ toℕ i ≡ ℕ.zero)
+--    → SGStates._⊑_ (proj₁ S')
+--        (proj₁ (iterTill (proj₁ S') D i)) 
+--        (proj₁ (iterTill (proj₁ S') D (add (Signoid.card (proj₁ S')) i a)))
+
+        
 
 module GlobalNF
     {ℓ : Level}

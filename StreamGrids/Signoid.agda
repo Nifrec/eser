@@ -77,3 +77,54 @@ enumOrder {ℓ} {A} {_⊂_} {S} x y
 
 infix 30 enumOrder
 syntax enumOrder x y = x « y
+
+-- Signoids with a fixed finite cardinality. 
+-- Used to make pattern matching on the cardinality easier.
+FinCardSignoid :
+    {ℓ : Level.Level} 
+    {A : Set ℓ} 
+    (_⊂_ : Rel A ℓ) 
+    (c : ℕ)
+    → Set ℓ
+FinCardSignoid {ℓ} {A} _⊂_ c = 
+    Σ[ S ∈ (Signoid _⊂_) ](Signoid.card S ≡ fin (ℕ.suc c))
+
+record FinSignoid 
+    {ℓ : Level.Level} 
+    {A : Set ℓ} 
+    (_⊂_ : Rel A ℓ) 
+    (c : ℕ)
+    : Set ℓ where
+    field
+        idxToEl  : Fin (ℕ.suc c) → A
+        elToIdx  : A → Fin (ℕ.suc c)
+        inv : Inverseᵇ _≡_ _≡_ idxToEl elToIdx
+        subrelat : (x y : A) → x ⊂ y → (cardTo< (elToIdx x) (elToIdx y))
+        --^ This just says that _⊂_ is a subrelation of _«_, i.e.,
+        -- that x ⊂ y → x « y. But _«_ is not defined yet here, see below.
+        coerc    : (y x : A) 
+                 → x ⊂ y 
+                 → (x' : A) 
+                 --^ Smaller alternative to x.
+                 → (cardTo< (elToIdx x') (elToIdx x))
+                 --^ Proof that x' is smaller than x: x' « x.
+                 → Σ[ y' ∈ A ]( (cardTo< (elToIdx y') (elToIdx y))) --^ y' « y
+fromFinSignoid : 
+    {ℓ : Level.Level} 
+    {A : Set ℓ} 
+    (_⊂_ : Rel A ℓ) 
+    (c : ℕ)
+    (S : FinSignoid _⊂_ c)
+    → Signoid _⊂_
+fromFinSignoid {ℓ} {A} _⊂_ c record { idxToEl = idxToEl 
+    ; elToIdx = elToIdx
+    ; inv = inv 
+    ; subrelat = subrelat 
+    ; coerc = coerc } = 
+        record 
+        { card = fin ( ℕ.suc c) 
+        ; idxToEl = idxToEl
+        ; elToIdx = elToIdx
+        ; inv = inv 
+        ; subrelat = subrelat 
+        ; coerc = coerc }
