@@ -35,7 +35,6 @@ module StreamGrids.Addibles where
     Addibles : (c : ℕ∞) → (n : cardToSet c) → Set
     Addibles ∞ n = ℕ
     Addibles (fin zero) ()
-    --Addibles (fin (ℕ.suc c)) n = Fin (ℕ.suc c ∸ toℕ n)
     Addibles (fin (ℕ.suc c)) n = Fin (ℕ.suc (c ∸ toℕ n))
 
     -- Add an addible to n while staying in `cardToSet c`.
@@ -44,80 +43,11 @@ module StreamGrids.Addibles where
     add (fin zero) ()
     add (fin (suc c)) n m = cast (castabilityTheorem c n) (n Data.Fin.+ m) 
 
-
+    -- n + 0 ≡ n for any n ∈ ℕ.
+    -- For the Fin case, see StreamGrids.Fin.addFinZeroCasted
+    -- and StreamGrids.Fin.addFinZeroCastedCanonical.
     addℕzero : (n : ℕ) → add ∞ n ℕ.zero ≡ n
     addℕzero n = Data.Nat.Properties.+-identityʳ n
-
-    ---- #TODO: move to more suitable file.
-    ---- 0 Fin.+ n ≐ n holds by definition.
-    ---- n Fin.+ 0 ≡ n does not seem to be in the standard library.
-    --fin+unital
-    --    : {c : ℕ}
-    --    → (n : Fin (ℕ.suc c))
-    --    → cast (castabilityTheorem c n) (n Data.Fin.+ (Fin.zero {(c ∸ toℕ n)})) ≡ n
-    --fin+unital {c} Fin.zero = refl
-    --fin+unital {c@(ℕ.suc c')} (Fin.suc n) = 
-    --    let casted = (n Data.Fin.+ Fin.zero)
-    --    in
-    --    let rec = fin+unital {c'} (n) 
-    --    in
-    --    let H₂ = cong toℕ rec
-    --    in
-    --    let H₃ = subst (λ x → x ≡ toℕ (n)) (toℕ-cast _ casted) H₂
-    --    in
-    --    let H₄ : ℕ.suc (toℕ casted) ≡ ℕ.suc (toℕ (n))
-    --        H₄ = cong (ℕ.suc) H₃
-    --    in
-    --    let H₆ : toℕ (Fin.suc casted) ≡ toℕ (cast (castabilityTheorem c' n) (Fin.suc n))
-    --        H₆ = subst (λ x → ℕ.suc (toℕ casted) ≡ ℕ.suc x) (toℕ-inject₁ n) H₄
-    --    in
-    --    ?
-    --    ----let H₅ : toℕ (Fin.suc casted) ≡ toℕ (Fin.suc n)
-    --    ----    H₅ = subst (λ x → ℕ.suc (toℕ casted) ≡ ℕ.suc x) (toℕ-inject₁ n) H₄
-    --    ----in
-    --    ----let lemma : 
-    --    --let H₆ : Fin.suc casted ≡ Fin.suc n
-    --    --    H₆ = toℕ-injective H₄
-    --    --in
-    --    --{! !}
-    ----fin+unital {c} (Fin.suc n) = 
-    ----    let casted = (inject₁ n Data.Fin.+ Fin.zero)
-    ----    in
-    ----    let rec = fin+unital {c} (inject₁ n) 
-    ----    in
-    ----    let H₂ = cong toℕ rec
-    ----    in
-    ----    let H₃ = subst (λ x → x ≡ toℕ (inject₁ n)) (toℕ-cast _ casted) H₂
-    ----    in
-    ----    let H₄ : ℕ.suc (toℕ casted) ≡ ℕ.suc (toℕ (inject₁ n))
-    ----        H₄ = cong (ℕ.suc) H₃
-    ----    in
-    ----    let H₅ : toℕ (Fin.suc casted) ≡ toℕ (Fin.suc n)
-    ----        H₅ = subst (λ x → ℕ.suc (toℕ casted) ≡ ℕ.suc x) (toℕ-inject₁ n) H₄
-    ----    in
-    ----    let H₆ : toℕ (Fin.suc casted) ≡ toℕ (cast (castabilityTheorem c n) (Fin.suc n))
-    ----        H₆ = subst (λ x → ℕ.suc (toℕ casted) ≡ ℕ.suc x) (toℕ-inject₁ n) H₄
-    ----    in
-    ----    let H₆ : Fin.suc casted ≡ Fin.suc n
-    ----        H₆ = toℕ-injective H₅
-    ----    in
-    ----    {! !}
-
-    
-        
-
-    addFinZero 
-        : (c : ℕ) 
-        → (i : Fin (ℕ.suc c))
-        → add (fin (ℕ.suc c)) i Fin.zero ≡ i
-    addFinZero c Fin.zero = refl
-    addFinZero c (Fin.suc i) = 
-        let LHS = add (fin (ℕ.suc c)) (Fin.suc i) Fin.zero
-        in
-        let check : LHS ≡ cast (castabilityTheorem c (Fin.suc i)) ((Fin.suc i) Data.Fin.+ Fin.zero)
-            check = refl
-        in
-        ?
 
     -- Adding the successor of an addible a (if it exists)
     -- is the same as adding a first and then taking the successor of the

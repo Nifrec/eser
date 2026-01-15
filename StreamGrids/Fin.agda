@@ -85,7 +85,12 @@ toℕ-lower {c@(suc c')} {k@(suc k')} (suc n) h@(s≤s h') =
 --  (this gives a sufficient condition for a cast to be possible: 
 --  if `n : Fin (ℕ.suc c)` and `m : Fin (ℕ.suc (c ∸ toℕ n))` 
 --  then one can cast `n F+ m` back into n's original type `Fin (ℕ.suc c)`).
--- 5. i ≡ cast z (i F+ (Fin.zero {c ∸ toℕ i}))
+-- 5. i ≡ cast z (i F+ (Fin.zero {x}))
+--      given any `z : toℕ i ℕ+ ℕ.suc x ≡ ℕ.suc c`.
+-- 6. i ≡ cast (castabilityTheorem c i) (i F+ (Fin.zero {c ∸ toℕ i}))
+--      (same as 5., but with always-available canonical choices
+--          `x ≐ (c - toℕ i)` 
+--          `z ≐ castabilityTheorem c i`)
 --------------------------------------------------------------------------------
 
 _F+_ = Data.Fin._+_
