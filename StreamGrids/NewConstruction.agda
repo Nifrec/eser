@@ -5,23 +5,6 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
--- Termination for iterFromTill was an annoyance.
--- Imperically it is obvious:
--- ```
--- q := root h
--- for j = 0 to i
---      q := add decider's next choice to q
--- return q
--- ```
--- Doing it functional is a bit confusing. The distance from (idx q) to i
--- decreases every iteration, so that should give termination.
--- Initially I defined distance as
--- E.g., dist 1 4 ≐ 3 and dist 2 3 ≐ 1.
--- dist : {n m : ℕ} → n Data.Nat.< m → ℕ
--- dist {n} {m} n<m = ∣ n - m ∣
--- Noting that |_-_| is given in the stdlib Data.Nat.Base.
--- It was difficult to prove the required properties of this, when generalised
--- to work with finite sets (using toℕ to inject to ℕ).
 open import Level
 open import Relation.Binary hiding (Irrelevant)
 open import Relation.Nullary
@@ -362,6 +345,9 @@ iterTillSublog {ℓ} S@(record {card = fin (ℕ.suc c)}) D i =
             in
             let q⊑q++ : q ⊑ q++
                 q⊑q++ = SGStates.⊑-trans S q⊑q+ q+⊑q++
+            in
+            let check : q++ ≡ proj₁ (iterTill S D (endoSuc _))
+                check = refl
             in
             let i+Sa = (cast z (i F+ Fin.suc a))
             in 

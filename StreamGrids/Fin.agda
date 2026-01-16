@@ -241,3 +241,11 @@ addFinZeroCastedCanonical (ℕ.suc c) (Fin.suc i) =
         H₃ = trans H₂ (cast-suc-comm i Fin.zero z1 z)
     in
     H₃
+
+inject₁-+-comm  
+    : {c k : ℕ}
+    → (x : Fin c)
+    → (y : Fin k)
+    → (z : toℕ x ℕ+ ℕ.suc k ≡ ℕ.suc (toℕ x ℕ+ k))
+    → x F+ (inject₁ y) ≡ cast z (inject₁ (x F+ y))
+inject₁-+-comm x y = ?
