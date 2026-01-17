@@ -4,7 +4,7 @@ And how the readme is organised.
 
 Other files of interest:
 * [./Signoids.md] : discussion on the design of Signoids.
-* [./TODISCUSS.md] : things to discuss with superviors.
+* [./TODISCUSS.md] : things to discuss with supervisor.
 * [./Expressivity.md] : discussion what kinds of relations StreamGrids can
   encode.
 
@@ -16,7 +16,7 @@ Other files of interest:
     Definition of Signoids.
 * `StreamGrids/States`
     - Definition of StreamGrid states. 
-        There represent are partially constructucted quotient types.
+        There represent are partially constructed quotient types.
     - Definition/computation allowed successor states.
     - Functions to compute the normal forms of elements in states.
 * `StreamGrids/Suffix`
@@ -96,7 +96,7 @@ might still confuse 'sublist' and 'lowlist'.
        Egbert Rijke's book 145 T12.3.5 P145).
     3. Two elements in `AsType S D` are equal iff their elements are equal
         and their normality proofs are equal (this may need a lemma).
-    4. Proofs of normality are hProps (this needs a lemma but is obivous).
+    4. Proofs of normality are hProps (this needs a lemma but is obvious).
     5. Element equality is also an hProp by 1-2-3, since `A` is an hSet
         and the elements live in `A`.
 
@@ -125,6 +125,7 @@ See 11 Dec 2025 metalemma sheet and also [./Expressivity.md].
     and arguments `x0`, `x1`, ..., `xn` that
     `nf(c(x0, x1, ... , xn)) = nf(c(nf(x0), nf(x1), ..., nf(xn)))`.
     (The RHS might be a normal form itself).
+* That the output really is a congruence?
 
 ### Applications
 * Quotient isomorphisms.
