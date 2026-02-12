@@ -88,6 +88,8 @@ might still confuse 'sublist' and 'lowlist'.
 * Be consistent in doccomments: "ChoiceLog" or "choice-log" or "choicelog"?
 
 ### Proofs to write/formalise
+* **Li's stuff**: show my `nf()` function implements a *definable quotient*
+    in Li's definition. 
 * `AsType S D` is an hSet, which follows from the facts:
     1. `A` has decidable equality because it is enumerable:
         `x ≡ y` iff `idx(x) ≡ idx(y)`, and the latter equality in ℕ
