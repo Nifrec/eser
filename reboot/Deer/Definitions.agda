@@ -15,6 +15,8 @@ open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_≤_)
 open import Data.Vec hiding (restrict)
+open import Data.Nat.Properties using (≤-<-trans)
+open import Data.Fin.Properties using (toℕ<n)
 
 --open import Relation.Nullary
 --open ≡-Reasoning
@@ -120,9 +122,28 @@ LocProp = (n : ℕ) → Vec ℕ n → Set
 LocSat : (ℕ → ℕ) → LocProp → Set
 LocSat f P = (n : ℕ) → P n (restrict n f)
 
--- Local version of NLeq ∧ NFix
-NF-loc : LocProp
-NF-loc f n = {!  !}
+-- Local version of NLeq: f m ≤ m for all m,
+-- where f m is encoded as the value of a vector at index 0.
+NFLeqLoc : LocProp
+NFLeqLoc n v = (m : Fin n) → lookup v m ≤ toℕ m
+
+--NFLoc : LocProp
+--NFLoc n v = (m : Fin n) → Σ[ nfleq ∈ (lookup v m ≤ toℕ m) ](lookup v (lookup 
+
+-- Local version of NFix : f (f m) ≡ f m for all m.
+-- Technical issue: when not assuming f m ≤ m, then f m > n is possible,
+-- which means that we cannot lookup `f m` as vector index.
+-- If LocSat f NFLeqLoc then this can, of course, never happen.
+-- But I wanted to define NFFixLoc independently from NFLeqLoc,
+-- so it has the conditional form:
+--      "if f m is an index of the vector then f (f m) ≡ f m".
+NFFixLoc : LocProp
+NFFixLoc n v = (m : Fin n) 
+             → (q : (lookup v m ≤ toℕ m)) 
+             → lookup v (fromℕ< (≤-<-trans q (toℕ<n m))) ≡ lookup v m
 
 NFFunThatLocSats : LocProp → Set
-NFFunThatLocSats P = Σ[ f ∈ (ℕ → ℕ) ] (LocSat f NF-loc × LocSat f P)
+NFFunThatLocSats P = Σ[ f ∈ (ℕ → ℕ) ] (
+      LocSat f NFLeqLoc 
+    × LocSat f NFFixLoc 
+    × LocSat f P)
