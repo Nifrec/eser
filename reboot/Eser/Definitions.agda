@@ -156,6 +156,19 @@ numIsItself : (n : ℕ) → (n ≡ᵇ n) ≡ true
 numIsItself zero = refl
 numIsItself (ℕ.suc n) = numIsItself n
 
+numEqualSym : (n m : ℕ) → (n ≡ᵇ m) ≡ true → (m ≡ᵇ n) ≡ true
+numEqualSym ℕ.zero ℕ.zero n≡m = refl
+numEqualSym (ℕ.suc n) (ℕ.suc m) Sn≡Sm = numEqualSym n m Sn≡Sm
+
+numEqualTrans : 
+    (n m ℓ : ℕ) 
+    → (n ≡ᵇ m) ≡ true 
+    → (m ≡ᵇ ℓ) ≡ true
+    → (n ≡ᵇ ℓ) ≡ true
+numEqualTrans ℕ.zero ℕ.zero ℕ.zero n≡m m≡ℓ = refl
+numEqualTrans (ℕ.suc n) (ℕ.suc m) (ℕ.suc ℓ) Sn≡Sm Sm≡Sℓ = 
+    numEqualTrans n m ℓ Sn≡Sm Sm≡Sℓ
+
 FunToRel : NFFun → DecEquiv
 FunToRel (f , nleq , nfix) = 
     (R , isequiv)
@@ -171,10 +184,11 @@ FunToRel (f , nleq , nfix) =
                 reflR {n} = numIsItself (f n)
             in
             let symR : Symmetric R'
-                symR = ?
+                symR {n} {m} R'nm = numEqualSym (f n) (f m) R'nm
             in
             let transR : Transitive R'
-                transR = ?
+                transR {i} {j} {k} R'ij R'jk = 
+                    numEqualTrans (f i) (f j) (f k) R'ij R'jk
             in
             record { refl = reflR ; sym = symR ; trans = transR }
 
