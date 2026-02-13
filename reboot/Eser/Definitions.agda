@@ -152,14 +152,31 @@ NFFunWithLocProp P = Σ[ f ∈ (ℕ → ℕ) ] (
 -- Correspondences 
 --------------------------------------------------------------------------------
 
+numIsItself : (n : ℕ) → (n ≡ᵇ n) ≡ true
+numIsItself zero = refl
+numIsItself (ℕ.suc n) = numIsItself n
+
 FunToRel : NFFun → DecEquiv
 FunToRel (f , nleq , nfix) = 
     (R , isequiv)
     where
         R : ℕ → ℕ → Bool
         R n m = f n ≡ᵇ f m
-        isequiv : IsEquivalence (R ⊢_~_)
-        isequiv = ?
+        R' : ℕ → ℕ → Set
+        R' = R ⊢_~_
+        isequiv : IsEquivalence R'
+        isequiv = 
+            let
+                reflR : Reflexive R'
+                reflR {n} = numIsItself (f n)
+            in
+            let symR : Symmetric R'
+                symR = ?
+            in
+            let transR : Transitive R'
+                transR = ?
+            in
+            record { refl = reflR ; sym = symR ; trans = transR }
 
 --RelToFun : DecEquiv → NFFun
 --RelToFun (R , isequiv) 0 = 0
