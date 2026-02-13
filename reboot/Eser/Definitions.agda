@@ -22,7 +22,7 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤
 open import Data.Fin.Properties using (toℕ<n)
 open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
 
-open import Eser.Logic using (elimCaseLeft)
+open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 --open import Relation.Nullary
 --open ≡-Reasoning
 --open import Data.Nat.Properties
@@ -192,10 +192,6 @@ FunToRel (f , nleq , nfix) =
             in
             record { refl = reflR ; sym = symR ; trans = transR }
 
---RelToFun : DecEquiv → NFFun
---RelToFun (R , isequiv) 0 = 0
---RelToFun (R , isequiv) (suc n) = {!  !}
-
 -- "n is the minimum number that satisfies proposition P".
 IsMin : (n : ℕ) → (P : ℕ → Bool) → Set
 IsMin n P = (x : ℕ) → (x ≤ n) → (P x ≡ true) → x ≡ n
@@ -203,12 +199,12 @@ IsMin n P = (x : ℕ) → (x ≤ n) → (P x ≡ true) → x ≡ n
 -- Find the smallest number m ≤ n such that P m ≡ true,
 -- xor return a proof that no such number exists.
 -- (Note: n itself may also be returned!)
-FindMin : (n : ℕ) → (P : ℕ → Bool) → 
+findMin : (n : ℕ) → (P : ℕ → Bool) → 
     ((Σ[ ℓ ∈ ℕ ](ℓ ≤ n × IsMin ℓ P))
     ⊎
     ((ℓ : ℕ) → (ℓ ≤ n) → (P ℓ ≡ false))
     )
-FindMin 0 P with ((P 0) Data.Bool.≟ true)
+findMin 0 P with ((P 0) Data.Bool.≟ true)
 ... | yes P0 = 
     let f : IsMin 0 P
         f x x≤0 _ = n≤0⇒n≡0 x≤0
@@ -216,7 +212,7 @@ FindMin 0 P with ((P 0) Data.Bool.≟ true)
     inj₁ (0 , ≤-refl , f)
 ... | no ¬P0 = 
     inj₂ (λ x x≤0 → subst (λ ℓ → P ℓ ≡ false) (sym (n≤0⇒n≡0 x≤0)) (¬-not ¬P0))
-FindMin (suc n) P with (FindMin n P)
+findMin (suc n) P with (findMin n P)
 -- Case 1 : there exist a m ≤ n that satisfies P. 
 -- Then return that m, regardless of whether P (suc n) is true.
 ... | (inj₁ (m , m≤n , isminPm )) = 
@@ -264,3 +260,38 @@ FindMin (suc n) P with (FindMin n P)
             ([_,_] H K) ℓ<Sn⊎l≡Sn 
     in
     inj₂ f
+
+-- Find smallest m ≤ n such that P m ≡ true,
+-- when knowing P n ≡ true.
+-- Then there always is such an m! (worst case m := n works).
+findMinAlwaysPoss 
+    : (n : ℕ) 
+    → (P : ℕ → Bool) 
+    → (P n ≡ true)
+    → Σ[ ℓ ∈ ℕ ](ℓ ≤ n × IsMin ℓ P)
+findMinAlwaysPoss n P Pn =
+    let foundMin = findMin n P
+    in
+    let notRightCase : ¬ ((ℓ : ℕ) → ℓ ≤ n → P ℓ ≡ false)
+        notRightCase p = not-¬ (p n ≤-refl) Pn
+    in
+    elimCaseRight foundMin notRightCase
+
+RelToFun : DecEquiv → NFFun
+RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) = 
+    let f : ℕ → ℕ
+        f n = proj₁ (findMinAlwaysPoss n (R n) (reflR {n}))
+    in
+    let nleq : NLeq f
+        nleq n = proj₁ (proj₂ (findMinAlwaysPoss n (R n) (reflR {n})))
+    in
+    let nfix : NFix f
+        nfix n = 
+            let fn = proj₁ (findMinAlwaysPoss n (R n) (reflR {n}))
+            in
+            let H = proj₂ (proj₂ (findMinAlwaysPoss n (R n) (reflR {n})))
+            in
+            ?
+    in
+    (f , nleq , nfix)
+
