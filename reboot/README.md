@@ -1,1 +1,1 @@
-# DEER : Decidable Enumerable Equivalence Relations
+# ESER : Enumerable-Set Equivalence Relations
