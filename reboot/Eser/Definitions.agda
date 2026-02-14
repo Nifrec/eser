@@ -150,7 +150,22 @@ NFFunWithLocProp P = Σ[ f ∈ (ℕ → ℕ) ] (
     × AllRestr f P)
 
 --------------------------------------------------------------------------------
--- Correspondences 
+-- Maps between relations and functions.
+-- 
+-- The main definitions are:
+-- * FunToRel : NFFun → DecEquiv
+-- * RelToFun : DecEquiv → NFFun
+-- But there are also a lot of auxiliary lemmas in this section
+-- necessary to define them.
+--
+-- Some notes:
+-- * FunToRel does not use the NF-properties of the input.
+--      It could be retyped as (ℕ → ℕ) → DecEquiv.
+-- * RelToFun does use symmetry and transitivity to prove the NF-properties of
+--      the output. However, given only reflexivity one can still
+--      use the current implementation 
+--      (mapping n to the minimum m s.t. m ≤ n and R n m)
+--      define ReflexiveRel → (ℕ → ℕ).
 --------------------------------------------------------------------------------
 
 numIsItself : (n : ℕ) → (n ≡ᵇ n) ≡ true
@@ -361,3 +376,53 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
     in
     (f , nleq , nfix)
 
+--------------------------------------------------------------------------------
+-- Correspondences up to homotopy
+--
+-- Both DecEquiv and NFFun have the form of
+-- Σ[ g ∈ (A → B) ](a bunch of properties).
+-- Let X and Y be types that have a similar form,
+-- and let h : X → Y and k : Y → X.
+-- We define X ≊ Y 
+-- (In nvim Cornelis the default mapping for ≊ is \approxeq)
+-- as
+-- (1) for all (g , p) ∈ X, a homotopy π₁ k(h(g, p)) ≈ g
+-- and
+-- (2) for all (f , q) ∈ Y, a homotopy π₁ h(k(f, q)) ≈ f
+-- So ≊ expresses 
+-- "isomorphism up to homotopy and proof-relevance of the bunches of properties"
+--------------------------------------------------------------------------------
+
+-- Homotopy between functions, i.e., pointwise equality.
+-- I.e., the functions are the same input-output map,
+-- but may have different implementations.
+-- A more general, but rather overcomplicated and confusing, definition
+-- can be found in the stdlib in Function.Relation.Binary.Setoid.Equality.
+_≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
+_≈_ {A} {B} f g = (a : A) → f a ≡ g a
+
+open import Function
+
+-- FunsWithProps is the type of dependenty functions A → B
+-- with some properties.
+FunsWithProps : {A : Set}
+    {B : A → Set}
+    → (((a : A) → B a) → Set)
+    → Set
+FunsWithProps {A} {B} Properties = Σ[ g ∈ ((a : A) → B a)](Properties g)
+
+-- "Equivalence between types of functions-with-properties
+-- up to first-projection-homotopy and proof-relevance of the properties".
+record _≊_ 
+    {A A' : Set}
+    {B : A → Set}
+    {B' : A' → Set}
+    (P : ((a : A) → B a) → Set)
+    (P' : ((a : A') → B' a) → Set)
+    : Set
+    where
+    field
+        leftToRight : FunsWithProps P  → FunsWithProps P'
+        rightToLeft : FunsWithProps P' → FunsWithProps P
+        almostInvL : (proj₁ ∘ rightToLeft ∘ leftToRight) ≡ proj₁
+        almostInvR : (proj₁ ∘ leftToRight ∘ rightToLeft) ≡ proj₁
