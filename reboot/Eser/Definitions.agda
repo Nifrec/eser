@@ -426,3 +426,39 @@ record _≊_
         rightToLeft : FunsWithProps P' → FunsWithProps P
         almostInvL : (proj₁ ∘ rightToLeft ∘ leftToRight) ≡ proj₁
         almostInvR : (proj₁ ∘ leftToRight ∘ rightToLeft) ≡ proj₁
+
+--------------------------------------------------------------------------------
+-- Localisible properties
+--
+-- The intend is to capture the following:
+-- a property of an equivalence relation on an enumerable set
+-- A = {a₀, a₁, a₂, ...}
+-- is 'localisible' if it is defined as an ℕ-indexed family of predicates
+-- P that checks,
+-- given a relation Rₙ₋₁ on [a₀, ..., aₙ₋₁] (that satisfies P)*
+-- whether an extension of Rₙ₋₁ to Rₙ 
+-- by choosing an equivalence class chosen for aₙ maintains P.
+--
+-- * In implementation we do not enforce this condition,
+-- in the sense that we require that P holds 
+-- on all restrictions of R to prefixes of A, not in any particular order.
+--
+-- Localisible properties give a tool for building normalisation functions, 
+-- and hence for building equivalence relations, 
+-- and hence for building quotient types:
+-- Start with the relation a₀ R a₀, i.e., with one equivalence class [a₀]
+-- on the restriction {a₀}
+-- and for each n ≥ 1, choose an equivalence class (either an existing class or
+-- a new one) for aₙ, such that P still holds.
+--
+-- This is especially useful if it is hard to check P on a global relation
+-- on ℕ (congruence, associativity, commutativity seem hard to define as a
+-- function A → A → Bool!), 
+-- but the local check on each {a₀, ..., aₙ} is decidable
+-- (which in practise is often the case: checking 
+-- if a finite equivalence relation
+-- on the finite set {a₀, ..., aₙ} is congruent/associative/commutativity is
+-- easy, just brute force!)
+--------------------------------------------------------------------------------
+
+
