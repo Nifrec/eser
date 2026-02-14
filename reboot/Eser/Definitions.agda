@@ -192,9 +192,14 @@ FunToRel (f , nleq , nfix) =
             in
             record { refl = reflR ; sym = symR ; trans = transR }
 
+-- Predicate: "There exists no number smaller than n that satisfies P"
+-- (Note: this does NOT yet guarrantee ANY number satisfies P).
+NoSmaller : (n : ℕ) → (P : ℕ → Bool) → Set
+NoSmaller n P = (x : ℕ) → (x ≤ n) → (P x ≡ true) → x ≡ n
+
 -- "n is the minimum number that satisfies proposition P".
 IsMin : (n : ℕ) → (P : ℕ → Bool) → Set
-IsMin n P = (x : ℕ) → (x ≤ n) → (P x ≡ true) → x ≡ n
+IsMin n P = (P n ≡ true ) × NoSmaller n P
 
 -- Find the smallest number m ≤ n such that P m ≡ true,
 -- xor return a proof that no such number exists.
@@ -206,10 +211,10 @@ findMin : (n : ℕ) → (P : ℕ → Bool) →
     )
 findMin 0 P with ((P 0) Data.Bool.≟ true)
 ... | yes P0 = 
-    let f : IsMin 0 P
+    let f : NoSmaller 0 P
         f x x≤0 _ = n≤0⇒n≡0 x≤0
     in
-    inj₁ (0 , ≤-refl , f)
+    inj₁ (0 , ≤-refl , P0 , f)
 ... | no ¬P0 = 
     inj₂ (λ x x≤0 → subst (λ ℓ → P ℓ ≡ false) (sym (n≤0⇒n≡0 x≤0)) (¬-not ¬P0))
 findMin (suc n) P with (findMin n P)
@@ -225,8 +230,8 @@ findMin (suc n) P with (findMin n P)
 -- if not, then we can prove no m ≤ suc n satisfies P.
 ... | (inj₂ f ) with (P (ℕ.suc n)) Data.Bool.≟ true
 ...     | yes PSn = 
-    let isminPSn : IsMin (ℕ.suc n) P
-        isminPSn x x≤Sn Px = 
+    let nosmallerPSn : NoSmaller (ℕ.suc n) P
+        nosmallerPSn x x≤Sn Px = 
             let H : x Data.Nat.< (ℕ.suc n) ⊎ (x ≡ ℕ.suc n)
                 H = m≤n⇒m<n∨m≡n x≤Sn
             in
@@ -242,7 +247,7 @@ findMin (suc n) P with (findMin n P)
                     not-¬ (f x x≤n) Px
             in
             elimCaseLeft H ¬[x<Sn]
-    in inj₁ (ℕ.suc n , ≤-refl , isminPSn)
+    in inj₁ (ℕ.suc n , ≤-refl , PSn , nosmallerPSn)
 ...     | no ¬PSn = 
     let f : (ℓ : ℕ) → ℓ ≤ ℕ.suc n → P ℓ ≡ false
         f ℓ ℓ≤Sn = 
@@ -288,6 +293,11 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
     let nfix : NFix f
         nfix n = 
             let fn = proj₁ (findMinAlwaysPoss n (R n) (reflR {n}))
+            in
+            let ffn = proj₁ (findMinAlwaysPoss fn (R fn) reflR)
+            in
+            let nRfn : R n (fn) ≡ true
+                nRfn = ?
             in
             let H = proj₂ (proj₂ (findMinAlwaysPoss n (R n) (reflR {n})))
             in
