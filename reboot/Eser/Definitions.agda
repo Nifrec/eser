@@ -10,6 +10,7 @@ open import Data.Bool hiding (_≤_ ; _<_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
 open import Data.Nat
 open import Data.Sum
+open import Data.Empty
 open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
@@ -53,7 +54,7 @@ module Eser.Definitions where
 DecRel : Set
 DecRel = ℕ → ℕ → Bool
 
-_⊢_~_ : DecRel → Rel ℕ 0ℓ
+_⊢_~_ : {A : Set} → (A → A → Bool) → Rel A 0ℓ
 R ⊢ n ~ m = R n m ≡ true
 
 -- Decidable equivalence relations.
@@ -282,6 +283,39 @@ findMinAlwaysPoss n P Pn =
     in
     elimCaseRight foundMin notRightCase
 
+-- #TODO: move or remove
+boolRelToSetRel
+    : {A : Set}
+    → {a b : A}
+    → {R : A → A → Bool}
+    → (R a b ≡ true)
+    → (R ⊢ a ~ b)
+boolRelToSetRel {A} {a} {b} {R} Rab = Rab
+
+-- #TODO: move or remove
+setRelToBoolRel
+    : {A : Set}
+    → {a b : A}
+    → {R : A → A → Bool}
+    → (R ⊢ a ~ b)
+    → (R a b ≡ true)
+setRelToBoolRel {A} {a} {b} {R} R⊢a~b with R a b Data.Bool.≟ true
+... | yes Rab = Rab
+... | no  ¬Rab = ⊥-elim (¬Rab R⊢a~b)
+
+-- #TODO: Remove? Look how silly it is...
+-- (It helped me to realise that "Transitive (R ⊢_~_)" can be directly applied
+-- to Boolean equalities, by definition of the (_⊢_~_) notation!).
+boolRelTrans
+    : {A : Set}
+    → {a b c : A}
+    → {R : A → A → Bool}
+    → (Transitive (R ⊢_~_))
+    → (R a b ≡ true)
+    → (R b c ≡ true)
+    → (R a c ≡ true)
+boolRelTrans {A} {a} {b} {c} {R} transR Rab Rbc = transR Rab Rbc
+
 RelToFun : DecEquiv → NFFun
 RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) = 
     let f : ℕ → ℕ
@@ -291,17 +325,39 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
         nleq n = proj₁ (proj₂ (findMinAlwaysPoss n (R n) (reflR {n})))
     in
     let nfix : NFix f
+        --  To show: f (f n) ≡ f n.
+        --  Intuition: 
+        --  f n is the minimum m ≤ n such that R n m.
+        --  f (f n) is the minimum m ≤ f n such that R (f n) m.
+        --  So we have f (f n) ≤ f n ≤ n
+        --  and (by transitivity) n R (f n) R (f (f n)).
+        --  Hence f (f n) is also an m ≤ n such that R n m,
+        --  but since f n was the minimum with this property we obtain
+        --  f (f n) ≡ f n, as desired!
         nfix n = 
             let fn = proj₁ (findMinAlwaysPoss n (R n) (reflR {n}))
             in
             let ffn = proj₁ (findMinAlwaysPoss fn (R fn) reflR)
             in
             let nRfn : R n (fn) ≡ true
-                nRfn = ?
+                nRfn = proj₁ (proj₂ (proj₂ 
+                       (findMinAlwaysPoss n (R n) (reflR {n}))))
             in
-            let H = proj₂ (proj₂ (findMinAlwaysPoss n (R n) (reflR {n})))
+            let fnRffn : R (fn) (ffn) ≡ true
+                fnRffn = proj₁ (proj₂ (proj₂ 
+                         (findMinAlwaysPoss fn (R fn) (reflR {fn}))))
             in
-            ?
+            let nRffn : R n (ffn) ≡ true
+                nRffn = transR nRfn fnRffn 
+            in
+            let ffn≤fn : ffn ≤ fn
+                ffn≤fn = proj₁ (proj₂ 
+                    (findMinAlwaysPoss fn (R fn) (reflR {fn})))
+            in
+            let fnIsMin = proj₂ (proj₂ (proj₂ 
+                          (findMinAlwaysPoss n (R n) (reflR {n}))))
+            in
+            fnIsMin ffn ffn≤fn nRffn
     in
     (f , nleq , nfix)
 
