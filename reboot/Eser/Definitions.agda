@@ -474,6 +474,11 @@ record _≊_
 -- easy, just brute force!)
 --------------------------------------------------------------------------------
 
+-- A predicate/property P of equivalence relations on enumerable sets
+-- that can be defined locally via a family {Pₙ}_{n ∈ ℕ} of properties
+-- for each restriction of the relation to a prefix of the set.
+-- That is: P R =  ∧_{n ∈ N, R' = restriction R to {0, 1, ..., n-1}} Pₙ R'
+-- (for all decidable R ⊆ ℕ × ℕ).
 record LocalisibleProp : Set₁ where
     field
         Prel : RelProp
@@ -482,9 +487,11 @@ record LocalisibleProp : Set₁ where
             (R : DecEquiv) → (Prel R ↔ (AllRestr (proj₁ (RelToFun R)) Ploc))
 open LocalisibleProp
 
+-- A local property that is pointwise decidable.
 DecLocProp : LocProp → Set
 DecLocProp P = (n : ℕ) → (v : Vec ℕ n) → Dec (P n v)
 
+-- A localisible property whose local restrictions Pₙ are all decidable.
 LocallyDecProp : Set₁
 LocallyDecProp = Σ[ P ∈ LocalisibleProp ](DecLocProp (Ploc P))
     
