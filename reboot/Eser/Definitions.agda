@@ -23,6 +23,8 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤
                                        ; n≤1+n ; m≤n⇒m<n∨m≡n)
 open import Data.Fin.Properties using (toℕ<n)
 open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
+open import Function
+
 
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 --open import Relation.Nullary
@@ -414,8 +416,6 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
 _≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
 _≈_ {A} {B} f g = (a : A) → f a ≡ g a
 
-open import Function
-
 -- FunsWithProps is the type of dependenty functions A → B
 -- with some properties.
 FunsWithProps : {A : Set}
@@ -437,8 +437,12 @@ record _≊_
     field
         leftToRight : FunsWithProps P  → FunsWithProps P'
         rightToLeft : FunsWithProps P' → FunsWithProps P
-        almostInvL : (proj₁ ∘ rightToLeft ∘ leftToRight) ≡ proj₁
-        almostInvR : (proj₁ ∘ leftToRight ∘ rightToLeft) ≡ proj₁
+        almostInvL 
+            : (F : FunsWithProps P) 
+            → (proj₁ ∘ rightToLeft ∘ leftToRight) F ≈ proj₁ F
+        almostInvR 
+            : (F : FunsWithProps P')
+            → (proj₁ ∘ leftToRight ∘ rightToLeft) F ≈ proj₁ F
 
 --------------------------------------------------------------------------------
 -- Localisible properties
