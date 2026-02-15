@@ -9,6 +9,11 @@
   for every potential extension whether it preserves the desired properties.
 * Ploc : output a Bool or a Set?
     Really been in doubt for a long time!
+* I realised: FinitaryRelationProperty <-> LocalisibleRelationProperty
+    truth-preserving mapping between them, for relations on ℕ×ℕ.
+    **Should I prove in Agda?**
+* NFLeqLoc and NFFixLoc worth proving in Agda? Feel like big distractor,
+    or at least low-prio.
 * (This I want to discuss already for a long time): induction proof principle
     (every congruence contains the equality relation -- how is this useful?)
 * Why do people do HoTT and cubical TT, when ≡ is just an inductive type
