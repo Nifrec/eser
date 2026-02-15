@@ -7,6 +7,8 @@
   This is an argument why locally extending a normal form function may be a
   useful tool: we can check (=compute) 
   for every potential extension whether it preserves the desired properties.
+* Ploc : output a Bool or a Set?
+    Really been in doubt for a long time!
 * (This I want to discuss already for a long time): induction proof principle
     (every congruence contains the equality relation -- how is this useful?)
 * Why do people do HoTT and cubical TT, when ≡ is just an inductive type
