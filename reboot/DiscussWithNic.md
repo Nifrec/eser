@@ -7,4 +7,9 @@
   This is an argument why locally extending a normal form function may be a
   useful tool: we can check (=compute) 
   for every potential extension whether it preserves the desired properties.
-* Property-preserving-adjunction?
+* (This I want to discuss already for a long time): induction proof principle
+    (every congruence contains the equality relation -- how is this useful?)
+* Why do people do HoTT and cubical TT, when ≡ is just an inductive type
+    with -- somewhat arbitrarily -- only the `refl` constructor.
+    Why not allow types to supply their own equality relation?
+    You still get induction principles etc...
