@@ -474,7 +474,7 @@ record _≊_
 -- easy, just brute force!)
 --------------------------------------------------------------------------------
 
-record LocalisibleProp : Set where
+record LocalisibleProp : Set₁ where
     field
         Prel : RelProp
         Ploc : LocProp
@@ -483,8 +483,8 @@ record LocalisibleProp : Set where
 open LocalisibleProp
 
 DecLocProp : LocProp → Set
-DecLocProp P = (n : ℕ) → (v : Vec n ℕ) → Decidable (P n v)
+DecLocProp P = (n : ℕ) → (v : Vec ℕ n) → Dec (P n v)
 
-LocallyDecProp : Set
+LocallyDecProp : Set₁
 LocallyDecProp = Σ[ P ∈ LocalisibleProp ](DecLocProp (Ploc P))
     
