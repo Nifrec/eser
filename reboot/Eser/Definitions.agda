@@ -10,6 +10,7 @@ open import Data.Bool hiding (_≤_ ; _<_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
 open import Data.Nat
 open import Data.Sum
+open import Data.Unit
 open import Data.Empty
 open import Relation.Binary
 open import Relation.Binary.Definitions
@@ -67,11 +68,11 @@ DecEquiv = Σ[ R ∈ DecRel ]( IsEquivalence (R ⊢_~_) )
 -- the `Prop` sort is not vanilla and experimental,
 -- and adding proofs of proof-irrelevance via Σ is overcomplicating things).
 RelProp : Set₁
-RelProp = DecRel → Set
+RelProp = DecEquiv → Set
 
 -- Equivalence relations that also have a given property.
 DecEquivWithProp : RelProp → Set
-DecEquivWithProp P = Σ[ R ∈ DecRel ] (IsEquivalence (R ⊢_~_) × P R)
+DecEquivWithProp P = Σ[ R ∈ DecRel ] Σ[ Req ∈ IsEquivalence (R ⊢_~_) ] (P (R , Req))
 
 --------------------------------------------------------------------------------
 -- Normal-form functions and globally-defined properties of them.
@@ -85,23 +86,23 @@ FunProp = (ℕ → ℕ) → Set
 -- i.e., has been explored earlier.
 -- This is necessary when building equivalence relations by inductively
 -- assigning each n ∈ ℕ to its normal form.
-NLeq : FunProp
-NLeq f = (n : ℕ) → f n ≤ n
+NFLeq : FunProp
+NFLeq f = (n : ℕ) → f n ≤ n
 
 -- Coherence constraint on normal form functions: 
 -- the normal form of a normal form is itself.
-NFix : FunProp
-NFix f = (n : ℕ) → f (f n) ≡ f n
+NFFix : FunProp
+NFFix f = (n : ℕ) → f (f n) ≡ f n
 
 -- Functions ℕ → ℕ that encode an equivalence relation,
 -- i.e., functions that satisfy the coherence conditions that allow
 -- them to be used as a normal-form function.
 NFFun : Set
-NFFun = Σ[ f ∈ (ℕ → ℕ) ]( NLeq f × NFix f)
+NFFun = Σ[ f ∈ (ℕ → ℕ) ]( NFLeq f × NFFix f)
 
 -- #TODO: remove?
 NFFunWithProp : FunProp → Set
-NFFunWithProp P = Σ[ f ∈ (ℕ → ℕ) ] ( NLeq f × NFix f × P f)
+NFFunWithProp P = Σ[ f ∈ (ℕ → ℕ) ] ( NFLeq f × NFFix f × P f)
 
 
 --------------------------------------------------------------------------------
@@ -115,7 +116,7 @@ restrict (suc n) f = (f n) ∷ (restrict n f)
 
 -- Decidable locally defined property.
 -- For each n, judge whether the restriction of a function ℕ → ℕ
--- to {0, ..., n} satisfies the property.
+-- to {0, ..., n-1} satisfies the property.
 LocProp : Set₁
 LocProp = (n : ℕ) → Vec ℕ n → Set
 
@@ -125,28 +126,40 @@ AllRestr : (ℕ → ℕ) → LocProp → Set
 AllRestr f P = (n : ℕ) → P n (restrict n f)
 
 -- #TODO: remove?
--- Local version of NLeq: f m ≤ m for all m,
+-- Local version of NFLeq: f m ≤ m for all m,
 -- where f m is encoded as the value of a vector at index 0.
 NFLeqLoc : LocProp
 NFLeqLoc n v = (m : Fin n) → lookup v m ≤ toℕ m
 
+-- Really local version of NFLeq : assume previous outputs are OK
+-- already (f m ≤ m for all m < n), only check the last one (i.e., f n ≤ n).
+NFLeqReallyLoc : LocProp
+NFLeqReallyLoc 0 [] = ⊤
+NFLeqReallyLoc (ℕ.suc n) v = last v ≤ n
+
+-- #TODO: Fix stuff below or remove.
 -- #TODO: remove?
--- Local version of NFix : f (f m) ≡ f m for all m.
+-- Local version of NFFix : f (f m) ≡ f m for all m.
 -- Technical issue: when not assuming f m ≤ m, then f m > n is possible,
 -- which means that we cannot lookup `f m` as vector index.
 -- If AllRestr f NFLeqLoc then this can, of course, never happen.
 -- But I wanted to define NFFixLoc independently from NFLeqLoc,
 -- so it has the conditional form:
 --      "if f m is an index of the vector then f (f m) ≡ f m".
-NFFixLoc : LocProp
-NFFixLoc n v = (m : Fin n) 
-             → (q : (lookup v m ≤ toℕ m)) 
-             → lookup v (fromℕ< (≤-<-trans q (toℕ<n m))) ≡ lookup v m
+--NFFixLoc : LocProp
+--NFFixLoc n v = (m : Fin n) 
+--             → (q : (lookup v m ≤ toℕ m)) 
+--             → lookup v (fromℕ< (≤-<-trans q (toℕ<n m))) ≡ lookup v m
+
+---- Really local version of NFFixLoc: only check the last value.
+--NFFixReallyLoc : LocProp
+--NFFixReallyLoc 0 [] = ⊤
+--NFFixReallyLoc (ℕ.suc n) v = Σ[ g ∈ (last v ≤ n) ](lookup v (fromℕ< g) ≡ last v)
 
 NFFunWithLocProp : LocProp → Set
 NFFunWithLocProp P = Σ[ f ∈ (ℕ → ℕ) ] (
-      AllRestr f NFLeqLoc 
-    × AllRestr f NFFixLoc 
+      NFLeq f
+    × NFFix f
     × AllRestr f P)
 
 --------------------------------------------------------------------------------
@@ -336,10 +349,10 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
     let f : ℕ → ℕ
         f n = proj₁ (findMinAlwaysPoss n (R n) (reflR {n}))
     in
-    let nleq : NLeq f
+    let nleq : NFLeq f
         nleq n = proj₁ (proj₂ (findMinAlwaysPoss n (R n) (reflR {n})))
     in
-    let nfix : NFix f
+    let nfix : NFFix f
         --  To show: f (f n) ≡ f n.
         --  Intuition: 
         --  f n is the minimum m ≤ n such that R n m.
@@ -461,4 +474,17 @@ record _≊_
 -- easy, just brute force!)
 --------------------------------------------------------------------------------
 
+record LocalisibleProp : Set where
+    field
+        Prel : RelProp
+        Ploc : LocProp
+        correspondence : 
+            (R : DecEquiv) → (Prel R ↔ (AllRestr (proj₁ (RelToFun R)) Ploc))
+open LocalisibleProp
 
+DecLocProp : LocProp → Set
+DecLocProp P = (n : ℕ) → (v : Vec n ℕ) → Decidable (P n v)
+
+LocallyDecProp : Set
+LocallyDecProp = Σ[ P ∈ LocalisibleProp ](DecLocProp (Ploc P))
+    
