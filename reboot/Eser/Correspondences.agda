@@ -20,7 +20,7 @@ open import Data.Vec hiding (restrict)
 open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
 open import Function
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
-                                       ; n≤1+n ; m≤n⇒m<n∨m≡n)
+                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; ≡ᵇ⇒≡)
 open ≡-Reasoning
 
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
@@ -75,23 +75,46 @@ F $$ n = (proj₁ F) n
 lemma2 : (F : NFFun) → proj₁ (FunToRel F) ≡ λ (n m : ℕ) → F $$ n ≡ᵇ F $$ m
 lemma2 (f , nleq , nfix) = refl
 
+-- Convert a proof that m ≡ᵇ n is true
+-- to a proof of m ≡ n.
 decEqToPredEq
     : {m n : ℕ}
     → ((m ≡ᵇ n) ≡ true)
     → m ≡ n
-decEqToPredEq {m} {n} m≡ᵇn with m ≡ᵇ n
-    -- Hmm this is not so obvious...
-    -- but for ℕ we know that nums are either equal or not?
-... | true m≡n 
+decEqToPredEq {m} {n} m≡ᵇn = 
+    -- Implementation: we know `true ≡ (m ≡ᵇ n)`
+    -- and we know `tt : T true`.
+    -- Apply a dependent transport (subst)
+    -- to get `tt' : T (m ≡ᵇ n)`, 
+    -- which serves as input to the stdlib lemma ≡ᵇ⇒≡.
+    ≡ᵇ⇒≡ m n (subst T (sym m≡ᵇn) tt)
 
-lemma4 
+predEqToDecEq
+    : {m n : ℕ}
+    → m ≡ n
+    → ((m ≡ᵇ n) ≡ true)
+-- Use the inductive definition of ≡ᵇ to make the (m ≡ᵇ n) in the goal compute.
+-- Path induction reduces the goal to (m ≡ᵇ m) ≡ true.
+-- If m ≗ ℕ.zero then this reduces to true ≡ true.
+predEqToDecEq {ℕ.zero} refl = refl
+-- If m ≗ ℕ.suc m' then the goal reduces to (m' ≡ᵇ m') ≡ true,
+-- which we get by induction.
+predEqToDecEq {ℕ.suc m} refl = predEqToDecEq {m} {m} refl
+
+-- Normal forms are the smallest elements of their equivalence class.
+-- (Equivalence classes are fibers of the normal-form function f).
+-- More precisely, the minimum m s.t. m ≤ n and such that f n ≡ f m
+-- is always f n. This follows from the fact that f n ≤ n (by NFLeq),
+-- and for any m with f m ≡ f n hence also f n ≡ f m ≤ m,
+-- so f n is ≤ than all inputs that f sends to it.
+nfIsSmallestInClass 
     : (f : ℕ → ℕ) 
     → (nleq : NFLeq f) 
     → (nfix : NFFix f)
     → (n : ℕ)
     → (H : (f n ≡ᵇ f n) ≡ true) -- That's obvious!
     → proj₁ (findMinAlwaysPoss n (λ m → f n ≡ᵇ f m) H) ≡ f n
-lemma4 f nleq nfix ℕ.zero H = 
+nfIsSmallestInClass f nleq nfix ℕ.zero H = 
     begin 
     proj₁ (findMinAlwaysPoss 0 (λ m → f 0 ≡ᵇ f m) H)
     ≡⟨  findMinZeroLemma (λ m → f 0 ≡ᵇ f m) H ⟩
@@ -99,22 +122,28 @@ lemma4 f nleq nfix ℕ.zero H =
     ≡⟨ sym ( n≤0⇒n≡0 (nleq 0)) ⟩
     f 0
     ∎
-lemma4 f nleq nfix (ℕ.suc n) H = 
-    let (ℓ , ℓ≤Sn , fSn≡fℓ , noSmallerℓ) = 
+nfIsSmallestInClass f nleq nfix (ℕ.suc n) H = 
+    let (ℓ , ℓ≤Sn , fSn≡ᵇfℓ , noSmallerℓ) = 
             (findMinAlwaysPoss (ℕ.suc n) (λ m → f (ℕ.suc n) ≡ᵇ f m) H)
     in
     -- Need make case distinction: f (ℕ.suc n) ≤ ℓ or not. In case of former:
     -- No wait, fSn≡fℓ but we have also nleq!
     -- So that gives fSn≤ℓ already
+    let fℓ≡fSn : f ℓ ≡ f (ℕ.suc n)
+        fℓ≡fSn = sym (decEqToPredEq fSn≡ᵇfℓ)
+    in
     let Sn≤ℓ : f (ℕ.suc n) ≤ ℓ
         -- Need to convert "(f (ℕ.suc n) ≡ᵇ f ℓ) ≡ true" to ≡.
         -- Do this for general `A ≡ᵇ B ≡ true → A ≡ B`.
         -- Didn't I already?
-        Sn≤ℓ = subst (λ x → x ≤ ℓ) ({! sym fSn≡fℓ !}) (nleq ℓ)
+        Sn≤ℓ = subst (λ x → x ≤ ℓ) fℓ≡fSn (nleq ℓ)
     in
     let fSn = f (ℕ.suc n)
     in
-    {! sym (noSmallerℓ (fSn)   ) !}
+    let fSn≡ᵇffSn : (fSn ≡ᵇ f fSn) ≡ true
+        fSn≡ᵇffSn = predEqToDecEq (sym (nfix (ℕ.suc n)))
+    in
+    sym (noSmallerℓ fSn Sn≤ℓ fSn≡ᵇffSn)
 
 lemma3 
     : (f : ℕ → ℕ) 
@@ -124,17 +153,21 @@ lemma3
     → (defR : proj₁ R ≡ λ (n m : ℕ) → f n ≡ᵇ f m)
     → (proj₁ ∘ RelToFun) R ≈ f
 lemma3 f nleq nfix R refl n = 
+    let H : (f n ≡ᵇ f n) ≡ true
+        -- This is also the definition used in the implementation of RelToFun,
+        -- as input to its own call to findMinAlwaysPoss.
+        -- Not important: it is proof-irrelevant anyway.
+        H = ((IsEquivalence.refl ∘ proj₂) R) {n} 
+    in
     begin 
     (proj₁ ∘ RelToFun) R n
     ≡⟨ lemma1 R n ⟩
-    proj₁ (findMinAlwaysPoss n ((proj₁ R) n) (((IsEquivalence.refl ∘ proj₂) R) {n}))
+    proj₁ (findMinAlwaysPoss n ((proj₁ R) n) H)
     ≡⟨ refl ⟩
-    proj₁ (findMinAlwaysPoss n (λ m → f n ≡ᵇ f m) (((IsEquivalence.refl ∘ proj₂) R) {n}))
-    ≡⟨ ? ⟩
+    proj₁ (findMinAlwaysPoss n (λ m → f n ≡ᵇ f m) H)
+    ≡⟨ nfIsSmallestInClass f nleq nfix n H ⟩
     f n
     ∎
-    
-    
 
 --lemma2 : 
 --    : (F : NFFun) 
