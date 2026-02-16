@@ -105,6 +105,14 @@ predEqToDecEq {ℕ.zero} refl = refl
 -- which we get by induction.
 predEqToDecEq {ℕ.suc m} refl = predEqToDecEq {m} {m} refl
 
+predNeqToDecNeq
+    : {m n : ℕ}
+    → m ≢ n
+    → ((m ≡ᵇ n) ≡ false)
+predNeqToDecNeq {m} {n} m≢n with ((m ≡ᵇ n) Data.Bool.≟ true)
+... | yes m≡ᵇn = ⊥-elim (m≢n (decEqToPredEq m≡ᵇn))
+... | no  m≢ᵇn = ¬-not m≢ᵇn
+
 -- Normal forms are the smallest elements of their equivalence class.
 -- (Equivalence classes are fibers of the normal-form function f).
 -- More precisely, the minimum m s.t. m ≤ n and such that f n ≡ f m
@@ -240,8 +248,39 @@ oneMinPerClass R Req n m hₙ hₘ
     in
     trans nRm (sym (predEqToDecEq ℓ≡k))
 ... | no  ¬nRm with (ℓ Data.Nat.≟ k)
-...     | yes ℓ≡k = ?
-...     | no  l≢k = ?
+...     | yes ℓ≡k = 
+        -- Derive a contradiction from nRℓ and kRm, since refl gives ℓRk,
+        -- and hence transitivity gives nRm.
+        let reflR : Reflexive (R ⊢_~_)
+            reflR = IsEquivalence.refl Req
+        in
+        let transR : Transitive (R ⊢_~_)
+            transR = IsEquivalence.trans Req
+        in
+        let symR : Symmetric (R ⊢_~_)
+            symR = IsEquivalence.sym Req
+        in
+        let nRℓ : (R n ℓ ≡ true)
+            nRℓ = proj₁ (proj₂ (proj₂ (findMinAlwaysPoss n (R n) hₙ)))
+        in
+        let ℓRk : (R ℓ k ≡ true)
+            ℓRk = subst (λ v → R ℓ v ≡ true) ℓ≡k (reflR {ℓ}) 
+        in
+        let kRm : (R k m ≡ true)
+            kRm = symR (proj₁ (proj₂ (proj₂ (findMinAlwaysPoss m (R m) hₘ))))
+        in
+        let nRm : (R n m ≡ true)
+            nRm = transR (transR nRℓ ℓRk) kRm
+        in
+        ⊥-elim (¬nRm nRm)
+...     | no  ℓ≢k = 
+        let nRm≡false : (R n m) ≡ false
+            nRm≡false = ¬-not ¬nRm
+        in
+        let false≡[ℓ≡k] : false ≡ (ℓ ≡ᵇ k)
+            false≡[ℓ≡k] = sym (predNeqToDecNeq ℓ≢k) 
+        in
+        trans nRm≡false false≡[ℓ≡k]
 
 -- The relation R' outputted by (proj₁ ∘ FunToRel ∘ RelToFun) R
 -- has nR'm 
