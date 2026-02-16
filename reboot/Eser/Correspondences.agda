@@ -5,6 +5,7 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
+-- RelToFun and FunToRel form an isomorphism 'up to proj₁ homotopy'.
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
@@ -44,8 +45,11 @@ open import Eser.Definitions
 module Eser.Correspondences where
 
 --------------------------------------------------------------------------------
--- RelToFun and FunToRel form an isomorphism 'up to proj₁ homotopy'.
+-- Part 1 : FRF(f) ≈ f
+-- Mapping a function to a relation and back yields a NFFun homotopic to the
+-- input fun.
 --------------------------------------------------------------------------------
+
 -- If P 0 holds then the smallest m s.t. m ≤ 0 and P m
 -- is obviously 0 itself, since no m has m < 0.
 findMinZeroLemma
@@ -176,3 +180,84 @@ lemma3 f nleq nfix R refl n =
 FRFHomot : (F : NFFun) → (proj₁ ∘ RelToFun ∘ FunToRel) F ≈ proj₁ F
 FRFHomot F@(f , nleq , nfix) = lemma3 f nleq nfix (FunToRel F) (lemma2 F) 
 
+--------------------------------------------------------------------------------
+-- Part 2 : RFR(R) ≈ R
+-- Mapping a decidable equivalence relation to a NFFun and back,
+-- yields a relation ℕ → ℕ → Bool homotopic to the input relation.
+--------------------------------------------------------------------------------
+
+
+-- General fact about an equivalence relation R ⊆ ℕ×ℕ:
+-- if nRm then the equivalence classes [n] and [m] are the same,
+-- and hence the same subset of ℕ, and hence have the same minimum.
+-- I.e., nRm iff (Min_ℓ(ℓ≤n ∧ nRℓ) ≡ Min_ℓ(ℓ≤m ∧ mRℓ))
+oneMinPerClass
+    : (R : ℕ → ℕ → Bool)
+    → (Req : IsEquivalence (R ⊢_~_))
+    → (n m : ℕ)
+    → (hₙ : R n n ≡ true) -- This type is proof-irrelevant.
+    → (hₘ : R m m ≡ true) -- This one too.
+    → (R n m) ≡ 
+        (
+        proj₁ (findMinAlwaysPoss n (R n) hₙ)
+        ≡ᵇ
+        proj₁ (findMinAlwaysPoss m (R m) hₘ)
+        )
+oneMinPerClass R Req n m hₙ hₘ
+    using ℓ ← (proj₁ (findMinAlwaysPoss n (R n) hₙ))
+    using k ← (proj₁ (findMinAlwaysPoss m (R m) hₘ))
+    with ((R n m) Data.Bool.≟ true)
+... | yes nRm = 
+    let symR : Symmetric (R ⊢_~_)
+        symR = IsEquivalence.sym Req
+    in
+    let transR : Transitive (R ⊢_~_)
+        transR = IsEquivalence.trans Req
+    in
+    let nRℓ : (R n ℓ ≡ true)
+        nRℓ = proj₁ (proj₂ (proj₂ (findMinAlwaysPoss n (R n) hₙ)))
+    in
+    let isSmallestℓn : NoSmaller ℓ (R n)
+        isSmallestℓn = proj₂ (proj₂ (proj₂ (findMinAlwaysPoss n (R n) hₙ)))
+    in
+    let mRℓ : (R m ℓ ≡ true)
+        mRℓ = transR (symR nRm) nRℓ
+    in
+    let isSmallestℓm : NoSmaller ℓ (R m)
+        isSmallestℓm x x≤ℓ mRx =
+            let nRx : (R n x ≡ true)
+                nRx = transR nRm mRx
+            in isSmallestℓn x x≤ℓ nRx
+    in
+    let isminℓm : IsMin ℓ (R m)
+        isminℓm = (mRℓ , isSmallestℓm)
+    in
+    let isminkm : IsMin k (R m)
+        isminkm = proj₂ (proj₂ (findMinAlwaysPoss m (R m) hₘ))
+    in
+    let ℓ≡k : ℓ ≡ k
+        ℓ≡k = minUnique ℓ k (R m) isminℓm isminkm
+    in
+    trans nRm (sym (predEqToDecEq ℓ≡k))
+... | no  ¬nRm with (ℓ Data.Nat.≟ k)
+...     | yes ℓ≡k = ?
+...     | no  l≢k = ?
+
+-- The relation R' outputted by (proj₁ ∘ FunToRel ∘ RelToFun) R
+-- has nR'm 
+-- if the min ℓ≤n s.t. nRℓ equals the min ℓ≤m s.t. mRℓ.
+RFRLemma 
+    : (R : DecEquiv) 
+    → (proj₁ ∘ FunToRel ∘ RelToFun) R 
+        ≡ 
+        λ (n m : ℕ) → (
+        proj₁ (findMinAlwaysPoss n (proj₁ R $ n) (IsEquivalence.refl (proj₂ R) {n}))
+        ≡ᵇ
+        proj₁ (findMinAlwaysPoss m (proj₁ R $ m) (IsEquivalence.refl (proj₂ R) {m}))
+        )
+RFRLemma R = refl
+
+
+
+RFRHomot : (R : DecEquiv) → (proj₁ ∘ FunToRel ∘ RelToFun) R ≈ proj₁ R
+RFRHomot R = ?
