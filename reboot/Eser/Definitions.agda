@@ -6,7 +6,7 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 open import Level
-open import Data.Bool hiding (_≤_ ; _<_)
+open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
 open import Data.Nat
 open import Data.Sum
@@ -17,10 +17,10 @@ open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
 open import Data.Product
 open import Relation.Binary.Structures
-open import Data.Fin hiding (_≤_)
+open import Data.Fin hiding (_≤_ ; _≤?_)
 open import Data.Vec hiding (restrict)
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
-                                       ; n≤1+n ; m≤n⇒m<n∨m≡n)
+                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 open import Data.Fin.Properties using (toℕ<n)
 open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
 open import Function
@@ -312,6 +312,20 @@ findMinAlwaysPoss n P Pn =
         notRightCase p = not-¬ (p n ≤-refl) Pn
     in
     elimCaseRight foundMin notRightCase
+
+minUnique
+    : (n m : ℕ) 
+    → (P : ℕ → Bool)
+    → (IsMin n P)
+    → (IsMin m P)
+    → n ≡ m
+minUnique n m P (Pn , noSmallerN) (Pm , noSmallerM) with (n ≤? m)
+... | yes n≤m = noSmallerM n n≤m Pn
+... | no  n≰m =
+    let m≤n : m ≤ n
+        m≤n = ≰⇒≥ n≰m
+    in
+    sym (noSmallerN m m≤n Pm)
 
 -- #TODO: move or remove
 boolRelToSetRel
