@@ -169,37 +169,10 @@ lemma3 f nleq nfix R refl n =
     f n
     ∎
 
---lemma2 : 
---    : (F : NFFun) 
---    → (proj₁ ∘ RelToFun ∘ FunToRel) 
---        ≈ 
---        λ n → proj₁ (findMinAlwaysPoss n ((proj₁ R) n) 
---        (((IsEquivalence.refl ∘ proj₂) R) {n}))
--- The Fun → Rel → Fun map is homotopic to id_{Fun}.
--- 
+-- For all NFFuns f, mapping Fun → Rel → Fun on f gives a NFFun homotopic to f.
+-- (Note: we are NOT proving 
+-- that `proj₁ ∘ RelToFun ∘ FunToRel` and `proj₁` are homotopic themselves,
+-- but instead that THEIR OUTPUTS are homotopic.)
 FRFHomot : (F : NFFun) → (proj₁ ∘ RelToFun ∘ FunToRel) F ≈ proj₁ F
-FRFHomot F@(f , nleq , nfix) ℕ.zero = 
-    let fn≤0 : f ℕ.zero ≤ ℕ.zero
-        fn≤0 = nleq 0
-    in
-    let fn≡0 : f ℕ.zero ≡ ℕ.zero
-        fn≡0 = n≤0⇒n≡0 fn≤0
-    in
-    let R = FunToRel F
-    in
-    let _ = {! ((proj₁ ∘ RelToFun ∘ FunToRel) F) ℕ.zero !}
-    in
-    {!
-    begin 
-    {! ((proj₁ ∘ RelToFun ∘ FunToRel) F) ℕ.zero !}
-    ≡⟨ {! lemma1 R 0 !} ⟩
-    {! proj₁ (findMinAlwaysPoss 0 ((proj₁ R) 0) (((IsEquivalence.refl ∘ proj₂) R) {0})) !}
-    --≡⟨ ? ⟩
-    --    ℕ.zero
-    --≡⟨ sym fn≡0 ⟩
-    --    f ℕ.zero
-    --∎
-    !}
-FRFHomot (f , nleq , nfix) (ℕ.suc n) = {! !}
-
+FRFHomot F@(f , nleq , nfix) = lemma3 f nleq nfix (FunToRel F) (lemma2 F) 
 
