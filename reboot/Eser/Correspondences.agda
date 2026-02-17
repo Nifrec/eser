@@ -313,5 +313,28 @@ doubleArgHomot
     → uncurry f ≈ uncurry g
 doubleArgHomot R S H = uncurry H
 
-RFRHomot : (R : DecEquiv) → (proj₁ ∘ FunToRel ∘ RelToFun) R ≈ proj₁ R
-RFRHomot R = ?
+-- Mapping a decidable equivalence to a NFFunction and back
+-- yields the same relation as one started with,
+-- up to first-projection homotopy.
+--
+-- Technical detail: we only proved it is homotopic to the original relation
+-- when evaluating both arguments in ℕ at the same time.
+-- So this proof uncurries R : ℕ → ℕ → Bool (for which we didn't prove homotopy)
+-- to R : ℕ × ℕ → Bool for which we did prove homotopy.
+RFRHomot 
+    : (R : DecEquiv) 
+    → (uncurry ∘ proj₁ ∘ FunToRel ∘ RelToFun) R ≈ (uncurry ∘  proj₁) R
+RFRHomot R (n , m) = 
+    let H₁ = RFRLemma R
+    in
+    let hₙ : (proj₁ R) n n ≡ true
+        hₙ = IsEquivalence.refl (proj₂ R) {n}
+    in
+    let hₘ : (proj₁ R) m m ≡ true
+        hₘ = IsEquivalence.refl (proj₂ R) {m}
+    in
+    let H₂ = oneMinPerClass (proj₁ R) (proj₂ R) n m hₙ hₘ
+    in
+    let H₃ = cong (λ x → (uncurry x) (n , m)) H₁
+    in
+    trans H₃ (sym H₂)
