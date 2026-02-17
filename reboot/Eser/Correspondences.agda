@@ -296,23 +296,22 @@ RFRLemma
         )
 RFRLemma R = refl
 
-
+-- #TODO: remove? currently it is more of a personal note.
+--
+-- If f, g : A → B → C
+-- have that (f a b) ≡ (g a b),
+-- then we can prove that 
+--      λ(a, b) ∈ A×B → f a b
+--  is homotopic to
+--      λ(a, b) ∈ A×B → g a b
+--  (and also that f a ≈ g a for all a : A,
+--  but we CANNOT prove that f ≈ g without function extensionality).
 doubleArgHomot
     : {A B C : Set}
-    → (R S : A → B → C)
-    → ((a : A) → (b : B) → R a b ≡ S a b)
-    → R ≈ S
-doubleArgHomot R S H a =
-    begin 
-        R a
-        ≡⟨ refl ⟩
-        (λ b → R a b)
-        ≡⟨ {! cong (λ x → (λ b → x)) (λ b → H a b) !} ⟩
-        (λ b → S a b)
-        ≡⟨ refl ⟩
-        S a
-        ∎
-    
+    → (f g : A → B → C)
+    → ((a : A) → (b : B) → f a b ≡ g a b)
+    → uncurry f ≈ uncurry g
+doubleArgHomot R S H = uncurry H
 
 RFRHomot : (R : DecEquiv) → (proj₁ ∘ FunToRel ∘ RelToFun) R ≈ proj₁ R
 RFRHomot R = ?
