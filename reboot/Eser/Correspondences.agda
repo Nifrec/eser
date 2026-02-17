@@ -410,7 +410,7 @@ homotsPreserveAllRestrSat→
 homotsPreserveAllRestrSat→ {f} {g} f≈g Ploc AllRestrF n = 
     subst (λ vec → Ploc n vec) (homotRestrictLift f≈g n) (AllRestrF n)
 
--- 
+-- Two-direction version of previous lemma.
 homotsPreserveAllRestrSat
     : {f g : ℕ → ℕ}
     → (f ≈ g)
@@ -438,7 +438,14 @@ FunToRelPresvProps→ (localisibleProp Prel Ploc corresp) f PrelR =
     let FRFf≈f = (proj₁ ∘ RelToFun ∘ FunToRel) f ≈ (proj₁ f)
         FRFf≈f = FRFHomot f
     in
-    ?
+    homotsPreserveAllRestrSat→ FRFf≈f Ploc H
+
+FunToRelPresvProps←
+    : (P : LocalisibleProp)
+    → (f : NFFun)
+    → AllRestr (proj₁ f) (Ploc P)
+    → Prel P (FunToRel f) 
+FunToRelPresvProps← (localisibleProp Prel Ploc corresp) f PrelR = ?
 
 -- (2) This direction is nontrivial.
 FunToRelPresvProps
