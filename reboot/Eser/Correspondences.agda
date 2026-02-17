@@ -297,6 +297,22 @@ RFRLemma
 RFRLemma R = refl
 
 
+doubleArgHomot
+    : {A B C : Set}
+    → (R S : A → B → C)
+    → ((a : A) → (b : B) → R a b ≡ S a b)
+    → R ≈ S
+doubleArgHomot R S H a =
+    begin 
+        R a
+        ≡⟨ refl ⟩
+        (λ b → R a b)
+        ≡⟨ {! cong (λ x → (λ b → x)) (λ b → H a b) !} ⟩
+        (λ b → S a b)
+        ≡⟨ refl ⟩
+        S a
+        ∎
+    
 
 RFRHomot : (R : DecEquiv) → (proj₁ ∘ FunToRel ∘ RelToFun) R ≈ proj₁ R
 RFRHomot R = ?
