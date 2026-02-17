@@ -19,7 +19,7 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Product
 open import Data.Vec hiding (restrict)
 open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
-open import Function
+open import Function hiding (_↔_)
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
                                        ; n≤1+n ; m≤n⇒m<n∨m≡n ; ≡ᵇ⇒≡)
 open ≡-Reasoning
@@ -338,3 +338,111 @@ RFRHomot R (n , m) =
     let H₃ = cong (λ x → (uncurry x) (n , m)) H₁
     in
     trans H₃ (sym H₂)
+
+--------------------------------------------------------------------------------
+-- Preservation of properties
+-- The isomorphism-up-to-proj₁-homotopies preserves localisible properties.
+--
+-- More precisely:
+-- Let P = (Prel, Ploc) be a localisible property,
+-- then
+-- (1) Prel R            <-> AllRestr (RelToFun R) Ploc
+-- (2) Prel (FunToRel) f <-> AllRestr f Ploc
+--------------------------------------------------------------------------------
+open LocalisibleProp
+
+-- (1) This direction is trivial, since it holds by definition
+-- of a localisible property.
+RelToFunPresvProps
+    : (P : LocalisibleProp)
+    → (R : DecEquiv)
+    → Prel P R ↔ AllRestr ((proj₁ ∘ RelToFun) R) (Ploc P)
+RelToFunPresvProps P R = correspondence P R
+
+applyEqArgs 
+    : {A B C : Set}
+    → {a a' : A}
+    → {b b' : B}
+    → (_app_ : A → B → C)
+    → (a ≡ a')
+    → (b ≡ b')
+    → (a app b ≡ a' app b')
+applyEqArgs {A} {B} {C} {a} {a'} {b} {b'} _app_ a≡a' b≡b' =
+    begin 
+    a app b
+    ≡⟨ cong (_app b) a≡a' ⟩
+    a' app b
+    ≡⟨ cong (a' app_) b≡b' ⟩
+    a' app b'
+    ∎
+    
+-- If f ≈ g
+-- then λn.(restrict n f) ≈ λn.(restrict n g)
+-- i.e., they pointwise output the same vectors.
+homotRestrictLift
+    : {f g : ℕ → ℕ}
+    → (f ≈ g)
+    → (n : ℕ)
+    → (restrict n f) ≡ (restrict n g)
+homotRestrictLift {f} {g} f≈g ℕ.zero = refl
+homotRestrictLift {f} {g} f≈g (ℕ.suc n) = 
+    let fn≡gn = f≈g n
+    in
+    let restOfVectorsEqual : restrict n f ≡ restrict n g
+        restOfVectorsEqual = homotRestrictLift {f} {g} f≈g n
+    in
+    applyEqArgs _∷_ fn≡gn restOfVectorsEqual
+
+
+    
+-- Lemma for proving (2):
+-- if f ≈ g then f locally satisfies a LocProp
+-- iff g locally satisfies it.
+-- (This is an advantage of local properties: for properties
+-- on relations we *cannot* show `R≈S → (Prel R ↔ Prel S)`).
+-- First a sub-lemma that proves only the "→" direction.
+-- The bigger "↔" follows from symmetry (note ≈ is symmetric).
+homotsPreserveAllRestrSat→
+    : {f g : ℕ → ℕ}
+    → (f ≈ g)
+    → (Ploc : LocProp)
+    → AllRestr f Ploc → AllRestr g Ploc
+homotsPreserveAllRestrSat→ {f} {g} f≈g Ploc AllRestrF n = 
+    subst (λ vec → Ploc n vec) (homotRestrictLift f≈g n) (AllRestrF n)
+
+-- 
+homotsPreserveAllRestrSat
+    : {f g : ℕ → ℕ}
+    → (f ≈ g)
+    → (Ploc : LocProp)
+    → AllRestr f Ploc ↔ AllRestr g Ploc
+homotsPreserveAllRestrSat f≈g Ploc = 
+    let LtoR = homotsPreserveAllRestrSat→ f≈g Ploc
+    in
+    let RtoL = homotsPreserveAllRestrSat→ (≈-sym f≈g) Ploc
+    in
+    (LtoR , RtoL)
+
+FunToRelPresvProps→
+    : (P : LocalisibleProp)
+    → (f : NFFun)
+    → Prel P (FunToRel f) 
+    → AllRestr (proj₁ f) (Ploc P)
+FunToRelPresvProps→ (localisibleProp Prel Ploc corresp) f PrelR =
+    let R : DecEquiv
+        R = FunToRel f
+    in
+    let H : AllRestr ((proj₁ ∘ RelToFun ∘ FunToRel) f ) Ploc
+        H = proj₁ (corresp R) PrelR
+    in
+    let FRFf≈f = (proj₁ ∘ RelToFun ∘ FunToRel) f ≈ (proj₁ f)
+        FRFf≈f = FRFHomot f
+    in
+    ?
+
+-- (2) This direction is nontrivial.
+FunToRelPresvProps
+    : (P : LocalisibleProp)
+    → (f : NFFun)
+    → Prel P (FunToRel f) ↔ AllRestr (proj₁ f) (Ploc P)
+FunToRelPresvProps P f = {! TODO !}

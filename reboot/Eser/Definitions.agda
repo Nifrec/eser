@@ -23,7 +23,7 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤
                                        ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 open import Data.Fin.Properties using (toℕ<n)
 open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
-open import Function
+open import Function hiding (_↔_)
 
 
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
@@ -43,6 +43,9 @@ open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 --open import Data.List.Relation.Unary.Any using (Any)
 
 module Eser.Definitions where
+
+_↔_ : (A B : Set) → Set
+A ↔ B = (A → B) × (B → A)
 
 --------------------------------------------------------------------------------
 -- Relations on ℕ
@@ -430,6 +433,9 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
 _≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
 _≈_ {A} {B} f g = (a : A) → f a ≡ g a
 
+≈-sym : {A : Set} → {B : A → Set} → Symmetric (_≈_ {A} {B})
+≈-sym {A} {B} {f} {g} f≈g a = sym (f≈g a)
+
 -- FunsWithProps is the type of dependenty functions A → B
 -- with some properties.
 FunsWithProps : {A : Set}
@@ -498,6 +504,7 @@ record _≊_
 -- That is: P R =  ∧_{n ∈ N, R' = restriction R to {0, 1, ..., n-1}} Pₙ R'
 -- (for all decidable R ⊆ ℕ × ℕ).
 record LocalisibleProp : Set₁ where
+    constructor localisibleProp
     field
         Prel : RelProp
         Ploc : LocProp
