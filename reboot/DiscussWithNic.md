@@ -41,8 +41,9 @@ FunToRelPresvProps
 [ ] Agda : Cleanup Agda code.
 [ ] Agda : Prove `f (f n) ≡ f n` and `f n ≤ n` are a localisible property.
 [ ] Agda : Start implementing §3: tools for signatures.
+    **With or first without external args???**
 [ ] Agda : Implement construction quotient type from NFFun.
-[ ] Read: W-types.
+[ ] Read : W-types.
 
 ## Other high-prio things
 * Can't prove homotopy for `R : ℕ → ℕ → Bool` but `R : ℕ×ℕ → bool` works.
