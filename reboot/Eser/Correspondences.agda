@@ -445,11 +445,28 @@ FunToRelPresvProps←
     → (f : NFFun)
     → AllRestr (proj₁ f) (Ploc P)
     → Prel P (FunToRel f) 
-FunToRelPresvProps← (localisibleProp Prel Ploc corresp) f PrelR = ?
+FunToRelPresvProps← (localisibleProp Prel Ploc corresp) f PlocF =
+    -- We cannot apply the definition of a localisible property
+    -- because f is not of the shape `RelToFun R`.
+    -- However, we can map f first to a relation and then back to a function f',
+    -- which is of the right shape, and by FRFHomot still homotopic to f itself.
+    let R = FunToRel f
+    in
+    let f' = proj₁ (RelToFun (FunToRel f))
+    in
+    let f'≈f : f' ≈ proj₁ f
+        f'≈f = FRFHomot f
+    in
+    let PlocF' : AllRestr f' Ploc
+        PlocF' = λ n → subst (λ restr → Ploc n restr)
+                    (homotRestrictLift {proj₁ f} {f'} (≈-sym f'≈f) n)
+                    (PlocF n)
+    in
+    proj₂ (corresp R) PlocF'
 
--- (2) This direction is nontrivial.
+-- (2) That FunToRel preserves properties is not so trivial.
 FunToRelPresvProps
     : (P : LocalisibleProp)
     → (f : NFFun)
     → Prel P (FunToRel f) ↔ AllRestr (proj₁ f) (Ploc P)
-FunToRelPresvProps P f = {! TODO !}
+FunToRelPresvProps P f = (FunToRelPresvProps→ P f , FunToRelPresvProps← P f)
