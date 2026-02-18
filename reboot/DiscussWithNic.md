@@ -1,5 +1,31 @@
 # To discuss 18 Feb 2026
-## High priority
+
+## Progress
+* Simplified the diagram.
+    The formal definitions in Agda are slightly different from the handwritten
+    ones.
+    I managed to prove all the correspondences in the diagram in Agda.
+    Main theorems:
+
+in `Eser/Correspondences`:
+```agda
+FRFHomot : (F : NFFun) → (proj₁ ∘ RelToFun ∘ FunToRel) F ≈ proj₁ F
+
+RFRHomot 
+    : (R : DecEquiv) 
+    → (uncurry ∘ proj₁ ∘ FunToRel ∘ RelToFun) R ≈ (uncurry ∘  proj₁) R
+
+-- This one is trivial!:
+RelToFunPresvProps
+    : (P : LocalisibleProp)
+    → (R : DecEquiv)
+    → Prel P R ↔ AllRestr ((proj₁ ∘ RelToFun) R) (Ploc P)
+
+FunToRelPresvProps
+    : (P : LocalisibleProp)
+    → (f : NFFun)
+    → Prel P (FunToRel f) ↔ AllRestr (proj₁ f) (Ploc P)
+```
 
 ## Localisible properties
 * I realised: FinitaryRelationProperty <-> LocalisibleRelationProperty
@@ -9,12 +35,22 @@
     is trivial: it is exactly the definition of localisible!
     Is this OK or problematic?
 
+## Potential TODOs
+**Let's set priorities for next meeting!**, options:
+[ ] LaTex:Write section §2 (the correspondence theorem I just proved in Agda).
+[ ] Agda : Cleanup Agda code.
+[ ] Agda : Prove `f (f n) ≡ f n` and `f n ≤ n` are a localisible property.
+[ ] Agda : Start implementing §3: tools for signatures.
+[ ] Agda : Implement construction quotient type from NFFun.
+[ ] Read: W-types.
+
 ## Other high-prio things
 * Can't prove homotopy for `R : ℕ → ℕ → Bool` but `R : ℕ×ℕ → bool` works.
     But proved everything else for `R : ℕ → ℕ → Bool`,
     and used `uncurry` in main statement.
     Makes main statement less elegant, but otherwise have to change everything.
     Which option is best?
+* Do we have a target conference/journal?
 * Shulman's catlog is delightful book! 
     Interesting new angle/perspective on type theory and terms!
 * I defined homotopy and <-> myself, stdlib provides *similar*
