@@ -17,14 +17,14 @@ open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
 open import Data.Product
 --open import Relation.Binary.Structures
-open import Data.Fin hiding (_≤_ ; _≤?_)
+open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Data.List
 open import Data.Vec hiding (restrict)
 --open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
---open import Function hiding (_↔_)
+open import Function hiding (_↔_)
 
 --open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 --open import Relation.Nullary
@@ -42,10 +42,31 @@ open import Data.Vec hiding (restrict)
 --open import Data.List.Membership.Propositional.Properties using (∈-lookup)
 --open import Data.List.Relation.Unary.Any using (Any)
 
---open import Eser.Definitions using (_≈_)
+open import Eser.Definitions using (_≈_)
 
 module Eser.Signatures where
 
+indices : {A : Set} → List A → Set
+indices {A} L = Fin (Data.List.length L)
+ 
+-- Equivalence between two types.
+-- The stdlib uses an overly general definition
+-- what requires also showing `n ≈₁ m → (f n) ≈₂ (f m)`
+-- given setoids (N, ≈₁) and (M, ≈₂).
+-- We just use propositional equality _≡_ for both the domain and codomain,
+record HomotEquivalence (Left Right : Set) : Set where 
+    field
+        LR : Left → Right
+        RL : Right → Left
+        homotLRL : (RL ∘ LR) ≈ id
+        homotRLR : (LR ∘ RL) ≈ id
+
+_≃_ : Set → Set → Set
+A ≃ B = HomotEquivalence A B
+
+--------------------------------------------------------------------------------
+-- Signature representations
+--------------------------------------------------------------------------------
 
 ---- Very terse representation of signatures,
 ---- parametrised by a type `N` of constructor names
@@ -62,9 +83,12 @@ module Eser.Signatures where
 
 
 -- Very terse representation of signatures.
--- Constructors either have arity 0 or suc a.
+-- Constructors either have arity 0 or suc a
+-- (for inductive arguments of their own type;
+-- for each multiary constructor with arity `suc a`,
+-- the value `a` should be stored in the List ℕ).
 -- Constructors either take one external argument from ℕ,
--- or no recursive arguments.
+-- or no external arguments.
 record TerseSignature : Set where
    field 
         pure-nullary : ℕ
@@ -73,19 +97,159 @@ record TerseSignature : Set where
         ℕ-multiary : List ℕ
 open TerseSignature
 
-indices : {A : Set} → List A → Set
-indices {A} L = Fin (Data.List.length L)
- 
+data ConstrKind : Set where
+    c-pure-nullary   : ConstrKind
+    c-ℕ-nullary      : ConstrKind
+    c-pure-multiary  : ConstrKind
+    c-ℕ-multiary     : ConstrKind
+
+-- Lookup the arity of a non-nullary constructor in a signature.
+arity 
+    : (S : TerseSignature) 
+    → (indices (pure-multiary S)) ⊎ (indices (ℕ-multiary S))
+    → ℕ
+--arity _ c-pure-nullary = 0
+--arity _ c-ℕ-nullary = 0
+arity S (inj₁ idx) = ℕ.suc (Data.List.lookup (pure-multiary S) idx )
+arity S (inj₂ idx) = ℕ.suc (Data.List.lookup (ℕ-multiary S)    idx )
+
 -- Term algebra over a TerseSignature.
-data TerseFreeTerm (S : TerseSignature) : Set where
-    mk-pure-nullary : Fin (pure-nullary S) → TerseFreeTerm S
-    mk-ℕ-nullary : Fin (ℕ-nullary S) → ℕ → TerseFreeTerm S
+data TerseFreeTerms (S : TerseSignature) : Set where
+    mk-pure-nullary : Fin (pure-nullary S) → TerseFreeTerms S
+    mk-ℕ-nullary : Fin (ℕ-nullary S) → ℕ → TerseFreeTerms S
     mk-pure-multiary 
         : (c : indices (pure-multiary S)) 
-        → (Vec (TerseFreeTerm S) (Data.List.lookup (pure-multiary S) c)) 
-        → TerseFreeTerm S 
+        → (Vec (TerseFreeTerms S) (ℕ.suc (Data.List.lookup (pure-multiary S) c)))
+        → TerseFreeTerms S 
     mk-ℕ-multiary 
         : (c : indices (pure-multiary S)) 
-        → (Vec (TerseFreeTerm S) (Data.List.lookup (pure-multiary S) c)) 
+        → (Vec (TerseFreeTerms S) (ℕ.suc (Data.List.lookup (pure-multiary S) c)))
         → ℕ
-        → TerseFreeTerm S 
+        → TerseFreeTerms S 
+
+--------------------------------------------------------------------------------
+-- Mergings
+--
+-- The number of ways to merge two lists,
+-- of length n and m respectively, into one list,
+-- without changing the relative order of the elements in each list.
+-- E.g. the mergings of [a a'] with [b b'] are
+-- [a a' b b']
+-- [a b a' b']
+-- [a b b' a']
+-- [b a a' b']
+-- [b a b' a']
+-- [b b' a a']
+--------------------------------------------------------------------------------
+-- Compute number of ways to merge two lists.
+numMergings : ℕ → ℕ → ℕ
+-- If one list is empty, there is only one choice.
+numMergings 0 m = 1
+numMergings n 0 = 1
+-- When mergings a∷α with b∷β, there are two options:
+-- (1) Either put a as the first element of the merging.
+--      Then it remains to merge α with b∷β, so NM(n, m+1) mergings possible.
+-- (2) Xor put a after b. Then it remains to merge a∷α with β.
+--      So NM(n+1, m) mergings possible.
+-- Clearly those two cases are mutually exclusive since only one of a and b can
+-- be put first.
+numMergings (suc n) (suc m) = numMergings n (ℕ.suc m) + numMergings (ℕ.suc n) m
+
+
+-- Inductive type explicitly encoding all possible mergings.
+-- Note how it corresponds to the explanation of the recursive case of
+-- numMergings.
+data Merging {A : Set} {B : Set} : List A → List B → Set where
+    -- Also captures the case Merging [] []
+    BetaTriv : (α : List A) → Merging α []
+    -- Does NOT capture the case Merging [] []
+    AlphaTriv : (b : B) → (β : List B) → Merging [] (b ∷ β)
+    -- Take a merging γ of α and β and extend it to (a ∷ γ).
+    AFirst : (a : A) → (α : List A) → (β : List B) → Merging α β
+        → Merging (a ∷ α) β
+    -- Take a merging γ of α and β and extend it to (b ∷ γ).
+    BFirst : (b : B) → (α : List A) → (β : List B) → Merging α β
+        → Merging α (b ∷ β)
+
+-- Same as `Merging`, but the arguments are now vectors.
+VMerging 
+    : {A B : Set}
+    → {n m : ℕ} 
+    → (α : Vec A n) 
+    → (β : Vec B m) 
+    → Set
+VMerging α β = Merging (toList α) (toList β)
+
+MergingFinTheo
+    : {A B : Set}
+    → (n m : ℕ) 
+    → (α : Vec A n) 
+    → (β : Vec B m) 
+    → VMerging α β ≃ Fin (numMergings n m)
+MergingFinTheo n m α β = ?
+    
+--------------------------------------------------------------------------------
+-- Representation of term algebras that reveals much more about the choices
+-- one needs to make when constructing a term.
+--------------------------------------------------------------------------------
+
+TeleTerms : (S : TerseSignature) → Set
+TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
+    where
+        kindCaseDistinction : (S : TerseSignature) → ℕ → ConstrKind → Set
+        round : TerseSignature → ℕ → Set
+        round S i = Σ[ ck ∈ ConstrKind ](kindCaseDistinction S i ck)
+
+        kindCaseDistinction S i c-pure-nullary
+            = Σ[ c ∈ Fin (pure-nullary S) ] i ≡ 0
+        kindCaseDistinction S i c-ℕ-nullary
+            = Σ[ c ∈ Fin (ℕ-nullary S) ] Σ[ n ∈ ℕ ] (n < i)
+            --^ n < i : value n may only be used in round (suc n).
+            -- Note: this forces i > 0, 
+            -- so we do not need to store this explicitly.
+        kindCaseDistinction S i c-pure-multiary 
+            = 
+            Σ[ hᵢ ∈ i > 0 ] 
+            --^ To avoid an α in round 0 constisting of
+            -- round 0 elements.
+            Σ[ c ∈ indices (pure-multiary S) ]
+            Σ[ m ∈ Fin (arity S (inj₁ c)) ]
+            -- α is a vector whose length is in the range [0, ..., m]
+            -- of terms of round (i ∸ 1).
+            Σ[ lenα ∈ Fin (toℕ m) ]
+            Σ[ α ∈ Vec (round S (Data.Nat.pred i)) (ℕ.suc (toℕ lenα)) ]
+            -- β is a vector of length m - |α| (so |α| + |β| ≡ m)
+            -- with elements from `round 0 ⊎ round 1 ⊎ ... ⊎ round (i ∸ 2).
+            -- Note that α and β do not share elements,
+            -- and their union always contains at least one element
+            -- from round (i ∸ 1). β can be empty.
+            Σ[ β ∈ Vec (Σ[ j ∈ Fin (Data.Nat.pred i) ] round S (toℕ j)) ((toℕ m) ∸ Data.Vec.length α) ]
+            VMerging α β
+        -- Same as previous case, but now also an n < i,
+        -- which in turn makes hᵢ redundent (it guarrantees i > 0
+        -- otherwise no such n exists).
+        kindCaseDistinction S i c-ℕ-multiary 
+            = 
+            Σ[ n ∈ ℕ ] 
+            Σ[ hₙ ∈ n < i ] 
+            Σ[ c ∈ indices (ℕ-multiary S) ]
+            Σ[ m ∈ Fin (arity S (inj₂ c)) ]
+            Σ[ lenα ∈ Fin (toℕ m) ]
+            Σ[ α ∈ Vec (round S (Data.Nat.pred i)) (ℕ.suc (toℕ lenα)) ]
+            Σ[ β ∈ Vec (Σ[ j ∈ Fin (Data.Nat.pred i) ] round S (toℕ j)) ((toℕ m) ∸ Data.Vec.length α) ]
+            VMerging α β
+
+--------------------------------------------------------------------------------
+-- Correspondence theorems:
+--
+-- 1. TerseFreeTerms and TeleTerms are in bijection, i.e., represent the same
+--  term algebra (up to renaming elements).
+-- 2. All nested Σs in TeleTerms are finite sets, only the outermost quantifies
+--  over ℕ. That is, for all S and i, we have: round S i ≃ Fin k for some k.
+-- 3. Corollary of 1. and 2.: TerseFreeTerms ≃ TeleTerms ≃ ℕ
+--------------------------------------------------------------------------------
+
+FreeTerms≃TeleTerms 
+    : (S : TerseSignature)
+    → TerseFreeTerms S ≃ TeleTerms S
+FreeTerms≃TeleTerms S = ?

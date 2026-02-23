@@ -72,8 +72,8 @@ data ∞∐ (sizes : ℕ → ℕ) : Set
 data ∐ (m : ℕ) (sizes : Fin m → ℕ) : Set
     where
         inj
-            : (Fin m)                 -- Index of finite set in the union.
-            → (Fin (ℕ.suc (sizes m))) -- Index of number within the finite set.
+            : (i : Fin m)             -- Index of finite set in the union.
+            → (Fin (ℕ.suc (sizes i))) -- Index of number within the finite set.
 
 ∞Squash : (sizes : ℕ → ℕ) → (∞∐ sizes) ≃ ℕ
 ∞Squash sizes = (f , g , gfHomot , fgHomot)
@@ -83,4 +83,6 @@ data ∐ (m : ℕ) (sizes : Fin m → ℕ) : Set
         g : ℕ → ∞∐ sizes
         g = ?
         gfHomot : g ∘ f ≈ id
+        gfHomot = ?
         fgHomot : f ∘ g ≈ id
+        fgHomot = ?
