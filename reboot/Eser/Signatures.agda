@@ -20,6 +20,7 @@ open import Data.Product
 open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Data.List
 open import Data.Vec hiding (restrict)
+open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
 open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
@@ -68,21 +69,6 @@ A ≃ B = HomotEquivalence A B
 --------------------------------------------------------------------------------
 -- Signature representations
 --------------------------------------------------------------------------------
-
----- Very terse representation of signatures,
----- parametrised by a type `N` of constructor names
----- (e.g., use N ≔ String).
----- Constructors either have arity 0 or suc a.
----- Constructors either take one external argument from ℕ,
----- or no recursive arguments.
---record TerseSignature (N : Set) : Set where
---    record
---        pure-nullary : [ N ]
---        ℕ-nullary    : [ N ]
---        pure-multiary : [ N × ℕ ]
---        ℕ-multiary : [ N × ℕ ]
-
-
 -- Very terse representation of signatures.
 -- Constructors either have arity 0 or suc a
 -- (for inductive arguments of their own type;
@@ -193,12 +179,6 @@ MergingFinTheo n m α β = ?
 -- Representation of term algebras that reveals much more about the choices
 -- one needs to make when constructing a term.
 --------------------------------------------------------------------------------
-_ = {! <-Rec {0ℓ} !}
-
-meh : (n : ℕ) → 0 ≤ n
-meh n = {! <-Rec (λ n → 0 ≤ n) !}
-
-open import Induction.WellFounded
 
 -- `<-Rec` in Data.Nat.Induction should do the same, but it confused me how to
 -- apply it.
@@ -241,7 +221,9 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             → ((m : ℕ) → (m < n) → Set)
             → Set
         round : TerseSignature → ℕ → Set
-        round S = <-rec (λ i → Set) (λ i → λ rec → Σ-syntax ConstrKind λ ck → kindCaseDistinction S i ck rec)
+        round S = <-rec (λ i → Set) 
+            (λ i → λ rec → 
+            Σ[ ck ∈ ConstrKind ] kindCaseDistinction S i ck rec)
 
         kindCaseDistinction S i c-pure-nullary rec
             = Σ[ c ∈ Fin (pure-nullary S) ] i ≡ 0
@@ -257,17 +239,23 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             -- round 0 elements.
             Σ[ c ∈ indices (pure-multiary S) ]
             Σ[ m ∈ Fin (arity S (inj₁ c)) ]
-            -- α is a vector whose length is in the range [0, ..., m]
+            -- α is a vector whose length is in the range [1, ..., m]
             -- of terms of round (i ∸ 1). We use Well-Founded recursion to
             -- define `round (i - 1)`.
             Σ[ lenα ∈ Fin (toℕ m) ]
-            Σ[ α ∈ Vec (rec (Data.Nat.pred i) (0<n⇒pred[n]<n hᵢ) ) (ℕ.suc (toℕ lenα)) ]
+            Σ[ α ∈ Vec 
+                    (rec (Data.Nat.pred i) (0<n⇒pred[n]<n hᵢ) ) -- round (i - 1)
+                    (ℕ.suc (toℕ lenα)) -- A length in [1, ..., m]
+            ] 
             -- β is a vector of length m - |α| (so |α| + |β| ≡ m)
             -- with elements from `round 0 ⊎ round 1 ⊎ ... ⊎ round (i ∸ 2).
             -- Note that α and β do not share elements,
             -- and their union always contains at least one element
             -- from round (i ∸ 1). β can be empty.
-            Σ[ β ∈ Vec (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ)) ((toℕ m) ∸ Data.Vec.length α) ]
+            Σ[ β ∈ Vec 
+                (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ)) 
+                ((toℕ m) ∸ Data.Vec.length α) 
+            ]
             VMerging α β
         -- Same as previous case, but now also an n < i,
         -- which in turn makes hᵢ redundent (it guarrantees i > 0
@@ -279,8 +267,14 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             Σ[ c ∈ indices (ℕ-multiary S) ]
             Σ[ m ∈ Fin (arity S (inj₂ c)) ]
             Σ[ lenα ∈ Fin (toℕ m) ]
-            Σ[ α ∈ Vec (rec (Data.Nat.pred i) (0<n⇒pred[n]<n (m<n⇒0<n {n} {i} hₙ)) ) (ℕ.suc (toℕ lenα)) ]
-            Σ[ β ∈ Vec (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ)) ((toℕ m) ∸ Data.Vec.length α) ]
+            Σ[ α ∈ Vec 
+                (rec (Data.Nat.pred i) (0<n⇒pred[n]<n (m<n⇒0<n {n} {i} hₙ)) ) 
+                (ℕ.suc (toℕ lenα)) 
+            ]
+            Σ[ β ∈ Vec 
+                (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ))
+                ((toℕ m) ∸ Data.Vec.length α)
+            ]
             VMerging α β
 
 --------------------------------------------------------------------------------
