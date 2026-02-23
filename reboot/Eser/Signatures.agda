@@ -240,13 +240,13 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             -- round 0 elements.
             Σ[ c ∈ indices (pure-multiary S) ]
             Σ[ m ∈ Fin (arity S (inj₁ c)) ]
-            -- α is a vector whose length is in the range [1, ..., m]
-            -- of terms of round (i ∸ 1). We use Well-Founded recursion to
-            -- define `round (i - 1)`.
-            Σ[ lenα ∈ Fin (toℕ m) ]
+            -- α is a vector whose length is ℕ.suc m
+            -- which is in the range [1, ..., arity S (inj₁ c)],
+            -- whose elements are terms from round (i ∸ 1). 
+            -- We use Well-Founded recursion to define `round (i - 1)`.
             Σ[ α ∈ Vec 
                     (rec (Data.Nat.pred i) (0<n⇒pred[n]<n hᵢ) ) -- round (i - 1)
-                    (ℕ.suc (toℕ lenα)) -- A length in [1, ..., m]
+                    (ℕ.suc (toℕ m))
             ] 
             -- β is a vector of length m - |α| (so |α| + |β| ≡ m)
             -- with elements from `round 0 ⊎ round 1 ⊎ ... ⊎ round (i ∸ 2).
@@ -255,7 +255,7 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             -- from round (i ∸ 1). β can be empty.
             Σ[ β ∈ Vec 
                 (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ)) 
-                ((toℕ m) ∸ Data.Vec.length α) 
+                (arity S (inj₁ c) ∸ Data.Vec.length α) 
             ]
             VMerging α β
         -- Same as previous case, but now also an n < i,
@@ -267,14 +267,13 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             Σ[ hₙ ∈ n < i ] 
             Σ[ c ∈ indices (ℕ-multiary S) ]
             Σ[ m ∈ Fin (arity S (inj₂ c)) ]
-            Σ[ lenα ∈ Fin (toℕ m) ]
             Σ[ α ∈ Vec 
                 (rec (Data.Nat.pred i) (0<n⇒pred[n]<n (m<n⇒0<n {n} {i} hₙ)) ) 
-                (ℕ.suc (toℕ lenα)) 
+                (ℕ.suc (toℕ m)) 
             ]
             Σ[ β ∈ Vec 
                 (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ))
-                ((toℕ m) ∸ Data.Vec.length α)
+                ((arity S (inj₂ c)) ∸ Data.Vec.length α)
             ]
             VMerging α β
 
@@ -325,9 +324,9 @@ decompileTerm {S} (mk-pure-multiary x args) =
     let (α , β) = Data.List.partition {P = P} Pdec (toList args)
     in
     -- #TODO: eh bug? m and lenα are the same?
-    let m = length args
+    let m' = Data.Vec.length args
     in
-    let lenα = ?
+    let m = ?
     in
     let α = ?
     in
@@ -335,7 +334,7 @@ decompileTerm {S} (mk-pure-multiary x args) =
     in
     let merging = ?
     in
-    (round , c-pure-multiary , hᵢ , x , m , lenα , α , β , merging)
+    (round , c-pure-multiary , hᵢ , x , m , α , β , merging)
 decompileTerm {S} (mk-ℕ-multiary c x x₁) = {! !}
 
 FreeTerms≃TeleTerms 
