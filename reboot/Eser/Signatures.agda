@@ -12,6 +12,7 @@ open import Data.Nat
 open import Data.Sum
 open import Data.Unit
 open import Data.Empty
+open import Relation.Unary using (Decidable)
 open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
@@ -286,8 +287,61 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
 --  over ℕ. That is, for all S and i, we have: round S i ≃ Fin k for some k.
 -- 3. Corollary of 1. and 2.: TerseFreeTerms ≃ TeleTerms ≃ ℕ
 --------------------------------------------------------------------------------
+open import Data.List.Extrema.Nat
+
+decompileTerm : {S : TerseSignature} → TerseFreeTerms S → TeleTerms S
+decompileTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
+decompileTerm {S} (mk-ℕ-nullary x n) = 
+    let round = ℕ.suc n
+    in
+    (round , c-ℕ-nullary , x , n , n<1+n n)
+decompileTerm {S} (mk-pure-multiary x args) = 
+    let getRound = λ t → proj₁ (decompileTerm t)
+    in
+    let argRounds : Vec ℕ (Data.Vec.length args)
+        argRounds = Data.Vec.map getRound args
+    in
+    -- 0 is default value when list is empty (I tested),
+    -- but we know it is not empty anyway.
+    let round∸1 : ℕ
+        round∸1 = max 0 (toList argRounds)
+    in
+    let round = ℕ.suc round∸1
+    in
+    let hᵢ : 0 < round
+        hᵢ = Data.Nat.z<s {round∸1}
+    in
+    let P : TerseFreeTerms S → Set
+        P = λ a → getRound a ≡ round∸1
+    in
+    -- #TODO: Agda will probably compain here about termination.
+    -- An idea to fix it:
+    -- Define P on terms t that come with (t << t') where
+    --  << is the subterm relation and t' is our input.
+    --  Prove << is well-founded and use well-founded recursion.
+    let Pdec : Relation.Unary.Decidable P
+        Pdec t = getRound t Data.Nat.≟ round∸1
+    in
+    let (α , β) = Data.List.partition {P = P} Pdec (toList args)
+    in
+    -- #TODO: eh bug? m and lenα are the same?
+    let m = length args
+    in
+    let lenα = ?
+    in
+    let α = ?
+    in
+    let β = ?
+    in
+    let merging = ?
+    in
+    (round , c-pure-multiary , hᵢ , x , m , lenα , α , β , merging)
+decompileTerm {S} (mk-ℕ-multiary c x x₁) = {! !}
 
 FreeTerms≃TeleTerms 
     : (S : TerseSignature)
     → TerseFreeTerms S ≃ TeleTerms S
-FreeTerms≃TeleTerms S = ?
+FreeTerms≃TeleTerms S .HomotEquivalence.LR = {! !}
+FreeTerms≃TeleTerms S .HomotEquivalence.RL = {! !}
+FreeTerms≃TeleTerms S .HomotEquivalence.homotLRL = {! !}
+FreeTerms≃TeleTerms S .HomotEquivalence.homotRLR = {! !}
