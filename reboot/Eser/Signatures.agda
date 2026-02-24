@@ -45,27 +45,10 @@ open import Function hiding (_↔_)
 --open import Data.List.Membership.Propositional.Properties using (∈-lookup)
 --open import Data.List.Relation.Unary.Any using (Any)
 
-open import Eser.Definitions using (_≈_)
+open import Eser.Definitions using (_≈_ ; indices ; _≃_)
+open import Eser.Mergings
 
 module Eser.Signatures where
-
-indices : {A : Set} → List A → Set
-indices {A} L = Fin (Data.List.length L)
- 
--- Equivalence between two types.
--- The stdlib uses an overly general definition
--- what requires also showing `n ≈₁ m → (f n) ≈₂ (f m)`
--- given setoids (N, ≈₁) and (M, ≈₂).
--- We just use propositional equality _≡_ for both the domain and codomain,
-record HomotEquivalence (Left Right : Set) : Set where 
-    field
-        LR : Left → Right
-        RL : Right → Left
-        homotLRL : (RL ∘ LR) ≈ id
-        homotRLR : (LR ∘ RL) ≈ id
-
-_≃_ : Set → Set → Set
-A ≃ B = HomotEquivalence A B
 
 --------------------------------------------------------------------------------
 -- Signature representations
@@ -115,67 +98,6 @@ data TerseFreeTerms (S : TerseSignature) : Set where
         → ℕ
         → TerseFreeTerms S 
 
---------------------------------------------------------------------------------
--- Mergings
---
--- The number of ways to merge two lists,
--- of length n and m respectively, into one list,
--- without changing the relative order of the elements in each list.
--- E.g. the mergings of [a a'] with [b b'] are
--- [a a' b b']
--- [a b a' b']
--- [a b b' a']
--- [b a a' b']
--- [b a b' a']
--- [b b' a a']
---------------------------------------------------------------------------------
--- Compute number of ways to merge two lists.
-numMergings : ℕ → ℕ → ℕ
--- If one list is empty, there is only one choice.
-numMergings 0 m = 1
-numMergings n 0 = 1
--- When mergings a∷α with b∷β, there are two options:
--- (1) Either put a as the first element of the merging.
---      Then it remains to merge α with b∷β, so NM(n, m+1) mergings possible.
--- (2) Xor put a after b. Then it remains to merge a∷α with β.
---      So NM(n+1, m) mergings possible.
--- Clearly those two cases are mutually exclusive since only one of a and b can
--- be put first.
-numMergings (suc n) (suc m) = numMergings n (ℕ.suc m) + numMergings (ℕ.suc n) m
-
-
--- Inductive type explicitly encoding all possible mergings.
--- Note how it corresponds to the explanation of the recursive case of
--- numMergings.
-data Merging {A : Set} {B : Set} : List A → List B → Set where
-    -- Also captures the case Merging [] []
-    BetaTriv : (α : List A) → Merging α []
-    -- Does NOT capture the case Merging [] []
-    AlphaTriv : (b : B) → (β : List B) → Merging [] (b ∷ β)
-    -- Take a merging γ of α and β and extend it to (a ∷ γ).
-    AFirst : (a : A) → (α : List A) → (β : List B) → Merging α β
-        → Merging (a ∷ α) β
-    -- Take a merging γ of α and β and extend it to (b ∷ γ).
-    BFirst : (b : B) → (α : List A) → (β : List B) → Merging α β
-        → Merging α (b ∷ β)
-
--- Same as `Merging`, but the arguments are now vectors.
-VMerging 
-    : {A B : Set}
-    → {n m : ℕ} 
-    → (α : Vec A n) 
-    → (β : Vec B m) 
-    → Set
-VMerging α β = Merging (toList α) (toList β)
-
-MergingFinTheo
-    : {A B : Set}
-    → (n m : ℕ) 
-    → (α : Vec A n) 
-    → (β : Vec B m) 
-    → VMerging α β ≃ Fin (numMergings n m)
-MergingFinTheo n m α β = ?
-    
 --------------------------------------------------------------------------------
 -- Representation of term algebras that reveals much more about the choices
 -- one needs to make when constructing a term.

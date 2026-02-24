@@ -34,7 +34,7 @@ open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 --open import Data.Fin.Properties
 --open import Data.Fin.Induction
 --open import Data.Empty
---open import Data.List
+open import Data.List hiding (lookup ; last)
 --open import Data.List.Relation.Unary.AllPairs using (AllPairs)
 --open import Data.List.Relation.Unary.All using (All)
 --open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
@@ -44,8 +44,42 @@ open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 
 module Eser.Definitions where
 
+--------------------------------------------------------------------------------
+-- Preliminary generic/basic definitions
+--------------------------------------------------------------------------------
+indices : {A : Set} → List A → Set
+indices {A} L = Fin (Data.List.length L)
+
+-- Biimplication: existance of functions both ways, 
+-- they do not need to be inverses of each other.
 _↔_ : (A B : Set) → Set
 A ↔ B = (A → B) × (B → A)
+
+-- Homotopy between functions, i.e., pointwise equality.
+-- I.e., the functions are the same input-output map,
+-- but may have different implementations.
+-- A more general, but rather overcomplicated and confusing, definition
+-- can be found in the stdlib in Function.Relation.Binary.Setoid.Equality.
+_≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
+_≈_ {A} {B} f g = (a : A) → f a ≡ g a
+
+≈-sym : {A : Set} → {B : A → Set} → Symmetric (_≈_ {A} {B})
+≈-sym {A} {B} {f} {g} f≈g a = sym (f≈g a)
+
+-- Equivalence between two types.
+-- The stdlib uses an overly general definition
+-- what requires also showing `n ≈₁ m → (f n) ≈₂ (f m)`
+-- given setoids (N, ≈₁) and (M, ≈₂).
+-- We just use propositional equality _≡_ for both the domain and codomain,
+record HomotEquivalence (Left Right : Set) : Set where 
+    field
+        LR : Left → Right
+        RL : Right → Left
+        homotLRL : (RL ∘ LR) ≈ id
+        homotRLR : (LR ∘ RL) ≈ id
+
+_≃_ : Set → Set → Set
+A ≃ B = HomotEquivalence A B
 
 --------------------------------------------------------------------------------
 -- Relations on ℕ
@@ -424,17 +458,6 @@ RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) =
 -- So ≊ expresses 
 -- "isomorphism up to homotopy and proof-relevance of the bunches of properties"
 --------------------------------------------------------------------------------
-
--- Homotopy between functions, i.e., pointwise equality.
--- I.e., the functions are the same input-output map,
--- but may have different implementations.
--- A more general, but rather overcomplicated and confusing, definition
--- can be found in the stdlib in Function.Relation.Binary.Setoid.Equality.
-_≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
-_≈_ {A} {B} f g = (a : A) → f a ≡ g a
-
-≈-sym : {A : Set} → {B : A → Set} → Symmetric (_≈_ {A} {B})
-≈-sym {A} {B} {f} {g} f≈g a = sym (f≈g a)
 
 -- FunsWithProps is the type of dependenty functions A → B
 -- with some properties.
