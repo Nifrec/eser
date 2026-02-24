@@ -21,18 +21,17 @@ open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
 open import Data.Nat
-open import Data.Sum
+open import Data.Sum hiding (map)
 open import Data.Unit
 open import Data.Empty
-open import Relation.Unary using (Decidable)
-open import Relation.Binary
-open import Relation.Binary.Definitions
-open import Relation.Binary.PropositionalEquality
-open import Data.Product
---open import Relation.Binary.Structures
+open import Relation.Unary using (Pred ; Decidable)
+open import Data.Product hiding (map)
 open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
+open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
 open import Data.List
-open import Data.Vec hiding (restrict)
+open import Data.List.Properties using (reverse-++ ; unfold-reverse ; ∷ʳ-++)
+open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
 open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
@@ -50,6 +49,7 @@ open import Function hiding (_↔_)
 --open import Data.Fin.Induction
 --open import Data.Empty
 --open import Data.List
+open import Relation.Nullary
 --open import Data.List.Relation.Unary.AllPairs using (AllPairs)
 --open import Data.List.Relation.Unary.All using (All)
 --open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
@@ -131,3 +131,129 @@ compileMerging {α = α} {β = β} (BetaTriv α) = α
 compileMerging {α = α} {β = b ∷ β} (AlphaTriv b β) = b ∷ β
 compileMerging {α = a ∷ α} {β = β} (AFirst a α β m) = a ∷ (compileMerging m)
 compileMerging {α = α} {β = b ∷ β} (BFirst b α β m) = b ∷ (compileMerging m)
+
+--------------------------------------------------------------------------------
+-- Inverse operations to merging
+--
+-- Destroy a list into two lists, plus a proof that that can be merged
+-- together to reconstruct the original list.
+-- We destroy the list by filtering out all elements that satisfy a certain
+-- predicate. For example, the usecase needed in Eser.Signal uses 
+-- a list of type A, a function f : A → B and then a predicate of
+-- the form (λ x → f x ≡ Z) for some fixed Z (see also `split` below).
+--
+-- In the stdlib, there is Data.List.partition which implements a similar
+-- computation, but gives fewer proofs of its behaviour.
+--------------------------------------------------------------------------------
+
+-- #TODO: first define unmerge, then split is special case where the predicate
+-- compares f-images with the max.
+
+-- Data structure used by `unmerge` to pass invariants to recursive calls.
+record UnmergeInvariants {A : Set} (L : List A) {P : Pred A _} (Pdec : Decidable P) : Set where
+    constructor mkIvars
+    field
+        rest : List A --^ Remaining elements in the reversed L.
+        α : List (Σ[ a ∈ A ] P a)
+        β : List (Σ[ a ∈ A ] ¬ (P a))
+        m : Merging (map proj₁ α) (map proj₁ β)
+        seen : List A
+        H-seen : (reverse rest) ++ seen ≡ reverse L
+        H-m : compileMerging m ≡ seen
+open UnmergeInvariants
+
+reverseLemma
+    : {A : Set}
+    → (a : A)
+    → (K H : List A)
+    → reverse (a ∷ K) ++ H ≡ reverse K ++ (a ∷ H)
+reverseLemma a K H =
+    begin 
+    reverse (a ∷ K) ++ H
+    ≡⟨ cong (λ L → L ++ H) (unfold-reverse a K) ⟩
+    ((reverse K) ∷ʳ a) ++ H
+    ≡⟨ ∷ʳ-++ (reverse K) a H  ⟩
+    reverse K ++ (a ∷ H)
+    ∎
+
+unmergeRec
+    : {A : Set} 
+    → {L : List A} 
+    → {P : Pred A _} 
+    → {Pdec : Decidable P} 
+    → (UnmergeInvariants L Pdec)
+    → Σ[ iv ∈ UnmergeInvariants L Pdec ] (rest iv ≡ [])
+unmergeRec iv@(mkIvars [] α β m seen H-seen H-m) = (iv , refl)
+unmergeRec {Pdec = Pdec} (mkIvars (x ∷ rest) α β m seen H-seen H-m) with (Pdec x)
+... | yes Px =
+    let α' = (x , Px) ∷ α
+    in
+    let β' = β
+    in
+    let m' : Merging  (map proj₁ α') (map proj₁ β')
+        m' = AFirst x (map proj₁ α) (map proj₁ β) m
+    in
+    let seen' = x ∷ seen
+    in
+    let H-seen' = trans (sym (reverseLemma x rest seen)) H-seen
+    in
+    let H-m' = cong (λ K → x ∷ K) H-m
+    in
+    let iv' = mkIvars rest α' β' m' seen' H-seen' H-m'
+    in
+    unmergeRec iv' -- #TODO: termination issue. Use WF recursion on `rest`, which is a list whose length decreases by 1 every step, so no true termination issue.
+... | no ¬Px = ?
+
+-- NOTE: you'll probably want to reverse the 
+-- input list before feeding it into unmerge!
+-- See type of field `H-seen` in UnmergeInvariants: 
+-- α and β are a partition of `reverse L` in the final output (when rest ≐ []).
+unmerge 
+    : {A : Set} 
+    → (L : List A) 
+    → {P : Pred A _} 
+    → (Pdec : Decidable P) 
+    → Σ[ iv ∈ UnmergeInvariants L Pdec ] (rest iv ≡ [])
+unmerge [] Pdec = record { 
+      rest = []
+    ; α = []
+    ; β = []
+    ; m = BetaTriv []
+    ; seen = []
+    ; H-seen = refl 
+    ; H-m = refl } , refl
+unmerge (x ∷ L) Pdec with Pdec x
+... | yes Px = 
+    let α = (x , Px) ∷ []
+    in
+    let β = []
+    in
+    let m : Merging (map proj₁ α) (map proj₁ β)
+        m = BetaTriv (map proj₁ α)
+    in
+    let seen = x ∷ []
+    in
+    let H-seen = sym (reverse-++ seen L)
+    in
+    let H-m = refl
+    in
+    let iv = mkIvars L α β m seen H-seen H-m
+    in
+    unmergeRec iv
+... | no ¬Px =
+    let α = []
+    in
+    let β = (x , ¬Px) ∷ []
+    in
+    let m : Merging (map proj₁ α) (map proj₁ β)
+        m = AlphaTriv x []
+    in
+    let seen = x ∷ []
+    in
+    let H-seen = sym (reverse-++ seen L)
+    in
+    let H-m = refl
+    in
+    let iv = mkIvars L α β m seen H-seen H-m
+    in
+    unmergeRec iv
