@@ -30,7 +30,9 @@ open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Data.List
+open import Data.List.Relation.Unary.All hiding (toList ; map)
 open import Data.List.Properties using (reverse-++ ; unfold-reverse ; ∷ʳ-++)
+open import Data.List.Extrema.Nat using (max)
 open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
@@ -288,3 +290,61 @@ unmerge (x ∷ L) Pdec with Pdec x
         iv = mkIvars α β m seen H-seen H-m
     in
     unmergeRec L iv
+
+decEqualsMax
+    : {A : Set}
+    → (L : List A)
+    → (f : A → ℕ)
+    → Decidable (λ a → f a ≡ max 0 (map f L))
+decEqualsMax L f = λ a → f a Data.Nat.≟ (max 0 (map f L))
+
+record UnmergeMaxOutp 
+    {A : Set}
+    (L : List A)
+    (f : A → ℕ)
+    : Set
+    where
+    constructor mkUnmMaxOutp
+    field
+        maxes  : List A
+        others : List A
+        H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
+        H-others : All (λ a → f a < max 0 (map f L)) others
+        m : Merging maxes others
+        H-m : compileMerging m ≡ L
+ 
+-- Special case of unmerge:
+-- given L : List A and a function f : A → ℕ,
+-- let α be the elements in L whose f-images reach the maximum value (of map f
+-- L), and β the other elements.
+-- Note that α is never empty if L is not, but β might be.
+unmergeMax
+    : {A : Set} 
+    → (L : List A) 
+    → (f : A → ℕ)
+    → UnmergeMaxOutp L f
+-- This function is mostly a decorator around `unmerge`; it just recasts
+-- the output of a special case of unmerge.
+unmergeMax {A} L f =
+    let iv : UnmergeInvariants (reverse L) [] (decEqualsMax L f)
+        iv = unmerge (reverse L) (decEqualsMax L f)
+    in
+    let maxes : List A
+        maxes = map proj₁ (α iv)
+    in
+    let others : List A
+        others = map proj₁ (β iv)
+    in
+    let H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
+        H-maxes = ?
+    in
+    let H-others : All (λ a → f a < max 0 (map f L)) others
+        H-others = ?
+    in
+    let m : Merging maxes others
+        m = ?
+    in
+    let H-m : compileMerging m ≡ L
+        H-m = ?
+    in
+    mkUnmMaxOutp maxes others H-maxes H-others m H-m
