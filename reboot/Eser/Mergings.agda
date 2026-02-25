@@ -30,13 +30,16 @@ open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Data.List
+open import Data.List.Membership.Propositional
 open import Data.List.Relation.Unary.All hiding (toList ; map)
-open import Data.List.Properties using (reverse-++ ; unfold-reverse ; ∷ʳ-++)
-open import Data.List.Extrema.Nat using (max)
+open import Data.List.Properties using (reverse-++ ; reverse-involutive ; 
+    unfold-reverse ; ∷ʳ-++)
+open import Data.List.Extrema.Nat using (max ; xs≤max)
 open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
-open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
+open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n 
+    ; m≤n⇒m<n∨m≡n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
@@ -60,6 +63,7 @@ open import Relation.Nullary
 --open import Data.List.Relation.Unary.Any using (Any)
 
 open import Eser.Definitions using (_≈_ ; indices ; _≃_)
+open import Eser.Logic using (elimCaseRight)
 
 module Eser.Mergings where
 
@@ -306,12 +310,30 @@ record UnmergeMaxOutp
     where
     constructor mkUnmMaxOutp
     field
-        maxes  : List A
-        others : List A
-        H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
-        H-others : All (λ a → f a < max 0 (map f L)) others
-        m : Merging maxes others
+        maxes  : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)))
+        others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)))
+        --H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
+        --H-others : All (λ a → f a < max 0 (map f L)) others
+        m : Merging (map proj₁ maxes) (map proj₁ others)
         H-m : compileMerging m ≡ L
+
+notMaxMeansSmaller : (L : List ℕ) → (n : ℕ) → n ≢ max 0 L → n ∈ L → n < max 0 L
+notMaxMeansSmaller L n n≢max n∈L = 
+    let all≤max = xs≤max 0 L
+    in
+    let n≤max : n ≤ max 0 L
+        n≤max = Data.List.Relation.Unary.All.lookup all≤max n∈L
+    in
+    let Hn : (n < max 0 L) ⊎ (n ≡ max 0 L) 
+        Hn = m≤n⇒m<n∨m≡n n≤max
+    in
+    elimCaseRight Hn n≢max
+
+addMembership
+    : {A : Set}
+    → (L : List A)
+    → List (Σ[ a ∈ A ] (a ∈ L))
+addMembership L = mapWith∈ L (λ {a} a∈L → (a , a∈L))
  
 -- Special case of unmerge:
 -- given L : List A and a function f : A → ℕ,
@@ -329,22 +351,38 @@ unmergeMax {A} L f =
     let iv : UnmergeInvariants (reverse L) [] (decEqualsMax L f)
         iv = unmerge (reverse L) (decEqualsMax L f)
     in
-    let maxes : List A
-        maxes = map proj₁ (α iv)
+    let maxes : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)))
+        maxes = α iv
     in
-    let others : List A
-        others = map proj₁ (β iv)
+    let others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)))
+        others = 
+            let g = λ ((b , ¬Pb) , b∈L) → (b , notMaxMeansSmaller (map f (β iv)) (f b) ¬Pb b∈L)
+            in
+            map g (addMembership (β iv))
     in
-    let H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
-        H-maxes = ?
+    --let H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
+    --    H-maxes = ?
+    --in
+    --let H-others : All (λ a → f a < max 0 (map f L)) others
+    --    H-others = ?
+    --in
+    let merge : Merging (map proj₁ maxes) (map proj₁ others)
+        merge = {! m iv !} -- Need tell Agda that π₁ β ≡ π₁ others...
     in
-    let H-others : All (λ a → f a < max 0 (map f L)) others
-        H-others = ?
+    let H-m' = compileMerging (m iv) ≡ reverse (reverse L)
+        H-m' = 
+            begin 
+            compileMerging (m iv)
+            ≡⟨  H-m iv ⟩
+            [] ++ (seen iv)
+            ≡⟨ H-seen iv ⟩
+            reverse (reverse L)
+            ≡⟨ reverse-involutive L ⟩
+            L
+            ∎
+            --trans (H-m iv) (H-seen iv)
     in
-    let m : Merging maxes others
-        m = ?
-    in
-    let H-m : compileMerging m ≡ L
+    let --H-m : compileMerging m ≡ L
         H-m = ?
     in
-    mkUnmMaxOutp maxes others H-maxes H-others m H-m
+    mkUnmMaxOutp maxes others merge H-m
