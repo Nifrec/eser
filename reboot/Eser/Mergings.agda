@@ -107,20 +107,20 @@ MergingFinTheo
     → VMerging α β ≃ Fin (numMergings n m)
 MergingFinTheo n m α β = ?
 
--- Extract the vector encoded in a merging.
--- Only homogeneous implementation given, for when α and 
--- β have the same underlying type (to avoid all the annoying injections
--- that A⊎B would otherwise require),
--- (the heterogeneous case is not harder, I think, this project just did not
--- need it).
-compileVMerging
-    : {A : Set}
-    → {n m : ℕ} 
-    → {α : Vec A n} 
-    → {β : Vec A m} 
-    → VMerging α β
-    → Vec A (n + m)
-compileVMerging {α = α} {β = β} m = ?
+---- Extract the vector encoded in a merging.
+---- Only homogeneous implementation given, for when α and 
+---- β have the same underlying type (to avoid all the annoying injections
+---- that A⊎B would otherwise require),
+---- (the heterogeneous case is not harder, I think, this project just did not
+---- need it).
+--compileVMerging
+--    : {A : Set}
+--    → {n m : ℕ} 
+--    → {α : Vec A n} 
+--    → {β : Vec A m} 
+--    → VMerging α β
+--    → Vec A (n + m)
+--compileVMerging {α = α} {β = β} m = ?
 
 compileMerging
     : {A : Set}
@@ -212,8 +212,27 @@ unmergeRec {L = L} {Pdec = Pdec} (x ∷ rest) (mkIvars α β m seen H-seen H-m) 
     let iv' : UnmergeInvariants L rest Pdec
         iv' = mkIvars α' β' m' seen' H-seen' H-m'
     in
-    unmergeRec rest iv' -- #TODO: termination issue. Use WF recursion on `rest`, which is a list whose length decreases by 1 every step, so no true termination issue.
-... | no ¬Px = ?
+    unmergeRec rest iv'
+-- The 'no' case is almost identical to the 'yes' case,
+-- except that we concatenate x to β instead of α.
+... | no ¬Px = 
+    let α' = α
+    in
+    let β' = (x , ¬Px) ∷ β
+    in
+    let m' : Merging  (map proj₁ α') (map proj₁ β')
+        m' = BFirst x (map proj₁ α) (map proj₁ β) m
+    in
+    let seen' = x ∷ seen
+    in
+    let H-seen' = trans (sym (reverseLemma x rest seen)) H-seen
+    in
+    let H-m' = cong (λ K → x ∷ K) H-m
+    in
+    let iv' : UnmergeInvariants L rest Pdec
+        iv' = mkIvars α' β' m' seen' H-seen' H-m'
+    in
+    unmergeRec rest iv'
 
 -- NOTE: you'll probably want to reverse the 
 -- input list before feeding it into unmerge!
