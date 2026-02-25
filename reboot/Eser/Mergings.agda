@@ -28,12 +28,22 @@ open import Relation.Unary using (Pred ; Decidable)
 open import Data.Product hiding (map)
 open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality.Properties renaming (setoid to ≡-setoid)
 open ≡-Reasoning
 open import Data.List
 open import Data.List.Membership.Propositional
+open import Data.List.Membership.Propositional.Properties using (∈-map⁺)
+open import Data.List.Membership.Setoid.Properties hiding (∈-map⁺) 
+    renaming (reverse⁻ to ∈-reverse⁻)
 open import Data.List.Relation.Unary.All hiding (toList ; map)
+open import Data.List.Relation.Unary.Any hiding (map)
+open import Data.List.Relation.Binary.Pointwise.Base hiding (map)
 open import Data.List.Properties using (reverse-++ ; reverse-involutive ; 
     unfold-reverse ; ∷ʳ-++)
+open import Data.List.Relation.Binary.Pointwise.Properties renaming 
+    (refl to Pointwise-refl)
+open import Data.List.Relation.Binary.Suffix.Heterogeneous using (tail)
+    renaming (there to Suffix-there ; here to Suffix-here)
 open import Data.List.Extrema.Nat using (max ; xs≤max)
 open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_)
 open import Induction.WellFounded
@@ -64,6 +74,7 @@ open import Relation.Nullary
 
 open import Eser.Definitions using (_≈_ ; indices ; _≃_)
 open import Eser.Logic using (elimCaseRight)
+open import Eser.Suffix using (_≼_ ; suffixElemInclusion)
 
 module Eser.Mergings where
 
@@ -169,10 +180,11 @@ record UnmergeInvariants
     : Set where
     constructor mkIvars
     field
-        α : List (Σ[ a ∈ A ] P a)
-        β : List (Σ[ a ∈ A ] ¬ (P a))
+        α : List (Σ[ a ∈ A ] (P a) × (a ∈ L))
+        β : List (Σ[ a ∈ A ] ¬ (P a) × a ∈ L)
         m : Merging (map proj₁ α) (map proj₁ β)
         seen : List A
+        H-rest : rest ≼ L
         H-seen : (reverse rest) ++ seen ≡ reverse L
         H-m : compileMerging m ≡ seen
 open UnmergeInvariants
@@ -199,10 +211,14 @@ unmergeRec
     → (rest : List A) --^ Remaining elements in the reversed L.
     → (UnmergeInvariants L rest Pdec)
     → UnmergeInvariants L [] Pdec
-unmergeRec [] iv@(mkIvars α β m seen H-seen H-m) = iv
-unmergeRec {L = L} {Pdec = Pdec} (x ∷ rest) (mkIvars α β m seen H-seen H-m) with (Pdec x)
+unmergeRec [] iv = iv
+unmergeRec {L = L} {Pdec = Pdec} (x ∷ rest) 
+    (mkIvars α β m seen x∷rest≼L H-seen H-m) with (Pdec x)
 ... | yes Px =
-    let α' = (x , Px) ∷ α
+    let x∈L : x ∈ L
+        x∈L = suffixElemInclusion x∷rest≼L (Any.here refl)
+    in
+    let α' = (x , Px , x∈L) ∷ α
     in
     let β' = β
     in
@@ -211,32 +227,41 @@ unmergeRec {L = L} {Pdec = Pdec} (x ∷ rest) (mkIvars α β m seen H-seen H-m) 
     in
     let seen' = x ∷ seen
     in
+    let H-rest' : rest ≼ L
+        H-rest' = Data.List.Relation.Binary.Suffix.Heterogeneous.tail x∷rest≼L
+    in
     let H-seen' = trans (sym (reverseLemma x rest seen)) H-seen
     in
     let H-m' = cong (λ K → x ∷ K) H-m
     in
     let iv' : UnmergeInvariants L rest Pdec
-        iv' = mkIvars α' β' m' seen' H-seen' H-m'
+        iv' = mkIvars α' β' m' seen' H-rest' H-seen' H-m'
     in
     unmergeRec rest iv'
 -- The 'no' case is almost identical to the 'yes' case,
 -- except that we concatenate x to β instead of α.
 ... | no ¬Px = 
+    let x∈L : x ∈ L
+        x∈L = suffixElemInclusion x∷rest≼L (Any.here refl)
+    in
     let α' = α
     in
-    let β' = (x , ¬Px) ∷ β
+    let β' = (x , ¬Px , x∈L) ∷ β
     in
     let m' : Merging  (map proj₁ α') (map proj₁ β')
         m' = BFirst x (map proj₁ α) (map proj₁ β) m
     in
     let seen' = x ∷ seen
     in
+    let H-rest' : rest ≼ L
+        H-rest' = Data.List.Relation.Binary.Suffix.Heterogeneous.tail x∷rest≼L
+    in
     let H-seen' = trans (sym (reverseLemma x rest seen)) H-seen
     in
     let H-m' = cong (λ K → x ∷ K) H-m
     in
     let iv' : UnmergeInvariants L rest Pdec
-        iv' = mkIvars α' β' m' seen' H-seen' H-m'
+        iv' = mkIvars α' β' m' seen' H-rest' H-seen' H-m'
     in
     unmergeRec rest iv'
 
@@ -255,11 +280,13 @@ unmerge [] Pdec = record {
     ; β = []
     ; m = BetaTriv []
     ; seen = []
+    ; H-rest = Data.List.Relation.Binary.Suffix.Heterogeneous.here []
     ; H-seen = refl 
     ; H-m = refl }
-unmerge (x ∷ L) Pdec with Pdec x
+unmerge {A} (x ∷ L) {P} Pdec with Pdec x
 ... | yes Px = 
-    let α = (x , Px) ∷ []
+    let α : List (Σ[ a ∈ A ] (P a) × (a ∈ (x ∷ L)))
+        α = (x , Px , Any.here refl) ∷ []
     in
     let β = []
     in
@@ -268,30 +295,36 @@ unmerge (x ∷ L) Pdec with Pdec x
     in
     let seen = x ∷ []
     in
+    let H-rest : L ≼ (x ∷ L)
+        H-rest = Suffix-there (Suffix-here (Pointwise-refl refl))
+    in
     let H-seen = sym (reverse-++ seen L)
     in
     let H-m = refl
     in
     let iv : UnmergeInvariants (x ∷ L) L Pdec
-        iv = mkIvars α β m seen H-seen H-m
+        iv = mkIvars α β m seen H-rest H-seen H-m
     in
     unmergeRec L iv
 ... | no ¬Px =
     let α = []
     in
-    let β = (x , ¬Px) ∷ []
+    let β = (x , ¬Px , here refl) ∷ []
     in
     let m : Merging (map proj₁ α) (map proj₁ β)
         m = AlphaTriv x []
     in
     let seen = x ∷ []
     in
+    let H-rest : L ≼ (x ∷ L)
+        H-rest = Suffix-there (Suffix-here (Pointwise-refl refl))
+    in
     let H-seen = sym (reverse-++ seen L)
     in
     let H-m = refl
     in
     let iv : UnmergeInvariants (x ∷ L) L Pdec
-        iv = mkIvars α β m seen H-seen H-m
+        iv = mkIvars α β m seen H-rest H-seen H-m
     in
     unmergeRec L iv
 
@@ -310,10 +343,8 @@ record UnmergeMaxOutp
     where
     constructor mkUnmMaxOutp
     field
-        maxes  : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)))
-        others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)))
-        --H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
-        --H-others : All (λ a → f a < max 0 (map f L)) others
+        maxes  : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)) × a ∈ L)
+        others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)) × a ∈ L)
         m : Merging (map proj₁ maxes) (map proj₁ others)
         H-m : compileMerging m ≡ L
 
@@ -329,12 +360,20 @@ notMaxMeansSmaller L n n≢max n∈L =
     in
     elimCaseRight Hn n≢max
 
+-- #TODO: unused in the end
 addMembership
     : {A : Set}
     → (L : List A)
     → List (Σ[ a ∈ A ] (a ∈ L))
 addMembership L = mapWith∈ L (λ {a} a∈L → (a , a∈L))
  
+reversePresvMax
+    : (n : ℕ)
+    → (L : List ℕ)
+    → max n L ≡ max n (reverse L)
+reversePresvMax n [] = refl
+reversePresvMax n (x ∷ L) = {! !}
+
 -- Special case of unmerge:
 -- given L : List A and a function f : A → ℕ,
 -- let α be the elements in L whose f-images reach the maximum value (of map f
@@ -348,24 +387,30 @@ unmergeMax
 -- This function is mostly a decorator around `unmerge`; it just recasts
 -- the output of a special case of unmerge.
 unmergeMax {A} L f =
-    let iv : UnmergeInvariants (reverse L) [] (decEqualsMax L f)
-        iv = unmerge (reverse L) (decEqualsMax L f)
+    let Lᴿ = reverse L
     in
-    let maxes : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)))
-        maxes = α iv
+    let iv : UnmergeInvariants Lᴿ [] (decEqualsMax Lᴿ f)
+        iv = unmerge Lᴿ (decEqualsMax Lᴿ f)
     in
-    let others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)))
-        others = 
-            let g = λ ((b , ¬Pb) , b∈L) → (b , notMaxMeansSmaller (map f (β iv)) (f b) ¬Pb b∈L)
+    let ∈-unreverse : {a : A} → (a ∈ Lᴿ) → a ∈ L
+        ∈-unreverse a∈Lᴿ = ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
+    in
+    let maxes' : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f Lᴿ)) × a ∈ Lᴿ)
+        maxes' = {! α iv !}
+    in
+    let others' : List (Σ[ a ∈ A ] (f a < max 0 (map f Lᴿ)) × a ∈ Lᴿ)
+        others' = 
+            let g = λ (b , ¬Pb , b∈L) → (b , notMaxMeansSmaller (map f Lᴿ) 
+                    (f b) ¬Pb (∈-map⁺ f b∈L) , b∈L)
             in
-            map g (addMembership (β iv))
+            map g (β iv)
     in
-    --let H-maxes : All (λ a → f a ≡ max 0 (map f L)) maxes
-    --    H-maxes = ?
-    --in
-    --let H-others : All (λ a → f a < max 0 (map f L)) others
-    --    H-others = ?
-    --in
+    -- #TODO: revert reversion. use x ∈ Lᴿ -> x ∈ L
+    -- and congruence over max Lᴿ = max L.
+    let maxes = ?
+    in
+    let others = ?
+    in
     let merge : Merging (map proj₁ maxes) (map proj₁ others)
         merge = {! m iv !} -- Need tell Agda that π₁ β ≡ π₁ others...
     in
