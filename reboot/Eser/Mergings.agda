@@ -150,10 +150,19 @@ compileMerging {α = α} {β = b ∷ β} (BFirst b α β m) = b ∷ (compileMerg
 -- compares f-images with the max.
 
 -- Data structure used by `unmerge` to pass invariants to recursive calls.
-record UnmergeInvariants {A : Set} (L : List A) {P : Pred A _} (Pdec : Decidable P) : Set where
+-- `rest` is supposed to be a suffix of L of elements still to be divided over α
+-- and β, but it is a parameter instead of a field to satisfy the termination
+-- checker (although, this way it also nicely makes explicit at type level 
+-- that the algorithm always ends with nothing left to divide).
+record UnmergeInvariants 
+    {A : Set} 
+    (L : List A) 
+    (rest : List A) --^ Remaining elements in the reversed L.
+    {P : Pred A _} 
+    (Pdec : Decidable P) 
+    : Set where
     constructor mkIvars
     field
-        rest : List A --^ Remaining elements in the reversed L.
         α : List (Σ[ a ∈ A ] P a)
         β : List (Σ[ a ∈ A ] ¬ (P a))
         m : Merging (map proj₁ α) (map proj₁ β)
@@ -181,10 +190,11 @@ unmergeRec
     → {L : List A} 
     → {P : Pred A _} 
     → {Pdec : Decidable P} 
-    → (UnmergeInvariants L Pdec)
-    → Σ[ iv ∈ UnmergeInvariants L Pdec ] (rest iv ≡ [])
-unmergeRec iv@(mkIvars [] α β m seen H-seen H-m) = (iv , refl)
-unmergeRec {Pdec = Pdec} (mkIvars (x ∷ rest) α β m seen H-seen H-m) with (Pdec x)
+    → (rest : List A) --^ Remaining elements in the reversed L.
+    → (UnmergeInvariants L rest Pdec)
+    → UnmergeInvariants L [] Pdec
+unmergeRec [] iv@(mkIvars α β m seen H-seen H-m) = iv
+unmergeRec {L = L} {Pdec = Pdec} (x ∷ rest) (mkIvars α β m seen H-seen H-m) with (Pdec x)
 ... | yes Px =
     let α' = (x , Px) ∷ α
     in
@@ -199,9 +209,10 @@ unmergeRec {Pdec = Pdec} (mkIvars (x ∷ rest) α β m seen H-seen H-m) with (Pd
     in
     let H-m' = cong (λ K → x ∷ K) H-m
     in
-    let iv' = mkIvars rest α' β' m' seen' H-seen' H-m'
+    let iv' : UnmergeInvariants L rest Pdec
+        iv' = mkIvars α' β' m' seen' H-seen' H-m'
     in
-    unmergeRec iv' -- #TODO: termination issue. Use WF recursion on `rest`, which is a list whose length decreases by 1 every step, so no true termination issue.
+    unmergeRec rest iv' -- #TODO: termination issue. Use WF recursion on `rest`, which is a list whose length decreases by 1 every step, so no true termination issue.
 ... | no ¬Px = ?
 
 -- NOTE: you'll probably want to reverse the 
@@ -213,15 +224,14 @@ unmerge
     → (L : List A) 
     → {P : Pred A _} 
     → (Pdec : Decidable P) 
-    → Σ[ iv ∈ UnmergeInvariants L Pdec ] (rest iv ≡ [])
+    → UnmergeInvariants L [] Pdec
 unmerge [] Pdec = record { 
-      rest = []
-    ; α = []
+      α = []
     ; β = []
     ; m = BetaTriv []
     ; seen = []
     ; H-seen = refl 
-    ; H-m = refl } , refl
+    ; H-m = refl }
 unmerge (x ∷ L) Pdec with Pdec x
 ... | yes Px = 
     let α = (x , Px) ∷ []
@@ -237,9 +247,10 @@ unmerge (x ∷ L) Pdec with Pdec x
     in
     let H-m = refl
     in
-    let iv = mkIvars L α β m seen H-seen H-m
+    let iv : UnmergeInvariants (x ∷ L) L Pdec
+        iv = mkIvars α β m seen H-seen H-m
     in
-    unmergeRec iv
+    unmergeRec L iv
 ... | no ¬Px =
     let α = []
     in
@@ -254,6 +265,7 @@ unmerge (x ∷ L) Pdec with Pdec x
     in
     let H-m = refl
     in
-    let iv = mkIvars L α β m seen H-seen H-m
+    let iv : UnmergeInvariants (x ∷ L) L Pdec
+        iv = mkIvars α β m seen H-seen H-m
     in
-    unmergeRec iv
+    unmergeRec L iv
