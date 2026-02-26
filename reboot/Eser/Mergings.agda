@@ -474,61 +474,58 @@ unmergeMax {A} L f =
     let ∈-unreverse : {a : A} → (a ∈ Lᴿ) → a ∈ L
         ∈-unreverse a∈Lᴿ = ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
     in
-    let maxes' : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f Lᴿ)) × a ∈ Lᴿ)
-        maxes' = α iv
-    in
-    let others' : List (Σ[ a ∈ A ] (f a < max 0 (map f Lᴿ)) × a ∈ Lᴿ)
-        others' = 
-            let g = λ (b , ¬Pb , b∈L) → (b , notMaxMeansSmaller (map f Lᴿ) 
-                    (f b) ¬Pb (∈-map⁺ f b∈L) , b∈L)
-            in
-            map g (β iv)
-    in
-    let maxes : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)) × a ∈ L)
-        maxes = 
-            let g = λ (a , fa≡maxLᴿ , a∈Lᴿ) 
-                    → (a 
-                      , subst (λ v → f a ≡ v) sameMax fa≡maxLᴿ 
-                      , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
-                      )
-            in
-            map g maxes'
-    in
-    -- We get others from others' in same way as maxes from maxes,
-    -- except for using "<" instead of "≡".
-    let others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)) × a ∈ L)
-        others = 
-            let g = λ (a , fa<maxLᴿ , a∈Lᴿ) 
-                    → (a 
-                      , subst (λ v → f a < v) sameMax fa<maxLᴿ 
-                      , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
-                      )
-            in
-            map g others'
-    in
-    let π₁othersEq = ?
-    in
-    let αtoMaxes 
+    let αToMaxes 
             : (Σ[ a ∈ A ] (f a ≡ max 0 (map f Lᴿ)) × a ∈ Lᴿ)
             → (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)) × a ∈ L)
-        αtoMaxes (a , fa≡maxLᴿ , a∈Lᴿ) =
+        αToMaxes (a , fa≡maxLᴿ , a∈Lᴿ) =
                           (a 
                           , subst (λ v → f a ≡ v) sameMax fa≡maxLᴿ 
                           , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
                           )
     in
+    let HαToMaxes : (proj₁ ∘ αToMaxes) ≈ proj₁
+        HαToMaxes (a , _ , _) = refl
+    in
+    let maxes : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)) × a ∈ L)
+        maxes = map αToMaxes (α iv)
+    in
     let π₁maxesEq : (map proj₁ (α iv)) ≡ (map proj₁ maxes)
-        π₁maxesEq = {! mapProj₁Id ? ? ? !}
+        π₁maxesEq = sym (mapProj₁Id αToMaxes HαToMaxes (α iv))
+    in
+    let βToOthers 
+            : (Σ[ a ∈ A ] (f a ≢ max 0 (map f Lᴿ)) × a ∈ Lᴿ)
+            → (Σ[ a ∈ A ] (f a < max 0 (map f L)) × a ∈ L)
+        βToOthers = 
+            let g = λ (b , ¬Pb , b∈L) → (b , notMaxMeansSmaller (map f Lᴿ) 
+                    (f b) ¬Pb (∈-map⁺ f b∈L) , b∈L)
+            in
+            let g' = λ (a , fa<maxLᴿ , a∈Lᴿ) 
+                    → (a 
+                      , subst (λ v → f a < v) sameMax fa<maxLᴿ 
+                      , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
+                      )
+            in
+            (g' ∘ g)
+    in
+    let HβToOthers : (proj₁ ∘ βToOthers) ≈ proj₁
+        HβToOthers (b , _ , _) = refl
+    in
+    let others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)) × a ∈ L)
+        others = map βToOthers (β iv)
+    in
+    let π₁othersEq = (map proj₁ (α iv)) ≡ (map proj₁ others)
+        π₁othersEq = sym (mapProj₁Id βToOthers HβToOthers (β iv))
     in
     let merge : Merging (map proj₁ maxes) (map proj₁ others)
         merge =
-            let merge' =  m iv -- Need tell Agda that π₁ β ≡ π₁ others...
+            --let m' = subst (λ v → Merging (map proj₁ (α iv)) v) π₁othersEq (m iv)
+            --in
+            --subst (λ v → Merging v (map proj₁ others)) π₁maxesEq m'
+            let m' = subst (λ v → Merging v (map proj₁ (β iv))) π₁maxesEq (m iv)
             in
-            let merge'' = subst (λ v → Merging (map proj₁ (α iv)) v) π₁othersEq merge'
-            in
-            subst (λ v → Merging v (map proj₁ others)) π₁maxesEq merge''
+            subst (λ v → Merging (map proj₁ maxes) v) π₁othersEq m'
     in
-    let H-m' = compileMerging (m iv) ≡ reverse (reverse L)
+    let H-m' = compileMerging (m iv) ≡ L
         H-m' = 
             begin 
             compileMerging (m iv)
@@ -539,9 +536,8 @@ unmergeMax {A} L f =
             ≡⟨ reverse-involutive L ⟩
             L
             ∎
-            --trans (H-m iv) (H-seen iv)
     in
-    let --H-m : compileMerging m ≡ L
-        H-m = ?
+    let H-m : compileMerging merge ≡ L
+        H-m = trans (sym (mergeSubst (m iv) π₁maxesEq π₁othersEq)) H-m'
     in
     mkUnmMaxOutp maxes others merge H-m
