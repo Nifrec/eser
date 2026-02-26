@@ -39,7 +39,7 @@ open import Data.List.Relation.Unary.All hiding (toList ; map)
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.List.Relation.Binary.Pointwise.Base hiding (map)
 open import Data.List.Properties using (reverse-++ ; reverse-involutive ; 
-    unfold-reverse ; ∷ʳ-++)
+    unfold-reverse ; ∷ʳ-++ ; reverse-map ; map-∘)
 open import Data.List.Relation.Binary.Pointwise.Properties renaming 
     (refl to Pointwise-refl)
 open import Data.List.Relation.Binary.Suffix.Heterogeneous using (tail)
@@ -374,6 +374,75 @@ reversePresvMax
 reversePresvMax n [] = refl
 reversePresvMax n (x ∷ L) = {! !}
 
+-- Substituting equal lists in a Merging does not change the encoded list
+-- that the Merging constructs.
+mergeSubst
+    : {A : Set}
+    → {L L' K K' : List A}
+    → (m : Merging L K)
+    → (hₗ : L ≡ L')
+    → (hₖ : K ≡ K')
+    → compileMerging m ≡ 
+        compileMerging 
+            (subst (λ v → Merging L' v) hₖ 
+            (subst (λ v → Merging v K) hₗ m)
+            )
+mergeSubst {A} {L} {L} {K} {K} m refl refl = refl
+
+mergeSubstLeft
+    : {A : Set}
+    → {L L' K : List A}
+    → (m : Merging L K)
+    → (h : L ≡ L')
+    → compileMerging m ≡ compileMerging (subst (λ v → Merging v K) h m)
+mergeSubstLeft {A} {L} {L} {K} m refl = refl
+
+mergeSubstRight
+    : {A : Set}
+    → {L K K' : List A}
+    → (m : Merging L K)
+    → (h : K ≡ K')
+    → compileMerging m ≡ compileMerging (subst (λ v → Merging L v) h m)
+mergeSubstRight {A} {L} {K} {K} m refl = refl
+
+-- If f ≈ g (homotopy) then map f L ≡ map g L for all lists L.
+mapRewrHomot
+    : {A B : Set}
+    → {f g : A → B}
+    → (f ≈ g)
+    → (map f) ≈ (map g)
+mapRewrHomot {f = f} {g = g} f≈g [] = refl
+mapRewrHomot {f = f} {g = g} f≈g (a ∷ as) = 
+    begin 
+        map f (a ∷ as)
+    ≡⟨  refl ⟩
+        (f a) ∷ (map f as)
+    ≡⟨ cong (λ b → b ∷ (map f as)) (f≈g a) ⟩
+        (g a) ∷ (map f as)
+    ≡⟨ cong (λ L → (g a) ∷ L) (mapRewrHomot f≈g as) ⟩
+        (g a) ∷ (map g as)
+    ≡⟨ refl ⟩
+        map g (a ∷ as)
+    ∎
+    
+
+-- When mapping a list of tuples under a function that acts as the id
+-- on the first component, then the list of first projections remains the same.
+mapProj₁Id
+    : {A : Set}
+    → {B C : A → Set}
+    → (g : Σ[ a ∈ A ](B a) → Σ[ a ∈ A ](C a))
+    → (proj₁ ∘ g) ≈ proj₁
+    → (map proj₁ ∘ map g) ≈ (map proj₁)
+mapProj₁Id g h L = 
+    begin 
+        map proj₁ (map g L) 
+    ≡⟨  sym (map-∘ {g = proj₁} {f = g} L) ⟩
+        map (proj₁ ∘ g) L
+    ≡⟨  mapRewrHomot h L ⟩
+        map proj₁ L
+    ∎
+
 -- Special case of unmerge:
 -- given L : List A and a function f : A → ℕ,
 -- let α be the elements in L whose f-images reach the maximum value (of map f
@@ -392,11 +461,21 @@ unmergeMax {A} L f =
     let iv : UnmergeInvariants Lᴿ [] (decEqualsMax Lᴿ f)
         iv = unmerge Lᴿ (decEqualsMax Lᴿ f)
     in
+    let sameMax : max 0 (map f Lᴿ) ≡ max 0 (map f L)
+        sameMax = 
+            begin 
+                max 0 (map f Lᴿ)
+            ≡⟨ cong (max 0) (reverse-map f L) ⟩
+                max 0 (reverse (map f L))
+            ≡⟨ sym (reversePresvMax 0 (map f L)) ⟩
+                max 0 (map f L)
+            ∎
+    in
     let ∈-unreverse : {a : A} → (a ∈ Lᴿ) → a ∈ L
         ∈-unreverse a∈Lᴿ = ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
     in
     let maxes' : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f Lᴿ)) × a ∈ Lᴿ)
-        maxes' = {! α iv !}
+        maxes' = α iv
     in
     let others' : List (Σ[ a ∈ A ] (f a < max 0 (map f Lᴿ)) × a ∈ Lᴿ)
         others' = 
@@ -405,14 +484,49 @@ unmergeMax {A} L f =
             in
             map g (β iv)
     in
-    -- #TODO: revert reversion. use x ∈ Lᴿ -> x ∈ L
-    -- and congruence over max Lᴿ = max L.
-    let maxes = ?
+    let maxes : List (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)) × a ∈ L)
+        maxes = 
+            let g = λ (a , fa≡maxLᴿ , a∈Lᴿ) 
+                    → (a 
+                      , subst (λ v → f a ≡ v) sameMax fa≡maxLᴿ 
+                      , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
+                      )
+            in
+            map g maxes'
     in
-    let others = ?
+    -- We get others from others' in same way as maxes from maxes,
+    -- except for using "<" instead of "≡".
+    let others : List (Σ[ a ∈ A ] (f a < max 0 (map f L)) × a ∈ L)
+        others = 
+            let g = λ (a , fa<maxLᴿ , a∈Lᴿ) 
+                    → (a 
+                      , subst (λ v → f a < v) sameMax fa<maxLᴿ 
+                      , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
+                      )
+            in
+            map g others'
+    in
+    let π₁othersEq = ?
+    in
+    let αtoMaxes 
+            : (Σ[ a ∈ A ] (f a ≡ max 0 (map f Lᴿ)) × a ∈ Lᴿ)
+            → (Σ[ a ∈ A ] (f a ≡ max 0 (map f L)) × a ∈ L)
+        αtoMaxes (a , fa≡maxLᴿ , a∈Lᴿ) =
+                          (a 
+                          , subst (λ v → f a ≡ v) sameMax fa≡maxLᴿ 
+                          , ∈-reverse⁻ (≡-setoid _) a∈Lᴿ
+                          )
+    in
+    let π₁maxesEq : (map proj₁ (α iv)) ≡ (map proj₁ maxes)
+        π₁maxesEq = {! mapProj₁Id ? ? ? !}
     in
     let merge : Merging (map proj₁ maxes) (map proj₁ others)
-        merge = {! m iv !} -- Need tell Agda that π₁ β ≡ π₁ others...
+        merge =
+            let merge' =  m iv -- Need tell Agda that π₁ β ≡ π₁ others...
+            in
+            let merge'' = subst (λ v → Merging (map proj₁ (α iv)) v) π₁othersEq merge'
+            in
+            subst (λ v → Merging v (map proj₁ others)) π₁maxesEq merge''
     in
     let H-m' = compileMerging (m iv) ≡ reverse (reverse L)
         H-m' = 
