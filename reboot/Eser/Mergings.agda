@@ -75,7 +75,7 @@ open import Relation.Nullary
 --open import Data.List.Relation.Unary.Any using (Any)
 
 open import Eser.Definitions using (_≈_ ; indices ; _≃_)
-open import Eser.Logic using (elimCaseRight)
+open import Eser.Logic using (elimCaseRight ; implCongrLeft ; implCongrRight)
 open import Eser.Suffix using (_≼_ ; suffixElemInclusion)
 
 module Eser.Mergings where
@@ -152,6 +152,31 @@ compileMerging {α = α} {β = b ∷ β} (AlphaTriv b β) = b ∷ β
 compileMerging {α = a ∷ α} {β = β} (AFirst a α β m) = a ∷ (compileMerging m)
 compileMerging {α = α} {β = b ∷ β} (BFirst b α β m) = b ∷ (compileMerging m)
 
+compileMembership
+    : {A : Set}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → (a : A)
+    → a ∈ (compileMerging m) 
+    → (a ∈ α) ⊎ (a ∈ β)
+compileMembership {α} {β} (BetaTriv α₁) a a∈comp = inj₁ a∈comp
+compileMembership {α} {β} (AlphaTriv b β₁) a a∈comp = inj₂ a∈comp
+compileMembership (AFirst a₁ α β m) a (here px) = inj₁ (here px)
+compileMembership (AFirst a₁ α β m) a (there a∈comp) = 
+    let rec = compileMembership m a a∈comp
+    in
+    let a∈α→a∈a₁α : a ∈ α → a ∈ (a₁ ∷ α)
+        a∈α→a∈a₁α a∈α = there a∈α
+    in
+    implCongrLeft rec a∈α→a∈a₁α
+compileMembership (BFirst b α β m) a (here px) = inj₂ (here px)
+compileMembership (BFirst b α β m) a (there a∈comp) =
+    let rec = compileMembership m a a∈comp
+    in
+    let a∈β→a∈bβ : a ∈ β → a ∈ (b ∷ β)
+        a∈β→a∈bβ a∈β = there a∈β
+    in
+    implCongrRight rec a∈β→a∈bβ
 -- Macro for getting length of the list encoded in a Merging.
 mergelen
     : {A : Set}
