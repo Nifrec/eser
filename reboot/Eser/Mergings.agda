@@ -16,6 +16,8 @@
 -- [b a b' a']
 -- [b b' a a']
 
+{-# OPTIONS --allow-unsolved-metas #-}
+
 -- #TODO: these imports are copied, not all used; remove unused imports.
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)

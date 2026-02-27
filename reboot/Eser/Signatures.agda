@@ -45,7 +45,8 @@ open import Function hiding (_↔_)
 --open import Data.List.Membership.Propositional.Properties using (∈-lookup)
 --open import Data.List.Relation.Unary.Any using (Any)
 
-open import Eser.Definitions using (_≈_ ; indices ; _≃_)
+open import Eser.Definitions using (_≈_ ; indices ; _≃_ ; HomotEquivalence)
+open HomotEquivalence
 open import Eser.Mergings
 
 module Eser.Signatures where
@@ -262,7 +263,7 @@ decompileTerm {S} (mk-ℕ-multiary c x x₁) = {! !}
 FreeTerms≃TeleTerms 
     : (S : TerseSignature)
     → TerseFreeTerms S ≃ TeleTerms S
-FreeTerms≃TeleTerms S .HomotEquivalence.LR = {! !}
-FreeTerms≃TeleTerms S .HomotEquivalence.RL = {! !}
-FreeTerms≃TeleTerms S .HomotEquivalence.homotLRL = {! !}
-FreeTerms≃TeleTerms S .HomotEquivalence.homotRLR = {! !}
+FreeTerms≃TeleTerms S .LR = {! !}
+FreeTerms≃TeleTerms S .RL = {! !}
+FreeTerms≃TeleTerms S .homotLRL = {! !}
+FreeTerms≃TeleTerms S .homotRLR = {! !}
