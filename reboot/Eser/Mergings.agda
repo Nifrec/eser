@@ -169,7 +169,7 @@ mergelenIncrementA
     → {α β : List A} 
     → (m : Merging α β)
     → mergelen (AFirst a α β m) ≡ ℕ.suc (mergelen m)
-mergelenIncrementA = ?
+mergelenIncrementA m = refl -- The RHS normalises to the LHS, so it's easy!
 
 -- BFirst analog to mergelenIncrementA.
 mergelenIncrementB
@@ -178,7 +178,7 @@ mergelenIncrementB
     → {α β : List A} 
     → (m : Merging α β)
     → mergelen (BFirst b α β m) ≡ ℕ.suc (mergelen m)
-mergelenIncrementB = ?
+mergelenIncrementB m = refl
 
 -- Merging α with β results in a list L that is never shorter than α.
 mergelenLemma
