@@ -25,3 +25,20 @@ elimCaseLeft (inj₂ b) = λ _ → b
 elimCaseRight : {A B : Set} → (A ⊎ B) → (¬ B) → A
 elimCaseRight (inj₁ a) = λ _ → a
 elimCaseRight (inj₂ b) ¬B = ⊥-elim (¬B b)
+
+-- If X⊎Y and X→Z then Z⊎Y.
+implCongrLeft
+    : {X Y Z : Set}
+    → X ⊎ Y
+    → (X → Z)
+    → Z ⊎ Y
+implCongrLeft (inj₁ x) f = inj₁ (f x)
+implCongrLeft (inj₂ y) f = inj₂ y
+
+implCongrRight
+    : {X Y Z : Set}
+    → X ⊎ Y
+    → (Y → Z)
+    → X ⊎ Z
+implCongrRight (inj₁ x) f = inj₁ x
+implCongrRight (inj₂ y) f = inj₂ (f y)

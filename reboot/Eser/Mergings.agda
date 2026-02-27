@@ -177,6 +177,22 @@ compileMembership (BFirst b α β m) a (there a∈comp) =
         a∈β→a∈bβ a∈β = there a∈β
     in
     implCongrRight rec a∈β→a∈bβ
+
+compileMembershipMapCongr
+    : {A B : Set}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → (f : A → B)
+    → (b : B)
+    → b ∈ map f (compileMerging m) 
+    → (b ∈ map f α) ⊎ (b ∈ map f β)
+-- Informal proof sketch:
+-- First get pre-img a of b, then use compileMembership, and then elim that.
+-- Don't case distinct on m. Prove sidelemma b ∈ map f L -> a ∈ L × f a ≡ b.
+-- From a ∈ L we get a ∈ α ⊎ a ∈ β. Hence b ≡ f a is then in α or β as well.
+-- QED.
+compileMembershipMapCongr m f b b∈MapFComp = ?
+
 -- Macro for getting length of the list encoded in a Merging.
 mergelen
     : {A : Set}

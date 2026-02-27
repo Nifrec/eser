@@ -9,21 +9,22 @@ open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
 open import Data.Nat
-open import Data.Sum
+open import Data.Sum hiding (map)
 open import Data.Unit
 open import Data.Empty
 open import Relation.Unary using (Decidable)
 open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
-open import Data.Product
+open import Data.Product hiding (map)
 --open import Relation.Binary.Structures
 open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Data.List
-open import Data.Vec hiding (restrict)
+open import Data.Vec hiding (restrict ; length ; map)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
 open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
+open import Data.Vec.Properties using (length-toList) 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
@@ -41,13 +42,16 @@ open import Function hiding (_↔_)
 --open import Data.List.Relation.Unary.AllPairs using (AllPairs)
 --open import Data.List.Relation.Unary.All using (All)
 --open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
---open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
---open import Data.List.Membership.Propositional.Properties using (∈-lookup)
+open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
+open import Data.List.Membership.Setoid.Properties using (∈-length)
 --open import Data.List.Relation.Unary.Any using (Any)
 
+open import Eser.Logic using (elimCaseRight)
 open import Eser.Definitions using (_≈_ ; indices ; _≃_ ; HomotEquivalence)
 open HomotEquivalence
-open import Eser.Mergings
+open import Data.List.Extrema.Nat
+open import Eser.Mergings using (Merging ; unmergeMax ; UnmergeMaxOutp 
+    ; mergelenLemma ; VMerging ; compileMerging ; compileMembership)
 
 module Eser.Signatures where
 
@@ -76,14 +80,12 @@ data ConstrKind : Set where
     c-ℕ-multiary     : ConstrKind
 
 -- Lookup the arity of a non-nullary constructor in a signature.
-arity 
+getArity 
     : (S : TerseSignature) 
     → (indices (pure-multiary S)) ⊎ (indices (ℕ-multiary S))
     → ℕ
---arity _ c-pure-nullary = 0
---arity _ c-ℕ-nullary = 0
-arity S (inj₁ idx) = ℕ.suc (Data.List.lookup (pure-multiary S) idx )
-arity S (inj₂ idx) = ℕ.suc (Data.List.lookup (ℕ-multiary S)    idx )
+getArity S (inj₁ idx) = ℕ.suc (Data.List.lookup (pure-multiary S) idx )
+getArity S (inj₂ idx) = ℕ.suc (Data.List.lookup (ℕ-multiary S)    idx )
 
 -- Term algebra over a TerseSignature.
 data TerseFreeTerms (S : TerseSignature) : Set where
@@ -162,7 +164,7 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             --^ To avoid an α in round 0 constisting of
             -- round 0 elements.
             Σ[ c ∈ indices (pure-multiary S) ]
-            Σ[ m ∈ Fin (arity S (inj₁ c)) ]
+            Σ[ m ∈ Fin (getArity S (inj₁ c)) ]
             -- α is a vector whose length is ℕ.suc m
             -- which is in the range [1, ..., arity S (inj₁ c)],
             -- whose elements are terms from round (i ∸ 1). 
@@ -178,7 +180,7 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             -- from round (i ∸ 1). β can be empty.
             Σ[ β ∈ Vec 
                 (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ)) 
-                (arity S (inj₁ c) ∸ Data.Vec.length α) 
+                (getArity S (inj₁ c) ∸ Data.Vec.length α) 
             ]
             VMerging α β
         -- Same as previous case, but now also an n < i,
@@ -189,14 +191,14 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
             Σ[ n ∈ ℕ ] 
             Σ[ hₙ ∈ n < i ] 
             Σ[ c ∈ indices (ℕ-multiary S) ]
-            Σ[ m ∈ Fin (arity S (inj₂ c)) ]
+            Σ[ m ∈ Fin (getArity S (inj₂ c)) ]
             Σ[ α ∈ Vec 
                 (rec (Data.Nat.pred i) (0<n⇒pred[n]<n (m<n⇒0<n {n} {i} hₙ)) ) 
                 (ℕ.suc (toℕ m)) 
             ]
             Σ[ β ∈ Vec 
                 (Σ[ j ∈ ℕ ] Σ[ hⱼ ∈ ℕ.suc (ℕ.suc j) < i ] rec j (ssn<m⇒n<m hⱼ))
-                ((arity S (inj₂ c)) ∸ Data.Vec.length α)
+                ((getArity S (inj₂ c)) ∸ Data.Vec.length α)
             ]
             VMerging α β
 
@@ -209,7 +211,6 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
 --  over ℕ. That is, for all S and i, we have: round S i ≃ Fin k for some k.
 -- 3. Corollary of 1. and 2.: TerseFreeTerms ≃ TeleTerms ≃ ℕ
 --------------------------------------------------------------------------------
-open import Data.List.Extrema.Nat
 
 decompileTerm : {S : TerseSignature} → TerseFreeTerms S → TeleTerms S
 decompileTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
@@ -218,6 +219,9 @@ decompileTerm {S} (mk-ℕ-nullary x n) =
     in
     (round , c-ℕ-nullary , x , n , n<1+n n)
 decompileTerm {S} (mk-pure-multiary x args) = 
+    let arity : ℕ
+        arity = ℕ.suc (Data.List.lookup (pure-multiary S) x)
+    in
     let getRound = λ t → proj₁ (decompileTerm t)
     in
     let argRounds : Vec ℕ (Data.Vec.length args)
@@ -244,18 +248,73 @@ decompileTerm {S} (mk-pure-multiary x args) =
     let Pdec : Relation.Unary.Decidable P
         Pdec t = getRound t Data.Nat.≟ round∸1
     in
-    let (α , β) = Data.List.partition {P = P} Pdec (toList args)
+    let L : List (TerseFreeTerms S)
+        L = toList args
     in
-    -- #TODO: eh bug? m and lenα are the same?
-    let m' = Data.Vec.length args
+    let unmergeMaxOutp : UnmergeMaxOutp L getRound
+        unmergeMaxOutp = unmergeMax L getRound
     in
-    let m = ?
+    let rawMerge = UnmergeMaxOutp.m unmergeMaxOutp
     in
-    let α = ?
+    let H-rawMerge : compileMerging rawMerge ≡ L
+        H-rawMerge = UnmergeMaxOutp.H-m unmergeMaxOutp
     in
-    let β = ?
+    let maxes = UnmergeMaxOutp.maxes unmergeMaxOutp
     in
-    let merging = ?
+    let others = UnmergeMaxOutp.others unmergeMaxOutp
+    in
+    let lenMaxes>0 : 0 < Data.List.length (map proj₁ maxes)
+        lenMaxes>0 = 
+            let M = max 0 (map getRound L)
+            in
+            let M∈L : M ∈ (map getRound L)
+                M∈L = ? -- This should be provable for non-empty lists.
+            in
+            let M∈compile : M ∈ map getRound (compileMerging rawMerge)
+                M∈compile = subst (λ v → M ∈ map getRound v) (sym H-rawMerge) M∈L
+            in
+            -- #TODO: generalise compileMembership to still hold under maps!
+            -- The map is `getRound`.
+            let M∈maxes⊎M∈others : M ∈ (map proj₁ maxes) ⊎ M ∈ (map proj₁ others)
+                M∈maxes⊎M∈others = compileMembership rawMerge 
+            in
+            let M∉others : M ∉ (map proj₁ others)
+                M∉others M∈others = ? -- others come with proofs that all el 
+                -- are smaller than the max. So obviously there max 
+                -- itself cannot be in others! But Tell That Agda...
+            in
+            let M∈maxes : M ∈ (map proj₁ maxes)
+                M∈maxes = elimCaseRight M∈maxes⊎M∈others M∉others
+            in
+            ∈-length M∈maxes
+    in
+    let m : Fin (getArity S (inj₁ x))
+        -- #TODO: ditch all the stuff below!!!
+        m = let lenL≡arity : length L ≡ arity
+                lenL≡arity = length-toList args
+            in
+            let m' : ℕ
+                m' = Data.List.length maxes -- m must be one smaller than this!
+            in
+            -- We know that m' ≤ length L and that length L is the arity.
+            -- So it should be possible to inject it into the finite set.
+            let lenMaxes≤lenMerge : 
+                    length (Data.List.map proj₁ maxes) ≤ length (compileMerging rawMerge)
+                lenMaxes≤lenMerge = mergelenLemma rawMerge
+            in
+            let lenMaxes≤lenL : length (Data.List.map proj₁ maxes) ≤ length L
+                lenMaxes≤lenL = subst 
+                    (λ v → length (Data.List.map proj₁ maxes) ≤ v) 
+                    (cong length H-rawMerge) 
+                    lenMaxes≤lenMerge
+            in
+            ?
+    in
+    let α = {!  !}
+    in
+    let β = {! UnmergeMaxOutp.others unmergeMaxOutp !}
+    in
+    let merging = {! UnmergeMaxOutp.m unmergeMaxOutp !}
     in
     (round , c-pure-multiary , hᵢ , x , m , α , β , merging)
 decompileTerm {S} (mk-ℕ-multiary c x x₁) = {! !}
