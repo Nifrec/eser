@@ -47,11 +47,11 @@ open import Data.List.Relation.Binary.Pointwise.Properties renaming
 open import Data.List.Relation.Binary.Suffix.Heterogeneous using (tail)
     renaming (there to Suffix-there ; here to Suffix-here)
 open import Data.List.Extrema.Nat using (max ; xs≤max)
-open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_)
+open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_ ; length)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
 open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n 
-    ; m≤n⇒m<n∨m≡n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
+    ; m≤n⇒m<n∨m≡n ; ≤-trans ; n≤1+n) -- ; ≤-<-trans ; n≤0⇒n≡0 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
@@ -126,6 +126,7 @@ MergingFinTheo
     → VMerging α β ≃ Fin (numMergings n m)
 MergingFinTheo n m α β = ?
 
+
 ---- Extract the vector encoded in a merging.
 ---- Only homogeneous implementation given, for when α and 
 ---- β have the same underlying type (to avoid all the annoying injections
@@ -151,6 +152,71 @@ compileMerging {α = α} {β = b ∷ β} (AlphaTriv b β) = b ∷ β
 compileMerging {α = a ∷ α} {β = β} (AFirst a α β m) = a ∷ (compileMerging m)
 compileMerging {α = α} {β = b ∷ β} (BFirst b α β m) = b ∷ (compileMerging m)
 
+-- Macro for getting length of the list encoded in a Merging.
+mergelen
+    : {A : Set}
+    → {α β : List A} 
+    → Merging α β
+    → ℕ
+mergelen = length ∘ compileMerging
+
+-- Wrapping a Merging in a AFirst constructor increases the length of
+-- the encoded list by 1. 
+-- Obviously: the a : A argument is concatenated to the encoded list.
+mergelenIncrementA
+    : {A : Set}
+    → {a : A}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → mergelen (AFirst a α β m) ≡ ℕ.suc (mergelen m)
+mergelenIncrementA = ?
+
+-- BFirst analog to mergelenIncrementA.
+mergelenIncrementB
+    : {A : Set}
+    → {b : A}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → mergelen (BFirst b α β m) ≡ ℕ.suc (mergelen m)
+mergelenIncrementB = ?
+
+-- Merging α with β results in a list L that is never shorter than α.
+mergelenLemma
+    : {A : Set}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → length α ≤ mergelen m
+-- compileMerge m ≗ α in this case:
+mergelenLemma {A} {α} {[]}     (BetaTriv α) = ≤-refl 
+-- length α = 0 in this case:
+mergelenLemma {A} {[]} {b ∷ β} (AlphaTriv b β) = z≤n
+mergelenLemma {A} {a ∷ α} {β}  (AFirst a α β m) =
+    let IH : length α ≤ mergelen m
+        IH = mergelenLemma m
+    in
+    let sIHs : ℕ.suc (length α) ≤ ℕ.suc (mergelen m)
+        sIHs = s≤s IH
+    in
+    let sIHs' : length (a ∷ α) ≤ ℕ.suc (mergelen m)
+        sIHs' = sIHs -- These types are definitionally equal!
+    in
+    subst (λ z → length (a ∷ α) ≤ z) 
+          (mergelenIncrementA {A} {a} {α} {β} m) 
+          sIHs'
+mergelenLemma {A} {α} {b ∷ β}  (BFirst b α β m) =
+    let IH : length α ≤ mergelen m
+        IH = mergelenLemma m
+    in
+    let H' : mergelen m ≤ ℕ.suc (mergelen m)
+        H' = n≤1+n (mergelen m)
+    in
+    let H'' : mergelen m ≤ mergelen (BFirst b α β m)
+        H'' = subst (λ z → mergelen m ≤ z) 
+                    (mergelenIncrementB {A} {b} {α} {β} m) 
+                    H'
+    in
+    ≤-trans IH H''
+    
 --------------------------------------------------------------------------------
 -- Inverse operations to merging
 --
