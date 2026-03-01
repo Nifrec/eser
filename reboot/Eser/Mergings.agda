@@ -34,8 +34,8 @@ open import Relation.Binary.PropositionalEquality.Properties renaming (setoid to
 open ≡-Reasoning
 open import Data.List
 open import Data.List.Membership.Propositional
-open import Data.List.Membership.Propositional.Properties using (∈-map⁺)
-open import Data.List.Membership.Setoid.Properties hiding (∈-map⁺) 
+open import Data.List.Membership.Propositional.Properties using (∈-map⁺ ; ∈-map⁻)
+open import Data.List.Membership.Setoid.Properties hiding (∈-map⁺ ; ∈-map⁻) 
     renaming (reverse⁻ to ∈-reverse⁻)
 open import Data.List.Relation.Unary.All hiding (toList ; map)
 open import Data.List.Relation.Unary.Any hiding (map)
@@ -186,12 +186,23 @@ compileMembershipMapCongr
     → (b : B)
     → b ∈ map f (compileMerging m) 
     → (b ∈ map f α) ⊎ (b ∈ map f β)
--- Informal proof sketch:
--- First get pre-img a of b, then use compileMembership, and then elim that.
--- Don't case distinct on m. Prove sidelemma b ∈ map f L -> a ∈ L × f a ≡ b.
--- From a ∈ L we get a ∈ α ⊎ a ∈ β. Hence b ≡ f a is then in α or β as well.
--- QED.
-compileMembershipMapCongr m f b b∈MapFComp = ?
+compileMembershipMapCongr {A} {B} {α} {β} m f b b∈MapFComp = 
+    let meh : (Σ[ a ∈ A ] (a ∈ compileMerging m) × (b ≡ f a))
+        meh = ∈-map⁻ f b∈MapFComp
+    in
+    let (a , a∈comp , b≡fa) = meh
+    in
+    let a∈α⊎a∈β : a ∈ α ⊎ a ∈ β
+        a∈α⊎a∈β = compileMembership m a a∈comp
+    in
+    let a∈α→b∈fα : a ∈ α → b ∈ map f α
+        a∈α→b∈fα a∈α = subst (λ x → x ∈ map f α) (sym b≡fa) (∈-map⁺ f a∈α)
+    in
+    let a∈β→b∈fβ : a ∈ β → b ∈ map f β
+        a∈β→b∈fβ a∈β = subst (λ x → x ∈ map f β) (sym b≡fa) (∈-map⁺ f a∈β)
+    in
+    Data.Sum.map a∈α→b∈fα a∈β→b∈fβ a∈α⊎a∈β
+
 
 -- Macro for getting length of the list encoded in a Merging.
 mergelen
