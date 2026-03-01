@@ -20,10 +20,11 @@ open import Data.Product hiding (map)
 --open import Relation.Binary.Structures
 open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Data.List
+open import Data.List.Properties using (map-∘)
 open import Data.Vec hiding (restrict ; length ; map)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
-open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
+open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n ; <⇒≢) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
 open import Data.Vec.Properties using (length-toList) 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
@@ -51,7 +52,8 @@ open import Eser.Definitions using (_≈_ ; indices ; _≃_ ; HomotEquivalence)
 open HomotEquivalence
 open import Data.List.Extrema.Nat
 open import Eser.Mergings using (Merging ; unmergeMax ; UnmergeMaxOutp 
-    ; mergelenLemma ; VMerging ; compileMerging ; compileMembership)
+    ; mergelenLemma ; VMerging ; compileMerging ; compileMembership
+    ; compileMembershipMapCongr)
 
 module Eser.Signatures where
 
@@ -211,18 +213,34 @@ TeleTerms S = Σ[ i ∈ ℕ ] ( round S i )
 --  over ℕ. That is, for all S and i, we have: round S i ≃ Fin k for some k.
 -- 3. Corollary of 1. and 2.: TerseFreeTerms ≃ TeleTerms ≃ ℕ
 --------------------------------------------------------------------------------
+open import Data.List.Relation.Unary.Any using (here ; there)
 
-decompileTerm : {S : TerseSignature} → TerseFreeTerms S → TeleTerms S
-decompileTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
-decompileTerm {S} (mk-ℕ-nullary x n) = 
+-- Auxiliary lemma.
+-- Given a list of tuples (x , qx , ...) where qx proves that f x ≢ M
+-- then we know that the f-map of the first projections of the list does not
+-- contain M.
+not∈lemma 
+    : {A C : Set}
+    → {B : A → Set}
+    → (L : List (Σ[ a ∈ A ] B a))
+    → (f : A → C)
+    → (M : C)
+    → (z : (x : Σ[ a ∈ A ] B a) → f (proj₁ x) ≢ M)
+    → (M ∉ map (f ∘ proj₁) L)
+not∈lemma (x ∷ L) f M z (here px) = z x (sym px)
+not∈lemma (x ∷ L) f M z (there M∈mapL) = not∈lemma L f M z M∈mapL
+
+decomposeTerm : {S : TerseSignature} → TerseFreeTerms S → TeleTerms S
+decomposeTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
+decomposeTerm {S} (mk-ℕ-nullary x n) = 
     let round = ℕ.suc n
     in
     (round , c-ℕ-nullary , x , n , n<1+n n)
-decompileTerm {S} (mk-pure-multiary x args) = 
+decomposeTerm {S} (mk-pure-multiary x args) = 
     let arity : ℕ
         arity = ℕ.suc (Data.List.lookup (pure-multiary S) x)
     in
-    let getRound = λ t → proj₁ (decompileTerm t)
+    let getRound = λ t → proj₁ (decomposeTerm t)
     in
     let argRounds : Vec ℕ (Data.Vec.length args)
         argRounds = Data.Vec.map getRound args
@@ -259,7 +277,11 @@ decompileTerm {S} (mk-pure-multiary x args) =
     let H-rawMerge : compileMerging rawMerge ≡ L
         H-rawMerge = UnmergeMaxOutp.H-m unmergeMaxOutp
     in
-    let maxes = UnmergeMaxOutp.maxes unmergeMaxOutp
+    let maxes : List ( Σ[ t ∈ (TerseFreeTerms S) ] (
+            proj₁ (decomposeTerm t) ≡ max 0 (map getRound L)
+            ×
+            t ∈ L))
+        maxes = UnmergeMaxOutp.maxes unmergeMaxOutp
     in
     let others = UnmergeMaxOutp.others unmergeMaxOutp
     in
@@ -275,18 +297,42 @@ decompileTerm {S} (mk-pure-multiary x args) =
             in
             -- #TODO: generalise compileMembership to still hold under maps!
             -- The map is `getRound`.
-            let M∈maxes⊎M∈others : M ∈ (map proj₁ maxes) ⊎ M ∈ (map proj₁ others)
-                M∈maxes⊎M∈others = compileMembership rawMerge 
+            let M∈maxes⊎M∈others : M ∈ (map (getRound ∘ proj₁) maxes) 
+                                   ⊎ 
+                                   M ∈ (map (getRound ∘ proj₁) others)
+                M∈maxes⊎M∈others = 
+                    let almost = compileMembershipMapCongr rawMerge getRound 
+                                                           M M∈compile 
+                    -- This gives 
+                    -- M ∈ map getRound (map proj₁ maxes) ⊎ ...
+                    -- but we need
+                    -- M ∈ map (getRound ∘ proj₁) maxes ⊎ ...
+                    in
+                    subst (λ x → M ∈ map (getRound ∘ proj₁) maxes ⊎ M ∈ x) 
+                          (sym (map-∘ {g = getRound} {f = proj₁} others)) 
+                          (subst (λ x → M ∈ x ⊎ M ∈ map getRound 
+                                 (map (λ r → proj₁ r) others)) 
+                                 (sym (map-∘ {g = getRound} {f = proj₁} maxes)) 
+                                 almost
+                          )
             in
-            let M∉others : M ∉ (map proj₁ others)
-                M∉others M∈others = ? -- others come with proofs that all el 
-                -- are smaller than the max. So obviously there max 
-                -- itself cannot be in others! But Tell That Agda...
+                -- others come with proofs that all elements
+                -- are smaller than the max. 
+                -- So obviously the max itself cannot be in others! 
+            let M∉others : M ∉ (map (getRound ∘ proj₁) others)
+                M∉others M∈others = 
+                        let z (t , getRoundT<M , _) = <⇒≢ getRoundT<M
+                        in
+                        not∈lemma others getRound M z M∈others
             in
-            let M∈maxes : M ∈ (map proj₁ maxes)
+            --let meh = map-∘ {g = ℕ.suc} {f = ℕ.suc} (1 ∷ 2 ∷ [])
+            --in
+            let M∈maxes : M ∈ (map (getRound ∘ proj₁) maxes)
                 M∈maxes = elimCaseRight M∈maxes⊎M∈others M∉others
             in
-            ∈-length M∈maxes
+            -- #TODO: we only showed the getRound ∘ proj₁ image of maxes.
+            -- use lemma that `map` preserves and reflects length.
+            {! ∈-length M∈maxes !}
     in
     let m : Fin (getArity S (inj₁ x))
         -- #TODO: ditch all the stuff below!!!
@@ -317,7 +363,7 @@ decompileTerm {S} (mk-pure-multiary x args) =
     let merging = {! UnmergeMaxOutp.m unmergeMaxOutp !}
     in
     (round , c-pure-multiary , hᵢ , x , m , α , β , merging)
-decompileTerm {S} (mk-ℕ-multiary c x x₁) = {! !}
+decomposeTerm {S} (mk-ℕ-multiary c x x₁) = {! !}
 
 FreeTerms≃TeleTerms 
     : (S : TerseSignature)
