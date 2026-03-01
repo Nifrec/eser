@@ -47,14 +47,15 @@ open import Function hiding (_↔_)
 open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
 open import Data.List.Membership.Propositional.Properties using (∈-length)
 --open import Data.List.Relation.Unary.Any using (Any)
+open import Data.List.Extrema.Nat
 
 open import Eser.Logic using (elimCaseRight)
 open import Eser.Definitions using (_≈_ ; indices ; _≃_ ; HomotEquivalence)
 open HomotEquivalence
-open import Data.List.Extrema.Nat
 open import Eser.Mergings using (Merging ; unmergeMax ; UnmergeMaxOutp 
     ; mergelenLemma ; VMerging ; compileMerging ; compileMembership
     ; compileMembershipMapCongr)
+open import Eser.ListMaxima using (nonemptyThenHasMax)
 
 module Eser.Signatures where
 
@@ -309,8 +310,11 @@ decomposeTerm {S} (mk-pure-multiary x args) =
             let M = max 0 (map getRound L)
             in
             let M∈L : M ∈ (map getRound L)
-                M∈L = ? -- This should be provable for non-empty lists.
-                -- We can get length
+                M∈L = 
+                    let 0<arity : 0 < arity
+                        0<arity = z<s
+                    in
+                    {! nonemptyThenHasMax (subst (λ v → 0 < v) (sym lenL≡arity) 0<arity !}
             in
             let M∈compile : M ∈ map getRound (compileMerging rawMerge)
                 M∈compile = subst (λ v → M ∈ map getRound v) (sym H-rawMerge) M∈L

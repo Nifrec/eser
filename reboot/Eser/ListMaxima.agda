@@ -10,10 +10,11 @@
 -- and in particular, also if L is empty.
 
 open import Data.Nat
-open import Data.Nat.Properties using (<-≤-trans)
+open import Data.Nat.Properties using (<-≤-trans ; n≢0⇒n>0 )
 open import Data.List
 open import Data.List.Extrema.Nat
 open import Data.List.Membership.Propositional using (_∈_)
+open import Data.List.Relation.Unary.All renaming (lookup to All-lookup)
 open import Relation.Binary.PropositionalEquality
 open import Data.Sum
 open import Function
@@ -47,10 +48,10 @@ nonemptyThenHasMax {L@(x ∷ L')} _ with maxIsDefaultOrIn L
                 in
                 let x≤max : x ≤ max 0 L
                     -- Need to eliminate an ``All`` predicate here.
-                    x≤max = {! xs≤max x∈L !}
+                    x≤max = All-lookup (xs≤max 0 L) x∈L
                 in
                 let 0<x : 0 < x
-                    0<x = ?
+                    0<x = n≢0⇒n>0 x≢0
                 in
                 let max<x : max 0 L < x
                     max<x = subst (λ y → y < x) (sym max0L≡0) 0<x
