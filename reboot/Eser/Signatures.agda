@@ -20,14 +20,15 @@ open import Data.Product hiding (map)
 --open import Relation.Binary.Structures
 open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
 open import Data.List
-open import Data.List.Properties using (map-∘)
+open import Data.List.Properties using (map-∘ ; length-map)
 open import Data.Vec hiding (restrict ; length ; map)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
-open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n ; <⇒≢) --; ≤-trans ; ≤-<-trans ; n≤0⇒n≡0 
+open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n ; <⇒≢
+    ; ≤-trans ) -- ; ≤-<-trans ; n≤0⇒n≡0 
 open import Data.Vec.Properties using (length-toList) 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
---open import Data.Fin.Properties using (toℕ<n)
+open import Data.Fin.Properties using (toℕ-fromℕ<)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
 open import Function hiding (_↔_)
 
@@ -44,7 +45,7 @@ open import Function hiding (_↔_)
 --open import Data.List.Relation.Unary.All using (All)
 --open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
 open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
-open import Data.List.Membership.Setoid.Properties using (∈-length)
+open import Data.List.Membership.Propositional.Properties using (∈-length)
 --open import Data.List.Relation.Unary.Any using (Any)
 
 open import Eser.Logic using (elimCaseRight)
@@ -230,6 +231,21 @@ not∈lemma
 not∈lemma (x ∷ L) f M z (here px) = z x (sym px)
 not∈lemma (x ∷ L) f M z (there M∈mapL) = not∈lemma L f M z M∈mapL
 
+-- If a number is bigger than 0 and ≤ than ℓ,
+-- then it is the successor of a number in [0, ..., ℓ-1].
+getPredec
+    : {k ℓ : ℕ}
+    → k ≤ ℓ
+    → 0 < k
+    → Σ[ m ∈ Fin ℓ ](ℕ.suc (toℕ m) ≡ k)
+getPredec {ℕ.suc k} {ℓ} k≤ℓ 0<k = 
+    let m = fromℕ< (≤-trans ≤-refl k≤ℓ)
+    in
+    let toℕm≡k = toℕ-fromℕ< (≤-trans ≤-refl k≤ℓ)
+    in
+    (m , cong ℕ.suc toℕm≡k)
+
+
 decomposeTerm : {S : TerseSignature} → TerseFreeTerms S → TeleTerms S
 decomposeTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
 decomposeTerm {S} (mk-ℕ-nullary x n) = 
@@ -285,18 +301,20 @@ decomposeTerm {S} (mk-pure-multiary x args) =
     in
     let others = UnmergeMaxOutp.others unmergeMaxOutp
     in
-    let lenMaxes>0 : 0 < Data.List.length (map proj₁ maxes)
-        lenMaxes>0 = 
+    let lenL≡arity : length L ≡ arity
+        lenL≡arity = length-toList args
+    in
+    let 0<lenMaxes : 0 < Data.List.length maxes
+        0<lenMaxes = 
             let M = max 0 (map getRound L)
             in
             let M∈L : M ∈ (map getRound L)
                 M∈L = ? -- This should be provable for non-empty lists.
+                -- We can get length
             in
             let M∈compile : M ∈ map getRound (compileMerging rawMerge)
                 M∈compile = subst (λ v → M ∈ map getRound v) (sym H-rawMerge) M∈L
             in
-            -- #TODO: generalise compileMembership to still hold under maps!
-            -- The map is `getRound`.
             let M∈maxes⊎M∈others : M ∈ (map (getRound ∘ proj₁) maxes) 
                                    ⊎ 
                                    M ∈ (map (getRound ∘ proj₁) others)
@@ -316,45 +334,42 @@ decomposeTerm {S} (mk-pure-multiary x args) =
                                  almost
                           )
             in
-                -- others come with proofs that all elements
+                -- Elements of 'others' come with proofs that their first
+                -- components' getRound images are
                 -- are smaller than the max. 
-                -- So obviously the max itself cannot be in others! 
+                -- So obviously the pre-image of the max 
+                -- itself cannot be in others! 
             let M∉others : M ∉ (map (getRound ∘ proj₁) others)
                 M∉others M∈others = 
                         let z (t , getRoundT<M , _) = <⇒≢ getRoundT<M
                         in
                         not∈lemma others getRound M z M∈others
             in
-            --let meh = map-∘ {g = ℕ.suc} {f = ℕ.suc} (1 ∷ 2 ∷ [])
-            --in
             let M∈maxes : M ∈ (map (getRound ∘ proj₁) maxes)
                 M∈maxes = elimCaseRight M∈maxes⊎M∈others M∉others
             in
-            -- #TODO: we only showed the getRound ∘ proj₁ image of maxes.
-            -- use lemma that `map` preserves and reflects length.
-            {! ∈-length M∈maxes !}
+            -- #TODO: simplification?:
+            -- in the above I went through quite some fuss to rewrite
+            -- map getRound (map proj₁ ...) into map (getRound ∘ proj₁),
+            -- but now I am undoing it again. Was this earlier rewrite not just
+            -- a confusing detour?
+            subst (λ x₁ → 0 < x₁) (length-map (getRound ∘ proj₁) maxes) (∈-length M∈maxes)
     in
-    let m : Fin (getArity S (inj₁ x))
-        -- #TODO: ditch all the stuff below!!!
-        m = let lenL≡arity : length L ≡ arity
-                lenL≡arity = length-toList args
-            in
-            let m' : ℕ
-                m' = Data.List.length maxes -- m must be one smaller than this!
-            in
-            -- We know that m' ≤ length L and that length L is the arity.
-            -- So it should be possible to inject it into the finite set.
-            let lenMaxes≤lenMerge : 
-                    length (Data.List.map proj₁ maxes) ≤ length (compileMerging rawMerge)
-                lenMaxes≤lenMerge = mergelenLemma rawMerge
-            in
-            let lenMaxes≤lenL : length (Data.List.map proj₁ maxes) ≤ length L
-                lenMaxes≤lenL = subst 
-                    (λ v → length (Data.List.map proj₁ maxes) ≤ v) 
-                    (cong length H-rawMerge) 
-                    lenMaxes≤lenMerge
-            in
-            ?
+    let lenMaxes≤lenMerge : 
+            length maxes ≤ length (compileMerging rawMerge)
+        lenMaxes≤lenMerge = subst (λ v → v ≤ length (compileMerging rawMerge))
+                                  (length-map proj₁ maxes)
+                                  (mergelenLemma rawMerge)
+    in
+    let lenMaxes≤lenL : length maxes ≤ arity
+        lenMaxes≤lenL = 
+            subst 
+            (λ v → length maxes ≤ v) 
+            (trans (cong length H-rawMerge) lenL≡arity)
+            lenMaxes≤lenMerge
+    in
+    let m : Fin arity
+        m = proj₁ (getPredec lenMaxes≤lenL 0<lenMaxes)
     in
     let α = {!  !}
     in
