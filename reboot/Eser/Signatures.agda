@@ -34,7 +34,7 @@ open import Function hiding (_↔_)
 
 --open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 --open import Relation.Nullary
---open ≡-Reasoning
+open ≡-Reasoning
 --open import Data.Nat.Properties
 --open import Data.Fin
 --open import Data.Fin.Properties
@@ -381,7 +381,23 @@ decomposeTerm {S} (mk-pure-multiary x args) =
     let m : Fin arity
         m = proj₁ (getPredec lenMaxes≤lenL 0<lenMaxes)
     in
-    let α = {!  !}
+    let lenMaxes≡Sm : length (map (decomposeTerm ∘ proj₁) maxes) ≡ ℕ.suc (toℕ m)
+        lenMaxes≡Sm =  
+                begin 
+                    length (map (decomposeTerm ∘ proj₁) maxes)
+                ≡⟨ length-map (decomposeTerm ∘ proj₁) maxes ⟩
+                    length maxes
+                ≡⟨ sym (proj₂ (getPredec lenMaxes≤lenL 0<lenMaxes)) ⟩
+                    ℕ.suc (toℕ m) 
+                ∎
+    in                    
+    let α = let α' = fromList (map (decomposeTerm ∘ proj₁) maxes)
+            in
+            -- #TODO: I can prove that the length is right, but I don't think
+            -- this will give the right elements yet...
+            let α'' = subst (λ x → Vec _ x) lenMaxes≡Sm α'
+            in
+            α''
     in
     let β = {! UnmergeMaxOutp.others unmergeMaxOutp !}
     in
