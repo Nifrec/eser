@@ -305,6 +305,10 @@ decomposeTerm {S} (mk-pure-multiary x args) =
     let lenL≡arity : length L ≡ arity
         lenL≡arity = length-toList args
     in
+    let lenGetRoundL≡arity : length (map getRound L) ≡ arity
+        lenGetRoundL≡arity = 
+                subst (λ v → v ≡ arity) (sym (length-map getRound L)) lenL≡arity
+    in
     let 0<lenMaxes : 0 < Data.List.length maxes
         0<lenMaxes = 
             let M = max 0 (map getRound L)
@@ -314,7 +318,9 @@ decomposeTerm {S} (mk-pure-multiary x args) =
                     let 0<arity : 0 < arity
                         0<arity = z<s
                     in
-                    {! nonemptyThenHasMax (subst (λ v → 0 < v) (sym lenL≡arity) 0<arity !}
+                    nonemptyThenHasMax (subst (λ v → 0 < v) 
+                                              (sym lenGetRoundL≡arity) 
+                                              0<arity)
             in
             let M∈compile : M ∈ map getRound (compileMerging rawMerge)
                 M∈compile = subst (λ v → M ∈ map getRound v) (sym H-rawMerge) M∈L
