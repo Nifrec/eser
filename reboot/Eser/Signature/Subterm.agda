@@ -148,18 +148,43 @@ module IndexHeterogeneousTransClosure
                       : {i j : I} → A {i} → A {j} → Set where
         direct 
             : {i j : I} 
-            → (a : A {i}) 
-            → (b : A {j}) 
+            → {a : A {i}} 
+            → {b : A {j}} 
             → (a ∼ b) 
             → ITransClosure _∼_ a b
         composed --^ a∼b and b∼⁺c then a∼⁺c.
             : {i j k : I} 
-            → (a : A {i}) 
-            → (b : A {j}) 
-            → (c : A {k})
+            → {a : A {i}} 
+            → {b : A {j}} 
+            → {c : A {k}}
             → a ∼ b
             → ITransClosure _∼_ b c
             → ITransClosure _∼_ a c
+
+    -- Predicate that an index-heterogeneous relation is transitive.
+    ITransitive : (_∼_ : {i j : I} → A {i} → A {j} → Set) → Set
+    ITransitive _∼_ = 
+              {i j k : I}
+            → {a : A {i}} 
+            → {b : A {j}} 
+            → {c : A {k}}
+            → a ∼ b
+            → b ∼ c
+            → a ∼ c
+
+    -- Theorem that the indexed-transitive-closure is actually transitive.
+    ITransClosureTransitivity
+        : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+        → ITransitive (ITransClosure _∼_)
+    ITransClosureTransitivity _∼_ {a = a} {b = b} {c = c} (direct a∼b) b∼⁺c 
+        = composed a∼b b∼⁺c
+    ITransClosureTransitivity _∼_ {a = a} {b = b} {c = c} 
+        (composed {a = a} {b = z} {c = b} a∼z z∼⁺b) b∼⁺c = 
+            let z∼⁺c = ITransClosureTransitivity _∼_ z∼⁺b b∼⁺c
+            in
+            composed a∼z z∼⁺c
+
+
 open IndexHeterogeneousTransClosure
 
 module _ {S : TerseSignature} where
