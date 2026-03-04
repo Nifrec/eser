@@ -48,6 +48,7 @@ open import Function hiding (_↔_)
 open ≡-Reasoning
 open import Data.Vec.Membership.Propositional using (_∈_ ; _∉_ )
 open import Data.List.Extrema.Nat using (max)
+open import Induction
 
 open import Relation.Binary.Construct.Closure.Transitive using (TransClosure)
     renaming (wellFounded to TransWellFounded)
@@ -184,6 +185,33 @@ module IndexHeterogeneousTransClosure
             in
             composed a∼z z∼⁺c
 
+    IWfRec : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+           → RecStruct (Σ[ i ∈ I ](A {i})) 0ℓ 0ℓ
+    -- {i : I} (x : A i)
+    IWfRec _∼_ P (i , x) = (j : I) → (y : A {j}) → y ∼ x → P (j , y)
+
+    data IAcc (_∼_ : {i j : I} → A {i} → A {j} → Set) (i,x : Σ[ i ∈ I ](A {i}) )
+              : Set where
+        iacc : (rs : IWfRec _∼_ (IAcc _∼_) i,x) → IAcc _∼_ i,x
+
+    --data IAcc (_∼_ : {i j : I} → A {i} → A {j} → Set) {i : I} (x : A {i}) : Set where
+    --    iacc : (rs : IWfRec _∼_ (IAcc _∼_) {i} x) → IAcc _∼_ {i} x
+
+    -- Generalised 'accessibility' predicate.
+    --
+    --IAcc 
+    --    : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+    --    → {i : I} 
+    --    → A i
+    --    → Set
+    --IAcc _∼_ {i} x = {j : I} → {y : A j} → y ∼ x → IAcc _∼_ {j} y
+
+    -- The ITransClosure preserves Well-Foundedness.
+    ITransWellFounded
+        : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+        → WellFounded _∼_
+        → WellFounded (ITransClosure _∼_)
+    ITransWellFounded = ?
 
 open IndexHeterogeneousTransClosure
 
@@ -219,11 +247,40 @@ module _ {S : TerseSignature} where
     _«*_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
     _«*_ {n} {m} = ITransClosure _«_ {n} {m}
 
+    «AllAcc : {n : ℕ} → (t : PartialTerms S n) → IAcc (_«_ {n}) (n , t)
+    «AllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
+    «AllAcc {0} (mk-ℕ-nullary x x₁) = iacc λ {j y ()}
+    «AllAcc {n} (argless-pure-multiary c) = iacc λ { j y () }
+    «AllAcc {n} (argless-ℕ-multiary c x) = iacc λ { j y () }
+    «AllAcc {0} t@(giveArg t' a) = 
+        iacc ?
+        where
+            f : (j : ℕ) (y : PartialTerms S ℕ.zero) → y « giveArg t' a → IAcc _«_ (j , y)
+            f 0 a (inj₁ refl) = «AllAcc {0} a
+            f (suc j) a (inj₁ refl) = {! «AllAcc {ℕ.suc j} a !}
+               --^ Wait this does not make sense. Now a : PartialTerms S 0
+               -- and a : PartialTerms S (ℕ.suc j). That is not possible!
+            f j y (inj₂ y«t') =
+                        let rec = «AllAcc {ℕ.suc 0} t'
+                        in -- TODO: eliminate this and apply it to y«t':
+                        {!   !}  
+    «AllAcc {suc n} t@(giveArg t' a) = iacc λ { j y x → {! !} }
+
+    _«σ_ : Rel (AllPartialTerms S) 0ℓ
+    (j , a) «σ (i , t) = a « t
+
+    «σ-WellFounded : WellFounded _«σ_
+    «σ-WellFounded t = acc f
+        where
+            f : {y : AllPartialTerms S} → y «σ t → Acc _«σ_ y
+            f {y} (y«t) = ? -- Can't recurse here 
+                            -- cuz can't expose y as building block of t
+
     --«-WellFounded : WellFounded _«_
     --«-WellFounded t = acc f
     --    where
-    --        f : {k : TerseFreeTerms S} → k « t → Acc _«_ k
+    --        f : {k : PartialTerms S} → k « t → Acc _«_ k
     --        f {k} k∈Lt = ?
 
     --«*-WellFounded : WellFounded _«*_
-    --«*-WellFounded = TransWellFounded _«_ «-WellFounded
+    --«*-WellFounded = ITransWellFounded _«_ {! «-WellFounded !}
