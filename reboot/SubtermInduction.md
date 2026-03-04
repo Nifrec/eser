@@ -87,3 +87,86 @@ record TerseSignature : Set where
         ℕ-multiary : List ℕ
 ```
 )
+
+## Follow-up problems
+4 March 2026
+
+Now the above gave a very elegant way of defining _«_:
+```agda
+AllPartialTerms : (S : TerseSignature) → Set
+AllPartialTerms S = Σ[ n ∈ ℕ ](PartialTerms S n)
+
+ClosedTerms : (S : TerseSignature) → Set
+ClosedTerms S = PartialTerms S 0
+
+module _ {S : TerseSignature} where
+    -- Is-argument-of-relation: 
+    -- `a « t` iff t is build as a contructor with (among others) argument a.
+    -- a is an arument of (giveArg t a₁) if it is the last 
+    -- argument (a₁) or an earlier argument, i.e., an arg of t.
+    -- This relation also concerns non-closed-terms, it was easier to define it
+    -- this way.
+    _«_ : Rel (AllPartialTerms S) 0ℓ
+    a « (0 , mk-pure-nullary _)           = ⊥
+    a « (0 , mk-ℕ-nullary _ _)            = ⊥
+    a « (suc n , argless-pure-multiary _) = ⊥
+    a « (suc n , argless-ℕ-multiary _ _)  = ⊥
+    a « (n , giveArg t a₁)                = (a ≡ (0 , a₁)) ⊎ (a « (ℕ.suc n , t))
+```
+Unfortunately, `(ℕ.suc n , t)` is not the same as `t` and the termination
+checker rejected it...
+
+### Better solution
+Use a relation that is heterogeneous in the indices of the underlying type:
+```agda
+_«_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+a « mk-pure-nullary _           = ⊥
+a « mk-ℕ-nullary _ _            = ⊥
+a « argless-pure-multiary _     = ⊥
+a « argless-ℕ-multiary _ _      = ⊥
+_«_ {0} {m} a (giveArg t a₁)    = (a ≡ a₁) ⊎ (a « t)
+_«_ {suc n} {m} a _             = _ 
+```
+Now we cannot simply take the `TransClosure`, since the stdlib only defines
+it on homogeneous relations.
+But we can mimick the definition thereof easily:
+```agda
+module IndexHeterogeneousTransClosure 
+    {I : Set}
+    {A : {I} → Set}
+    where
+
+    -- Generalisation of `TransClosure` from 
+    -- Relation.Binary.Construct.Closure.Transitive
+    -- to relations that are heretogeneous in the indices of the underlying
+    -- type.
+    --
+    -- Don't confuse this with the "indexed relations"
+    -- in the stdlib in Relation.Binary.Indexed.Homogeneous,
+    -- There the related elements are of type `I → Set`, and `A ≗ I → Set`.
+    -- In this file we have a very different situation:
+    -- the base type instead is `A : I → Set`, so the related elements
+    -- live in `A i`, each for some fixed `i`.
+    data ITransClosure (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+                      : {i j : I} → A {i} → A {j} → Set where
+        direct 
+            : {i j : I} 
+            → (a : A {i}) 
+            → (b : A {j}) 
+            → (a ∼ b) 
+            → ITransClosure _∼_ a b
+        composed --^ a∼b and b∼⁺c then a∼⁺c.
+            : {i j k : I} 
+            → (a : A {i}) 
+            → (b : A {j}) 
+            → (c : A {k})
+            → a ∼ b
+            → ITransClosure _∼_ b c
+            → ITransClosure _∼_ a c
+open IndexHeterogeneousTransClosure
+```
+And now we can define the is-subterm-of-relation:
+```agda
+_«*_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+_«*_ {n} {m} = ITransClosure _«_ {n} {m}
+```

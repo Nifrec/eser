@@ -34,7 +34,7 @@ open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
 open import Data.Product hiding (map)
-open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_)
+open import Data.Fin hiding (_≤_ ; _≤?_ ; _<_ ; _>_ ; _+_ )
 open import Data.List
 open import Data.List.Properties using (map-∘ ; length-map)
 open import Data.Vec hiding (restrict ; length ; map)
@@ -121,23 +121,78 @@ data PartialTerms (S : TerseSignature) : ℕ →  Set where
         → PartialTerms S 0         --^ Next argument to give: a closed term.
         → PartialTerms S n
 
+AllPartialTerms : (S : TerseSignature) → Set
+AllPartialTerms S = Σ[ n ∈ ℕ ](PartialTerms S n)
+
 ClosedTerms : (S : TerseSignature) → Set
 ClosedTerms S = PartialTerms S 0
 
-module _ {S : TerseSignature} where
-    -- `a « t` iff t is build as a contructor with (among others) argument a.
-    _«_ : Rel (ClosedTerms S) 0ℓ
-    a « mk-pure-nullary x = {! !}
-    a « mk-ℕ-nullary x x₁ = {! !}
-    a « giveArg t t₁ = {! !}
-    --a « mk-pure-nullary _ = ⊥           --^ Nullary terms have no argument.
-    --a « mk-ℕ-nullary _ _ = ⊥            --^ Nullary terms have no argument.
-    --a « mk-pure-multiary c L = a ∈ L    --^ L is the list of arguments.
-    --a « mk-ℕ-multiary c L _ = a ∈ L     --^ L is the list of arguments.
+-- #TODO: move to own file. Maybe contribute to stdlib?
+module IndexHeterogeneousTransClosure 
+    {I : Set}
+    {A : {I} → Set}
+    where
 
-    ---- The 'subterm' relation is the transitive closure of _«_.
-    --_«*_ : Rel (TerseFreeTerms S) 0ℓ
-    --_«*_ = TransClosure _«_ 
+    -- Generalisation of `TransClosure` from 
+    -- Relation.Binary.Construct.Closure.Transitive
+    -- to relations that are heretogeneous in the indices of the underlying
+    -- type.
+    --
+    -- Don't confuse this with the "indexed relations"
+    -- in the stdlib in Relation.Binary.Indexed.Homogeneous,
+    -- There the related elements are of type `I → Set`, and `A ≗ I → Set`.
+    -- In this file we have a very different situation:
+    -- the base type instead is `A : I → Set`, so the related elements
+    -- live in `A i`, each for some fixed `i`.
+    data ITransClosure (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+                      : {i j : I} → A {i} → A {j} → Set where
+        direct 
+            : {i j : I} 
+            → (a : A {i}) 
+            → (b : A {j}) 
+            → (a ∼ b) 
+            → ITransClosure _∼_ a b
+        composed --^ a∼b and b∼⁺c then a∼⁺c.
+            : {i j k : I} 
+            → (a : A {i}) 
+            → (b : A {j}) 
+            → (c : A {k})
+            → a ∼ b
+            → ITransClosure _∼_ b c
+            → ITransClosure _∼_ a c
+open IndexHeterogeneousTransClosure
+
+module _ {S : TerseSignature} where
+    -- Is-argument-of-relation: 
+    -- `a « t` iff t is build as a contructor with (among others) argument a.
+    -- a is an arument of (giveArg t a₁) if it is the last 
+    -- argument (a₁) or an earlier argument, i.e., an arg of t.
+    -- This relation also concerns non-closed-terms, it was easier to define it
+    -- this way.
+    -- The relation is defined as a heterogeneous relation between PartialTerms
+    -- of possibly different indices. The simpler homogeneous definition
+    -- commented out below is rejected by the termination checker:
+    --_«_ : Rel (AllPartialTerms S) 0ℓ
+    --a « (0 , mk-pure-nullary _)           = ⊥
+    --a « (0 , mk-ℕ-nullary _ _)            = ⊥
+    --a « (suc n , argless-pure-multiary _) = ⊥
+    --a « (suc n , argless-ℕ-multiary _ _)  = ⊥
+    --a « (n , giveArg t a₁)            = (a ≡ (0 , a₁)) ⊎ (a « (ℕ.suc n , t))
+    _«_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+    a « mk-pure-nullary _           = ⊥
+    a « mk-ℕ-nullary _ _            = ⊥
+    a « argless-pure-multiary _     = ⊥
+    a « argless-ℕ-multiary _ _      = ⊥
+    _«_ {0} {m} a (giveArg t a₁)    = (a ≡ a₁) ⊎ (a « t)
+    _«_ {suc n} {m} a _             = _ 
+    --^ a is not closed, so not a valid argument to anything!
+
+    -- The 'subterm' relation is the transitive closure of _«_.
+    -- We cannot use `TransClosure` from 
+    -- Relation.Binary.Construct.Closure.Transitive,
+    -- because our relation is heterogenerous in the ℕ-indices.
+    _«*_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+    _«*_ {n} {m} = ITransClosure _«_ {n} {m}
 
     --«-WellFounded : WellFounded _«_
     --«-WellFounded t = acc f
