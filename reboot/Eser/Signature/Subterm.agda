@@ -57,44 +57,6 @@ open import Eser.Definitions using (indices)
 
 module Eser.Signature.Subterm  where
 
--- #TODO: remove
-module FailedTerseFreeTermsVersion {S : TerseSignature} where
-    -- `a « t` iff t is build as a contructor with (among others) argument a.
-    _«_ : Rel (TerseFreeTerms S) 0ℓ
-    a « mk-pure-nullary _ = ⊥           --^ Nullary terms have no argument.
-    a « mk-ℕ-nullary _ _ = ⊥            --^ Nullary terms have no argument.
-    a « mk-pure-multiary c L = a ∈ L    --^ L is the list of arguments.
-    a « mk-ℕ-multiary c L _ = a ∈ L     --^ L is the list of arguments.
-
-    -- The 'subterm' relation is the transitive closure of _«_.
-    _«*_ : Rel (TerseFreeTerms S) 0ℓ
-    _«*_ = TransClosure _«_ 
-
-    «-WellFounded : WellFounded _«_
-    «-WellFounded t = acc f
-        where
-            f : {k : TerseFreeTerms S} → k « t → Acc _«_ k
-            f {k} k∈Lt = ?
-
-    «*-WellFounded : WellFounded _«*_
-    «*-WellFounded = TransWellFounded _«_ «-WellFounded
-
-    open TerseSignature
-
-    -- The height of a term is 0 for nullary constructors and otherwise
-    -- 1 + (max height of an argument).
-    height : TerseFreeTerms S → ℕ
-    height (mk-pure-nullary _)    = 0
-    height (mk-ℕ-nullary _ _)     = 0
-    --height (mk-pure-multiary c L) = ℕ.suc (max 0 (map height (toList L)))
-    height (mk-pure-multiary c (x ∷ L)) = ℕ.suc (height x)
-    height (mk-ℕ-multiary c (x ∷ L) _) = ℕ.suc (height x)
-    --height (mk-ℕ-multiary c L _)  = ℕ.suc (max 0 (map height (toList L)))
-
-
-    --termsAcc : {h : ℕ} → (t : TerseFreeTerms S) → (height t ≡ h) → Acc _«_ t
-    --termsAcc {h} t height≡h = acc ?
-
 --------------------------------------------------------------------------------
 -- Retry: partial terms. Now we can define height and well-foundedness of the
 -- subterm relation.
@@ -352,28 +314,13 @@ module _ {S : TerseSignature} where
     -- We cannot use `TransClosure` from 
     -- Relation.Binary.Construct.Closure.Transitive,
     -- because our relation is heterogenerous in the ℕ-indices.
-    _«*_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
-    _«*_ {n} {m} = ITransClosure _«_ {n} {m}
+    _«+_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+    _«+_ {n} {m} = ITransClosure _«_ {n} {m}
 
-    --allArgsAreClosed
-    --    : {n m : ℕ}
-    --    → {a : PartialTerms S n}
-    --    → {t : PartialTerms S m}
-    --    → a « t
-    --    → n ≡ 0
-    --allArgsAreClosed {ℕ.zero} {m} {a} {t} a«t = {! !}
-    --allArgsAreClosed {ℕ.suc n} {m} {a} {giveArg t t₁} a«t = {! !}
-    
-    --elimIAcc
-    --    : {m : ℕ}
-    --    → {a : PartialTerms S 0}
-    --    → {t : PartialTerms S m}
-    --    → IAcc {ℕ} {PartialTerms S} _«_ (m , t)
-    --    → a « t
-    --    → IAcc {ℕ} {PartialTerms S} _«_ (0 , a)
-    --elimIAcc {m} {a} {t} (iacc rs) a«t = rs 0 a a«t
-
-    «AllAcc : {n : ℕ} → (t : PartialTerms S n) → IAcc {ℕ} {PartialTerms S} (_«_) (n , t)
+    «AllAcc 
+        : {n : ℕ} 
+        → (t : PartialTerms S n) 
+        → IAcc {ℕ} {PartialTerms S} (_«_) (n , t)
     «AllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
     «AllAcc {0} (mk-ℕ-nullary x x₁) = iacc λ {j y ()}
     «AllAcc {n} (argless-pure-multiary c) = iacc λ { j y () }
@@ -389,11 +336,8 @@ module _ {S : TerseSignature} where
                 elimIAcc IAccT' y«t'
             f (ℕ.suc j) y ()
 
-    --«-WellFounded : WellFounded _«_
-    --«-WellFounded t = acc f
-    --    where
-    --        f : {k : PartialTerms S} → k « t → Acc _«_ k
-    --        f {k} k∈Lt = ?
+    «-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«_
+    «-WellFounded t = «AllAcc t
 
-    --«*-WellFounded : WellFounded _«*_
-    --«*-WellFounded = ITransWellFounded _«_ {! «-WellFounded !}
+    «+-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«+_
+    «+-WellFounded = ITransIWellFounded _«_ «-WellFounded
