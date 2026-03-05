@@ -190,9 +190,6 @@ module IndexHeterogeneousTransClosure
     -- {i : I} (x : A i)
     IWfRec _∼_ P (i , x) = (j : I) → (y : A {j}) → y ∼ x → P (j , y)
 
-    data IAcc (_∼_ : {i j : I} → A {i} → A {j} → Set) (i,x : Σ[ i ∈ I ](A {i}) )
-              : Set where
-        iacc : (rs : IWfRec _∼_ (IAcc _∼_) i,x) → IAcc _∼_ i,x
 
     --data IAcc (_∼_ : {i j : I} → A {i} → A {j} → Set) {i : I} (x : A {i}) : Set where
     --    iacc : (rs : IWfRec _∼_ (IAcc _∼_) {i} x) → IAcc _∼_ {i} x
@@ -214,6 +211,11 @@ module IndexHeterogeneousTransClosure
     ITransWellFounded = ?
 
 open IndexHeterogeneousTransClosure
+
+data IAcc {I : Set} {A : I → Set} 
+    (_∼_ : {i j : I} → A i → A j → Set) (i,x : Σ[ i ∈ I ](A i) ) : Set where
+    iacc : (rs : IWfRec _∼_ (IAcc _∼_) i,x) → IAcc _∼_ i,x
+
 
 module _ {S : TerseSignature} where
     -- Is-argument-of-relation: 
@@ -237,7 +239,7 @@ module _ {S : TerseSignature} where
     a « argless-pure-multiary _     = ⊥
     a « argless-ℕ-multiary _ _      = ⊥
     _«_ {0} {m} a (giveArg t a₁)    = (a ≡ a₁) ⊎ (a « t)
-    _«_ {suc n} {m} a _             = _ 
+    _«_ {suc n} {m} a _             = ⊥ 
     --^ a is not closed, so not a valid argument to anything!
 
     -- The 'subterm' relation is the transitive closure of _«_.
@@ -247,24 +249,39 @@ module _ {S : TerseSignature} where
     _«*_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
     _«*_ {n} {m} = ITransClosure _«_ {n} {m}
 
-    «AllAcc : {n : ℕ} → (t : PartialTerms S n) → IAcc (_«_ {n}) (n , t)
+    --allArgsAreClosed
+    --    : {n m : ℕ}
+    --    → {a : PartialTerms S n}
+    --    → {t : PartialTerms S m}
+    --    → a « t
+    --    → n ≡ 0
+    --allArgsAreClosed {ℕ.zero} {m} {a} {t} a«t = {! !}
+    --allArgsAreClosed {ℕ.suc n} {m} {a} {giveArg t t₁} a«t = {! !}
+    
+    elimIAcc
+        : {m : ℕ}
+        → {a : PartialTerms S 0}
+        → {t : PartialTerms S m}
+        → IAcc {ℕ} {PartialTerms S} _«_ (m , t)
+        → a « t
+        → IAcc {ℕ} {PartialTerms S} _«_ (0 , a)
+    elimIAcc {m} {a} {t} (iacc rs) a«t = rs 0 a a«t
+
+    «AllAcc : {n : ℕ} → (t : PartialTerms S n) → IAcc {ℕ} {PartialTerms S} (_«_) (n , t)
     «AllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
     «AllAcc {0} (mk-ℕ-nullary x x₁) = iacc λ {j y ()}
     «AllAcc {n} (argless-pure-multiary c) = iacc λ { j y () }
     «AllAcc {n} (argless-ℕ-multiary c x) = iacc λ { j y () }
-    «AllAcc {0} t@(giveArg t' a) = 
-        iacc ?
+    «AllAcc {n} t@(giveArg t' a) = iacc f
         where
-            f : (j : ℕ) (y : PartialTerms S ℕ.zero) → y « giveArg t' a → IAcc _«_ (j , y)
-            f 0 a (inj₁ refl) = «AllAcc {0} a
-            f (suc j) a (inj₁ refl) = {! «AllAcc {ℕ.suc j} a !}
-               --^ Wait this does not make sense. Now a : PartialTerms S 0
-               -- and a : PartialTerms S (ℕ.suc j). That is not possible!
-            f j y (inj₂ y«t') =
-                        let rec = «AllAcc {ℕ.suc 0} t'
-                        in -- TODO: eliminate this and apply it to y«t':
-                        {!   !}  
-    «AllAcc {suc n} t@(giveArg t' a) = iacc λ { j y x → {! !} }
+            f : (j : ℕ) → (y : PartialTerms S j) → y « giveArg t' a → IAcc _«_ (j , y)
+            f ℕ.zero y (inj₁ refl) = «AllAcc {0} a
+            f ℕ.zero y (inj₂ y«t') = 
+                let IAccT' : IAcc _«_ (ℕ.suc n , t')
+                    IAccT' = «AllAcc {ℕ.suc n} t'
+                in
+                elimIAcc IAccT' y«t'
+            f (ℕ.suc j) y ()
 
     _«σ_ : Rel (AllPartialTerms S) 0ℓ
     (j , a) «σ (i , t) = a « t
