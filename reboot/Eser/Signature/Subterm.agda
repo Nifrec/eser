@@ -129,6 +129,7 @@ ClosedTerms : (S : TerseSignature) → Set
 ClosedTerms S = PartialTerms S 0
 
 -- #TODO: move to own file. Maybe contribute to stdlib?
+-- #TODO: remark all only proven for Set₀ but can probably be generalised.
 module IndexHeterogeneousTransClosure 
     {I : Set}
     {A : {I} → Set}
@@ -185,23 +186,13 @@ module IndexHeterogeneousTransClosure
             in
             composed a∼z z∼⁺c
 
-    IWfRec : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+    -- The predecessor-structure over the union of `_∼_ {i} {j}` 
+    -- over all indices i and j.
+    IWFRec : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
            → RecStruct (Σ[ i ∈ I ](A {i})) 0ℓ 0ℓ
     -- {i : I} (x : A i)
-    IWfRec _∼_ P (i , x) = (j : I) → (y : A {j}) → y ∼ x → P (j , y)
+    IWFRec _∼_ P (i , x) = (j : I) → (y : A {j}) → y ∼ x → P (j , y)
 
-
-    --data IAcc (_∼_ : {i j : I} → A {i} → A {j} → Set) {i : I} (x : A {i}) : Set where
-    --    iacc : (rs : IWfRec _∼_ (IAcc _∼_) {i} x) → IAcc _∼_ {i} x
-
-    -- Generalised 'accessibility' predicate.
-    --
-    --IAcc 
-    --    : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
-    --    → {i : I} 
-    --    → A i
-    --    → Set
-    --IAcc _∼_ {i} x = {j : I} → {y : A j} → y ∼ x → IAcc _∼_ {j} y
 
     -- The ITransClosure preserves Well-Foundedness.
     ITransWellFounded
@@ -212,9 +203,75 @@ module IndexHeterogeneousTransClosure
 
 open IndexHeterogeneousTransClosure
 
+-- x : A i is accessible (from i) if all y s.t. y ∼ x are also accessible (from
+-- j), for *any* index j s.t. y : A j.
 data IAcc {I : Set} {A : I → Set} 
     (_∼_ : {i j : I} → A i → A j → Set) (i,x : Σ[ i ∈ I ](A i) ) : Set where
-    iacc : (rs : IWfRec _∼_ (IAcc _∼_) i,x) → IAcc _∼_ i,x
+    iacc : (rs : IWFRec _∼_ (IAcc _∼_) i,x) → IAcc _∼_ i,x
+
+IWellFounded : {I : Set} {A : I → Set} (_∼_ : {i j : I} → A i → A j → Set) → Set
+IWellFounded {I} {A} _∼_ = {i : I} → (x : A i) → IAcc {I} {A} _∼_ (i , x)
+
+-- Now we mimick Induction.WellFounded of the stdlib, but then for IWellFounded.
+-- For the moment only for level 0ℓ, which is all I need.
+module ISome {I : Set} {A : I → Set} {_∼_ : {i j : I} → A i → A j → Set} where
+    iWFRecBuilder : SubsetRecursorBuilder (IAcc {I} {A} _∼_) (IWFRec _∼_)
+    iWFRecBuilder P f x (iacc rs) j y y∼x = 
+        -- * P is a predicate on Σ[i∈I](Ai).
+        -- * f proves that `Rec P ⊆' P`, i.e., if Py for all y∼x then Px.
+        -- The goal is to prove that (IAcc _∼_) ⊆' (Rec P),
+        -- i.e., that if x is accessible then P holds for all y s.t. y∼x.
+        -- By definition of accessibility of x, it follows from y∼x
+        -- that also y is accessible.
+        -- A recursive call on the accessibility of y (to iWFRecBuilder) 
+        -- then proves that `Rec P y` holds, i.e, that Pz holds for all z∼y.
+        let RecPY : (k : I) → (z : A k) → z ∼ y → P (k , z)
+            RecPY = iWFRecBuilder P f (j , y) (rs j y y∼x)
+        in
+        -- We then input that to f to prove Py, which was to be shown.
+        f (j , y) RecPY
+        -- Why does the termination checker not complain?
+        -- Because `rs` is a strictly smaller building block that `iacc rs`,
+        -- and we are not applying rs to any function
+        -- (instead we apply something TO rs, intuitively taking something out
+        -- of it, instead of building something on top of it!)
+    
+    -- Now we get an induction principle that can be used to show a precidate P
+    -- holds on all accessible elements. 
+    -- Intuitively it requires showing 
+    -- {i : I} → (x : A i) → ({j : I} → (y : A j) → y ∼ x → P y) → P x
+    -- to conclude the 'P holds on all accessible elements':
+    -- {i : I} → (x : A i) → Acc _∼_ x → P x.
+    -- The actual implementation uses tuples
+    -- Σ[ i ∈ I ](A i) instead of {i : I} → (x : A i).
+    iWFRec : SubsetRecursor (IAcc {I} {A} _∼_) (IWFRec _∼_)
+    iWFRec = subsetBuild iWFRecBuilder
+
+-- As in the standard library, the previous induction principle can be
+-- strengthened to *All points in Σ[ i ∈ I ](A i)* if all points are accessible.
+-- Accessibility of all points (IWellFounded) is an argument to the module.
+-- This is a fairly trivial corollary of ISome, which proves an induction
+-- principle for "all accessible elements", which in this context are just all
+-- elements.
+module IAll 
+    {I : Set} 
+    {A : I → Set} 
+    {_∼_ : {i j : I} → A i → A j → Set}
+    (IWF : IWellFounded {I} {A} _∼_)
+    where
+    iWFRecBuilder : RecursorBuilder (IWFRec _∼_)
+    iWFRecBuilder P f (i , x) = ISome.iWFRecBuilder P f (i , x) (IWF x) 
+    --
+    -- Now we get an induction principle that can be used to show a precidate P
+    -- holds UNIVERSALLY.
+    -- Intuitively it requires showing 
+    -- {i : I} → (x : A i) → ({j : I} → (y : A j) → y ∼ x → P y) → P x
+    -- to conclude the 'P holds on all elements':
+    -- {i : I} → (x : A i) → P x.
+    -- The actual implementation uses tuples
+    -- Σ[ i ∈ I ](A i) instead of {i : I} → (x : A i).
+    iWFRec : Recursor (IWFRec _∼_)
+    iWFRec = build iWFRecBuilder
 
 
 module _ {S : TerseSignature} where
@@ -282,16 +339,6 @@ module _ {S : TerseSignature} where
                 in
                 elimIAcc IAccT' y«t'
             f (ℕ.suc j) y ()
-
-    _«σ_ : Rel (AllPartialTerms S) 0ℓ
-    (j , a) «σ (i , t) = a « t
-
-    «σ-WellFounded : WellFounded _«σ_
-    «σ-WellFounded t = acc f
-        where
-            f : {y : AllPartialTerms S} → y «σ t → Acc _«σ_ y
-            f {y} (y«t) = ? -- Can't recurse here 
-                            -- cuz can't expose y as building block of t
 
     --«-WellFounded : WellFounded _«_
     --«-WellFounded t = acc f
