@@ -132,7 +132,7 @@ ClosedTerms S = PartialTerms S 0
 -- #TODO: remark all only proven for Set₀ but can probably be generalised.
 module IndexHeterogeneousTransClosure 
     {I : Set}
-    {A : {I} → Set}
+    {A : I → Set}
     where
 
     -- Generalisation of `TransClosure` from 
@@ -146,37 +146,37 @@ module IndexHeterogeneousTransClosure
     -- In this file we have a very different situation:
     -- the base type instead is `A : I → Set`, so the related elements
     -- live in `A i`, each for some fixed `i`.
-    data ITransClosure (_∼_ : {i j : I} → A {i} → A {j} → Set) 
-                      : {i j : I} → A {i} → A {j} → Set where
+    data ITransClosure (_∼_ : {i j : I} → A i → A j → Set) 
+                      : {i j : I} → A i → A j → Set where
         direct 
             : {i j : I} 
-            → {a : A {i}} 
-            → {b : A {j}} 
+            → {a : A i} 
+            → {b : A j} 
             → (a ∼ b) 
             → ITransClosure _∼_ a b
         composed --^ a∼b and b∼⁺c then a∼⁺c.
             : {i j k : I} 
-            → {a : A {i}} 
-            → {b : A {j}} 
-            → {c : A {k}}
+            → {a : A i} 
+            → {b : A j} 
+            → {c : A k}
             → a ∼ b
             → ITransClosure _∼_ b c
             → ITransClosure _∼_ a c
 
     -- Predicate that an index-heterogeneous relation is transitive.
-    ITransitive : (_∼_ : {i j : I} → A {i} → A {j} → Set) → Set
+    ITransitive : (_∼_ : {i j : I} → A i → A j → Set) → Set
     ITransitive _∼_ = 
               {i j k : I}
-            → {a : A {i}} 
-            → {b : A {j}} 
-            → {c : A {k}}
+            → {a : A i} 
+            → {b : A j} 
+            → {c : A k}
             → a ∼ b
             → b ∼ c
             → a ∼ c
 
     -- Theorem that the indexed-transitive-closure is actually transitive.
     ITransClosureTransitivity
-        : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
+        : (_∼_ : {i j : I} → A i → A j → Set) 
         → ITransitive (ITransClosure _∼_)
     ITransClosureTransitivity _∼_ {a = a} {b = b} {c = c} (direct a∼b) b∼⁺c 
         = composed a∼b b∼⁺c
@@ -186,20 +186,12 @@ module IndexHeterogeneousTransClosure
             in
             composed a∼z z∼⁺c
 
-    -- The predecessor-structure over the union of `_∼_ {i} {j}` 
+    -- The predecessor-structure over the union of `_∼_ i j` 
     -- over all indices i and j.
-    IWFRec : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
-           → RecStruct (Σ[ i ∈ I ](A {i})) 0ℓ 0ℓ
+    IWFRec : (_∼_ : {i j : I} → A i → A j → Set) 
+           → RecStruct (Σ[ i ∈ I ](A i)) 0ℓ 0ℓ
     -- {i : I} (x : A i)
-    IWFRec _∼_ P (i , x) = (j : I) → (y : A {j}) → y ∼ x → P (j , y)
-
-
-    -- The ITransClosure preserves Well-Foundedness.
-    ITransWellFounded
-        : (_∼_ : {i j : I} → A {i} → A {j} → Set) 
-        → WellFounded _∼_
-        → WellFounded (ITransClosure _∼_)
-    ITransWellFounded = ?
+    IWFRec _∼_ P (i , x) = (j : I) → (y : A j) → y ∼ x → P (j , y)
 
 open IndexHeterogeneousTransClosure
 
@@ -273,6 +265,16 @@ module IAll
     iWFRec : Recursor (IWFRec _∼_)
     iWFRec = build iWFRecBuilder
 
+
+
+    -- The ITransClosure preserves IWell-Foundedness.
+    ITransIWellFounded
+        : {I : Set} 
+        → {A : I → Set} 
+        → (_∼_ : {i j : I} → A i → A j → Set) 
+        → IWellFounded {I} {A} _∼_
+        → IWellFounded {I} {A} (ITransClosure {I} {A} _∼_)
+    ITransIWellFounded = ?
 
 module _ {S : TerseSignature} where
     -- Is-argument-of-relation: 
