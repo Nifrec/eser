@@ -265,16 +265,63 @@ module IAll
     iWFRec : Recursor (IWFRec _∼_)
     iWFRec = build iWFRecBuilder
 
+-- If x is accessible and y∼x then y is accessible.
+elimIAcc
+    : {I : Set} 
+    → {A : I → Set} 
+    → {_∼_ : {i j : I} → A i → A j → Set} 
+    → {i : I}
+    → {x : A i}
+    → IAcc {I} {A} _∼_ (i , x)
+    → {j : I}
+    → {y : A j}
+    → y ∼ x
+    → IAcc {I} {A} _∼_ (j , y)
+elimIAcc (iacc rs) {j = j} {y = y} y∼x = rs j y y∼x
 
+-- If x is _∼_ accessible then x is also accessible in the transitive closure of
+-- _∼_.
+IAccImplIAccTransClosure
+    : {I : Set} 
+    → {A : I → Set} 
+    → (_∼_ : {i j : I} → A i → A j → Set) 
+    → {i : I}
+    → (x : A i)
+    → IAcc {I} {A} _∼_ (i , x)
+    → IAcc {I} {A} (ITransClosure {I} {A} _∼_) (i , x)
+IAccImplIAccTransClosure {I} {A} _∼_ {i} x (iacc rs) = iacc f
+    where
+        f 
+            : (j : I) 
+            → (y : A j)
+            → ITransClosure {I} {A} _∼_ y x 
+            → IAcc {I} {A} (ITransClosure {I} {A} _∼_) (j , y)
+        f j y (direct y∼x) = 
+            let yIAcc : IAcc {I} {A} _∼_ (j , y)
+                yIAcc = rs j y y∼x
+            in
+            IAccImplIAccTransClosure _∼_ y yIAcc
+        f j y (composed {j = k} {b = z} y∼z z∼⁺x) = 
+            let zIAccTrans : IAcc {I} {A} (ITransClosure {I} {A} _∼_) (k , z)
+                zIAccTrans = f k z z∼⁺x
+            in
+            let y∼⁺z : ITransClosure {I} {A} _∼_ y z
+                y∼⁺z = direct y∼z
+            in
+            elimIAcc zIAccTrans y∼⁺z
 
-    -- The ITransClosure preserves IWell-Foundedness.
-    ITransIWellFounded
-        : {I : Set} 
-        → {A : I → Set} 
-        → (_∼_ : {i j : I} → A i → A j → Set) 
-        → IWellFounded {I} {A} _∼_
-        → IWellFounded {I} {A} (ITransClosure {I} {A} _∼_)
-    ITransIWellFounded = ?
+-- The ITransClosure preserves IWell-Foundedness.
+-- Obviously, since the definition of accessibility requires all
+-- predecessors of x under the transitive closure to be accessible.
+-- Hence accessibility of _«_ implies accessibility of _«*_.
+ITransIWellFounded
+    : {I : Set} 
+    → {A : I → Set} 
+    → (_∼_ : {i j : I} → A i → A j → Set) 
+    → IWellFounded {I} {A} _∼_
+    → IWellFounded {I} {A} (ITransClosure {I} {A} _∼_)
+ITransIWellFounded {I} {A} _∼_ IWF {i} x 
+    = IAccImplIAccTransClosure {I} {A} _∼_ {i} x (IWF x)
 
 module _ {S : TerseSignature} where
     -- Is-argument-of-relation: 
@@ -317,14 +364,14 @@ module _ {S : TerseSignature} where
     --allArgsAreClosed {ℕ.zero} {m} {a} {t} a«t = {! !}
     --allArgsAreClosed {ℕ.suc n} {m} {a} {giveArg t t₁} a«t = {! !}
     
-    elimIAcc
-        : {m : ℕ}
-        → {a : PartialTerms S 0}
-        → {t : PartialTerms S m}
-        → IAcc {ℕ} {PartialTerms S} _«_ (m , t)
-        → a « t
-        → IAcc {ℕ} {PartialTerms S} _«_ (0 , a)
-    elimIAcc {m} {a} {t} (iacc rs) a«t = rs 0 a a«t
+    --elimIAcc
+    --    : {m : ℕ}
+    --    → {a : PartialTerms S 0}
+    --    → {t : PartialTerms S m}
+    --    → IAcc {ℕ} {PartialTerms S} _«_ (m , t)
+    --    → a « t
+    --    → IAcc {ℕ} {PartialTerms S} _«_ (0 , a)
+    --elimIAcc {m} {a} {t} (iacc rs) a«t = rs 0 a a«t
 
     «AllAcc : {n : ℕ} → (t : PartialTerms S n) → IAcc {ℕ} {PartialTerms S} (_«_) (n , t)
     «AllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
