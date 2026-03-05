@@ -341,3 +341,26 @@ module _ {S : TerseSignature} where
 
     «+-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«+_
     «+-WellFounded = ITransIWellFounded _«_ «-WellFounded
+
+    open IAll {_∼_ = _«+_} («+-WellFounded) public
+        renaming ( iWFRecBuilder to «+-recBuilder
+                 ; iWFRec        to «+-rec
+        )
+    _ = {! «+-rec !}
+    -- Subterm induction
+    «+-rec'
+        : (P : {n : ℕ} → PartialTerms S n → Set)
+        → ({n : ℕ} → (t : PartialTerms S n) 
+            → ({m : ℕ} → (a : PartialTerms S m) → (a «+ t) → P a) 
+            → P t)
+        → ({n : ℕ} → (t : PartialTerms S n) → P t)
+    -- #TODO: uncurry f
+    «+-rec' P f {n} t = «+-rec (λ (n , t) → P {n} t) ? (n , t)
+    --«+-rec
+    --    : (P : AllPartialTerms S → Set)
+    --    → ((t : AllPartialTerms S) 
+    --        → ((a : AllPartialTerms S) → ((proj₂ a) «+ (proj₂ t)) → P a) 
+    --        → P t)
+    --    → ((t : AllPartialTerms S) → P t)
+    --«+-rec = IAll.iWFRec
+
