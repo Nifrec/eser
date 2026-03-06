@@ -445,20 +445,20 @@ module _ {S : TerseSignature} where
     ℕNullaryNoSubterm x (direct ())
     ℕNullaryNoSubterm x (composed {b = b} a«ₐb b«+t) = ℕNullaryNoSubterm x b«+t
 
-    lemma
+    iAccImplClosedAcc
         : (t : ClosedTerms S)
-        → (IAcc {ℕ} {PartialTerms S} _«ₐ_ (0 , t))
+        → (IAcc {ℕ} {PartialTerms S} _«+_ (0 , t))
         → (Acc _«_ t)
-    lemma (mk-pure-nullary x) (iacc rs) = acc λ { p → ⊥-elim (pureNullaryNoSubterm x p) }
-    lemma (mk-ℕ-nullary x x₁) (iacc rs) = acc λ { p → ⊥-elim (ℕNullaryNoSubterm x p) }    
-    lemma (giveArg t a) (iacc rs) = 
-        --let aIAcc : IAcc {ℕ} {PartialTerms S} _«+_ (0 , a)
-        --    aIAcc = elimIAcc (iacc rs) (direct (inj₁ refl))
-        --in
-        --lemma a aIAcc
+    iAccImplClosedAcc (mk-pure-nullary x) (iacc rs) = 
+        acc λ { p → ⊥-elim (pureNullaryNoSubterm x p) }
+    iAccImplClosedAcc (mk-ℕ-nullary x x₁) (iacc rs) = 
+        acc λ { p → ⊥-elim (ℕNullaryNoSubterm x p) }    
+    iAccImplClosedAcc t@(giveArg t' a) (iacc rs) = 
         acc f
         where
-            f : {y : ClosedTerms S} → y « giveArg t a → Acc _«_ y
-            f {y} (direct p) = lemma y (rs 0 y p) 
-            f (composed x p) = {! !}
+            f : {y : ClosedTerms S} → y « giveArg t' a → Acc _«_ y
+            f {y} (y«+t) = iAccImplClosedAcc y (rs 0 y y«+t) 
+
+    «-WellFounded : WellFounded _«_
+    «-WellFounded t = iAccImplClosedAcc t ( «+-WellFounded {0} t )
 
