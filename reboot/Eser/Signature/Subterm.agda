@@ -10,10 +10,10 @@
 -- has at least one argument t', which is in some sense 'smaller'
 -- denoted `t' « t`.
 -- t' itself may have arguments, and so may these arguments in turn;
--- all these are 'subterms' of t, i.e. all t'' s.t. `t'' «* t`
--- where _«*_ the transitive closure of _«_.
+-- all these are 'subterms' of t, i.e. all t'' s.t. `t'' «+ t`
+-- where _«+_ the transitive closure of _«_.
 --
--- Both _«_ and _«*_ are well-founded, which is convenient when
+-- Both _«_ and _«+_ are well-founded, which is convenient when
 -- defining recursive functions on terms.
 -- Proving well-foundedness requires recursion itself,
 -- leading to a chicken-egg problem.
@@ -91,7 +91,7 @@ ClosedTerms : (S : TerseSignature) → Set
 ClosedTerms S = PartialTerms S 0
 
 -- #TODO: move to own file. Maybe contribute to stdlib?
--- #TODO: remark all only proven for Set₀ but can probably be generalised.
+-- #TODO: remark all is only proven for Set₀ but can probably be generalised.
 module IndexHeterogeneousTransClosure 
     {I : Set}
     {A : I → Set}
@@ -275,7 +275,7 @@ IAccImplIAccTransClosure {I} {A} _∼_ {i} x (iacc rs) = iacc f
 -- The ITransClosure preserves IWell-Foundedness.
 -- Obviously, since the definition of accessibility requires all
 -- predecessors of x under the transitive closure to be accessible.
--- Hence accessibility of _«_ implies accessibility of _«*_.
+-- Hence accessibility of _«_ implies accessibility of _«+_.
 ITransIWellFounded
     : {I : Set} 
     → {A : I → Set} 
@@ -342,25 +342,32 @@ module _ {S : TerseSignature} where
     «+-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«+_
     «+-WellFounded = ITransIWellFounded _«_ «-WellFounded
 
-    open IAll {_∼_ = _«+_} («+-WellFounded) public
-        renaming ( iWFRecBuilder to «+-recBuilder
-                 ; iWFRec        to «+-rec
-        )
-    _ = {! «+-rec !}
+    open IAll {_∼_ = _«+_} («+-WellFounded)
+
     -- Subterm induction
-    «+-rec'
+    «+-rec
         : (P : {n : ℕ} → PartialTerms S n → Set)
         → ({n : ℕ} → (t : PartialTerms S n) 
             → ({m : ℕ} → (a : PartialTerms S m) → (a «+ t) → P a) 
             → P t)
         → ({n : ℕ} → (t : PartialTerms S n) → P t)
-    -- #TODO: uncurry f
-    «+-rec' P f {n} t = «+-rec (λ (n , t) → P {n} t) ? (n , t)
-    --«+-rec
-    --    : (P : AllPartialTerms S → Set)
-    --    → ((t : AllPartialTerms S) 
-    --        → ((a : AllPartialTerms S) → ((proj₂ a) «+ (proj₂ t)) → P a) 
-    --        → P t)
-    --    → ((t : AllPartialTerms S) → P t)
-    --«+-rec = IAll.iWFRec
+    «+-rec P f {n} t = iWFRec (λ (n , t) → P {n} t) f' (n , t)
+        where
+            -- f and f' are the same function up to Currying and
+            -- implicit-vs-explicit arguments.
+            f' : (n,t : Σ[ n ∈ ℕ ](PartialTerms S n))
+               → ((m : ℕ) → (y : PartialTerms S m) → y «+ (proj₂ n,t) → P y)
+               → P (proj₂ n,t)
+            f' (i , x) rec = f {i} x (λ {m} y → rec m y)
 
+    -- Uncurried version of subterm induction.
+    -- This is the direct output of the iWFRecBuilder,
+    -- but with a normalised type annotation that is actually understandable.
+    «+-rec'
+        : (P : AllPartialTerms S → Set)
+        → ( (n,t : AllPartialTerms S)
+            → ((m : ℕ) → (y : PartialTerms S m) → y «+ (proj₂ n,t) → P (m , y))
+            → P n,t
+          )
+        → ((n,t : AllPartialTerms S) → P n,t)
+    «+-rec' = iWFRec
