@@ -8,12 +8,12 @@
 -- Given a signature with a constructor c with arity ≥ 1,
 -- a term t constructed by applying arguments to c
 -- has at least one argument t', which is in some sense 'smaller'
--- denoted `t' « t`.
+-- denoted `t' «ₐ t`.
 -- t' itself may have arguments, and so may these arguments in turn;
 -- all these are 'subterms' of t, i.e. all t'' s.t. `t'' «+ t`
--- where _«+_ the transitive closure of _«_.
+-- where _«+_ the transitive closure of _«ₐ_.
 --
--- Both _«_ and _«+_ are well-founded, which is convenient when
+-- Both _«ₐ_ and _«+_ are well-founded, which is convenient when
 -- defining recursive functions on terms.
 -- Proving well-foundedness requires recursion itself,
 -- leading to a chicken-egg problem.
@@ -275,7 +275,7 @@ IAccImplIAccTransClosure {I} {A} _∼_ {i} x (iacc rs) = iacc f
 -- The ITransClosure preserves IWell-Foundedness.
 -- Obviously, since the definition of accessibility requires all
 -- predecessors of x under the transitive closure to be accessible.
--- Hence accessibility of _«_ implies accessibility of _«+_.
+-- Hence accessibility of _«ₐ_ implies accessibility of _«+_.
 ITransIWellFounded
     : {I : Set} 
     → {A : I → Set} 
@@ -287,7 +287,7 @@ ITransIWellFounded {I} {A} _∼_ IWF {i} x
 
 module _ {S : TerseSignature} where
     -- Is-argument-of-relation: 
-    -- `a « t` iff t is build as a contructor with (among others) argument a.
+    -- `a «ₐ t` iff t is build as a contructor with (among others) argument a.
     -- a is an arument of (giveArg t a₁) if it is the last 
     -- argument (a₁) or an earlier argument, i.e., an arg of t.
     -- This relation also concerns non-closed-terms, it was easier to define it
@@ -295,56 +295,56 @@ module _ {S : TerseSignature} where
     -- The relation is defined as a heterogeneous relation between PartialTerms
     -- of possibly different indices. The simpler homogeneous definition
     -- commented out below is rejected by the termination checker:
-    --_«_ : Rel (AllPartialTerms S) 0ℓ
-    --a « (0 , mk-pure-nullary _)           = ⊥
-    --a « (0 , mk-ℕ-nullary _ _)            = ⊥
-    --a « (suc n , argless-pure-multiary _) = ⊥
-    --a « (suc n , argless-ℕ-multiary _ _)  = ⊥
-    --a « (n , giveArg t a₁)            = (a ≡ (0 , a₁)) ⊎ (a « (ℕ.suc n , t))
-    _«_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
-    a « mk-pure-nullary _           = ⊥
-    a « mk-ℕ-nullary _ _            = ⊥
-    a « argless-pure-multiary _     = ⊥
-    a « argless-ℕ-multiary _ _      = ⊥
-    _«_ {0} {m} a (giveArg t a₁)    = (a ≡ a₁) ⊎ (a « t)
-    _«_ {suc n} {m} a _             = ⊥ 
+    --_«ₐ_ : Rel (AllPartialTerms S) 0ℓ
+    --a «ₐ (0 , mk-pure-nullary _)           = ⊥
+    --a «ₐ (0 , mk-ℕ-nullary _ _)            = ⊥
+    --a «ₐ (suc n , argless-pure-multiary _) = ⊥
+    --a «ₐ (suc n , argless-ℕ-multiary _ _)  = ⊥
+    --a «ₐ (n , giveArg t a₁)            = (a ≡ (0 , a₁)) ⊎ (a «ₐ (ℕ.suc n , t))
+    _«ₐ_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+    a «ₐ mk-pure-nullary _           = ⊥
+    a «ₐ mk-ℕ-nullary _ _            = ⊥
+    a «ₐ argless-pure-multiary _     = ⊥
+    a «ₐ argless-ℕ-multiary _ _      = ⊥
+    _«ₐ_ {0} {m} a (giveArg t a₁)    = (a ≡ a₁) ⊎ (a «ₐ t)
+    _«ₐ_ {suc n} {m} a _             = ⊥ 
     --^ a is not closed, so not a valid argument to anything!
 
-    -- The 'subterm' relation is the transitive closure of _«_.
+    -- The 'subterm' relation is the transitive closure of _«ₐ_.
     -- We cannot use `TransClosure` from 
     -- Relation.Binary.Construct.Closure.Transitive,
     -- because our relation is heterogenerous in the ℕ-indices.
     _«+_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
-    _«+_ {n} {m} = ITransClosure _«_ {n} {m}
+    _«+_ {n} {m} = ITransClosure _«ₐ_ {n} {m}
 
-    «AllAcc 
+    «ₐAllAcc 
         : {n : ℕ} 
         → (t : PartialTerms S n) 
-        → IAcc {ℕ} {PartialTerms S} (_«_) (n , t)
-    «AllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
-    «AllAcc {0} (mk-ℕ-nullary x x₁) = iacc λ {j y ()}
-    «AllAcc {n} (argless-pure-multiary c) = iacc λ { j y () }
-    «AllAcc {n} (argless-ℕ-multiary c x) = iacc λ { j y () }
-    «AllAcc {n} t@(giveArg t' a) = iacc f
+        → IAcc {ℕ} {PartialTerms S} (_«ₐ_) (n , t)
+    «ₐAllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
+    «ₐAllAcc {0} (mk-ℕ-nullary x x₁) = iacc λ {j y ()}
+    «ₐAllAcc {n} (argless-pure-multiary c) = iacc λ { j y () }
+    «ₐAllAcc {n} (argless-ℕ-multiary c x) = iacc λ { j y () }
+    «ₐAllAcc {n} t@(giveArg t' a) = iacc f
         where
-            f : (j : ℕ) → (y : PartialTerms S j) → y « giveArg t' a → IAcc _«_ (j , y)
-            f ℕ.zero y (inj₁ refl) = «AllAcc {0} a
-            f ℕ.zero y (inj₂ y«t') = 
-                let IAccT' : IAcc _«_ (ℕ.suc n , t')
-                    IAccT' = «AllAcc {ℕ.suc n} t'
+            f : (j : ℕ) → (y : PartialTerms S j) → y «ₐ giveArg t' a → IAcc _«ₐ_ (j , y)
+            f ℕ.zero y (inj₁ refl) = «ₐAllAcc {0} a
+            f ℕ.zero y (inj₂ y«ₐt') = 
+                let IAccT' : IAcc _«ₐ_ (ℕ.suc n , t')
+                    IAccT' = «ₐAllAcc {ℕ.suc n} t'
                 in
-                elimIAcc IAccT' y«t'
+                elimIAcc IAccT' y«ₐt'
             f (ℕ.suc j) y ()
 
-    «-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«_
-    «-WellFounded t = «AllAcc t
+    «ₐ-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«ₐ_
+    «ₐ-WellFounded t = «ₐAllAcc t
 
     «+-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«+_
-    «+-WellFounded = ITransIWellFounded _«_ «-WellFounded
+    «+-WellFounded = ITransIWellFounded _«ₐ_ «ₐ-WellFounded
 
     open IAll {_∼_ = _«+_} («+-WellFounded)
 
-    -- Subterm induction
+    -- Subterm induction on all partial terms.
     «+-rec
         : (P : {n : ℕ} → PartialTerms S n → Set)
         → ({n : ℕ} → (t : PartialTerms S n) 
@@ -371,3 +371,94 @@ module _ {S : TerseSignature} where
           )
         → ((n,t : AllPartialTerms S) → P n,t)
     «+-rec' = iWFRec
+
+--------------------------------------------------------------------------------
+-- Subterm induction on closed terms only
+--
+-- One could define a SubsetRecursorBuilder on subset 
+-- Q := ((IAcc _«+_) × IsClosed), but the following seems simpler:
+-- define the relation _«_ as the restriction of _«+_ to closed terms,
+-- and show it is WellFounded (just WellFounded, not IWellFounded :D ).
+--
+-- This works because if a : PartialTerms n and a «+ t for some t
+-- then it is necessarily the case that n ≡ 0.
+-- So, to prove that t is accessible, we only need to check accessibility of
+-- ClosedTerms.
+--------------------------------------------------------------------------------
+    _«_ : Rel (ClosedTerms S) 0ℓ
+    a « t = _«+_ {0} {0} a t
+
+    «ₐargsHaveIdxZero
+        : {n m : ℕ}
+        → {a : PartialTerms S n}
+        → {t : PartialTerms S m}
+        → a «ₐ t
+        → n ≡ 0
+    «ₐargsHaveIdxZero {ℕ.zero} {m} {a} {t} a«+t = refl
+    «ₐargsHaveIdxZero {ℕ.suc n} {m} {a} {mk-pure-nullary x₁} ()
+    «ₐargsHaveIdxZero {ℕ.suc n} {m} {a} {mk-ℕ-nullary x₁ x₂} ()
+    «ₐargsHaveIdxZero {ℕ.suc n} {m} {a} {argless-pure-multiary c} ()
+    «ₐargsHaveIdxZero {ℕ.suc n} {m} {a} {argless-ℕ-multiary c x₁} ()
+    «ₐargsHaveIdxZero {ℕ.suc n} {m} {a} {giveArg t t₁} ()
+
+    «+argsHaveIdxZero
+        : {n m : ℕ}
+        → {a : PartialTerms S n}
+        → {t : PartialTerms S m}
+        → a «+ t
+        → n ≡ 0
+    «+argsHaveIdxZero (direct a«ₐt) = «ₐargsHaveIdxZero a«ₐt
+    «+argsHaveIdxZero (composed a«ₐb b«+t) = «ₐargsHaveIdxZero a«ₐb
+
+    pureNullaryNoArg
+        : {n : ℕ}
+        → (a : PartialTerms S n)
+        → (x : Fin (pure-nullary S))
+        → a «ₐ (mk-pure-nullary x)
+        → ⊥
+    pureNullaryNoArg {n} x a ()
+    
+    pureNullaryNoSubterm
+        : {n : ℕ}
+        → {a : PartialTerms S n}
+        → (x : Fin (pure-nullary S))
+        → a «+ (mk-pure-nullary x)
+        → ⊥
+    pureNullaryNoSubterm x (direct ())
+    pureNullaryNoSubterm x (composed {b = b} a«ₐb b«+t) = 
+        pureNullaryNoSubterm x b«+t
+
+    ℕNullaryNoArg
+        : {n m : ℕ}
+        → (a : PartialTerms S n)
+        → (x : Fin (ℕ-nullary S))
+        → a «ₐ (mk-ℕ-nullary x m)
+        → ⊥
+    ℕNullaryNoArg {n} x a ()
+    
+    ℕNullaryNoSubterm
+        : {n m : ℕ}
+        → {a : PartialTerms S n}
+        → (x : Fin (ℕ-nullary S))
+        → a «+ (mk-ℕ-nullary x m)
+        → ⊥
+    ℕNullaryNoSubterm x (direct ())
+    ℕNullaryNoSubterm x (composed {b = b} a«ₐb b«+t) = ℕNullaryNoSubterm x b«+t
+
+    lemma
+        : (t : ClosedTerms S)
+        → (IAcc {ℕ} {PartialTerms S} _«ₐ_ (0 , t))
+        → (Acc _«_ t)
+    lemma (mk-pure-nullary x) (iacc rs) = acc λ { p → ⊥-elim (pureNullaryNoSubterm x p) }
+    lemma (mk-ℕ-nullary x x₁) (iacc rs) = acc λ { p → ⊥-elim (ℕNullaryNoSubterm x p) }    
+    lemma (giveArg t a) (iacc rs) = 
+        --let aIAcc : IAcc {ℕ} {PartialTerms S} _«+_ (0 , a)
+        --    aIAcc = elimIAcc (iacc rs) (direct (inj₁ refl))
+        --in
+        --lemma a aIAcc
+        acc f
+        where
+            f : {y : ClosedTerms S} → y « giveArg t a → Acc _«_ y
+            f {y} (direct p) = lemma y (rs 0 y p) 
+            f (composed x p) = {! !}
+
