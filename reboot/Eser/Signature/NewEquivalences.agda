@@ -208,6 +208,23 @@ getArgs {S} {n} (giveArg t a) =
     in
     subst (λ m → Vec (ClosedTerms S) m) H (getArgs t Data.Vec.∷ʳ a)
 
+ℕ-argType : ConstrKind → Set
+ℕ-argType c-pure-nullary    = ⊤
+ℕ-argType c-ℕ-nullary       = ℕ
+ℕ-argType c-pure-multiary   = ⊤
+ℕ-argType c-ℕ-multiary      = ℕ
+
+-- Get external ℕ-argument, if any.
+get-ℕ-arg
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S n)
+    → ℕ-argType (getConstrKind t)
+get-ℕ-arg (mk-pure-nullary _) = tt
+get-ℕ-arg (mk-ℕ-nullary _ n) = n
+get-ℕ-arg (argless-pure-multiary _) = tt
+get-ℕ-arg (argless-ℕ-multiary _ n ) = n
+get-ℕ-arg (giveArg t _) = get-ℕ-arg t
 --------------------------------------------------------------------------------
 -- Decomposing a closed term into a rounded term
 --------------------------------------------------------------------------------
@@ -233,7 +250,28 @@ decomposeTermRec {S} (mk-pure-nullary c) decomposeSubterm =
     (0 , pure-atomic c)
 decomposeTermRec {S} (mk-ℕ-nullary c n) decomposeSubterm =
     (ℕ.suc n , ℕ-atomic n c)
-decomposeTermRec {S} (giveArg t a) decomposeSubterm = {! !}
+decomposeTermRec {S} (giveArg t a) decomposeSubterm = 
+    let constrKind : ConstrKind
+        constrKind = getConstrKind t in 
+    let constrIdx : kindToIndexSet S constrKind
+        constrIdx = getConstrIdx t
+    in
+    let arity : ℕ
+        arity = getArity t
+    in
+    let args : Vec (ClosedTerms S) (getArity t)
+        args = getArgs (giveArg t a)
+    in
+    let ℕ-arg : ℕ-argType constrKind
+        ℕ-arg = get-ℕ-arg t
+    in
+    --------------------------------------------------------------------------------
+    -- Above this line is new stuff. Below this line is old stuff.
+    -- Let's try to fit the new stuff into the old stuff.
+    --------------------------------------------------------------------------------
+    
+    -- #TODO: assembly will require a case distinction on the constrKind.
+    ?
 
 --decomposeTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
 --decomposeTerm {S} (mk-ℕ-nullary x n) = 
