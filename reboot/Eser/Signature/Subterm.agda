@@ -462,3 +462,14 @@ module _ {S : TerseSignature} where
     «-WellFounded : WellFounded _«_
     «-WellFounded t = iAccImplClosedAcc t ( «+-WellFounded {0} t )
 
+    module SubtermWF = Induction.WellFounded.All «-WellFounded 0ℓ 
+
+    -- Induction on the subterm-relation on closed terms only.
+    «-rec : (P : ClosedTerms S → Set)
+        → (
+            (t : ClosedTerms S)
+            → ({a : ClosedTerms S} → a « t → P a)
+            → P t
+            )
+        → ((t : ClosedTerms S) → P t)
+    «-rec = SubtermWF.wfRec
