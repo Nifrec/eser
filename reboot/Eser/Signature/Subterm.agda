@@ -58,37 +58,37 @@ open import Eser.Definitions using (indices)
 module Eser.Signature.Subterm  where
 
 --------------------------------------------------------------------------------
--- Retry: partial terms. Now we can define height and well-foundedness of the
+-- Retry: open terms. Now we can define height and well-foundedness of the
 -- subterm relation.
 --------------------------------------------------------------------------------
 
 open TerseSignature
 
 
--- PartialTerms n are the partially constructed terms
+-- OpenTerms n are the open constructed terms
 -- that still need n inductive arguments.
--- PartialTerms 0 are exactly the closed terms of the term algebra.
-data PartialTerms (S : TerseSignature) : ℕ →  Set where
-    mk-pure-nullary : Fin (pure-nullary S) → PartialTerms S 0
-    mk-ℕ-nullary : Fin (ℕ-nullary S) → ℕ → PartialTerms S 0
+-- OpenTerms 0 are exactly the closed terms of the term algebra.
+data OpenTerms (S : TerseSignature) : ℕ →  Set where
+    mk-pure-nullary : Fin (pure-nullary S) → OpenTerms S 0
+    mk-ℕ-nullary : Fin (ℕ-nullary S) → ℕ → OpenTerms S 0
     argless-pure-multiary 
         : (c : indices (pure-multiary S)) 
-        → PartialTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
+        → OpenTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
     argless-ℕ-multiary 
         : (c : indices (pure-multiary S)) 
         → ℕ
-        → PartialTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
+        → OpenTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
     giveArg
         : {n : ℕ}
-        → PartialTerms S (ℕ.suc n) --^ Term still needing at least 1 more arg.
-        → PartialTerms S 0         --^ Next argument to give: a closed term.
-        → PartialTerms S n
+        → OpenTerms S (ℕ.suc n) --^ Term still needing at least 1 more arg.
+        → OpenTerms S 0         --^ Next argument to give: a closed term.
+        → OpenTerms S n
 
-AllPartialTerms : (S : TerseSignature) → Set
-AllPartialTerms S = Σ[ n ∈ ℕ ](PartialTerms S n)
+AllOpenTerms : (S : TerseSignature) → Set
+AllOpenTerms S = Σ[ n ∈ ℕ ](OpenTerms S n)
 
 ClosedTerms : (S : TerseSignature) → Set
-ClosedTerms S = PartialTerms S 0
+ClosedTerms S = OpenTerms S 0
 
 -- #TODO: move to own file. Maybe contribute to stdlib?
 -- #TODO: remark all is only proven for Set₀ but can probably be generalised.
@@ -292,16 +292,16 @@ module _ {S : TerseSignature} where
     -- argument (a₁) or an earlier argument, i.e., an arg of t.
     -- This relation also concerns non-closed-terms, it was easier to define it
     -- this way.
-    -- The relation is defined as a heterogeneous relation between PartialTerms
+    -- The relation is defined as a heterogeneous relation between OpenTerms
     -- of possibly different indices. The simpler homogeneous definition
     -- commented out below is rejected by the termination checker:
-    --_«ₐ_ : Rel (AllPartialTerms S) 0ℓ
+    --_«ₐ_ : Rel (AllOpenTerms S) 0ℓ
     --a «ₐ (0 , mk-pure-nullary _)           = ⊥
     --a «ₐ (0 , mk-ℕ-nullary _ _)            = ⊥
     --a «ₐ (suc n , argless-pure-multiary _) = ⊥
     --a «ₐ (suc n , argless-ℕ-multiary _ _)  = ⊥
     --a «ₐ (n , giveArg t a₁)            = (a ≡ (0 , a₁)) ⊎ (a «ₐ (ℕ.suc n , t))
-    _«ₐ_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+    _«ₐ_ : {n m : ℕ} → (OpenTerms S n) → (OpenTerms S m) → Set
     a «ₐ mk-pure-nullary _           = ⊥
     a «ₐ mk-ℕ-nullary _ _            = ⊥
     a «ₐ argless-pure-multiary _     = ⊥
@@ -314,20 +314,20 @@ module _ {S : TerseSignature} where
     -- We cannot use `TransClosure` from 
     -- Relation.Binary.Construct.Closure.Transitive,
     -- because our relation is heterogenerous in the ℕ-indices.
-    _«+_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+    _«+_ : {n m : ℕ} → (OpenTerms S n) → (OpenTerms S m) → Set
     _«+_ {n} {m} = ITransClosure _«ₐ_ {n} {m}
 
     «ₐAllAcc 
         : {n : ℕ} 
-        → (t : PartialTerms S n) 
-        → IAcc {ℕ} {PartialTerms S} (_«ₐ_) (n , t)
+        → (t : OpenTerms S n) 
+        → IAcc {ℕ} {OpenTerms S} (_«ₐ_) (n , t)
     «ₐAllAcc {0} (mk-pure-nullary x) = iacc λ {j y ()}
     «ₐAllAcc {0} (mk-ℕ-nullary x x₁) = iacc λ {j y ()}
     «ₐAllAcc {n} (argless-pure-multiary c) = iacc λ { j y () }
     «ₐAllAcc {n} (argless-ℕ-multiary c x) = iacc λ { j y () }
     «ₐAllAcc {n} t@(giveArg t' a) = iacc f
         where
-            f : (j : ℕ) → (y : PartialTerms S j) → y «ₐ giveArg t' a → IAcc _«ₐ_ (j , y)
+            f : (j : ℕ) → (y : OpenTerms S j) → y «ₐ giveArg t' a → IAcc _«ₐ_ (j , y)
             f ℕ.zero y (inj₁ refl) = «ₐAllAcc {0} a
             f ℕ.zero y (inj₂ y«ₐt') = 
                 let IAccT' : IAcc _«ₐ_ (ℕ.suc n , t')
@@ -336,27 +336,27 @@ module _ {S : TerseSignature} where
                 elimIAcc IAccT' y«ₐt'
             f (ℕ.suc j) y ()
 
-    «ₐ-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«ₐ_
+    «ₐ-WellFounded : IWellFounded {ℕ} {OpenTerms S} _«ₐ_
     «ₐ-WellFounded t = «ₐAllAcc t
 
-    «+-WellFounded : IWellFounded {ℕ} {PartialTerms S} _«+_
+    «+-WellFounded : IWellFounded {ℕ} {OpenTerms S} _«+_
     «+-WellFounded = ITransIWellFounded _«ₐ_ «ₐ-WellFounded
 
     open IAll {_∼_ = _«+_} («+-WellFounded)
 
-    -- Subterm induction on all partial terms.
+    -- Subterm induction on all Open terms.
     «+-rec
-        : (P : {n : ℕ} → PartialTerms S n → Set)
-        → ({n : ℕ} → (t : PartialTerms S n) 
-            → ({m : ℕ} → (a : PartialTerms S m) → (a «+ t) → P a) 
+        : (P : {n : ℕ} → OpenTerms S n → Set)
+        → ({n : ℕ} → (t : OpenTerms S n) 
+            → ({m : ℕ} → (a : OpenTerms S m) → (a «+ t) → P a) 
             → P t)
-        → ({n : ℕ} → (t : PartialTerms S n) → P t)
+        → ({n : ℕ} → (t : OpenTerms S n) → P t)
     «+-rec P f {n} t = iWFRec (λ (n , t) → P {n} t) f' (n , t)
         where
             -- f and f' are the same function up to Currying and
             -- implicit-vs-explicit arguments.
-            f' : (n,t : Σ[ n ∈ ℕ ](PartialTerms S n))
-               → ((m : ℕ) → (y : PartialTerms S m) → y «+ (proj₂ n,t) → P y)
+            f' : (n,t : Σ[ n ∈ ℕ ](OpenTerms S n))
+               → ((m : ℕ) → (y : OpenTerms S m) → y «+ (proj₂ n,t) → P y)
                → P (proj₂ n,t)
             f' (i , x) rec = f {i} x (λ {m} y → rec m y)
 
@@ -364,12 +364,12 @@ module _ {S : TerseSignature} where
     -- This is the direct output of the iWFRecBuilder,
     -- but with a normalised type annotation that is actually understandable.
     «+-rec'
-        : (P : AllPartialTerms S → Set)
-        → ( (n,t : AllPartialTerms S)
-            → ((m : ℕ) → (y : PartialTerms S m) → y «+ (proj₂ n,t) → P (m , y))
+        : (P : AllOpenTerms S → Set)
+        → ( (n,t : AllOpenTerms S)
+            → ((m : ℕ) → (y : OpenTerms S m) → y «+ (proj₂ n,t) → P (m , y))
             → P n,t
           )
-        → ((n,t : AllPartialTerms S) → P n,t)
+        → ((n,t : AllOpenTerms S) → P n,t)
     «+-rec' = iWFRec
 
 --------------------------------------------------------------------------------
@@ -380,7 +380,7 @@ module _ {S : TerseSignature} where
 -- define the relation _«_ as the restriction of _«+_ to closed terms,
 -- and show it is WellFounded (just WellFounded, not IWellFounded :D ).
 --
--- This works because if a : PartialTerms n and a «+ t for some t
+-- This works because if a : OpenTerms n and a «+ t for some t
 -- then it is necessarily the case that n ≡ 0.
 -- So, to prove that t is accessible, we only need to check accessibility of
 -- ClosedTerms.
@@ -390,8 +390,8 @@ module _ {S : TerseSignature} where
 
     «ₐargsHaveIdxZero
         : {n m : ℕ}
-        → {a : PartialTerms S n}
-        → {t : PartialTerms S m}
+        → {a : OpenTerms S n}
+        → {t : OpenTerms S m}
         → a «ₐ t
         → n ≡ 0
     «ₐargsHaveIdxZero {ℕ.zero} {m} {a} {t} a«+t = refl
@@ -403,8 +403,8 @@ module _ {S : TerseSignature} where
 
     «+argsHaveIdxZero
         : {n m : ℕ}
-        → {a : PartialTerms S n}
-        → {t : PartialTerms S m}
+        → {a : OpenTerms S n}
+        → {t : OpenTerms S m}
         → a «+ t
         → n ≡ 0
     «+argsHaveIdxZero (direct a«ₐt) = «ₐargsHaveIdxZero a«ₐt
@@ -412,7 +412,7 @@ module _ {S : TerseSignature} where
 
     pureNullaryNoArg
         : {n : ℕ}
-        → (a : PartialTerms S n)
+        → (a : OpenTerms S n)
         → (x : Fin (pure-nullary S))
         → a «ₐ (mk-pure-nullary x)
         → ⊥
@@ -420,7 +420,7 @@ module _ {S : TerseSignature} where
     
     pureNullaryNoSubterm
         : {n : ℕ}
-        → {a : PartialTerms S n}
+        → {a : OpenTerms S n}
         → (x : Fin (pure-nullary S))
         → a «+ (mk-pure-nullary x)
         → ⊥
@@ -430,7 +430,7 @@ module _ {S : TerseSignature} where
 
     ℕNullaryNoArg
         : {n m : ℕ}
-        → (a : PartialTerms S n)
+        → (a : OpenTerms S n)
         → (x : Fin (ℕ-nullary S))
         → a «ₐ (mk-ℕ-nullary x m)
         → ⊥
@@ -438,7 +438,7 @@ module _ {S : TerseSignature} where
     
     ℕNullaryNoSubterm
         : {n m : ℕ}
-        → {a : PartialTerms S n}
+        → {a : OpenTerms S n}
         → (x : Fin (ℕ-nullary S))
         → a «+ (mk-ℕ-nullary x m)
         → ⊥
@@ -447,7 +447,7 @@ module _ {S : TerseSignature} where
 
     iAccImplClosedAcc
         : (t : ClosedTerms S)
-        → (IAcc {ℕ} {PartialTerms S} _«+_ (0 , t))
+        → (IAcc {ℕ} {OpenTerms S} _«+_ (0 , t))
         → (Acc _«_ t)
     iAccImplClosedAcc (mk-pure-nullary x) (iacc rs) = 
         acc λ { p → ⊥-elim (pureNullaryNoSubterm x p) }

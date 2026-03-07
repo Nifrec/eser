@@ -45,29 +45,29 @@ height (mk-ℕ-multiary c (x ∷ L) _) = ℕ.suc (height x)
 ```
 since `x` is an explicit subterm, but obviously computes a bogus number.
 
-## A new solution: partial terms
+## A new solution: open terms
 The problem is that the vector-of-arguments is too much of a black box.
 So let's do away with it, and give arguments one-by-one.
 Then every argument appears explicitly in the inductive structure of a term.
 ```agda
--- PartialTerms n are the partially constructed terms
+-- OpenTerms n are the partially constructed terms
 -- that still need n inductive arguments.
--- PartialTerms 0 are exactly the closed terms of the term algebra.
-data PartialTerms (S : TerseSignature) : ℕ →  Set where
-    mk-pure-nullary : Fin (pure-nullary S) → PartialTerms S 0
-    mk-ℕ-nullary : Fin (ℕ-nullary S) → ℕ → PartialTerms S 0
+-- OpenTerms 0 are exactly the closed terms of the term algebra.
+data OpenTerms (S : TerseSignature) : ℕ →  Set where
+    mk-pure-nullary : Fin (pure-nullary S) → OpenTerms S 0
+    mk-ℕ-nullary : Fin (ℕ-nullary S) → ℕ → OpenTerms S 0
     argless-pure-multiary 
         : (c : indices (pure-multiary S)) 
-        → PartialTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
+        → OpenTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
     argless-ℕ-multiary 
         : (c : indices (pure-multiary S)) 
         → ℕ
-        → PartialTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
+        → OpenTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
     giveArg
         : {n : ℕ}
-        → PartialTerms S (ℕ.suc n) --^ Term still needing at least 1 more arg.
-        → PartialTerms S 0         --^ Next argument to give: a closed term.
-        → PartialTerms S n
+        → OpenTerms S (ℕ.suc n) --^ Term still needing at least 1 more arg.
+        → OpenTerms S 0         --^ Next argument to give: a closed term.
+        → OpenTerms S n
 ```
 
 (Also recall that 
@@ -93,11 +93,11 @@ record TerseSignature : Set where
 
 Now the above gave a very elegant way of defining _«_:
 ```agda
-AllPartialTerms : (S : TerseSignature) → Set
-AllPartialTerms S = Σ[ n ∈ ℕ ](PartialTerms S n)
+AllOpenTerms : (S : TerseSignature) → Set
+AllOpenTerms S = Σ[ n ∈ ℕ ](OpenTerms S n)
 
 ClosedTerms : (S : TerseSignature) → Set
-ClosedTerms S = PartialTerms S 0
+ClosedTerms S = OpenTerms S 0
 
 module _ {S : TerseSignature} where
     -- Is-argument-of-relation: 
@@ -106,7 +106,7 @@ module _ {S : TerseSignature} where
     -- argument (a₁) or an earlier argument, i.e., an arg of t.
     -- This relation also concerns non-closed-terms, it was easier to define it
     -- this way.
-    _«_ : Rel (AllPartialTerms S) 0ℓ
+    _«_ : Rel (AllOpenTerms S) 0ℓ
     a « (0 , mk-pure-nullary _)           = ⊥
     a « (0 , mk-ℕ-nullary _ _)            = ⊥
     a « (suc n , argless-pure-multiary _) = ⊥
@@ -119,7 +119,7 @@ checker rejected it...
 ### Better solution
 Use a relation that is heterogeneous in the indices of the underlying type:
 ```agda
-_«_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+_«_ : {n m : ℕ} → (OpenTerms S n) → (OpenTerms S m) → Set
 a « mk-pure-nullary _           = ⊥
 a « mk-ℕ-nullary _ _            = ⊥
 a « argless-pure-multiary _     = ⊥
@@ -167,6 +167,6 @@ open IndexHeterogeneousTransClosure
 ```
 And now we can define the is-subterm-of-relation:
 ```agda
-_«*_ : {n m : ℕ} → (PartialTerms S n) → (PartialTerms S m) → Set
+_«*_ : {n m : ℕ} → (OpenTerms S n) → (OpenTerms S m) → Set
 _«*_ {n} {m} = ITransClosure _«_ {n} {m}
 ```
