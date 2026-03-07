@@ -135,13 +135,15 @@ RoundedTerms S = Σ[ n ∈ ℕ ] (Round S n)
 data Round S where
     -- Nullary constructors without external-ℕ-argument.
     pure-atomic 
-        : Fin (pure-nullary S)      --^ Constructor identity.
+        : Fin (pure-nullary S)      
+            --^ Constructor identity.
         → Round S 0
     -- Nullary constructors with exernal-ℕ-argument.
     ℕ-atomic 
-        : (n : ℕ)                   --^ Round index (minus one).
-        → Fin (ℕ-nullary S)         --^ Constructor identity.
-        → Fin (ℕ.suc n)             --^ External ℕ-argument in [0, ..., n].
+        : (n : ℕ)                   
+            --^ Round index (minus one); n is also the external-ℕ-argument.
+        → Fin (ℕ-nullary S)         
+            --^ Constructor identity.
         → Round S (ℕ.suc n)
     -- Multiary constructor without external-ℕ-argument.
     pure-inductive
