@@ -75,9 +75,9 @@ data OpenTerms (S : TerseSignature) : ℕ →  Set where
         : (c : indices (pure-multiary S)) 
         → OpenTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
     argless-ℕ-multiary 
-        : (c : indices (pure-multiary S)) 
+        : (c : indices (ℕ-multiary S)) 
         → ℕ
-        → OpenTerms S (ℕ.suc (Data.List.lookup (pure-multiary S) c))
+        → OpenTerms S (ℕ.suc (Data.List.lookup (ℕ-multiary S) c))
     giveArg
         : {n : ℕ}
         → OpenTerms S (ℕ.suc n) --^ Term still needing at least 1 more arg.
