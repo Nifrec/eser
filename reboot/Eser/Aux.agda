@@ -34,3 +34,12 @@ m∸Sn≤m∸n n m =
     in
     subst (λ x → x ≤ m ∸ n) H (m∸n≤m (m ∸ n) 1)
         
+sumToSub
+    : (m n ℓ : ℕ)
+    → m + n ≡ ℓ
+    → n ≡ ℓ ∸ m
+sumToSub m n ℓ m+n≡ℓ = 
+    let H : (m + n) ∸ m ≡ ℓ ∸ m
+        H = cong (_∸ m) m+n≡ℓ
+    in
+    subst (λ x → x ≡ ℓ ∸ m) (Data.Nat.Properties.m+n∸m≡n m n) H

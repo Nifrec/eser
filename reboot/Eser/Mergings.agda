@@ -77,6 +77,7 @@ open import Relation.Nullary
 open import Eser.Definitions using (_≈_ ; indices ; _≃_)
 open import Eser.Logic using (elimCaseRight ; implCongrLeft ; implCongrRight)
 open import Eser.Suffix using (_≼_ ; suffixElemInclusion)
+open import Eser.Aux using (sumToSub)
 
 module Eser.Mergings where
 
@@ -300,6 +301,18 @@ mergeLenSum {A} {α} {b ∷ β} m@(BFirst b α β m') =
         length α + length (b ∷ β)
     ∎
     
+-- Corollary of mergeLenSum:
+mergeLenSub
+    : {A : Set}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → length β ≡ mergelen m ∸ length α
+mergeLenSub {A} {α} {β} m = 
+    let H : length α + length β ≡ mergelen m
+        H = sym (mergeLenSum {A} {α} {β} m)
+    in
+    sumToSub (length α) (length β) (mergelen m) H
+
 --------------------------------------------------------------------------------
 -- Inverse operations to merging
 --
