@@ -51,7 +51,7 @@ open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_ ; length)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
 open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n 
-    ; m≤n⇒m<n∨m≡n ; ≤-trans ; n≤1+n) -- ; ≤-<-trans ; n≤0⇒n≡0 
+    ; m≤n⇒m<n∨m≡n ; ≤-trans ; n≤1+n ; +-identityʳ ; +-identityˡ ; +-suc) -- ; ≤-<-trans ; n≤0⇒n≡0 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
@@ -268,6 +268,37 @@ mergelenLemma {A} {α} {b ∷ β}  (BFirst b α β m) =
                     H'
     in
     ≤-trans IH H''
+    
+mergeLenSum
+    : {A : Set}
+    → {α β : List A} 
+    → (m : Merging α β)
+    → mergelen m ≡ length α + length β
+mergeLenSum {A} {α} {[]} (BetaTriv α) = sym (+-identityʳ (length α))
+mergeLenSum {A} {[]} {b ∷ β} (AlphaTriv b β) = 
+    sym (+-identityˡ (length (b ∷ β)))
+mergeLenSum {A} {a ∷ α} {β} m@(AFirst a α β m') = 
+    begin 
+        mergelen m
+    ≡⟨ mergelenIncrementA {A} {a} {α} {β} m' ⟩
+        ℕ.suc (mergelen m')
+    ≡⟨ cong ℕ.suc (mergeLenSum m') ⟩
+        ℕ.suc (length α + length β)
+    ≡⟨⟩
+        length (a ∷ α) + length β
+    ∎
+mergeLenSum {A} {α} {b ∷ β} m@(BFirst b α β m') =
+    begin 
+        mergelen m
+    ≡⟨ mergelenIncrementB {A} {b} {α} {β} m' ⟩
+        ℕ.suc (mergelen m')
+    ≡⟨ cong ℕ.suc (mergeLenSum m') ⟩
+        ℕ.suc (length α + length β)
+    ≡⟨ sym (+-suc (length α) (length β)) ⟩
+        length α + ℕ.suc (length β)
+    ≡⟨⟩
+        length α + length (b ∷ β)
+    ∎
     
 --------------------------------------------------------------------------------
 -- Inverse operations to merging
