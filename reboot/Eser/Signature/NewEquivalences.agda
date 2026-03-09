@@ -1,4 +1,3 @@
--- Module      : Eser.Signature.NewEquivalences
 -- Description : Equivalence between two representations of term algebras.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
@@ -228,6 +227,208 @@ get-ℕ-arg (giveArg t _) = get-ℕ-arg t
 --------------------------------------------------------------------------------
 -- Decomposing a closed term into a rounded term
 --------------------------------------------------------------------------------
+
+record SplitArgsOutp 
+    {S : TerseSignature}
+    (arity-1 : ℕ) 
+    (args : Vec (ClosedTerms S) (ℕ.suc arity-1))
+    (decompose : ClosedTerms S → Σ[ i ∈ ℕ ](Round S i))
+    : Set
+    where
+    constructor splitOutp
+    field
+        m : Fin (ℕ.suc arity-1)
+        -- The next two are a bit hard to read because
+        -- n ≔ max 0 (map (proj₁ ∘ decompose) args) cannot be abbreviated here.
+        α : Vec (Round S (max 0 (map (proj₁ ∘ decompose) (toList args) ))) 
+                (ℕ.suc (toℕ m))
+        β : Vec (Σ[ ℓ ∈ ℕ ] (
+                    (ℓ < (max 0 (map (proj₁ ∘ decompose) (toList args) ))) 
+                    × 
+                    Round S ℓ)
+                ) 
+                ((ℕ.suc arity-1) ∸ (ℕ.suc (toℕ m)))
+        merging : VMerging α β
+        todo : ⊤ 
+        -- #TODO later extend this record with other data
+        -- needed to prove inversity of decomposeTerm.
+        -- Problably maxes, others, merging of them,
+        -- and proof that that merging compiles to the original args.
+        -- Or a proof that α ≡ map decompose maxes
+        -- from which one can infer map recompose α ≡ maxes,
+        -- or so.
+
+-- Subroutine of `decomposeTerm`.
+-- Split the vector of arguments of a constructor into
+-- the arguments attaining the maximum round
+-- and the arguments 
+splitArgs 
+    : {S : TerseSignature}
+    → (arity-1 : ℕ)
+    → (args : Vec (ClosedTerms S) (ℕ.suc arity-1))
+    → (decompose : ClosedTerms S → Σ[ i ∈ ℕ ](Round S i))
+    → SplitArgsOutp arity-1 args decompose
+splitArgs {S} arity-1 args decompose = 
+    let arity : ℕ
+        arity = ℕ.suc arity-1
+    in
+    let L : List (ClosedTerms S)
+        L = toList args
+    in
+    let getRound : ClosedTerms S → ℕ
+        getRound = proj₁ ∘ decompose
+    in
+    let unmergeMaxOutp : UnmergeMaxOutp L getRound
+        unmergeMaxOutp = unmergeMax L getRound
+    in
+    let rawMerge = UnmergeMaxOutp.m unmergeMaxOutp
+    in
+    let H-rawMerge : compileMerging rawMerge ≡ L
+        H-rawMerge = UnmergeMaxOutp.H-m unmergeMaxOutp
+    in
+    let maxRound : ℕ
+        maxRound = max 0 (map getRound L)
+    in
+    let maxes : List ( Σ[ t ∈ (ClosedTerms S) ] (
+            getRound t ≡ maxRound
+            ×
+            t ∈ L))
+        maxes = UnmergeMaxOutp.maxes unmergeMaxOutp
+    in
+    let others = UnmergeMaxOutp.others unmergeMaxOutp
+    in
+    let lenL≡arity : length L ≡ arity
+        lenL≡arity = length-toList args
+    in
+    let lenGetRoundL≡arity : length (map getRound L) ≡ arity
+        lenGetRoundL≡arity = 
+                subst (λ v → v ≡ arity) (sym (length-map getRound L)) lenL≡arity
+    in
+    let 0<lenMaxes : 0 < Data.List.length maxes
+        0<lenMaxes = 
+            let M = max 0 (map getRound L)
+            in
+            let M∈L : M ∈ (map getRound L)
+                M∈L = 
+                    let 0<arity : 0 < arity
+                        0<arity = z<s
+                    in
+                    nonemptyThenHasMax (subst (λ v → 0 < v) 
+                                              (sym lenGetRoundL≡arity) 
+                                              0<arity)
+            in
+            let M∈compile : M ∈ map getRound (compileMerging rawMerge)
+                M∈compile = subst (λ v → M ∈ map getRound v) (sym H-rawMerge) M∈L
+            in
+            let M∈maxes⊎M∈others : M ∈ (map (getRound ∘ proj₁) maxes) 
+                                   ⊎ 
+                                   M ∈ (map (getRound ∘ proj₁) others)
+                M∈maxes⊎M∈others = 
+                    let almost = compileMembershipMapCongr rawMerge getRound 
+                                                           M M∈compile 
+                    -- This gives 
+                    -- M ∈ map getRound (map proj₁ maxes) ⊎ ...
+                    -- but we need
+                    -- M ∈ map (getRound ∘ proj₁) maxes ⊎ ...
+                    in
+                    subst (λ x → M ∈ map (getRound ∘ proj₁) maxes ⊎ M ∈ x) 
+                          (sym (map-∘ {g = getRound} {f = proj₁} others)) 
+                          (subst (λ x → M ∈ x ⊎ M ∈ map getRound 
+                                 (map (λ r → proj₁ r) others)) 
+                                 (sym (map-∘ {g = getRound} {f = proj₁} maxes)) 
+                                 almost
+                          )
+            in
+                -- Elements of 'others' come with proofs that their first
+                -- components' getRound images are
+                -- are smaller than the max. 
+                -- So obviously the pre-image of the max 
+                -- itself cannot be in others! 
+            let M∉others : M ∉ (map (getRound ∘ proj₁) others)
+                M∉others M∈others = 
+                        let z (t , getRoundT<M , _) = <⇒≢ getRoundT<M
+                        in
+                        not∈lemma others getRound M z M∈others
+            in
+            let M∈maxes : M ∈ (map (getRound ∘ proj₁) maxes)
+                M∈maxes = elimCaseRight M∈maxes⊎M∈others M∉others
+            in
+            -- #TODO: simplification?:
+            -- in the above I went through quite some fuss to rewrite
+            -- map getRound (map proj₁ ...) into map (getRound ∘ proj₁),
+            -- but now I am undoing it again. Was this earlier rewrite not just
+            -- a confusing detour?
+            subst (λ x₁ → 0 < x₁) (length-map (getRound ∘ proj₁) maxes) (∈-length M∈maxes)
+    in
+    let lenMaxes≤lenMerge : 
+            length maxes ≤ length (compileMerging rawMerge)
+        lenMaxes≤lenMerge = subst (λ v → v ≤ length (compileMerging rawMerge))
+                                  (length-map proj₁ maxes)
+                                  (mergelenLemma rawMerge)
+    in
+    let lenMaxes≤lenL : length maxes ≤ arity
+        lenMaxes≤lenL = 
+            subst 
+            (λ v → length maxes ≤ v) 
+            (trans (cong length H-rawMerge) lenL≡arity)
+            lenMaxes≤lenMerge
+    in
+    let m : Fin arity
+        m = proj₁ (getPredec lenMaxes≤lenL 0<lenMaxes)
+    in
+    ----------------------------------------------------------------------------
+    -- Mapping maxes to α
+    -- Essentially just applying `decompose` to every element,
+    -- but we need some some boilerplate to show:
+    --  (1) the round-indices are all maxRound,
+    --  and
+    --  (2) that the length of α is correct.
+    ----------------------------------------------------------------------------
+    let maxesToα : Σ[ t  ∈ ClosedTerms S ]( 
+            ((proj₁ ∘ decompose) t ≡ maxRound) × (t ∈ L))
+            → Round S maxRound
+        maxesToα (t , pt , t∈L) = subst (Round S) pt (proj₂ (decompose t))
+    in
+    let lenMaxes≡Sm : length (map (maxesToα) maxes) ≡ ℕ.suc (toℕ m)
+        lenMaxes≡Sm =  
+                begin 
+                    length (map (maxesToα) maxes)
+                ≡⟨ length-map (maxesToα) maxes ⟩
+                    length maxes
+                ≡⟨ sym (proj₂ (getPredec lenMaxes≤lenL 0<lenMaxes)) ⟩
+                    ℕ.suc (toℕ m) 
+                ∎
+    in                    
+    let α' : Vec (Round S maxRound) (length (map maxesToα maxes))
+        α' = fromList ( map maxesToα maxes ) 
+    in
+    let α : Vec (Round S maxRound) (ℕ.suc (toℕ m))
+        α = subst (λ x → Vec (Round S maxRound) x) 
+            lenMaxes≡Sm α'
+    in
+    ----------------------------------------------------------------------------
+    -- Mapping others to β
+    --
+    -- Similar as mapping maxes to α,
+    -- only the length is a bit more involved.
+    ----------------------------------------------------------------------------
+    let othersToβ : Σ[ t  ∈ ClosedTerms S ]( 
+            ((proj₁ ∘ decompose) t < maxRound) × (t ∈ L))
+            → Σ[ ℓ ∈ ℕ ] ((ℓ < maxRound) × (Round S ℓ))
+        othersToβ (t , pt , t∈L) = 
+            (proj₁ (decompose t) , pt , proj₂ (decompose t))
+    in
+    let βType = Σ[ ℓ ∈ ℕ ]((ℓ < maxRound) × (Round S ℓ))
+    in
+    let β' : Vec βType (length (map othersToβ others))
+        β' = fromList ( map othersToβ others)
+    in
+    let fixβ'len : length (map othersToβ others) ≡ (arity ∸ (ℕ.suc (toℕ m)))
+        fixβ'len = ?
+    in
+    let β = subst (λ x → Vec βType x) fixβ'len β'
+    in
+    splitOutp m α β {! !} {! !}
 
 -- Decomposing a closed term into a rounded term,
 -- making the choices in constructing the term explicit.
