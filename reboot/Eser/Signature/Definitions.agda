@@ -204,3 +204,4 @@ data Round S where
         → (c : indices (ℕ-multiary S)) 
             --^ Constructor identity.
         → Vec (Σ[ ℓ ∈ ℕ ] ((ℓ ≤ n) × Round S ℓ)) (getArity S (inj₂ c))
+        → Round S (ℕ.suc n)
