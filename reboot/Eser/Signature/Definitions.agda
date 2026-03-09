@@ -149,14 +149,14 @@ data Round S where
     pure-inductive
         : (n : ℕ)                   
             --^ Round index (minus one).
-        → (i : indices (pure-multiary S)) 
+        → (c : indices (pure-multiary S)) 
             --^ Constructor identity.
-        → (m : Fin (getArity S (inj₁ i))) 
+        → (m : Fin (getArity S (inj₁ c))) 
             --^ Number (minus one) of arguments from previous round.
         → (α : Vec (Round S n) (ℕ.suc (toℕ m)))
             --^ Actual arguments from previous round (never empty!).
         → (β : Vec (Σ[ ℓ ∈ ℕ ] ((ℓ < n) × Round S ℓ)) 
-                   (getArity S (inj₁ i) ∸ (ℕ.suc (toℕ m))))
+                   (getArity S (inj₁ c) ∸ (ℕ.suc (toℕ m))))
             --^ Remaining arguments from at least two rounds ago.
         → VMerging α β
             --^ Interleaving of arguments in α and β
@@ -169,40 +169,38 @@ data Round S where
     ℕ-inductive-prevRoundArg
         : (n : ℕ)                   
             --^ Round index (minus one).
-        → (i : indices (ℕ-multiary S)) 
+        → (c : indices (ℕ-multiary S)) 
             --^ Constructor identity.
-        → (m : Fin (getArity S (inj₂ i))) 
+        → (m : Fin (getArity S (inj₂ c))) 
             --^ Number (minus one) of arguments from previous round.
         → (α : Vec (Round S n) (ℕ.suc (toℕ m)))
             --^ Actual arguments from previous round (never empty!).
         → (β : Vec (Σ[ ℓ ∈ ℕ ] ((ℓ < n) × Round S ℓ)) 
-                   (getArity S (inj₂ i) ∸ (ℕ.suc (toℕ m))))
+                   (getArity S (inj₂ c) ∸ (ℕ.suc (toℕ m))))
             --^ Remaining arguments from at least two rounds ago.
         → VMerging α β
             --^ Interleaving of arguments in α and β.
         → Fin n
             --^ External-ℕ-argument in [0, ..., n-1].
         → Round S (ℕ.suc n)
+
     -- Multiary constructor for round suc n whose external-ℕ-argument is n.
     -- We have not seen this constructor combined with external argument n
     -- before in any previous round, so we must also consider all combinations
     -- of this constructor, n, and any arguments from previous rounds;
     -- including combinations that do not take any argument from the previous
     -- round.
-    -- That the external-ℕ-argument is n is implicit.
+    -- This means that we do not need to distinguish between α and β,
+    -- since if α xor β xor neither can be empty,
+    -- and the total length is the same (the arity), 
+    -- and we consider all mergings,
+    -- then the collection of these mergings is just the collection
+    -- of all vectors of arguments from any earlier round whose length is the
+    -- constructor's arity.
+    -- Note that the external-ℕ-argument is n is implicit.
     ℕ-inductive-maxℕArg
         : (n : ℕ)                   
             --^ Round index (minus one), n is also the external-ℕ-argument.
-        → (i : indices (ℕ-multiary S)) 
+        → (c : indices (ℕ-multiary S)) 
             --^ Constructor identity.
-        → (lenα : Fin (ℕ.suc (getArity S (inj₂ i))))
-            --^ Number of arguments from previous round,
-            --  in range [0, ..., arity].
-        → (α : Vec (Round S n) (toℕ lenα))
-            --^ Actual arguments from previous round (can be empty).
-        → (β : Vec (Σ[ ℓ ∈ ℕ ] ((ℓ < n) × Round S ℓ)) 
-                   (getArity S (inj₂ i) ∸ (toℕ lenα)))
-            --^ Remaining arguments from at least two rounds ago.
-        → VMerging α β
-            --^ Interleaving of arguments in α and β.
-        → Round S (ℕ.suc n)
+        → Vec (Σ[ ℓ ∈ ℕ ] ((ℓ ≤ n) × Round S ℓ)) (getArity S (inj₂ c))
