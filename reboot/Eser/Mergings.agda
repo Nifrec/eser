@@ -330,22 +330,24 @@ mergeLenSub {A} {α} {β} m =
 -- (Not that it was anyhow difficult to prove this way).
 --------------------------------------------------------------------------------
 mergingEqLenSubst
-    : {A B : Set}
-    → {L R : List A} 
-    → {L' R' : List B}
+    : {A B A' B' : Set}
+    → {L : List A} 
+    → {R : List B}
+    → {L' : List A'} 
+    → {R' : List B'}
     → length L ≡ length L'
     → length R ≡ length R'
     → Merging L R
     → Merging L' R'
-mergingEqLenSubst {A} {B} {L} {[]} {L'} {[]} HL refl (BetaTriv L) = BetaTriv L'
-mergingEqLenSubst {A} {B} {[]} {b ∷ R} {[]} {b' ∷ R'} refl HR (AlphaTriv b R) 
+mergingEqLenSubst {A} {B} {A'} {B'} {L} {[]} {L'} {[]} HL refl (BetaTriv L) = BetaTriv L'
+mergingEqLenSubst {A} {B} {A'} {B'} {[]} {b ∷ R} {[]} {b' ∷ R'} refl HR (AlphaTriv b R) 
     = AlphaTriv b' R'
-mergingEqLenSubst {A} {B} {a ∷ L} {R} {a' ∷ L'} {R'} HL HR (AFirst a L R m) = 
+mergingEqLenSubst {A} {B} {A'} {B'} {a ∷ L} {R} {a' ∷ L'} {R'} HL HR (AFirst a L R m) = 
     let m' : Merging L' R'
         m' = mergingEqLenSubst (suc-injective HL) HR m
     in
     AFirst a' L' R' m'
-mergingEqLenSubst {A} {B} {L} {b ∷ R} {L'} {b' ∷ R'} HL HR (BFirst b L R m) =
+mergingEqLenSubst {A} {B} {A'} {B'} {L} {b ∷ R} {L'} {b' ∷ R'} HL HR (BFirst b L R m) =
     let m' : Merging L' R'
         m' = mergingEqLenSubst HL (suc-injective HR) m
     in
@@ -354,16 +356,20 @@ mergingEqLenSubst {A} {B} {L} {b ∷ R} {L'} {b' ∷ R'} HL HR (BFirst b L R m) 
 -- One-sided corollaries (when substituting only one of the two lists,
 -- with a list of the same type):
 mergingEqLenSubstLeft
-    : {A : Set}
-    → {L L' R : List A} 
+    : {A B A' : Set}
+    → {L : List A} 
+    → {R : List B}
+    → {L' : List A'} 
     → length L ≡ length L'
     → Merging L R
     → Merging L' R
 mergingEqLenSubstLeft HL m = mergingEqLenSubst HL refl m
 
 mergingEqLenSubstRight
-    : {A : Set}
-    → {L R R' : List A} 
+    : {A B B' : Set}
+    → {L : List A} 
+    → {R : List B}
+    → {R' : List B'}
     → length R ≡ length R'
     → Merging L R
     → Merging L R'
