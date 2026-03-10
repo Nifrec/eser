@@ -51,7 +51,7 @@ open import Data.Vec hiding (restrict ; map ; _++_ ; reverse ; _∷ʳ_ ; length)
 open import Induction.WellFounded
 open import Data.Nat.Induction using (<-Rec)
 open import Data.Nat.Properties using (≤-refl ; n<1+n ; <-trans ; m<n⇒0<n 
-    ; m≤n⇒m<n∨m≡n ; ≤-trans ; n≤1+n ; +-identityʳ ; +-identityˡ ; +-suc) -- ; ≤-<-trans ; n≤0⇒n≡0 
+    ; m≤n⇒m<n∨m≡n ; ≤-trans ; n≤1+n ; +-identityʳ ; +-identityˡ ; +-suc ; suc-injective) -- ; ≤-<-trans ; n≤0⇒n≡0 
 --                                       ; n≤1+n ; m≤n⇒m<n∨m≡n ; _≤?_ ; ≰⇒≥)
 --open import Data.Fin.Properties using (toℕ<n)
 --open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
@@ -313,6 +313,59 @@ mergeLenSub {A} {α} {β} m =
     in
     sumToSub (length α) (length β) (mergelen m) H
 
+--------------------------------------------------------------------------------
+-- Substituting the lists that are being merged
+--
+-- Mergings don't care about the elements in the lists,
+-- they essentially just interleave the indices of lists.
+-- So one can easily replace the merged lists by other lists of equal length.
+--
+-- Reflection: mergings could have been defined as ℕ → ℕ → Set instead,
+-- with Merging n m being an interleaving of Fin n and Fin m.
+-- Would that have been better / more general?
+-- A merging on lists could then have simply been defined as
+-- ListMerging L R ≔ Merging (indices L) (indices R)
+-- and since length L ≡ length L' -> indices L ≡ indices L'
+-- the lemma below follows from free. 
+-- (Not that it was anyhow difficult to prove this way).
+--------------------------------------------------------------------------------
+mergingEqLenSubst
+    : {A : Set}
+    → {L L' R R' : List A} 
+    → length L ≡ length L'
+    → length R ≡ length R'
+    → Merging L R
+    → Merging L' R'
+mergingEqLenSubst {A} {L} {L'} {[]} {[]} HL refl (BetaTriv L) = BetaTriv L'
+mergingEqLenSubst {A} {[]} {[]} {b ∷ R} {b' ∷ R'} refl HR (AlphaTriv b R) 
+    = AlphaTriv b' R'
+mergingEqLenSubst {A} {a ∷ L} {a' ∷ L'} {R} {R'} HL HR (AFirst a L R m) = 
+    let m' : Merging L' R'
+        m' = mergingEqLenSubst (suc-injective HL) HR m
+    in
+    AFirst a' L' R' m'
+mergingEqLenSubst {A} {L} {L'} {b ∷ R} {b' ∷ R'} HL HR (BFirst b L R m) =
+    let m' : Merging L' R'
+        m' = mergingEqLenSubst HL (suc-injective HR) m
+    in
+    BFirst b' L' R' m'
+
+-- One-sided corollaries (when substituting only one of the two lists):
+mergingEqLenSubstLeft
+    : {A : Set}
+    → {L L' R : List A} 
+    → length L ≡ length L'
+    → Merging L R
+    → Merging L' R
+mergingEqLenSubstLeft HL m = mergingEqLenSubst HL refl m
+
+mergingEqLenSubstRight
+    : {A : Set}
+    → {L R R' : List A} 
+    → length R ≡ length R'
+    → Merging L R
+    → Merging L R'
+mergingEqLenSubstRight HR m = mergingEqLenSubst refl HR m
 --------------------------------------------------------------------------------
 -- Inverse operations to merging
 --
