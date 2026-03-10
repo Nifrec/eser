@@ -327,9 +327,6 @@ mergeLenSub {A} {α} {β} m =
 -- computation, but gives fewer proofs of its behaviour.
 --------------------------------------------------------------------------------
 
--- #TODO: first define unmerge, then split is special case where the predicate
--- compares f-images with the max.
-
 -- Data structure used by `unmerge` to pass invariants to recursive calls.
 -- `rest` is supposed to be a suffix of L of elements still to be divided over α
 -- and β, but it is a parameter instead of a field to satisfy the termination
