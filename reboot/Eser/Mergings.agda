@@ -330,27 +330,29 @@ mergeLenSub {A} {α} {β} m =
 -- (Not that it was anyhow difficult to prove this way).
 --------------------------------------------------------------------------------
 mergingEqLenSubst
-    : {A : Set}
-    → {L L' R R' : List A} 
+    : {A B : Set}
+    → {L R : List A} 
+    → {L' R' : List B}
     → length L ≡ length L'
     → length R ≡ length R'
     → Merging L R
     → Merging L' R'
-mergingEqLenSubst {A} {L} {L'} {[]} {[]} HL refl (BetaTriv L) = BetaTriv L'
-mergingEqLenSubst {A} {[]} {[]} {b ∷ R} {b' ∷ R'} refl HR (AlphaTriv b R) 
+mergingEqLenSubst {A} {B} {L} {[]} {L'} {[]} HL refl (BetaTriv L) = BetaTriv L'
+mergingEqLenSubst {A} {B} {[]} {b ∷ R} {[]} {b' ∷ R'} refl HR (AlphaTriv b R) 
     = AlphaTriv b' R'
-mergingEqLenSubst {A} {a ∷ L} {a' ∷ L'} {R} {R'} HL HR (AFirst a L R m) = 
+mergingEqLenSubst {A} {B} {a ∷ L} {R} {a' ∷ L'} {R'} HL HR (AFirst a L R m) = 
     let m' : Merging L' R'
         m' = mergingEqLenSubst (suc-injective HL) HR m
     in
     AFirst a' L' R' m'
-mergingEqLenSubst {A} {L} {L'} {b ∷ R} {b' ∷ R'} HL HR (BFirst b L R m) =
+mergingEqLenSubst {A} {B} {L} {b ∷ R} {L'} {b' ∷ R'} HL HR (BFirst b L R m) =
     let m' : Merging L' R'
         m' = mergingEqLenSubst HL (suc-injective HR) m
     in
     BFirst b' L' R' m'
 
--- One-sided corollaries (when substituting only one of the two lists):
+-- One-sided corollaries (when substituting only one of the two lists,
+-- with a list of the same type):
 mergingEqLenSubstLeft
     : {A : Set}
     → {L L' R : List A} 
