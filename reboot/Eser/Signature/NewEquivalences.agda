@@ -47,7 +47,7 @@ open import Eser.Definitions using (_≈_ ; indices ; _≃_ ; HomotEquivalence)
 open HomotEquivalence
 open import Eser.Mergings using (Merging ; unmergeMax ; UnmergeMaxOutp 
     ; mergelenLemma ; VMerging ; compileMerging ; compileMembership
-    ; compileMembershipMapCongr ; mergeLenSub ; mergelen)
+    ; compileMembershipMapCongr ; mergeLenSub ; mergelen ; mergingEqLenSubst)
 open import Eser.ListMaxima using (nonemptyThenHasMax)
 open import Eser.Signature.Definitions hiding (getArity)
 open TerseSignature
@@ -423,6 +423,30 @@ splitArgs {S} arity-1 args decompose =
     let β' : Vec βType (length (map othersToβ others))
         β' = fromList ( map othersToβ others)
     in
+    -- K₁ and K₃ are to be used in fixβ'len below, 
+    -- but we define them in outer context because we'll need them later again.
+    let K₁ : length (map proj₁ others) ≡ length (map othersToβ others)
+        K₁ =
+            begin 
+                length (map proj₁ others)
+            ≡⟨ length-map proj₁ others ⟩
+                length others
+            ≡⟨ sym (length-map othersToβ others) ⟩
+                length (map othersToβ others)
+            ∎
+    in        
+    let K₃ : length (map proj₁ maxes) ≡ ℕ.suc (toℕ m)
+        K₃ = 
+            begin 
+                length (map proj₁ maxes)
+            ≡⟨  length-map proj₁ maxes ⟩
+                length maxes
+            ≡⟨ sym (length-map maxesToα maxes) ⟩
+                length (map maxesToα maxes)
+            ≡⟨ lenMaxes≡Sm ⟩
+                ℕ.suc (toℕ m)
+            ∎
+    in
     let fixβ'len : length (map othersToβ others) ≡ arity ∸ (ℕ.suc (toℕ m))
         fixβ'len = 
             -- Each of the three numbers in the following type
@@ -431,16 +455,6 @@ splitArgs {S} arity-1 args decompose =
                                                 ∸ length (map proj₁ maxes)
                 H₁ = mergeLenSub {α = map proj₁ maxes} {β = map proj₁ others} rawMerge
             in
-            let K₁ : length (map proj₁ others) ≡ length (map othersToβ others)
-                K₁ =
-                    begin 
-                        length (map proj₁ others)
-                    ≡⟨ length-map proj₁ others ⟩
-                        length others
-                    ≡⟨ sym (length-map othersToβ others) ⟩
-                        length (map othersToβ others)
-                    ∎
-            in        
             let H₂ :  length (map othersToβ others) ≡ (mergelen rawMerge) 
                                                 ∸ length (map proj₁ maxes)
                 H₂ = subst 
@@ -464,23 +478,47 @@ splitArgs {S} arity-1 args decompose =
                         ≡ x ∸ length (map proj₁ maxes)) 
                     K₂ H₂
             in
-            let K₃ : length (map proj₁ maxes) ≡ ℕ.suc (toℕ m)
-                K₃ = 
-                    begin 
-                        length (map proj₁ maxes)
-                    ≡⟨  length-map proj₁ maxes ⟩
-                        length maxes
-                    ≡⟨ sym (length-map maxesToα maxes) ⟩
-                        length (map maxesToα maxes)
-                    ≡⟨ lenMaxes≡Sm ⟩
-                        ℕ.suc (toℕ m)
-                    ∎
-            in
             subst (λ x →  length (map othersToβ others) ≡ arity ∸ x) K₃ H₃
     in
     let β = subst (λ x → Vec βType x) fixβ'len β'
     in
-    splitOutp m α β {! !} tt
+    ----------------------------------------------------------------------------
+    -- Now we need a merging Merging (toList α) (toList β)
+    --
+    -- These lists have the same lengths as (map proj₁ maxes)
+    -- and (map proj₁ others), respectively, for which we have the merging
+    -- rawMerge. Using `mergingEqLenSubst` we can therefore convert rawMerge
+    -- into the desired merging.
+    ----------------------------------------------------------------------------
+    let lenα≡lenproj₁maxes : length (toList α) ≡ length (map proj₁ maxes)
+        lenα≡lenproj₁maxes = 
+            begin 
+                length (toList α)
+            ≡⟨ length-toList α ⟩
+                ℕ.suc (toℕ m)
+            ≡⟨ sym K₃ ⟩
+                length (map proj₁ maxes)
+            ∎
+    in
+    let lenβ≡lenproj₁others : length (toList β) ≡ length (map proj₁ others)
+        lenβ≡lenproj₁others =
+            begin 
+                length (toList β)
+            ≡⟨ length-toList β ⟩
+                arity ∸ (ℕ.suc (toℕ m))
+            ≡⟨ sym fixβ'len ⟩
+                length (map othersToβ others)
+            ≡⟨ sym K₁ ⟩
+                length (map proj₁ others)
+            ∎
+    in
+    let merge : Merging (toList α) (toList β)
+        merge = mergingEqLenSubst {L' = toList α} {R' = toList β}
+                (sym lenα≡lenproj₁maxes) 
+                (sym lenβ≡lenproj₁others) 
+                rawMerge
+    in
+    splitOutp m α β merge tt
 
 -- Decomposing a closed term into a rounded term,
 -- making the choices in constructing the term explicit.
