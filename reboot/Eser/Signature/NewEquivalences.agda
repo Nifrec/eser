@@ -52,6 +52,7 @@ open import Eser.ListMaxima using (nonemptyThenHasMax)
 open import Eser.Signature.Definitions hiding (getArity)
 open TerseSignature
 open import Eser.Signature.Subterm
+open IndexHeterogeneousTransClosure
 open import Eser.Aux
 
 module Eser.Signature.NewEquivalences where
@@ -153,7 +154,8 @@ Sn∸n≡1 n =
     
 
 -- Auxiliary lemma proving that terms of the form `giveArg t a`
--- always have at least one argument.
+-- always have at least one argument given already
+-- (so the number of remaining required arguments is smaller than their arity).
 nonzeroArgsLemma
     : {S : TerseSignature}
     → {n : ℕ}
@@ -175,6 +177,86 @@ nonzeroArgsLemma {S} {n} (giveArg t' a') a =
         IH = nonzeroArgsLemma t' a'
     in
     ≤-trans IH (m∸Sn≤m∸n n (getArity (giveArg t' a'))) 
+
+-- If t received an argument, then it is not a pure-nullary constructor.
+giveArgNotNullaryConstrKindPure
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S (ℕ.suc n))
+    → (a : ClosedTerms S)
+    → getConstrKind (giveArg t a) ≢ c-pure-nullary
+giveArgNotNullaryConstrKindPure {S} {n} (argless-pure-multiary c) a = λ { () }
+giveArgNotNullaryConstrKindPure {S} {n} (argless-ℕ-multiary c x) a = λ { () }
+giveArgNotNullaryConstrKindPure {S} {n} (giveArg t a') a = 
+    giveArgNotNullaryConstrKindPure {S} {ℕ.suc n} t a'
+
+-- If t received an argument, then it is not a ℕ-nullary constructor.
+giveArgNotNullaryConstrKindℕ
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S (ℕ.suc n))
+    → (a : ClosedTerms S)
+    → getConstrKind (giveArg t a) ≢ c-ℕ-nullary
+giveArgNotNullaryConstrKindℕ {S} {n} (argless-pure-multiary c) a = λ { () }
+giveArgNotNullaryConstrKindℕ {S} {n} (argless-ℕ-multiary c x) a = λ { () }
+giveArgNotNullaryConstrKindℕ {S} {n} (giveArg t a') a = 
+    giveArgNotNullaryConstrKindℕ {S} {ℕ.suc n} t a'
+
+-- Helper function for the `with` clase in the next function
+-- (multiaryConstrKind).
+getConstrKindWithProof
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S n)
+    → Σ[ ck ∈ ConstrKind ](getConstrKind t ≡ ck)
+getConstrKindWithProof t = (getConstrKind t , refl)
+    
+-- Terms of the form t ≗ giveArg t' a always have an underlying multiary
+-- constructor, and consequently, a nonzero arity.
+multiaryConstrKind
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S (ℕ.suc n))
+    → (a : ClosedTerms S)
+    → getConstrKind (giveArg t a) ≡ c-pure-multiary 
+      ⊎ 
+      getConstrKind (giveArg t a) ≡ c-ℕ-multiary
+multiaryConstrKind {S} {n} t a with getConstrKindWithProof (giveArg t a)
+... | (c-pure-nullary , p) = ⊥-elim (giveArgNotNullaryConstrKindPure t a p)
+... | (c-ℕ-nullary , p) = ⊥-elim (giveArgNotNullaryConstrKindℕ t a p)
+... | (c-pure-multiary , p) = inj₁ p
+... | (c-ℕ-multiary , p) = inj₂ p
+    
+multiarySucArity
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S (ℕ.suc n))
+    → (a : ClosedTerms S)
+    → Σ[ m ∈ ℕ ](getArity (giveArg t a) ≡ ℕ.suc m)
+multiarySucArity {S} {n} t a with multiaryConstrKind t a
+... | inj₁ p = 
+    let c' : kindToIndexSet S (getConstrKind t)
+        c' = getConstrIdx t
+    in
+    let c : Fin (length (pure-multiary S))
+        c = subst (kindToIndexSet S) p c'
+    in
+    (Data.List.lookup (pure-multiary S) c , getArityLemma {S} {n} t p)
+    where
+        getArityLemma
+            : {S' : TerseSignature}
+            → {n' : ℕ}
+            → (t' : OpenTerms S (ℕ.suc n'))
+            → (p : getConstrKind t' ≡ c-pure-multiary)
+            → getArity t' ≡ 
+                ℕ.suc (Data.List.lookup (pure-multiary S) 
+                                        (subst (kindToIndexSet S) 
+                                               p 
+                                               (getConstrIdx t'))
+                      )
+        getArityLemma {S'} {n'} (argless-pure-multiary c) refl = refl
+        getArityLemma {S'} {n'} (giveArg t' a') p = getArityLemma {S'} {ℕ.suc n'} t' p
+... | inj₂ p = ?
 
 getArgs
     : {S : TerseSignature}
@@ -583,7 +665,7 @@ decomposeTermRec {S} (mk-pure-nullary c) decomposeSubterm =
     (0 , pure-atomic c)
 decomposeTermRec {S} (mk-ℕ-nullary c n) decomposeSubterm =
     (ℕ.suc n , ℕ-atomic n c)
-decomposeTermRec {S} (giveArg t a) decomposeSubterm = 
+decomposeTermRec {S} t@(giveArg t' a) decomposeSubterm = 
     let constrKind : ConstrKind
         constrKind = getConstrKind t in 
     let constrIdx : kindToIndexSet S constrKind
@@ -592,8 +674,23 @@ decomposeTermRec {S} (giveArg t a) decomposeSubterm =
     let arity : ℕ
         arity = getArity t
     in
-    let args : Vec (ClosedTerms S) (getArity t)
-        args = getArgs (giveArg t a)
+    -- Note: since t is closed, it holds that a « t ≗ a «+ t
+    -- and `direct` constructs a «+ t from a «ₐ t.
+    let args' : Vec (Σ[ a ∈ ClosedTerms S ]( a « t )) (getArity t)
+        args' = Data.Vec.map (λ (a , a«ₐt) → (a , ITransClosure.direct a«ₐt)) 
+                             (getArgsWithProof t)
+    in
+    -- Decompose the arguments to RoundedTerms using a well-founded
+    -- recursive call.
+    let args' : Vec (RoundedTerms S) (getArity t)
+        args' = Data.Vec.map (λ (a , a«t) → decomposeSubterm a«t) args'
+    in
+    let arity-1 : ℕ
+        arity-1 = ?
+    in
+    -- #TODO: subst vector index : arity = arity-1 + 1.
+    let args : Vec (RoundedTerms S) (ℕ.suc arity-1)
+        args = ?
     in
     let ℕ-arg : ℕ-argType constrKind
         ℕ-arg = get-ℕ-arg t
@@ -602,13 +699,13 @@ decomposeTermRec {S} (giveArg t a) decomposeSubterm =
     -- Above this line is new stuff. Below this line is old stuff.
     -- Let's try to fit the new stuff into the old stuff.
     --------------------------------------------------------------------------------
-    {! assembleRoundedTerm constrKind constrIdx args !}
+    assembleRoundedTerm constrKind constrIdx arity-1 args 
         where
             assembleRoundedTerm
                 : (ck : ConstrKind)
                 → (i : kindToIndexSet S ck)
                 → (arity-1 : ℕ)
-                → (args : Vec (ClosedTerms S) (ℕ.suc arity-1))
+                → (args : Vec (RoundedTerms S) (ℕ.suc arity-1))
                 → RoundedTerms S
             -- First two cases are contradictions.
             assembleRoundedTerm c-pure-nullary i args = {! !}
@@ -621,8 +718,8 @@ decomposeTermRec {S} (giveArg t a) decomposeSubterm =
                 let splitArgsOutp : SplitArgscOutp arity-1 args decomposeSubterm
                     splitArgsOutp = splitArgs arity-1 args decomposeSubterm
                     in
-                    !}
-                {! pure-inductive  !}
+                pure-inductive {! n !} {! c !} {! m !} {! α !} {! β !} {! merge !}
+                !}
             assembleRoundedTerm c-ℕ-multiary i args = {! !}
 
 --decomposeTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
