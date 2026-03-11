@@ -192,7 +192,6 @@ getArgs {S} (argless-ℕ-multiary c x) =
           (sym (n∸n≡0 (ℕ.suc (Data.List.lookup (ℕ-multiary S) c))))  
           []
 getArgs {S} {n} (giveArg t a) = 
-    --let NZ : 
     let H : ℕ.suc (getArity t ∸ ℕ.suc n) ≡ getArity (giveArg t a) ∸ n
         H = 
             begin 
@@ -206,6 +205,49 @@ getArgs {S} {n} (giveArg t a) =
             ∎
     in
     subst (λ m → Vec (ClosedTerms S) m) H (getArgs t Data.Vec.∷ʳ a)
+
+-- Variant of getArgs that for each arg also proves that it is a subterm.
+getArgsWithProof
+    : {S : TerseSignature}
+    → {n : ℕ}
+    → (t : OpenTerms S n)
+    → Vec (Σ[ a ∈ ClosedTerms S ](a «ₐ t)) (getArity t ∸ n)
+getArgsWithProof (mk-pure-nullary x) = []
+getArgsWithProof (mk-ℕ-nullary x x₁) = []
+getArgsWithProof {S} t@(argless-pure-multiary c) = 
+    subst (λ m → Vec (Σ[ a ∈ ClosedTerms S ](a «ₐ t)) m) 
+          (sym (n∸n≡0 (ℕ.suc (Data.List.lookup (pure-multiary S) c))))  
+          []
+getArgsWithProof {S} t@(argless-ℕ-multiary c x) =
+    subst (λ m → Vec (Σ[ a ∈ ClosedTerms S ](a «ₐ t)) m) 
+          (sym (n∸n≡0 (ℕ.suc (Data.List.lookup (ℕ-multiary S) c))))  
+          []
+getArgsWithProof {S} {n} t@(giveArg t' a) = 
+    let H : ℕ.suc (getArity t' ∸ ℕ.suc n) ≡ getArity (giveArg t' a) ∸ n
+        H = 
+            begin 
+                ℕ.suc (getArity t' ∸ ℕ.suc n)
+            ≡⟨ cong ℕ.suc (sym (pred[m∸n]≡m∸[1+n] (getArity t) n)) ⟩
+                ℕ.suc (Data.Nat.pred (getArity t' ∸ n))
+            ≡⟨ suc-pred (getArity t' ∸ n) ⦃ >-nonZero (nonzeroArgsLemma t' a) ⦄ ⟩
+                getArity t' ∸ n
+            ≡⟨⟩
+                getArity (giveArg t' a) ∸ n
+            ∎
+    in
+    let a«ₐt : a «ₐ t
+        a«ₐt = inj₁ (refl)
+    in
+    -- Recursive call gives pairs (a , a «ₐ t'), not a «ₐ t'.
+    -- But by definition of _«ₐ_, inj₂ (a «ₐ t') does have type a «ₐ t'
+    -- It uses this case: `_«ₐ_ {0} {m} a (giveArg t a₁) = (a ≡ a₁) ⊎ (a «ₐ t)`
+    let recCall : Vec (Σ[ a ∈ ClosedTerms S ](a «ₐ t)) (getArity t' ∸ ℕ.suc n)
+        recCall = Data.Vec.map (λ (a , a«ₐt') → (a , inj₂ a«ₐt')) 
+                               (getArgsWithProof t')
+    in
+    subst (λ m → Vec (Σ[ a ∈ ClosedTerms S ](a «ₐ t)) m) 
+                     H 
+                     (recCall Data.Vec.∷ʳ (a , a«ₐt))
 
 ℕ-argType : ConstrKind → Set
 ℕ-argType c-pure-nullary    = ⊤
@@ -560,9 +602,28 @@ decomposeTermRec {S} (giveArg t a) decomposeSubterm =
     -- Above this line is new stuff. Below this line is old stuff.
     -- Let's try to fit the new stuff into the old stuff.
     --------------------------------------------------------------------------------
-    
-    -- #TODO: assembly will require a case distinction on the constrKind.
-    ?
+    {! assembleRoundedTerm constrKind constrIdx args !}
+        where
+            assembleRoundedTerm
+                : (ck : ConstrKind)
+                → (i : kindToIndexSet S ck)
+                → (arity-1 : ℕ)
+                → (args : Vec (ClosedTerms S) (ℕ.suc arity-1))
+                → RoundedTerms S
+            -- First two cases are contradictions.
+            assembleRoundedTerm c-pure-nullary i args = {! !}
+            assembleRoundedTerm c-ℕ-nullary i args = {! !}
+            assembleRoundedTerm c-pure-multiary i arity-1 args = 
+                --let arity-1 : ℕ
+                --    arity-1 = Data.List.lookup (pure-multiary S) i
+                --in
+                {!
+                let splitArgsOutp : SplitArgscOutp arity-1 args decomposeSubterm
+                    splitArgsOutp = splitArgs arity-1 args decomposeSubterm
+                    in
+                    !}
+                {! pure-inductive  !}
+            assembleRoundedTerm c-ℕ-multiary i args = {! !}
 
 --decomposeTerm {S} (mk-pure-nullary x) = (0 , c-pure-nullary , x , refl {x = 0})
 --decomposeTerm {S} (mk-ℕ-nullary x n) = 
