@@ -256,6 +256,8 @@ multiarySucArity {S} {n} t a with multiaryConstrKind t a
                       )
         getArityLemma {S'} {n'} (argless-pure-multiary c) refl = refl
         getArityLemma {S'} {n'} (giveArg t' a') p = getArityLemma {S'} {ℕ.suc n'} t' p
+-- This case is same proof as the inj₁ case, except we replace `pure` with `ℕ`
+-- everywhere.
 ... | inj₂ p = ?
 
 getArgs
