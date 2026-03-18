@@ -232,4 +232,72 @@ jumpOver⊥s
     → (¬ C 0)
     → (t₀ : C 1)
     → (Σ[ w ∈ ℕ ] C w) ≃ (Σ[ n ∈ ℕ ] (C $ J-iter 1 t₀ J n))
-jumpOver⊥s _ _ _ _ = IGotProofOnPaper
+jumpOver⊥s _ _ _ _ = IGotProofOnPaper -- See sheet "Lih 11" backside
+
+--------------------------------------------------------------------------------
+-- Theorem: there are finitely many terms of a fixed weight
+--
+-- I.e., `Terms w ≃ Fin (ż w)` for all w ∈ ℕ for some ż : ℕ → ℕ
+--------------------------------------------------------------------------------
+
+-- The main statement is as follows:
+ZTheorem : {μ ζ : ℕ∞} → (S : Signature (μ) (ζ))
+    → Σ[ ż ∈ (ℕ → ℕ) ](
+        (w : ℕ) → (Terms {μ} {ζ} S w) ≃ (Fin $ ż w)
+        )
+ZTheorem = StillTODO
+
+-- The cases where S's term algebra is finite are easy,
+-- the special case where S's term algebra is infinite
+-- is the real work:
+ZTheoremInhab : {μ ζ : ℕ∞} → (S : Signature (suc∞ μ) (suc∞ ζ))
+    → Σ[ z ∈ (ℕ → ℕ) ](
+        (w : ℕ) → (Terms {suc∞ μ} {suc∞ ζ} S w) ≃ (Fin $ ℕ.suc $ z w)
+        )
+ZTheoremInhab = StillTODO
+
+-- But I will prove the latter via a collection of sublemmas.
+module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
+
+    C = Terms {suc∞ μ} {suc∞ ζ} S
+
+    -- Strategy:
+    -- C 0 is uninhabited because there's simply no constructor for weight w.
+    -- C 1 is a singleton, i.e. Fin 1;
+    --      only the nullary constructor with index 0 has weight 1.
+    -- C w for w ≥ 2 is the hard case:
+    -- 1. C w ≡ (C⁰ w) ⊎ (C⁺ w)
+    --      where 
+    --          C⁰ w are the terms of weight w made with a nullary constructor.
+    --          C⁼ w are the terms of weight w made with a multiary constructor.
+    -- 2. C⁰ w ≃ Fin 1 if there are at least w nullary constructors,
+    --      and C⁰ w ≃ ⊥ otherwise; only the term with index w-1 has weight w,
+    --      but it doesn't exist if the set of nullary constructors
+    --      is smaller than Fin w.
+    -- 3. C⁺ w ≃ Σ[ C ∈ {0, ..., w-1} ](
+    --      --^ Later constructors are too heavy already.
+    --      --  (If there are fewer than w constructors this set should be even
+    --      --  smaller)
+    --           Σ[ v ∈ Vec (Σ[k∈ℕ] (k < w) × (C k)) (arity c) ]
+    --      -- Vector of arguments, each having at most weight w∸1.
+    --          weightSum v ≡ w ∸ 1 ∸ c
+    --      )
+    --      Idea: a term (mk-multiary c v) ∈ C⁺ w
+    --          of weight w must have w = c + 1 + weightSum(v).
+    --          So weightSum v ≡ w ∸ 1 ∸ c (since w ≥ 2).
+    --          Since the weightSum is greater or equal to the weight
+    --          of any element, and since it has at least one element
+    --          (arity c ≥ 1), no element can have weight greater than w∸1.
+    -- 4. The number of choices c ∈ {0, ..., w-1} is finite
+    --      and computable, and the number of Vectors of a fixed length (arity
+    --      c) over a finite set is finite
+    --      (by the induction hypothesis, C k ≃ Fin (1 + z k) since k < w).
+    --      So the RHS in 3. is finite.
+    -- 5. To count the number of vectors in the inner-Σ in the LHS of 3.
+    --      we need to solve the following combinatorial problem:
+    --
+    --      Given a w ∈ ℕ and for each 0 ≤ k ≤ w - 1 a number Bₖ of balls
+    --      of weight k,
+    --      in how many ways can we choose N balls such that their total weight
+    --      is w? (order matters, the same ball may be chosen multiple times).
+    --      (in our case:  N ≔ arity c  and  Bₖ = C k ≃ Fin (1 + z k) )
