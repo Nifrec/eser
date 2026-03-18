@@ -211,46 +211,20 @@ InhabitJumper {C}
 -- until one reaches the first point beyond w; this is more work to prove right
 -- in Agda.
 
--- Iterating a dependent function whose codomain mismatches its domain
--- only by the application of a function 'g'.
-depGIter
-    : {A : Set}
-    → {B : A → Set}
-    → (g : A → A → A)
-    → (f : {a : A} → B a → Σ[ d ∈ A ] (B $ g a d))
-    → ℕ → Σ[ a ∈ A ] B a → Σ[ a ∈ A ] B a
-    --^ The final type is iterable!
-depGIter {A} {B} g f 0 (a , b) = (a , b)
-depGIter {A} {B} g f (suc n) (a , b) = 
-    let (a' , b') = depGIter {A} {B} g f n (a , b)
-    in
-    let (d , b'') = f {a'} b'
-    in
-    (g a' d , b'')
-
-getWeight : {C : ℕ → Set} → (g : ℕ → ℕ → ℕ) → (w : ℕ) → Σ[ h ∈ ℕ ] C (g h w) → ℕ
-getWeight {C} g w (h , t) = g h w
-
 -- Iterate an InhabitJumper from an inhabited starting point n₀,
 -- and give the point reached after n jumps.
--- (In out use case, we'll have ¬ C 0 but C 1 is inhabited, 
+-- (In out use case (see below), we'll have ¬ C 0 but C 1 is inhabited, 
 -- so we start with n₀ ≔ 1).
 J-iter : {C : ℕ → Set} → (n₀ : ℕ) → C n₀ → (J : InhabitJumper {C}) → ℕ → ℕ
 J-iter {C} n₀ t₀ J 0 = n₀
 --J-iter {C} n₀ t₀ J (suc n) = proj₁ $ depGIter g J' n (n₀ , t₀)
 J-iter {C} n₀ t₀ J (suc n) = proj₁ $ iter J' n (n₀ , t₀)
     where
-        --g : ℕ → ℕ → ℕ
-        --g w h = w + 1 + h
-        --J' : {w : ℕ} → C w → Σ[ h ∈ ℕ ] (C $ w + 1 + h) 
-        --J' {w} = (λ (h , tₕ , _) → (h , tₕ)) ∘ (J {w})
-        --J' : {w : ℕ} → C w → Σ[ w' ∈ ℕ ] C w'
         J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
         J' (w , t) = 
             let (h , t' , _) = J {w} t
             in
             (w + 1 + h , t')
-        --J' {w} = (λ (h , tₕ , _) → (w + 1 + h , tₕ)) ∘ (J {w})
 
 jumpOver⊥s
     : (C : ℕ → Set)
