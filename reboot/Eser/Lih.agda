@@ -148,17 +148,63 @@ AllTerms {μ} {ζ} S = Σ[ w ∈ ℕ ] Terms {μ} {ζ} S w
 -- * Prove a general theorem that `Σ[ n ∈ ℕ ] Fin (suc (z n)) ≃ ℕ`.
 --------------------------------------------------------------------------------
 
-signatureCountable 
+-- The term algebra of a signature with only nullary constructors
+-- is isomorphic to just the set of the nullary constructors.
+-- This is either Fin μ (if μ is finite) or ℕ (if μ = ∞).
+closedTermAlgEnum
+    : {μ : ℕ∞}
+    → (S : Signature μ (fin 0))
+    → AllTerms {μ} {fin 0} S ≃ cardToSet μ
+closedTermAlgEnum = StillTODO
+
+-- The term algebra of a signature without nullary constructors
+-- is always empty. There are no atomic terms, and therefore also no arguments
+-- to multiary constructors.
+emptyTermAlgEmpty
+    : {ζ : ℕ∞}
+    → (S : Signature (fin 0) ζ )
+    → (AllTerms {fin 0} {ζ} S) ≃ ⊥
+emptyTermAlgEmpty = StillTODO
+
+-- The term algebra of a signature with at least one nullary constructor a
+-- (so an atomic term) and at least one multiarty constructor c
+-- is always isomorphic to ℕ, since we can aways construct:
+-- t₀ ≔ a
+-- t₁ ≔ c(a , ..., a )
+-- t₂ ≔ c(t₁, ..., t₂)
+-- t₃ ≔ c(t₃, ..., t₃)
+-- etc.
+infTermAlgEnum
+    : {μ ζ : ℕ∞}
+    → (S : Signature (suc∞ μ) (suc∞ ζ))
+    → (AllTerms {suc∞ μ} {suc∞ ζ} S) ≃ ℕ
+infTermAlgEnum = IGotProofOnPaper
+
+-- Combining the three above lemmas: every term algebra
+-- is isomorphic to either `Fin n` for some n ∈ ℕ xor isomorphic to ℕ.
+-- That is equivalent to saying, isomorphic to `cardToSet z` for some z ∈ ℕ∞.
+everyTermAlgEnum
     : {μ ζ : ℕ∞}
     → (S : Signature μ ζ)
-    → (AllTerms {μ} {ζ} S) ≃ ℕ
-signatureCountable = StillTODO
-    --begin 
-    --    Σ[ w ∈ ℕ] Terms w
-    --≃⟨ StillTODO ⟩
-    --∎
-
-
+    → Σ[ z ∈ ℕ∞ ](AllTerms {μ} {ζ} S) ≃ cardToSet z
+everyTermAlgEnum {μ} 
+                 {fin 0} 
+                 S = (μ , closedTermAlgEnum {μ} S)
+everyTermAlgEnum {fin 0} 
+                 {ζ} 
+                 S = (fin 0 , emptyTermAlgEmpty {ζ} S)
+everyTermAlgEnum {μ@(fin (ℕ.suc x))} 
+                 {ζ@(fin (ℕ.suc y))} 
+                 S = (∞ , infTermAlgEnum {fin x} {fin y} S)
+everyTermAlgEnum {μ@(fin (ℕ.suc x))} 
+                 {∞} 
+                 S = (∞ , infTermAlgEnum {fin x} {∞} S)
+everyTermAlgEnum {∞} 
+                 {fin (ℕ.suc y)} 
+                 S = (∞ , infTermAlgEnum {∞} {fin y} S)
+everyTermAlgEnum {∞} 
+                 {∞} 
+                 S = (∞ , infTermAlgEnum {∞} {∞} S)
 --------------------------------------------------------------------------------
 -- Jump theorem: given a function that jumps between inhabited finite types,
 -- then the sum of all those types is equivalent to ℕ.
@@ -301,3 +347,15 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     --      in how many ways can we choose N balls such that their total weight
     --      is w? (order matters, the same ball may be chosen multiple times).
     --      (in our case:  N ≔ arity c  and  Bₖ = C k ≃ Fin (1 + z k) )
+
+-- #TODO Finish this
+
+--------------------------------------------------------------------------------
+-- Big picture proofs
+--------------------------------------------------------------------------------
+signatureCountable = StillTODO
+    --begin 
+    --    Σ[ w ∈ ℕ] Terms w
+    --≃⟨ StillTODO ⟩
+    --∎
+
