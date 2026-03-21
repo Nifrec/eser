@@ -6,8 +6,6 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 open import Level
-open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
-open import Data.Bool.Properties
 open import Data.Nat
 open import Data.Sum
 open import Data.Unit
@@ -21,7 +19,6 @@ open import Relation.Nullary
 open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
-open import Data.Vec 
 
 open import Function
 open import Function.Properties.Inverse hiding (refl ; trans ; sym)
