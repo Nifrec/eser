@@ -178,7 +178,7 @@ infTermAlgEnum
     : {μ ζ : ℕ∞}
     → (S : Signature (suc∞ μ) (suc∞ ζ))
     → (AllTerms {suc∞ μ} {suc∞ ζ} S) ≃ ℕ
-infTermAlgEnum = IGotProofOnPaper
+--^ See below for the proof
 
 -- Combining the three above lemmas: every term algebra
 -- is isomorphic to either `Fin n` for some n ∈ ℕ xor isomorphic to ℕ.
@@ -351,11 +351,6 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
 -- #TODO Finish this
 
 --------------------------------------------------------------------------------
--- Big picture proofs
+-- Big picture proof of infTermAlgEnum
 --------------------------------------------------------------------------------
-signatureCountable = StillTODO
-    --begin 
-    --    Σ[ w ∈ ℕ] Terms w
-    --≃⟨ StillTODO ⟩
-    --∎
-
+infTermAlgEnum {μ} {ζ} S = ?
