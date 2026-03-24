@@ -400,9 +400,7 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     --      of weight w needing n more arguments exist?
     --      Well note the following data is required to build such a term:
     --          - weights wₜ and wₐ such that wₐ + wₜ ≡ w.
-    --              There are w-1 = ŵ such choices.
-    --          - A constructor c ∈ cardToSet (suc∞ ζ) with index
-    --              at most w-1 (or at most ζ, in case this is even smaller).
+    --              There are w-1 = ŵ such choices (see point 6 below).
     --          - A base term t ∈ OT wₜ (suc n) ≃ Fin(ż wₜ n)
     --          - An argument a ∈ OT wₐ 0       ≃ Fin(ż wₐ 0)
     --      The last two equivalences can be obtained via Well-Founded (ℕ, <)
@@ -411,16 +409,73 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     --      since both weights are inhabited we must have wₜ ≥ 1 and wₐ ≥ 1, 
     --      so if w ≡ wₐ + wₜ then both wₐ < w and wₜ < w must hold. 
     --      Consequently, we can make recursive calls with arguments wₐ and wₜ.
-    -- 5. So define OTᵃ w n ≔ 
-    --  Σ[(wₜ,wₐ,p) ∈ Splits w] Σ[c ∈ Fin w] (OT wₜ (suc n)) × (OT wₐ 0)
-    --  ≃
-    --  Σ[Fin( ŵ )]Σ[Fin
-    --          
-    --
-    --
+    -- 5. So define 
+    --  OTᵃ w n ≔ Σ[(wₜ,wₐ,p) ∈ Splits w](OT wₜ (suc n)) × (OT wₐ 0)
+    --          ≃ Σ[Fin( ŵ )] Fin(ż wₜ n) × Fin(ż wₐ 0)
+    -- 6. Here `Splits w` (for any w ≗ suc ŵ) is the set of splits of w into 
+    --      two non-zero numbers that sum to w.
+    --      Formally:
+    --          Splits w ≔ Σ[x ∈ ℕ]Σ[y ∈ ℕ](suc x + suc y ≡ w)
+    --      Note that x ∈ {0, ..., w-2} ≃ Fin w-1 ≃ Fin ŵ,
+    --      and choosing an x fixes the only
+    --      possible choice of y already as 
+    --          suc y ≡ w - suc x = ŵ - x
+    --              so
+    --          y ≡ ŵ - x - 1
+    --      which has exactly one solution for all x ∈ {0, ..., ŵ-1},
+    --      if ŵ ≥ 1 and none if ŵ ≡ 0, but then x ∈ ⊥ anyway.
+    --      Hence the solutions are in bijection to the choice of x ∈ Fin ŵ.
 
--- #TODO Finish this
+    _<∞b_ : ℕ∞ → ℕ∞ → Bool
+    _<∞b_ = ? 
+    --^ Just a placeholder. Maybe it's better to prove `Decidable _<∞_`.
 
+    z⁰ : ℕ → ℕ → ℕ
+    z⁰ w (suc n) = 0 -- No nullary constructors take arguments.
+    z⁰ 0 0 = 0       -- All terms have weight at least one.
+    z⁰ (suc w) 0 = if (fin $ ℕ.suc w) <∞b (suc∞ ζ) then 1 else 0
+
+    -- The definition below doesn't type check, since we don't know
+    -- if w ≡ c. Need decide: either define OT⁰ ≔ Fin (z⁰ n w)
+    -- xor add a `w ≡ cardToℕ c` and a subst in the final equaltion.
+    --OT⁰ : ℕ → ℕ → Set
+    --OT⁰ w n = Σ[ t ∈ OT w n ] Σ[ c ∈ cardToSet $ suc∞ μ ] t ≡ mk-nullary c
+    --Eq-OT⁰ : ℕ → ℕ → Set
+    --Eq-OT⁰ w n = OT⁰ w n ≃ Fin (z⁰ n w)
+    OT⁰ : ℕ → ℕ → Set
+    OT⁰ w n = Fin (z⁰ n w)
+
+    Splits : ℕ → Set
+    Splits w = Σ[ x ∈ ℕ ] Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
+    splitsSize : ℕ → ℕ
+    splitsSize 0 = 0
+    splitsSize 1 = 1
+    splitsSize (suc (suc w)) = ℕ.suc w
+    splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
+    splitsFin w = ?
+
+    OTᵃ : ℕ → ℕ → Set
+    OTᵃ w n = Σ[ (wₜ , wₐ , p) ∈ Splits w ] (OT wₜ (ℕ.suc n)) × (OT wₐ 0)
+    zᵃ : ℕ → ℕ → ℕ
+    zᵃ w n = ? 
+        --^ should be ℕ-sum_{wₜ , wₐ , p ∈ Splits W} (z wₜ (suc n)) * (z wₐ 0)
+        --^ This needs two <-rec recursive calls.
+    
+    Eq-OTᵃ : ℕ → ℕ → Set
+    Eq-OTᵃ w n = OTᵃ w n ≃ Fin (zᵃ w n)
+
+    OTᵉ : ℕ → ℕ → Set
+    OTᵉ 0 n = ⊥
+    OTᵉ w@(suc w') n = Σ[ c ∈ cardToSet (suc∞ ζ) ] 
+                            ((fin w) <∞ (suc∞ ζ)) 
+                            × (arity {suc∞ μ} {suc∞ ζ} {S} c ≡ n) 
+                            × cardToℕ c ≡ w'
+    zᵉ : ℕ → ℕ → ℕ
+    zᵉ = ? -- 1 if (w ≤ ζ and arity (w - 1) ≡ n) else 0.
+    Eq-OTᵉ : ℕ → ℕ → Set
+    Eq-OTᵉ w n = OTᵉ w n ≃ Fin (zᵉ w n)
+
+    -- #TODO: also the ᵉ and the ᵃ variants.
 --------------------------------------------------------------------------------
 -- Big picture proof of infTermAlgEnum
 --------------------------------------------------------------------------------
