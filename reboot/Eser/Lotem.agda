@@ -373,48 +373,30 @@ ZTheoremInhab = StillTODO
 -- But I will prove the latter via a collection of sublemmas.
 module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
 
-    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
+    OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
 
     -- Strategy:
-    -- C 0 is uninhabited because there's simply no constructor for weight w.
-    -- C 1 is a singleton, i.e. Fin 1;
-    --      only the nullary constructor with index 0 has weight 1.
-    -- C w for w ≥ 2 is the hard case:
-    -- 1. C w ≡ (C⁰ w) ⊎ (C⁺ w)
+    -- OT 0 n is uninhabited because there's simply no constructor for weight w.
+    -- OT 1 n is a singleton (Fin 1) if n ≡ 0 or if a constructor with index 0
+    -- has arity n; only these have weight 1. 
+    -- OT w n for w ≥ 2 is the hard case:
+    -- 1. OT w n ≡ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
     --      where 
-    --          C⁰ w are the terms of weight w made with a nullary constructor.
-    --          C⁼ w are the terms of weight w made with a multiary constructor.
-    -- 2. C⁰ w ≃ Fin 1 if there are at least w nullary constructors,
-    --      and C⁰ w ≃ ⊥ otherwise; only the term with index w-1 has weight w,
+    --          OT⁰ w n are the terms in OT w n made with mk-nullary.
+    --          OT⁼ w n are the terms in OT w n made with mk-multiary,
+    --              i.e., constructors without any aguments applied.
+    --          OTᵃ w n are the terms in OT w n made with giveArg,
+    --              i.e., constructors with one or more arguments applied.
+    -- 2. OT⁰ w (suc n) ≃ Fin 0 always, 
+    --      because nullary constructors don't need arguments. 
+    --    OT⁰ w 0 ≃ Fin 1 if there are at least w nullary constructors,
+    --      and OT⁰ w 0 ≃ ⊥ otherwise; 
+    --      only the term with index w-1 has weight w,
     --      but it doesn't exist if the set of nullary constructors
     --      is smaller than Fin w.
-    -- 3. C⁺ w ≃ Σ[ C ∈ {0, ..., w-1} ](
-    --      --^ Later constructors are too heavy already.
-    --      --  (If there are fewer than w constructors this set should be even
-    --      --  smaller)
-    --           Σ[ v ∈ Vec (Σ[k∈ℕ] (k < w) × (C k)) (arity c) ]
-    --      -- Vector of arguments, each having at most weight w∸1.
-    --          weightSum v ≡ w ∸ 1 ∸ c
-    --      )
-    --      Idea: a term (mk-multiary c v) ∈ C⁺ w
-    --          of weight w must have w = c + 1 + weightSum(v).
-    --          So weightSum v ≡ w ∸ 1 ∸ c (since w ≥ 2).
-    --          Since the weightSum is greater or equal to the weight
-    --          of any element, and since it has at least one element
-    --          (arity c ≥ 1), no element can have weight greater than w∸1.
-    -- 4. The number of choices c ∈ {0, ..., w-1} is finite
-    --      and computable, and the number of Vectors of a fixed length (arity
-    --      c) over a finite set is finite
-    --      (by the induction hypothesis, C k ≃ Fin (1 + z k) since k < w).
-    --      So the RHS in 3. is finite.
-    -- 5. To count the number of vectors in the inner-Σ in the LHS of 3.
-    --      we need to solve the following combinatorial problem:
-    --
-    --      Given a w ∈ ℕ and for each 0 ≤ k ≤ w - 1 a number Bₖ of balls
-    --      of weight k,
-    --      in how many ways can we choose N balls such that their total weight
-    --      is w? (order matters, the same ball may be chosen multiple times).
-    --      (in our case:  N ≔ arity c  and  Bₖ = C k ≃ Fin (1 + z k) )
+    -- 3. OTᵉ w n ≃ Fin 1 if there are at least w constructors
+    --      and the constructor with index w-1 has arity n.
+    --      Otherwise OTᵉ w n ≃ Fin 0
 
 -- #TODO Finish this
 
