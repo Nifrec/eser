@@ -13,7 +13,10 @@
 --
 -- Lih has its own distinctive reprentation of signatures (finitary W-types)
 -- and a proof outline for showing term algebras are equivalent to ℕ.
--- Ideas developped in the period 11-18 March 2026,
+-- This open-terms-version of Lih also has a distinctive representation of terms
+-- over a signature: Agda-constructors can only apply one argument at a time to
+-- a signature-constructor.
+-- Ideas developed in March 2026,
 -- after the 11 March discussion with supervisors pointed out the previous
 -- approach was overly complicated and that things could have been done more
 -- general.
@@ -34,10 +37,13 @@ open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
 open import Data.Vec 
 
-open import Function renaming (_⇔_ to _≃_)
+open import Function
 open import Relation.Binary.Reasoning.Syntax
 
 open import StreamGrids.Card
+
+open import Eser.Equivalences.Notation
+open import Eser.Equivalences.Properties
 
 module Eser.Lotem where
 
@@ -121,7 +127,7 @@ arity {S = S} c = ℕ.suc (S c)
 -- But the number of data conversions, arithmetic rewrites and other things that
 -- that thorny is Agda, just wasn't fun).
 --
--- Open Terms allow to represent constructors with a few arguments applied,
+-- Open terms allow to represent constructors with a few arguments applied,
 -- but not as many as their arity.
 -- Now arguments are given one-by-one, and the combinatorial problem
 -- is simplified to just counting the number of arguments a
@@ -129,10 +135,11 @@ arity {S = S} c = ℕ.suc (S c)
 -- We use <-rec to show both a and t are drawn from finite sets.
 --------------------------------------------------------------------------------
 
--- OpenTerms S w n are the terms over signature S whose total weight (so far)
--- is w and that still need n more arguments to become a closed term
--- (i.e., to become a constructor with exactly as many inductive
--- arguments as its own arity).
+-- OpenTerms S w n are the terms over signature S
+-- * whose total weight (so far) is w
+-- * that still need n more arguments to become a closed term
+--      (i.e., to become a constructor with exactly as many inductive
+--      arguments as its own arity).
 data OpenTerms {μ ζ : ℕ∞} (S : Signature μ ζ) : ℕ → ℕ → Set where
     mk-nullary 
         : (c : cardToSet μ) 
@@ -143,20 +150,29 @@ data OpenTerms {μ ζ : ℕ∞} (S : Signature μ ζ) : ℕ → ℕ → Set wher
     -- Give a closed term as next argument to a strictly open term.
     giveArg 
         : {wₜ : ℕ} 
-        → {wₐ :  ℕ} 
+        → {wₐ : ℕ} 
         → {m : ℕ} 
         → (t : OpenTerms {μ} {ζ} S wₜ (ℕ.suc m))
         → (a : OpenTerms {μ} {ζ} S wₐ 0)
         → OpenTerms {μ} {ζ} S (wₐ + wₜ) m
     
 -- Closed terms: open terms needing no more arguments.
-C : {μ ζ : ℕ∞} (S : Signature μ ζ) → ℕ → Set
-C {μ} {ζ} S w =  OpenTerms {μ} {ζ} S w 0
+ClosedTerms : {μ ζ : ℕ∞} (S : Signature μ ζ) → ℕ → Set
+ClosedTerms {μ} {ζ} S w =  OpenTerms {μ} {ζ} S w 0
 
 -- *All* closed terms over S.
-ClosedTerms : {μ ζ : ℕ∞} (S : Signature μ ζ) → Set
-ClosedTerms {μ} {ζ} S = Σ[ w ∈ ℕ ] (C {μ} {ζ} S w)
+AllTerms : {μ ζ : ℕ∞} (S : Signature μ ζ) → Set
+AllTerms {μ} {ζ} S = Σ[ w ∈ ℕ ] (ClosedTerms {μ} {ζ} S w)
 
+-- #TODO: maybe move to new file 'TermsProperties' or so?
+-- All terms have at least weight 1.
+noWeightlessTerms 
+    : {μ ζ : ℕ∞} 
+    → (S : Signature μ ζ) 
+    → (n : ℕ)
+    → OpenTerms {μ} {ζ} S 0 n
+    → ⊥ 
+noWeightlessTerms {μ} {ζ} S n t = ?
 
 --------------------------------------------------------------------------------
 -- Main theorem : all term algebras over these Signatures are enumerable
@@ -178,7 +194,7 @@ ClosedTerms {μ} {ζ} S = Σ[ w ∈ ℕ ] (C {μ} {ζ} S w)
 --      (h might not be the minimum, but it allows us to use h as 'fuel'
 --      when defining the 'jump' function: it never needs to try more than
 --      the first next h weights).
--- * Prove a general theorem that `ClosedTerms` is _≃_ to the sum over only
+-- * Prove a general theorem that `AllTerms` is _≃_ to the sum over only
 --      the weights reached by the jump function.
 -- * Prove a general theorem that `Σ[ n ∈ ℕ ] Fin (suc (z n)) ≃ ℕ`.
 --------------------------------------------------------------------------------
@@ -189,7 +205,7 @@ ClosedTerms {μ} {ζ} S = Σ[ w ∈ ℕ ] (C {μ} {ζ} S w)
 closedTermAlgEnum
     : {μ : ℕ∞}
     → (S : Signature μ (fin 0))
-    → ClosedTerms {μ} {fin 0} S ≃ cardToSet μ
+    → AllTerms {μ} {fin 0} S ≃ cardToSet μ
 closedTermAlgEnum = StillTODO
 
 -- The term algebra of a signature without nullary constructors
@@ -198,7 +214,7 @@ closedTermAlgEnum = StillTODO
 emptyTermAlgEmpty
     : {ζ : ℕ∞}
     → (S : Signature (fin 0) ζ )
-    → (ClosedTerms {fin 0} {ζ} S) ≃ ⊥
+    → (AllTerms {fin 0} {ζ} S) ≃ ⊥
 emptyTermAlgEmpty = StillTODO
 
 -- The term algebra of a signature with at least one nullary constructor a
@@ -212,7 +228,7 @@ emptyTermAlgEmpty = StillTODO
 infTermAlgEnum
     : {μ ζ : ℕ∞}
     → (S : Signature (suc∞ μ) (suc∞ ζ))
-    → (ClosedTerms {suc∞ μ} {suc∞ ζ} S) ≃ ℕ
+    → (AllTerms {suc∞ μ} {suc∞ ζ} S) ≃ ℕ
 --^ See below for the proof
 
 -- Combining the three above lemmas: every term algebra
@@ -221,7 +237,7 @@ infTermAlgEnum
 everyTermAlgEnum
     : {μ ζ : ℕ∞}
     → (S : Signature μ ζ)
-    → Σ[ z ∈ ℕ∞ ](ClosedTerms {μ} {ζ} S) ≃ cardToSet z
+    → Σ[ z ∈ ℕ∞ ](AllTerms {μ} {ζ} S ≃ cardToSet z)
 everyTermAlgEnum {μ} 
                  {fin 0} 
                  S = (μ , closedTermAlgEnum {μ} S)
@@ -258,7 +274,7 @@ jumpTheorem
     -- ^ Function to jump between points.
     → (z : A → ℕ)
     -- ^ Sizes of visited types, minus one.
-    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ z (iter j n a₀))
+    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ z (iter j n a₀)) ≃ ℕ
 jumpTheorem = IGotProofOnPaper -- Sheet "Lih 10".
 
 --------------------------------------------------------------------------------
@@ -315,6 +331,21 @@ jumpOver⊥s
     → (Σ[ w ∈ ℕ ] C w) ≃ (Σ[ n ∈ ℕ ] (C $ J-iter 1 t₀ J n))
 jumpOver⊥s _ _ _ _ = IGotProofOnPaper -- See sheet "Lih 11" backside
 
+-- Special case of the jumpTheorem where 
+-- the jump function is implemented via an InhabitJumper,
+-- and the starting point is C 1.
+jumpTheoremInhabitJumper
+    : {C : ℕ → Set}
+    -- ^ Type of 'points' the jumping function can visit.
+    → (a₀ : C 1)
+    -- ^ Proof the starting point 1 is inhabited.
+    → (J : InhabitJumper {C})
+    -- ^ Function to jump between points.
+    → (z : ℕ → ℕ)
+    -- ^ Sizes of visited points, minus one.
+    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ z (J-iter {C} 1 a₀ J n)) ≃ ℕ
+jumpTheoremInhabitJumper = IGotProofOnPaper -- Sheet "Lih 10".
+
 --------------------------------------------------------------------------------
 -- Theorem: there are finitely many terms of a fixed weight
 --
@@ -323,8 +354,8 @@ jumpOver⊥s _ _ _ _ = IGotProofOnPaper -- See sheet "Lih 11" backside
 
 -- The main statement is as follows:
 ZTheorem : {μ ζ : ℕ∞} → (S : Signature (μ) (ζ))
-    → Σ[ ż ∈ (ℕ → ℕ) ](
-        (w : ℕ) → (n : ℕ) → (OpenTerms {μ} {ζ} S w n) ≃ (Fin $ ż w)
+    → Σ[ ż ∈ (ℕ → ℕ → ℕ) ](
+        (w : ℕ) → (n : ℕ) → (OpenTerms {μ} {ζ} S w n) ≃ (Fin $ ż w n)
         )
 ZTheorem = StillTODO
 
@@ -332,15 +363,17 @@ ZTheorem = StillTODO
 -- the special case where S's term algebra is infinite
 -- is the real work:
 ZTheoremInhab : {μ ζ : ℕ∞} → (S : Signature (suc∞ μ) (suc∞ ζ))
-    → Σ[ z ∈ (ℕ → ℕ) ](
-        (w : ℕ) → (n : ℕ) → (OpenTerms {suc∞ μ} {suc∞ ζ} S w n) ≃ (Fin $ ℕ.suc $ z w)
+    → Σ[ z ∈ (ℕ → ℕ → ℕ) ](
+        (w : ℕ) 
+        → (n : ℕ) 
+        → (OpenTerms {suc∞ μ} {suc∞ ζ} S w n) ≃ (Fin $ ℕ.suc $ z w n)
         )
 ZTheoremInhab = StillTODO
 
 -- But I will prove the latter via a collection of sublemmas.
 module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
 
-    --C' = Terms {suc∞ μ} {suc∞ ζ} S
+    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
 
     -- Strategy:
     -- C 0 is uninhabited because there's simply no constructor for weight w.
@@ -388,4 +421,49 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
 --------------------------------------------------------------------------------
 -- Big picture proof of infTermAlgEnum
 --------------------------------------------------------------------------------
-infTermAlgEnum {μ} {ζ} S = ?
+
+infTermAlgEnum {μ} {ζ} S = 
+    --------------------------------------
+    -- Unpacking earlier results
+    --------------------------------------
+    let C = ClosedTerms {suc∞ μ} {suc∞ ζ} S in
+    let ¬C0 : C 0 → ⊥ -- All terms have at least weight 1.
+        ¬C0 = noWeightlessTerms {suc∞ μ} {suc∞ ζ} S 0
+    in
+    let J : InhabitJumper {C}
+        J = ?
+    in
+    -- There is at least one nullary constructor; let a₀ be the corresponding
+    -- term. We need a subst to remind Agda that it always has weight 1.
+    let a₀ : C 1
+        a₀ =
+            let H : (ℕ.suc $ cardToℕ $ cardToZero μ) ≡ 1
+                H = ?
+            in
+            subst C H (mk-nullary (cardToZero μ))
+    in
+    let j : ℕ → ℕ
+        j = J-iter {C} 1 a₀ J 
+    in
+    let (z' , Cw-to-Finz') = ZTheoremInhab {μ} {ζ} S
+    in
+    -- We're only interested in terms taking 0 more arguments:
+    let z = λ w → z' w 0 in
+    let Cw-to-Finz = λ w → Cw-to-Finz' w 0 in
+    --------------------------------------
+    -- Actual proof: chain of _≃_'s
+    --------------------------------------
+    begin 
+        (Σ[ w ∈ ℕ ] C w)
+    -- 1. Filter away uninhabited weights.
+    ≃⟨ jumpOver⊥s C J ¬C0 a₀ ⟩
+        (Σ[ n ∈ ℕ ] C (j n))
+    -- 2. Show every inhabited weight is _≃_ to a nonempty finite set.
+    ≃⟨ rewr-≃-under-Σ $ Cw-to-Finz ∘ j ⟩
+        (Σ[ n ∈ ℕ ] (Fin $ ℕ.suc $ z $ j n))
+    -- 3. A ℕ-indexed sum of nonempty finite sets is _≃_ to ℕ.
+    ≃⟨ jumpTheoremInhabitJumper {C} a₀ J z ⟩
+        ℕ
+    ∎
+    
+

@@ -40,7 +40,7 @@ open import Relation.Binary.Reasoning.Syntax
 
 module Eser.Equivalences.Notation where
 
-infix 3 _≃_
+infixr 1 _≃_
 _≃_ : Set → Set → Set
 A ≃ B = A ↔ B
 

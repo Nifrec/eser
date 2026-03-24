@@ -5,6 +5,9 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --allow-unsolved-metas #-}
+
 open import Level
 open import Data.Nat
 open import Data.Sum
@@ -35,3 +38,11 @@ module Eser.Equivalences.Properties where
     → a ≡ a'
     → B a ≃ B a'
 ≃-subst {A} {B} {a} a≡a' = subst (λ x → B a ≃ B x) a≡a' (≃-refl {B a})
+
+-- If Ba ≃ Ca for all a ∈ A then Σ[a∈A]Ba ≃ Σ[a∈A]Ca.
+rewr-≃-under-Σ
+    : {A : Set}
+    → {B C : A → Set}
+    → ((a : A) → (B a ≃ C a))
+    → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
+rewr-≃-under-Σ H = ?
