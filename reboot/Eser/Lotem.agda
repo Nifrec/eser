@@ -374,20 +374,18 @@ ZTheoremInhab = StillTODO
 module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
 
     OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
-
+    
     -- Strategy:
-    -- OT 0 n is uninhabited because there's simply no constructor for weight w.
-    -- OT 1 n is a singleton (Fin 1) if n ≡ 0 or if a constructor with index 0
-    -- has arity n; only these have weight 1. 
-    -- OT w n for w ≥ 2 is the hard case:
-    -- 1. OT w n ≡ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
+    -- 1. OT 0 n ≃ Fin 0 since there are terms of weight 0.
+    -- 2. for w = suc ŵ:
+    --  OT w n ≡ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
     --      where 
     --          OT⁰ w n are the terms in OT w n made with mk-nullary.
     --          OT⁼ w n are the terms in OT w n made with mk-multiary,
     --              i.e., constructors without any aguments applied.
     --          OTᵃ w n are the terms in OT w n made with giveArg,
     --              i.e., constructors with one or more arguments applied.
-    -- 2. OT⁰ w (suc n) ≃ Fin 0 always, 
+    -- 3. OT⁰ w (suc n) ≃ Fin 0 always, 
     --      because nullary constructors don't need arguments. 
     --    OT⁰ w 0 ≃ Fin 1 if there are at least w nullary constructors,
     --      and OT⁰ w 0 ≃ ⊥ otherwise; 
@@ -397,6 +395,29 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     -- 3. OTᵉ w n ≃ Fin 1 if there are at least w constructors
     --      and the constructor with index w-1 has arity n.
     --      Otherwise OTᵉ w n ≃ Fin 0
+    -- 4. showing OTᵃ w n ≃ Fin (żᵃ w n) is the only hard case.
+    --      How many open terms of the form `giveArg t a`
+    --      of weight w needing n more arguments exist?
+    --      Well note the following data is required to build such a term:
+    --          - weights wₜ and wₐ such that wₐ + wₜ ≡ w.
+    --              There are w-1 = ŵ such choices.
+    --          - A constructor c ∈ cardToSet (suc∞ ζ) with index
+    --              at most w-1 (or at most ζ, in case this is even smaller).
+    --          - A base term t ∈ OT wₜ (suc n) ≃ Fin(ż wₜ n)
+    --          - An argument a ∈ OT wₐ 0       ≃ Fin(ż wₐ 0)
+    --      The last two equivalences can be obtained via Well-Founded (ℕ, <)
+    --      recursion on w when defining the ZTheoremInhab via <-rec;
+    --      the reasoning is as follows:
+    --      since both weights are inhabited we must have wₜ ≥ 1 and wₐ ≥ 1, 
+    --      so if w ≡ wₐ + wₜ then both wₐ < w and wₜ < w must hold. 
+    --      Consequently, we can make recursive calls with arguments wₐ and wₜ.
+    -- 5. So define OTᵃ w n ≔ 
+    --  Σ[(wₜ,wₐ,p) ∈ Splits w] Σ[c ∈ Fin w] (OT wₜ (suc n)) × (OT wₐ 0)
+    --  ≃
+    --  Σ[Fin( ŵ )]Σ[Fin
+    --          
+    --
+    --
 
 -- #TODO Finish this
 
