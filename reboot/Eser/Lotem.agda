@@ -438,10 +438,6 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     -- The definition below doesn't type check, since we don't know
     -- if w ≡ c. Need decide: either define OT⁰ ≔ Fin (z⁰ n w)
     -- xor add a `w ≡ cardToℕ c` and a subst in the final equaltion.
-    --OT⁰ : ℕ → ℕ → Set
-    --OT⁰ w n = Σ[ t ∈ OT w n ] Σ[ c ∈ cardToSet $ suc∞ μ ] t ≡ mk-nullary c
-    --Eq-OT⁰ : ℕ → ℕ → Set
-    --Eq-OT⁰ w n = OT⁰ w n ≃ Fin (z⁰ n w)
     OT⁰ : ℕ → ℕ → Set
     OT⁰ w n = Fin (z⁰ n w)
 
@@ -475,7 +471,35 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     Eq-OTᵉ : ℕ → ℕ → Set
     Eq-OTᵉ w n = OTᵉ w n ≃ Fin (zᵉ w n)
 
-    -- #TODO: also the ᵉ and the ᵃ variants.
+    ZsubDecompo
+        : (w n : ℕ)
+        → OT w n ≃ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
+    ZsubDecompo w n = ? -- make case distinction on constructors, see Lotem 4.
+
+    ż : ℕ → ℕ → ℕ
+    ż w n = (z⁰ w n) + (zᵉ w n) + (zᵃ w n)
+
+    ZMain
+        : (w n : ℕ)
+        → OT w n ≃ Fin (ż w n)
+    ZMain w n =
+        begin 
+            OT w n
+        ≃⟨ ZsubDecompo w n ⟩
+            ((OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n))
+        ≃⟨ ? ⟩ -- Use Eq-OT̂* for * ∈ {0,a,e} and some ⊎-congruence lemmas.
+            (Fin (z⁰ w n) ⊎ Fin (zᵉ w n) ⊎ Fin (zᵃ w n))
+        ≃⟨ ? ⟩ -- General lemma about summing Fin sets 
+               -- (applied under ≃-under-⊎-rewriting)
+               -- Maybe first sum the left and middle, if that's more convenient
+               -- with associativity.
+            (Fin (z⁰ w n) ⊎ Fin (zᵉ w n + zᵃ w n))
+        ≃⟨ ? ⟩
+            Fin (z⁰ w n + zᵉ w n + zᵃ w n)
+        ≃⟨ ≃-refl ⟩
+            Fin (ż w n)
+        ∎
+        
 --------------------------------------------------------------------------------
 -- Big picture proof of infTermAlgEnum
 --------------------------------------------------------------------------------
