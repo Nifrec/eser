@@ -26,6 +26,7 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 open ≡-Reasoning
 open import Relation.Nullary
 open import Data.Unit.Properties using (⊤-irrelevant)
+open import Function
 
 open import StreamGrids.Fin
 
@@ -36,7 +37,6 @@ module StreamGrids.Card where
 --------------------------------------------------------------------------------
 
 -- Natural numbers extended with a top element '∞' (w.r.t. the '<' relation).
--- #TODO: check if this already exist in the standard library?
 data ℕ∞ : Set where
     fin     : ℕ → ℕ∞
     ∞       : ℕ∞
@@ -51,6 +51,14 @@ fin n <∞ ∞      = ⊤
 ∞     <∞ fin m  = ⊥
 ∞     <∞ ∞      = ⊥
 
+_<∞?_ : Decidable _<∞_
+fin n <∞? fin m = n Data.Nat.<? m
+fin n <∞? ∞ = true because (ofʸ tt)
+∞ <∞? fin m = false because ofⁿ id
+∞ <∞? ∞ = false because ofⁿ id
+
+_<∞b_ : ℕ∞ → ℕ∞ → Bool
+n <∞b m = does (m <∞? n)
 --------------------------------------------------------------------------------
 -- Tools for convering between cardinalities and sets.
 --------------------------------------------------------------------------------
