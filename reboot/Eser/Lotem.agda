@@ -25,6 +25,7 @@ open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties
 open import Data.Nat
+open import Data.Nat.Induction
 open import Data.Sum
 open import Data.Unit
 open import Data.Empty
@@ -36,12 +37,10 @@ open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
 open import Data.Vec 
-
 open import Function
 open import Relation.Binary.Reasoning.Syntax
 
 open import StreamGrids.Card
-
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 
@@ -351,13 +350,70 @@ jumpTheoremInhabitJumper = IGotProofOnPaper -- Sheet "Lih 10".
 --
 -- I.e., `Terms w ≃ Fin (ż w)` for all w ∈ ℕ for some ż : ℕ → ℕ
 --------------------------------------------------------------------------------
+ZP  : {μ ζ : ℕ∞} 
+    → (S : Signature (μ) (ζ))
+    → (w : ℕ) 
+    → Set
+ZP {μ} {ζ} S w = (n : ℕ) → Σ[ z ∈ ℕ ]( OpenTerms {μ} {ζ} S w n ≃ Fin z )
+
+
+-- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
+module ZTheoremProof 
+    {μ ζ : ℕ∞}
+    (S : Signature μ ζ)
+    (w-1 : ℕ)
+    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
+    (n : ℕ)
+    where
+
+        OT = OpenTerms {μ} {ζ} S
+        -- The predicate we need to prove for every weight
+        ZP' : (w : ℕ) → Set
+        ZP' w = ZP {μ} {ζ} S w
+
+        w = ℕ.suc w-1
+        z : ℕ
+        z = IGotProofOnPaper
+        equiv : OT w n ≃ Fin z
+        equiv = IGotProofOnPaper
+
+
 
 -- The main statement is as follows:
-ZTheorem : {μ ζ : ℕ∞} → (S : Signature (μ) (ζ))
-    → Σ[ ż ∈ (ℕ → ℕ → ℕ) ](
-        (w : ℕ) → (n : ℕ) → (OpenTerms {μ} {ζ} S w n) ≃ (Fin $ ż w n)
-        )
-ZTheorem = StillTODO
+ZTheorem 
+    : {μ ζ : ℕ∞} 
+    → (S : Signature (μ) (ζ))
+    → (w : ℕ) 
+    → (n : ℕ) 
+    → Σ[ z ∈ ℕ ]((OpenTerms {μ} {ζ} S w n) ≃ (Fin z))
+ZTheorem {μ} {ζ} S w = <-rec (ZP S) f w
+    where
+        f : (w : ℕ) → (rec : {w' : ℕ} → w' < w → ZP {μ} {ζ} S w') → ZP {μ} {ζ} S w
+        f 0 _ = λ n → (0 , ?) -- #TODO: proof that OT 0 n is always empty.
+        f (suc w) rec n = (z , p)
+            where
+                z = ZTheoremProof.z {μ} {ζ} S w rec n
+                p = ZTheoremProof.equiv {μ} {ζ} S w rec n
+
+
+
+-- Alternative presentation of the ZTheorem: give the sizes of the finite
+-- sets as a function z : (w : ℕ) → (n : ℕ) → (<size of OT w n> : ℕ).
+-- (The ZTheorem uses WF < recursion on w, so it's more convenient to take w as
+-- argument there, rather than nesting it below the Σ[ z ∈ ... ] ...).
+Z   : {μ ζ : ℕ∞} 
+    → (S : Signature (μ) (ζ))
+    → Σ[ z ∈ (ℕ → ℕ → ℕ) ](
+        (w : ℕ) → (n : ℕ) → ((OpenTerms {μ} {ζ} S w n) ≃ (Fin $ z w n)))
+Z {μ} {ζ} S = (z , p)
+    where
+        z = λ w → λ n → proj₁ (ZTheorem {μ} {ζ} S w n)
+        p = λ w → λ n → proj₂ (ZTheorem {μ} {ζ} S w n)
+
+--------------------------------------------------------------------------------
+-- ZTheoremInhav and module ZSublemmas are deprecated.
+-- #TODO: remove all this (first salvage the nice parts)
+--------------------------------------------------------------------------------
 
 -- The cases where S's term algebra is finite are easy,
 -- the special case where S's term algebra is infinite
