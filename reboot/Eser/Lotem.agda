@@ -74,7 +74,7 @@ postulate StillTODO : {Whatever : Set} → Whatever
 -- * We can ealisy recognise empty and finite term algebras:
 --      * Signature 0 ζ has an empty term algebra.
 --      * Signature (suc∞ μ) 0 has a finite term algebra.
---      * Signature (suc∞ μ) (suc ζ) has a term algebra equivalent to ℕ.
+--      * Signature (suc∞ μ) (suc∞ ζ) has a term algebra equivalent to ℕ.
 --------------------------------------------------------------------------------
 
 Signature : ℕ∞ → ℕ∞ → Set
