@@ -30,6 +30,11 @@ open import Eser.Equivalences.Notation
 
 module Eser.Equivalences.Properties where
 
+≃-refl : {A : Set} → (A ≃ A)
+≃-refl = ↔-refl
+
+mk≃ = mk↔
+
 -- If a ≡ a' then B a ≃ B a'.
 ≃-subst
     : {A : Set}

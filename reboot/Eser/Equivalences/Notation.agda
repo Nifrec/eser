@@ -44,12 +44,9 @@ infixr 1 _≃_
 _≃_ : Set → Set → Set
 A ≃ B = A ↔ B
 
-≃-refl : {A : Set} → (A ≃ A)
-≃-refl = ↔-refl
-
 module ≃-Reasoning where
   open begin-syntax {A = Set} _≃_ {_≃_} id public
   open ≃-syntax {A = Set}     _≃_ _≃_ ↔-trans ↔-sym public
-  open end-syntax {A = Set}   _≃_ ≃-refl public
+  open end-syntax {A = Set}   _≃_ ↔-refl public
 open ≃-Reasoning public
 

@@ -356,27 +356,223 @@ ZP  : {μ ζ : ℕ∞}
     → Set
 ZP {μ} {ζ} S w = (n : ℕ) → Σ[ z ∈ ℕ ]( OpenTerms {μ} {ζ} S w n ≃ Fin z )
 
+-- #TODO: move splits stuff to other file
+Splits : ℕ → Set
+Splits w = Σ[ x ∈ ℕ ] Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
+splitsSize : ℕ → ℕ
+splitsSize 0 = 0
+splitsSize 1 = 1
+splitsSize (suc (suc w)) = ℕ.suc w
+splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
+splitsFin w = ?
 
 -- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
-module ZTheoremProof 
+module ZTheoremProof
     {μ ζ : ℕ∞}
     (S : Signature μ ζ)
-    (w-1 : ℕ)
-    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
-    (n : ℕ)
+    (W-1 : ℕ)
+    (rec : {w' : ℕ} → (w' < ℕ.suc W-1) → ZP {μ} {ζ} S w')
+    (N : ℕ) -- #TODO: remove? 
     where
 
-        OT = OpenTerms {μ} {ζ} S
-        -- The predicate we need to prove for every weight
-        ZP' : (w : ℕ) → Set
-        ZP' w = ZP {μ} {ζ} S w
+    W = ℕ.suc W-1
+    -- Most things are defined for arbitrary weight w and
+    -- num-remaining-args n, because this allows pattern-matching.
+    -- The target weight W is used instead where one of the following is needed:
+    -- (1) Well-Founded < recursion
+    --      on this argument (the `rec` argument to this module)
+    --  or
+    -- (2) The fact that W = ℕ.suc W-1 is greater than 0.
 
-        w = ℕ.suc w-1
-        z : ℕ
-        z = IGotProofOnPaper
-        equiv : OT w n ≃ Fin z
-        equiv = IGotProofOnPaper
+    OT = OpenTerms {μ} {ζ} S
+    ZP' : (w : ℕ) → Set
+    ZP' w = ZP {μ} {ζ} S w
 
+    IsNullary : {w : ℕ} → {n : ℕ} → OT w n → Set
+    IsNullary (mk-nullary _) = ⊤
+    IsNullary (mk-multiary _) = ⊥
+    IsNullary (giveArg _ _) = ⊥
+
+    IsEmptyMultiary : {w : ℕ} → {n : ℕ} → OT w n → Set
+    IsEmptyMultiary (mk-nullary _) = ⊥
+    IsEmptyMultiary (mk-multiary _) = ⊤
+    IsEmptyMultiary (giveArg _ _) = ⊥
+
+    IsGiveArg : {w : ℕ} → {n : ℕ} → OT w n → Set
+    IsGiveArg (mk-nullary _) = ⊥
+    IsGiveArg (mk-multiary _) = ⊥
+    IsGiveArg (giveArg _ _) = ⊤
+
+    OT-Nul : ℕ → ℕ → Set
+    OT-Nul w n = Σ[ t ∈ OT w n ] (IsNullary t)
+
+    OT-Mul : ℕ → ℕ → Set
+    OT-Mul w n = Σ[ t ∈ OT w n ] (IsEmptyMultiary t)
+
+    OT-Arg :  ℕ → Set
+    OT-Arg n = Σ[ t ∈ OT W n ] (IsGiveArg t)
+
+    -- Trivial sublemma: OT w n is an Agda-inductive type, and hence the sum
+    -- over all of its Agda-constructors of the subsets of the terms
+    -- constructed with that constructor.
+    ZsubDecompo
+        : (w n : ℕ)
+        → OT w n ≃ (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg n)
+    ZsubDecompo w n = mk≃ {to = to} {from = from} inv
+        where 
+            to : OT w n → (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n)
+            to t@(mk-nullary _) = inj₁ (t , tt)
+            to t@(mk-multiary _) = inj₂ $ inj₁ (t , tt)
+            to t@(giveArg _ _) = inj₂ $ inj₂ (t , tt)
+
+            from : (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n) → OT w n
+            from (inj₁ (t , _)) = t
+            from (inj₂ (inj₁ (t , _))) = t
+            from (inj₂ (inj₂ (t , _))) = t
+            invˡ : Inverseˡ _≡_ _≡_ to from
+            invˡ {inj₁ (mk-nullary _ , tt)} {t} refl = refl
+            invˡ {inj₂ (inj₁ (mk-multiary _ , tt))} {t} refl = refl
+            invˡ {inj₂ (inj₂ (giveArg _ _ , tt))} {t} refl = refl
+            invʳ : Inverseʳ _≡_ _≡_ to from
+            invʳ {mk-nullary _} {x} refl = refl
+            invʳ {mk-multiary _} {x} refl = refl
+            invʳ {giveArg _ _} {x} refl = refl
+            inv : Inverseᵇ _≡_ _≡_ to from
+            inv = (invˡ , invʳ)
+ 
+    z-Nul : ℕ → ℕ → ℕ
+    z-Nul w (suc n) = 0 -- No nullary constructors take arguments.
+    z-Nul 0 0 = 0       -- All terms have weight at least one.
+    z-Nul (suc w) 0 = if does ((fin w) <∞? ζ) then 1 else 0
+
+    z-Mul = ?
+
+    -- For this one, the argument `w` must be W, because it uses a call to
+    -- `rec`.
+    z-Arg : ℕ → ℕ
+    z-Arg n = ?
+
+    Eq-Nul : (w n : ℕ) → OT-Nul w n ≃ Fin (z-Nul w n)
+    Eq-Nul = ?
+
+    Eq-Mul : (w n : ℕ) → OT-Mul w n ≃ Fin (z-Mul w n)
+    Eq-Mul = ?
+
+    Eq-Arg : (n : ℕ) → OT-Arg W n ≃ Fin (z-Arg n)
+    Eq-Arg = ?
+
+    z : ℕ → ℕ
+    z n = z-Nul W n + z-Mul W n + z-Arg n
+
+    ZMain
+        : (n : ℕ)
+        → OT W n ≃ Fin (z n)
+    ZMain n =
+        begin 
+            OT W n
+        ≃⟨ ZsubDecompo W n ⟩
+            ((OT-Nul W n) ⊎ (OT-Mul W n) ⊎ (OT-Arg n))
+        ≃⟨ ? ⟩ -- Use Eq-OT̂* for * ∈ {0,a,e} and some ⊎-congruence lemmas.
+            (Fin (z-Nul W n) ⊎ Fin (z-Mul W n) ⊎ Fin (z-Arg n))
+        ≃⟨ ? ⟩ -- General lemma about summing Fin sets 
+               -- (applied under ≃-under-⊎-rewriting)
+               -- Maybe first sum the left and middle, if that's more convenient
+               -- with associativity.
+            (Fin (z-Nul W n) ⊎ Fin (z-Mul W n + z-Arg n))
+        ≃⟨ ? ⟩
+            Fin (z-Nul W n + z-Mul W n + z-Arg n)
+        ≃⟨ ≃-refl ⟩
+            Fin (z n)
+        ∎
+
+--module ZTheoremProof 
+--    {μ ζ : ℕ∞}
+--    (S : Signature μ ζ)
+--    (w-1 : ℕ)
+--    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
+--    (n : ℕ)
+--    where
+
+
+--        w = ℕ.suc w-1
+--        ------------------------------------------------------------------------
+--        -- Showing the subset of **nullary terms** in OT w n is finite.
+--        ------------------------------------------------------------------------
+
+--        IsNullary : {w : ℕ} → {n : ℕ} → OT w n → Set
+--        IsNullary (mk-nullary _) = ⊤
+--        IsNullary (mk-multiary _) = ⊥
+--        IsNullary (giveArg _ _) = ⊥
+
+--        IsGiveArg : {w : ℕ} → {n : ℕ} → OT w n → Set
+--        IsGiveArg (mk-nullary _) = ⊥
+--        IsGiveArg (mk-multiary _) = ⊥
+--        IsGiveArg (giveArg _ _) = ⊤
+
+
+--        OT⁰ : ℕ → ℕ → Set
+--        OT⁰ w n = Σ[ t ∈ OT w n ] (IsNullary t)
+
+--        Eq-OT⁰-n>0 : 0 < n → OT⁰ w n ≃ Fin 0
+
+--        Eq-OT⁰-0 : ¬ ((fin w) <∞ ζ) → OT⁰ w 0 ≃ Fin 0
+--        Eq-OT⁰-0 w≮ζ = ?
+
+--        Eq-OT⁰-1 : (fin w) <∞ ζ → OT⁰ w 0 ≃ Fin 1
+--        Eq-OT⁰-1 w<ζ = mk≃ {to = to} {from = from} inv
+--            where
+--                to : OT⁰ w 0 → Fin 1
+--                to t = Fin.zero
+--                from : Fin 1 → OT⁰ w 0
+--                from Fin.zero = ?
+--                inv = ?
+
+--        Eq-OT⁰ = OT⁰ w n ≃ Fin (z⁰ w n)
+
+
+
+--        ------------------------------------------------------------------------
+--        -- Finiteness of the the subset of **multiary terms without arguments**
+--        ------------------------------------------------------------------------
+--        OTᵉ : ℕ → ℕ → Set
+--        OTᵉ w n = Σ[ t ∈ OT w n ] (IsEmptyMulti t)
+
+--        OTᵉ 0 n = ⊥
+--        OTᵉ w@(suc w') n = Σ[ c ∈ cardToSet ζ ] 
+--                                ((fin w) <∞ ζ) 
+--                                × (arity {μ} {ζ} {S} c ≡ n) 
+--                                × cardToℕ c ≡ w'
+--        zᵉ : ℕ → ℕ → ℕ
+--        zᵉ w n with ((fin w) <∞? ζ) 
+--        ... | yes _ = if (arity {! w-1 !} Data.Nat.≡ᵇ n) then 1 else 0
+--        ... | no _ = 0
+
+--        Eq-OTᵉ : OTᵉ w n ≃ Fin (zᵉ w n)
+--        Eq-OTᵉ = ?
+
+
+--        ------------------------------------------------------------------------
+--        -- Finiteness of the the subset of **multiary terms with ≥ 1 arguments**
+--        ------------------------------------------------------------------------
+--        OTᵃ : ℕ → ℕ → Set
+--        OTᵃ w n = Σ[ (wₜ , wₐ , p) ∈ Splits w ] (OT wₜ (ℕ.suc n)) × (OT wₐ 0)
+--        zᵃ : ℕ → ℕ → ℕ
+--        zᵃ w n = ? 
+--            --^ should be ℕ-sum_{wₜ , wₐ , p ∈ Splits W} (z wₜ (suc n)) * (z wₐ 0)
+--            --^ This needs two <-rec recursive calls.
+        
+--        Eq-OTᵃ : ℕ → ℕ → Set
+--        Eq-OTᵃ w n = OTᵃ w n ≃ Fin (zᵃ w n)
+
+
+
+--        ż : ℕ → ℕ → ℕ
+--        ż w n = (z⁰ w n) + (zᵉ w n) + (zᵃ w n)
+
+        --z : ℕ
+        --z = IGotProofOnPaper
+        --equiv : OT w n ≃ Fin z
+        --equiv = IGotProofOnPaper
 
 
 -- The main statement is as follows:
@@ -392,8 +588,8 @@ ZTheorem {μ} {ζ} S w = <-rec (ZP S) f w
         f 0 _ = λ n → (0 , ?) -- #TODO: proof that OT 0 n is always empty.
         f (suc w) rec n = (z , p)
             where
-                z = ZTheoremProof.z {μ} {ζ} S w rec n
-                p = ZTheoremProof.equiv {μ} {ζ} S w rec n
+                z = {! ZTheoremProof.z {μ} {ζ} S w rec n !}
+                p = {! ZTheoremProof.equiv {μ} {ζ} S w rec n !}
 
 
 
@@ -482,79 +678,79 @@ module ZSublemmas (μ ζ : ℕ∞) (S : Signature (suc∞ μ) (suc∞ ζ)) where
     --      if ŵ ≥ 1 and none if ŵ ≡ 0, but then x ∈ ⊥ anyway.
     --      Hence the solutions are in bijection to the choice of x ∈ Fin ŵ.
 
-    _<∞b_ : ℕ∞ → ℕ∞ → Bool
-    _<∞b_ = ? 
-    --^ Just a placeholder. Maybe it's better to prove `Decidable _<∞_`.
+    --_<∞b_ : ℕ∞ → ℕ∞ → Bool
+    --_<∞b_ = ? 
+    ----^ Just a placeholder. Maybe it's better to prove `Decidable _<∞_`.
 
-    z⁰ : ℕ → ℕ → ℕ
-    z⁰ w (suc n) = 0 -- No nullary constructors take arguments.
-    z⁰ 0 0 = 0       -- All terms have weight at least one.
-    z⁰ (suc w) 0 = if (fin $ ℕ.suc w) <∞b (suc∞ ζ) then 1 else 0
+    --z⁰ : ℕ → ℕ → ℕ
+    --z⁰ w (suc n) = 0 -- No nullary constructors take arguments.
+    --z⁰ 0 0 = 0       -- All terms have weight at least one.
+    --z⁰ (suc w) 0 = if (fin $ ℕ.suc w) <∞b (suc∞ ζ) then 1 else 0
 
-    -- The definition below doesn't type check, since we don't know
-    -- if w ≡ c. Need decide: either define OT⁰ ≔ Fin (z⁰ n w)
-    -- xor add a `w ≡ cardToℕ c` and a subst in the final equaltion.
-    OT⁰ : ℕ → ℕ → Set
-    OT⁰ w n = Fin (z⁰ n w)
+    ---- The definition below doesn't type check, since we don't know
+    ---- if w ≡ c. Need decide: either define OT⁰ ≔ Fin (z⁰ n w)
+    ---- xor add a `w ≡ cardToℕ c` and a subst in the final equaltion.
+    --OT⁰ : ℕ → ℕ → Set
+    --OT⁰ w n = Fin (z⁰ n w)
 
-    Splits : ℕ → Set
-    Splits w = Σ[ x ∈ ℕ ] Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
-    splitsSize : ℕ → ℕ
-    splitsSize 0 = 0
-    splitsSize 1 = 1
-    splitsSize (suc (suc w)) = ℕ.suc w
-    splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
-    splitsFin w = ?
+    --Splits : ℕ → Set
+    --Splits w = Σ[ x ∈ ℕ ] Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
+    --splitsSize : ℕ → ℕ
+    --splitsSize 0 = 0
+    --splitsSize 1 = 1
+    --splitsSize (suc (suc w)) = ℕ.suc w
+    --splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
+    --splitsFin w = ?
 
-    OTᵃ : ℕ → ℕ → Set
-    OTᵃ w n = Σ[ (wₜ , wₐ , p) ∈ Splits w ] (OT wₜ (ℕ.suc n)) × (OT wₐ 0)
-    zᵃ : ℕ → ℕ → ℕ
-    zᵃ w n = ? 
-        --^ should be ℕ-sum_{wₜ , wₐ , p ∈ Splits W} (z wₜ (suc n)) * (z wₐ 0)
-        --^ This needs two <-rec recursive calls.
+    --OTᵃ : ℕ → ℕ → Set
+    --OTᵃ w n = Σ[ (wₜ , wₐ , p) ∈ Splits w ] (OT wₜ (ℕ.suc n)) × (OT wₐ 0)
+    --zᵃ : ℕ → ℕ → ℕ
+    --zᵃ w n = ? 
+    --    --^ should be ℕ-sum_{wₜ , wₐ , p ∈ Splits W} (z wₜ (suc n)) * (z wₐ 0)
+    --    --^ This needs two <-rec recursive calls.
     
-    Eq-OTᵃ : ℕ → ℕ → Set
-    Eq-OTᵃ w n = OTᵃ w n ≃ Fin (zᵃ w n)
+    --Eq-OTᵃ : ℕ → ℕ → Set
+    --Eq-OTᵃ w n = OTᵃ w n ≃ Fin (zᵃ w n)
 
-    OTᵉ : ℕ → ℕ → Set
-    OTᵉ 0 n = ⊥
-    OTᵉ w@(suc w') n = Σ[ c ∈ cardToSet (suc∞ ζ) ] 
-                            ((fin w) <∞ (suc∞ ζ)) 
-                            × (arity {suc∞ μ} {suc∞ ζ} {S} c ≡ n) 
-                            × cardToℕ c ≡ w'
-    zᵉ : ℕ → ℕ → ℕ
-    zᵉ = ? -- 1 if (w ≤ ζ and arity (w - 1) ≡ n) else 0.
-    Eq-OTᵉ : ℕ → ℕ → Set
-    Eq-OTᵉ w n = OTᵉ w n ≃ Fin (zᵉ w n)
+    --OTᵉ : ℕ → ℕ → Set
+    --OTᵉ 0 n = ⊥
+    --OTᵉ w@(suc w') n = Σ[ c ∈ cardToSet (suc∞ ζ) ] 
+    --                        ((fin w) <∞ (suc∞ ζ)) 
+    --                        × (arity {suc∞ μ} {suc∞ ζ} {S} c ≡ n) 
+    --                        × cardToℕ c ≡ w'
+    --zᵉ : ℕ → ℕ → ℕ
+    --zᵉ = ? -- 1 if (w ≤ ζ and arity (w - 1) ≡ n) else 0.
+    --Eq-OTᵉ : ℕ → ℕ → Set
+    --Eq-OTᵉ w n = OTᵉ w n ≃ Fin (zᵉ w n)
 
-    ZsubDecompo
-        : (w n : ℕ)
-        → OT w n ≃ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
-    ZsubDecompo w n = ? -- make case distinction on constructors, see Lotem 4.
+    --ZsubDecompo
+    --    : (w n : ℕ)
+    --    → OT w n ≃ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
+    --ZsubDecompo w n = ? -- make case distinction on constructors, see Lotem 4.
 
-    ż : ℕ → ℕ → ℕ
-    ż w n = (z⁰ w n) + (zᵉ w n) + (zᵃ w n)
+    --ż : ℕ → ℕ → ℕ
+    --ż w n = (z⁰ w n) + (zᵉ w n) + (zᵃ w n)
 
-    ZMain
-        : (w n : ℕ)
-        → OT w n ≃ Fin (ż w n)
-    ZMain w n =
-        begin 
-            OT w n
-        ≃⟨ ZsubDecompo w n ⟩
-            ((OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n))
-        ≃⟨ ? ⟩ -- Use Eq-OT̂* for * ∈ {0,a,e} and some ⊎-congruence lemmas.
-            (Fin (z⁰ w n) ⊎ Fin (zᵉ w n) ⊎ Fin (zᵃ w n))
-        ≃⟨ ? ⟩ -- General lemma about summing Fin sets 
-               -- (applied under ≃-under-⊎-rewriting)
-               -- Maybe first sum the left and middle, if that's more convenient
-               -- with associativity.
-            (Fin (z⁰ w n) ⊎ Fin (zᵉ w n + zᵃ w n))
-        ≃⟨ ? ⟩
-            Fin (z⁰ w n + zᵉ w n + zᵃ w n)
-        ≃⟨ ≃-refl ⟩
-            Fin (ż w n)
-        ∎
+    --ZMain
+    --    : (w n : ℕ)
+    --    → OT w n ≃ Fin (ż w n)
+    --ZMain w n =
+    --    begin 
+    --        OT w n
+    --    ≃⟨ ZsubDecompo w n ⟩
+    --        ((OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n))
+    --    ≃⟨ ? ⟩ -- Use Eq-OT̂* for * ∈ {0,a,e} and some ⊎-congruence lemmas.
+    --        (Fin (z⁰ w n) ⊎ Fin (zᵉ w n) ⊎ Fin (zᵃ w n))
+    --    ≃⟨ ? ⟩ -- General lemma about summing Fin sets 
+    --           -- (applied under ≃-under-⊎-rewriting)
+    --           -- Maybe first sum the left and middle, if that's more convenient
+    --           -- with associativity.
+    --        (Fin (z⁰ w n) ⊎ Fin (zᵉ w n + zᵃ w n))
+    --    ≃⟨ ? ⟩
+    --        Fin (z⁰ w n + zᵉ w n + zᵃ w n)
+    --    ≃⟨ ≃-refl ⟩
+    --        Fin (ż w n)
+    --    ∎
         
 --------------------------------------------------------------------------------
 -- Big picture proof of infTermAlgEnum
