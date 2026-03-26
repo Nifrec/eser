@@ -60,7 +60,7 @@ fin n <∞? ∞ = true because (ofʸ tt)
 _<∞b_ : ℕ∞ → ℕ∞ → Bool
 n <∞b m = does (m <∞? n)
 --------------------------------------------------------------------------------
--- Tools for convering between cardinalities and sets.
+-- Tools for converting between cardinalities and sets.
 --------------------------------------------------------------------------------
 
 -- Map a cardinality in Bigℕ to the prefix of the natural numbers
