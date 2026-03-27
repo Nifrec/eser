@@ -470,12 +470,11 @@ module ZTheoremProof
                 ((OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n))
             ≃⟨ rewr-≃-under-⊎-3 Eq-Nul Eq-Mul Eq-Arg ⟩
                 (Fin Z-Nul ⊎ Fin Z-Mul ⊎ Fin Z-Arg)
-            ≃⟨ ? ⟩ -- General lemma about summing Fin sets 
-                   -- (applied under ≃-under-⊎-rewriting)
-                   -- Maybe first sum the left and middle, if that's more convenient
-                   -- with associativity.
+            ≃⟨ rewr-≃-under-⊎-right (fin-⊎-+ Z-Mul Z-Arg) ⟩
                 (Fin Z-Nul ⊎ Fin (Z-Mul + Z-Arg ))
-            ≃⟨ ? ⟩
+            ≃⟨ fin-⊎-+ Z-Nul (Z-Mul + Z-Arg) ⟩
+                Fin (Z-Nul + (Z-Mul + Z-Arg))
+            ≃⟨ fin-+-assoc Z-Nul Z-Mul Z-Arg ⟩
                 Fin (Z-Nul + Z-Mul + Z-Arg)
             ≃⟨ ≃-refl ⟩
                 Fin z
