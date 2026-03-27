@@ -29,6 +29,7 @@ open import Function.Related.TypeIsomorphisms
 open import Function
 open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
+open import Data.Product.Function.NonDependent.Propositional using (_×-↔_)
 
 open import Eser.Equivalences.Notation
 
@@ -72,18 +73,25 @@ mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
     → A ≃ A'
 ≡-to-≃ refl = ≃-refl
 
+≃-×
+    : {A A' B B' : Set}
+    → A ≃ A'
+    → B ≃ B'
+    → (A × B) ≃ (A' × B')
+≃-× = _×-↔_
+
 --------------------------------------------------------------------------------
 -- Rewriting dependent sums Σ
 --------------------------------------------------------------------------------
 
 
 -- If Ba ≃ Ca for all a ∈ A then Σ[a∈A]Ba ≃ Σ[a∈A]Ca.
-rewr-≃-under-Σ
+rewr-≃-rightOf-Σ
     : {A : Set}
     → {B C : A → Set}
     → ((a : A) → (B a ≃ C a))
     → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
-rewr-≃-under-Σ H = ?
+rewr-≃-rightOf-Σ H = ?
 
 --------------------------------------------------------------------------------
 -- Rewriting binary sums _⊎_

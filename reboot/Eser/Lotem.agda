@@ -25,6 +25,7 @@ open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties
 open import Data.Nat
+open import Data.Nat.Properties
 open import Data.Nat.Induction
 open import Data.Sum
 open import Data.Unit
@@ -43,6 +44,7 @@ open import Relation.Binary.Reasoning.Syntax
 open import StreamGrids.Card
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
+open import Eser.Aux
 
 module Eser.Lotem where
 
@@ -366,6 +368,21 @@ splitsSize (suc (suc w)) = ℕ.suc w
 splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
 splitsFin w = ?
 
+split<Left : (m : ℕ) → (s : Splits m) → (ℕ.suc (proj₁ s) < m)
+split<Left m s = posSummandsThenSmaller wₜ+wₐ≡m
+    where
+        wₜ = ℕ.suc (proj₁ s)
+        wₐ = ℕ.suc (proj₁ ( proj₂ s))
+        wₜ+wₐ≡m = proj₂ (proj₂ s)
+
+split<Right : (m : ℕ) → (s : Splits m) → (ℕ.suc (proj₁ (proj₂ s)) < m)
+split<Right m s = posSummandsThenSmaller wₐ+wₜ≡m
+    where
+        wₜ = ℕ.suc (proj₁ s)
+        wₐ = ℕ.suc (proj₁ ( proj₂ s))
+        wₜ+wₐ≡m = proj₂ (proj₂ s)
+        wₐ+wₜ≡m = subst (λ x → x ≡ m) (+-comm wₜ wₐ) wₜ+wₐ≡m
+
 -- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
 module ZTheoremProof
     {μ ζ : ℕ∞}
@@ -456,8 +473,50 @@ module ZTheoremProof
         Eq-Mul : OT-Mul w n ≃ Fin Z-Mul
         Eq-Mul = ?
 
+        Zₜ : (s : Splits w) → (n : ℕ) → ℕ
+        Zₜ s n = proj₁ (rec (split<Left w s) (ℕ.suc n))
+
+        Hₜ  : (s : Splits w) 
+            → (n : ℕ) 
+            → (OT (ℕ.suc (proj₁ s)) (ℕ.suc n)) ≃ (Fin $ Zₜ s n )
+        Hₜ s n = proj₂ (rec (split<Left w s) (ℕ.suc n))
+
+        Zₐ : (s : Splits w) → ℕ
+        Zₐ s = proj₁ (rec (split<Right w s) 0)
+
+        Hₐ  : (s : Splits w) 
+            → (OT (ℕ.suc (proj₁ (proj₂ s))) 0) ≃ (Fin $ Zₐ s )
+        Hₐ s = proj₂ (rec (split<Right w s) 0)
+
+        Eq-split
+            : (n : ℕ)
+            → (s : Splits w)
+            →   (
+                    (OT (ℕ.suc (proj₁ s)) (ℕ.suc n)) 
+                    × 
+                    (OT (ℕ.suc (proj₁ (proj₂ s))) 0)
+                )
+                ≃ 
+                ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
+        Eq-split n s = ≃-× (Hₜ s n) (Hₐ s)
+
         Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
-        Eq-Arg = ?
+        Eq-Arg = 
+            begin 
+                OT-Arg w n
+            ≃⟨ ≃-refl ⟩
+                (Σ[ t ∈ OT w n ] (IsGiveArg t))
+            ≃⟨ ? ⟩
+                (Σ[ (wₜ , wₐ , p) ∈ (Splits w) ]( 
+                    (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)
+                    )
+                )
+            ≃⟨ rewr-≃-rightOf-Σ (Eq-split n) ⟩
+                (Σ[ s ∈ (Splits w) ]((Fin $ Zₜ s n ) × (Fin $ Zₐ s )))
+            ≃⟨ ? ⟩
+                Fin Z-Arg
+            ∎
+            
 
         z : ℕ
         z = Z-Nul + Z-Mul + Z-Arg
@@ -698,7 +757,7 @@ infTermAlgEnum {μ} {ζ} S =
     ≃⟨ jumpOver⊥s C J ¬C0 a₀ ⟩
         (Σ[ n ∈ ℕ ] C (j n))
     -- 2. Show every inhabited weight is _≃_ to a nonempty finite set.
-    ≃⟨ rewr-≃-under-Σ $ Cw-to-Finz ∘ j ⟩
+    ≃⟨ rewr-≃-rightOf-Σ $ Cw-to-Finz ∘ j ⟩
         (Σ[ n ∈ ℕ ] (Fin $ ℕ.suc $ z $ j n))
     -- 3. A ℕ-indexed sum of nonempty finite sets is _≃_ to ℕ.
     ≃⟨ jumpTheoremInhabitJumper {C} a₀ J z ⟩
