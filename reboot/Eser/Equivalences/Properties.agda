@@ -23,6 +23,7 @@ open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
 
+open import Function.Related.TypeIsomorphisms
 open import Function
 open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
@@ -120,5 +121,45 @@ rewr-≃-under-⊎ {A} {A'} {B} A≃A' = mk≃' f f⁻¹ invˡ invʳ
             ≡⟨⟩
                 inj₂ b
             ≡∎
-        
+
+rewr-≃-under-⊎-right
+    : {A B B' : Set}
+    → B ≃ B'
+    → (A ⊎ B) ≃ (A ⊎ B')
+rewr-≃-under-⊎-right {A} {B} {B'} B≃B' =
+    begin 
+        (A ⊎ B)
+    ≃⟨ ⊎-comm A B ⟩
+        (B ⊎ A)
+    ≃⟨ rewr-≃-under-⊎ {B} {B'} {A} B≃B' ⟩
+        (B' ⊎ A)
+    ≃⟨ ⊎-comm  B' A ⟩
+        (A ⊎ B')
+    ∎
+    
+rewr-≃-under-⊎-both
+    : {A A' B B' : Set}
+    → A ≃ A'
+    → B ≃ B'
+    → (A ⊎ B) ≃ (A' ⊎ B')
+rewr-≃-under-⊎-both {A} {A'} {B} {B'} A≃A' B≃B' =
+    begin 
+        (A ⊎ B)
+    ≃⟨ rewr-≃-under-⊎ A≃A' ⟩
+        (A' ⊎ B)
+    ≃⟨ rewr-≃-under-⊎-right B≃B' ⟩
+        (A' ⊎ B')
+    ∎
+    
+rewr-≃-under-⊎-3
+    : {A A' B B' C C' : Set}
+    → A ≃ A'
+    → B ≃ B'
+    → C ≃ C'
+    → (A ⊎ B ⊎ C) ≃ (A' ⊎ B' ⊎ C')
+rewr-≃-under-⊎-3 {A} {A'} {B} {B'} {C} {C'} A≃A' B≃B' C≃C' =
+    let H : (B ⊎ C) ≃ (B' ⊎ C')
+        H = rewr-≃-under-⊎-both B≃B' C≃C'
+    in
+        rewr-≃-under-⊎-both A≃A' H
 
