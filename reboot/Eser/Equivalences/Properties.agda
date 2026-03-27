@@ -73,8 +73,7 @@ mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
     → A ≃ A'
 ≡-to-≃ refl = ≃-refl
 
-≃-×
-    : {A A' B B' : Set}
+≃-× : {A A' B B' : Set}
     → A ≃ A'
     → B ≃ B'
     → (A × B) ≃ (A' × B')
@@ -93,6 +92,22 @@ rewr-≃-rightOf-Σ
     → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
 rewr-≃-rightOf-Σ H = ?
 
+-- If A ≃ A' and B does NOT depend on A then
+-- Σ[a∈A]B ≃ Σ[a'∈A']B
+rewr-≃-indexOf-Σ-indep
+    : {A A' B : Set}
+    → A ≃ A'
+    → (Σ[ a ∈ A ] B) ≃ (Σ[ a' ∈ A' ] B)
+rewr-≃-indexOf-Σ-indep {A} {A'} {B} A≃A' = ?
+
+-- If f : A ≃ A' then Σ[a∈A]Ba ≃ Σ[a'∈A']B(f(a)).
+-- Note that we have to precompose B with f to make it type-check.
+rewr-≃-indexOf-Σ-dep
+    : {A A' : Set}
+    → {B : A → Set}
+    → (A≃A' : A ≃ A')
+    → (Σ[ a ∈ A ] B a) ≃ (Σ[ a' ∈ A' ] B (Inverse.from A≃A' a'))
+rewr-≃-indexOf-Σ-dep {A} {A'} {B} A≃A' = ?
 --------------------------------------------------------------------------------
 -- Rewriting binary sums _⊎_
 --------------------------------------------------------------------------------

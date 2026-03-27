@@ -502,6 +502,9 @@ module ZTheoremProof
 
         Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
         Eq-Arg = 
+            let getSplit : Fin (splitsSize w) → Splits w
+                getSplit = Inverse.from (splitsFin w)
+            in
             begin 
                 OT-Arg w n
             ≃⟨ ≃-refl ⟩
@@ -513,7 +516,12 @@ module ZTheoremProof
                 )
             ≃⟨ rewr-≃-rightOf-Σ (Eq-split n) ⟩
                 (Σ[ s ∈ (Splits w) ]((Fin $ Zₜ s n ) × (Fin $ Zₐ s )))
-            ≃⟨ ? ⟩
+            ≃⟨ rewr-≃-indexOf-Σ-dep (splitsFin w) ⟩
+                (Σ[ x ∈ Fin (splitsSize w) ](
+                    (Fin $ Zₜ (getSplit x) n ) × (Fin $ Zₐ (getSplit x) )))
+            -- Now first rewrite the _×_ into ℕ-mult
+            -- and thereafter multiply the index-set size with the RHS size.
+            ≃⟨ ? ⟩ 
                 Fin Z-Arg
             ∎
             
