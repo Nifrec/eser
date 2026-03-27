@@ -450,13 +450,13 @@ module ZTheoremProof
         Z-Arg : ℕ
         Z-Arg = ?
 
-        Eq-Nul : (w n : ℕ) → OT-Nul w n ≃ Fin Z-Nul
+        Eq-Nul : OT-Nul w n ≃ Fin Z-Nul
         Eq-Nul = ?
 
-        Eq-Mul : (w n : ℕ) → OT-Mul w n ≃ Fin Z-Mul
+        Eq-Mul : OT-Mul w n ≃ Fin Z-Mul
         Eq-Mul = ?
 
-        Eq-Arg : (n : ℕ) → OT-Arg w n ≃ Fin Z-Arg
+        Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
         Eq-Arg = ?
 
         z : ℕ
@@ -468,7 +468,7 @@ module ZTheoremProof
                 OT w n
             ≃⟨ ZsubDecompo w n ⟩
                 ((OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n))
-            ≃⟨ ? ⟩ -- Use Eq-OT̂* for * ∈ {0,a,e} and some ⊎-congruence lemmas.
+            ≃⟨ rewr-≃-under-⊎-3 Eq-Nul Eq-Mul Eq-Arg ⟩
                 (Fin Z-Nul ⊎ Fin Z-Mul ⊎ Fin Z-Arg)
             ≃⟨ ? ⟩ -- General lemma about summing Fin sets 
                    -- (applied under ≃-under-⊎-rewriting)
