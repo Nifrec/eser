@@ -10,6 +10,7 @@
 
 open import Level
 open import Data.Nat
+open import Data.Nat.Properties
 open import Data.Sum
 open import Data.Unit
 open import Data.Empty
@@ -22,6 +23,7 @@ open import Relation.Nullary
 open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
+open import Data.Fin.Properties
 
 open import Function.Related.TypeIsomorphisms
 open import Function
@@ -35,6 +37,9 @@ module Eser.Equivalences.Properties where
 ≃-refl : {A : Set} → (A ≃ A)
 ≃-refl = ↔-refl
 
+≃-sym : {A B : Set} → (A ≃ B) → (B ≃ A)
+≃-sym = ↔-sym
+
 mk≃ = mk↔
 
 mk≃' 
@@ -46,6 +51,10 @@ mk≃'
     → A ≃ B
 mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
     
+--------------------------------------------------------------------------------
+-- Very basic ≃-rewriting theorems
+--------------------------------------------------------------------------------
+
 
 -- If a ≡ a' then B a ≃ B a'.
 ≃-subst
@@ -56,6 +65,18 @@ mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
     → B a ≃ B a'
 ≃-subst {A} {B} {a} a≡a' = subst (λ x → B a ≃ B x) a≡a' (≃-refl {B a})
 
+
+≡-to-≃ 
+    : { A A' : Set}
+    → A ≡ A'
+    → A ≃ A'
+≡-to-≃ refl = ≃-refl
+
+--------------------------------------------------------------------------------
+-- Rewriting dependent sums Σ
+--------------------------------------------------------------------------------
+
+
 -- If Ba ≃ Ca for all a ∈ A then Σ[a∈A]Ba ≃ Σ[a∈A]Ca.
 rewr-≃-under-Σ
     : {A : Set}
@@ -63,6 +84,10 @@ rewr-≃-under-Σ
     → ((a : A) → (B a ≃ C a))
     → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
 rewr-≃-under-Σ H = ?
+
+--------------------------------------------------------------------------------
+-- Rewriting binary sums _⊎_
+--------------------------------------------------------------------------------
 
 rewr-≃-under-⊎
     : {A A' B : Set}
@@ -162,4 +187,25 @@ rewr-≃-under-⊎-3 {A} {A'} {B} {B'} {C} {C'} A≃A' B≃B' C≃C' =
         H = rewr-≃-under-⊎-both B≃B' C≃C'
     in
         rewr-≃-under-⊎-both A≃A' H
+
+--------------------------------------------------------------------------------
+-- Rewriting expressions involving Fin
+--------------------------------------------------------------------------------
+
+fin-+-assoc
+    : (n m l : ℕ)
+    → Fin (n + (m + l)) ≃ Fin (n + m + l)
+fin-+-assoc n m l = 
+    let H₁ : (n + (m + l)) ≡ n + m + l
+        H₁ = sym (Data.Nat.Properties.+-assoc n m l)
+    in
+    let H₂ : Fin (n + (m + l)) ≡ Fin (n + m + l)
+        H₂ = cong Fin H₁
+    in
+    ≡-to-≃ H₂
+
+fin-⊎-+
+    : (n m : ℕ)
+    → ((Fin n) ⊎ (Fin m)) ≃ Fin (n + m)
+fin-⊎-+ n m = ≃-sym (Data.Fin.Properties.+↔⊎ {n} {m})
 
