@@ -385,16 +385,6 @@ split<Right m s = posSummandsThenSmaller wₐ+wₜ≡m
         wₜ+wₐ≡m = proj₂ (proj₂ s)
         wₐ+wₜ≡m = subst (λ x → x ≡ m) (+-comm wₜ wₐ) wₜ+wₐ≡m
 
-
-getWeight-1 : 
-    {μ ζ : ℕ∞}
-    {S : Signature μ ζ}
-    {w n : ℕ}
-    → OpenTerms {μ} {ζ} S w n
-    → Σ[ w' ∈ ℕ ] w ≡ ℕ.suc w'
-getWeight-1 = ?
-
-
 -- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
 module ZTheoremProof
     {μ ζ : ℕ∞}
@@ -495,31 +485,31 @@ module ZTheoremProof
         Eq-Mul = ?
 
         Zₜ : (s : Splits w) → (n : ℕ) → ℕ
-        Zₜ s n = proj₁ (rec (split<Left w s) (ℕ.suc n))
+        Zₜ s n = proj₁ (rec (split<Right w s) (ℕ.suc n))
 
         Hₜ  : (s : Splits w) 
             → (n : ℕ) 
-            → (OT (ℕ.suc (proj₁ s)) (ℕ.suc n)) ≃ (Fin $ Zₜ s n )
-        Hₜ s n = proj₂ (rec (split<Left w s) (ℕ.suc n))
+            → (OT (ℕ.suc $ proj₁ $ proj₂ s) (ℕ.suc n)) ≃ (Fin $ Zₜ s n )
+        Hₜ s n = proj₂ (rec (split<Right w s) (ℕ.suc n))
 
         Zₐ : (s : Splits w) → ℕ
-        Zₐ s = proj₁ (rec (split<Right w s) 0)
+        Zₐ s = proj₁ (rec (split<Left w s) 0)
 
         Hₐ  : (s : Splits w) 
-            → (OT (ℕ.suc (proj₁ (proj₂ s))) 0) ≃ (Fin $ Zₐ s )
-        Hₐ s = proj₂ (rec (split<Right w s) 0)
+            → (OT (ℕ.suc (proj₁ s)) 0) ≃ (Fin $ Zₐ s )
+        Hₐ s = proj₂ (rec (split<Left w s) 0)
 
         Eq-split
             : (n : ℕ)
             → (s : Splits w)
             →   (
-                    (OT (ℕ.suc (proj₁ s)) (ℕ.suc n)) 
+                    (OT (ℕ.suc (proj₁ (proj₂ s))) (ℕ.suc n)) 
                     × 
-                    (OT (ℕ.suc (proj₁ (proj₂ s))) 0)
+                    (OT (ℕ.suc (proj₁ s)) 0)
                 )
                 ≃ 
                 ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
-        Eq-split n s = ≃-× (Hₜ s n) (Hₐ s)
+        Eq-split n s = ≃-× (Hₜ s n) (Hₐ s) 
 
         OT-Arg-Unfolded : ℕ → ℕ → Set
         OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
@@ -537,43 +527,6 @@ module ZTheoremProof
             f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
             f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
             f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
-                --let wₜ-1 = proj₁ (getWeight-1 t) in
-                --let wₜ≡Swₜ-1 = proj₂ (getWeight-1 t) in
-                --let wₐ-1 = proj₁ (getWeight-1 a) in
-                --let wₐ≡Swₐ-1 = proj₂ (getWeight-1 a) in
-                --let p : ℕ.suc wₐ-1 + ℕ.suc wₜ-1 ≡ wₐ + wₜ
-                --    p = ≡begin 
-                --            ℕ.suc wₐ-1 + ℕ.suc wₜ-1   
-                --        ≡⟨ cong (λ x → ℕ.suc wₐ-1 + x) (sym wₜ≡Swₜ-1) ⟩ 
-                --            ℕ.suc wₐ-1 + wₜ
-                --        ≡⟨ cong ( _+ wₜ)  (sym wₐ≡Swₐ-1) ⟩
-                --            wₐ + wₜ
-                --        --≡⟨ +-comm wₜ wₐ ⟩
-                --        --    wₐ + wₜ
-                --        ≡∎
-                --in
-                --((wₐ-1 , wₜ-1 , p) 
-                --    , subst (λ x → OT x (ℕ.suc n)) wₜ≡Swₜ-1 t 
-                --    , subst (λ x → OT x 0) wₐ≡Swₐ-1 a)
-            --f (giveArg {wₜ} {wₐ} t a , tt) = 
-            --    let wₜ-1 = proj₁ (getWeight-1 t) in
-            --    let wₜ≡Swₜ-1 = proj₂ (getWeight-1 t) in
-            --    let wₐ-1 = proj₁ (getWeight-1 a) in
-            --    let wₐ≡Swₐ-1 = proj₂ (getWeight-1 a) in
-            --    let p : ℕ.suc wₐ-1 + ℕ.suc wₜ-1 ≡ wₐ + wₜ
-            --        p = ≡begin 
-            --                ℕ.suc wₐ-1 + ℕ.suc wₜ-1   
-            --            ≡⟨ cong (λ x → ℕ.suc wₐ-1 + x) (sym wₜ≡Swₜ-1) ⟩ 
-            --                ℕ.suc wₐ-1 + wₜ
-            --            ≡⟨ cong ( _+ wₜ)  (sym wₐ≡Swₐ-1) ⟩
-            --                wₐ + wₜ
-            --            --≡⟨ +-comm wₜ wₐ ⟩
-            --            --    wₐ + wₜ
-            --            ≡∎
-            --    in
-            --    ((wₐ-1 , wₜ-1 , p) 
-            --        , subst (λ x → OT x (ℕ.suc n)) wₜ≡Swₜ-1 t 
-            --        , subst (λ x → OT x 0) wₐ≡Swₐ-1 a)
             f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
             f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
                 let t = subst (λ x → OT x n) p (giveArg t' a)
@@ -600,8 +553,8 @@ module ZTheoremProof
                 OT-Arg w n
             ≃⟨ ≃-refl ⟩
                 (Σ[ t ∈ OT w n ] (IsGiveArg t))
-            ≃⟨ ? ⟩
-                (Σ[ (wₜ , wₐ , p) ∈ (Splits w) ]( 
+            ≃⟨ Eq-Arg-FirstStep w n ⟩
+                (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
                     (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)
                     )
                 )
