@@ -534,35 +534,62 @@ module ZTheoremProof
         Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
             where
             f : (OT-Arg w n) → OT-Arg-Unfolded w n
-            f (giveArg {wₜ} {wₐ} t a , tt) = 
-                let wₜ-1 = proj₁ (getWeight-1 t) in
-                let wₜ≡Swₜ-1 = proj₂ (getWeight-1 t) in
-                let wₐ-1 = proj₁ (getWeight-1 a) in
-                let wₐ≡Swₐ-1 = proj₂ (getWeight-1 a) in
-                let p : ℕ.suc wₐ-1 + ℕ.suc wₜ-1 ≡ wₐ + wₜ
-                    p = ≡begin 
-                            ℕ.suc wₐ-1 + ℕ.suc wₜ-1   
-                        ≡⟨ cong (λ x → ℕ.suc wₐ-1 + x) (sym wₜ≡Swₜ-1) ⟩ 
-                            ℕ.suc wₐ-1 + wₜ
-                        ≡⟨ cong ( _+ wₜ)  (sym wₐ≡Swₐ-1) ⟩
-                            wₐ + wₜ
-                        --≡⟨ +-comm wₜ wₐ ⟩
-                        --    wₐ + wₜ
-                        ≡∎
-                in
-                ((wₐ-1 , wₜ-1 , p) 
-                    , subst (λ x → OT x (ℕ.suc n)) wₜ≡Swₜ-1 t 
-                    , subst (λ x → OT x 0) wₐ≡Swₐ-1 a)
+            f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
+            f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
+            f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
+                --let wₜ-1 = proj₁ (getWeight-1 t) in
+                --let wₜ≡Swₜ-1 = proj₂ (getWeight-1 t) in
+                --let wₐ-1 = proj₁ (getWeight-1 a) in
+                --let wₐ≡Swₐ-1 = proj₂ (getWeight-1 a) in
+                --let p : ℕ.suc wₐ-1 + ℕ.suc wₜ-1 ≡ wₐ + wₜ
+                --    p = ≡begin 
+                --            ℕ.suc wₐ-1 + ℕ.suc wₜ-1   
+                --        ≡⟨ cong (λ x → ℕ.suc wₐ-1 + x) (sym wₜ≡Swₜ-1) ⟩ 
+                --            ℕ.suc wₐ-1 + wₜ
+                --        ≡⟨ cong ( _+ wₜ)  (sym wₐ≡Swₐ-1) ⟩
+                --            wₐ + wₜ
+                --        --≡⟨ +-comm wₜ wₐ ⟩
+                --        --    wₐ + wₜ
+                --        ≡∎
+                --in
+                --((wₐ-1 , wₜ-1 , p) 
+                --    , subst (λ x → OT x (ℕ.suc n)) wₜ≡Swₜ-1 t 
+                --    , subst (λ x → OT x 0) wₐ≡Swₐ-1 a)
+            --f (giveArg {wₜ} {wₐ} t a , tt) = 
+            --    let wₜ-1 = proj₁ (getWeight-1 t) in
+            --    let wₜ≡Swₜ-1 = proj₂ (getWeight-1 t) in
+            --    let wₐ-1 = proj₁ (getWeight-1 a) in
+            --    let wₐ≡Swₐ-1 = proj₂ (getWeight-1 a) in
+            --    let p : ℕ.suc wₐ-1 + ℕ.suc wₜ-1 ≡ wₐ + wₜ
+            --        p = ≡begin 
+            --                ℕ.suc wₐ-1 + ℕ.suc wₜ-1   
+            --            ≡⟨ cong (λ x → ℕ.suc wₐ-1 + x) (sym wₜ≡Swₜ-1) ⟩ 
+            --                ℕ.suc wₐ-1 + wₜ
+            --            ≡⟨ cong ( _+ wₜ)  (sym wₐ≡Swₐ-1) ⟩
+            --                wₐ + wₜ
+            --            --≡⟨ +-comm wₜ wₐ ⟩
+            --            --    wₐ + wₜ
+            --            ≡∎
+            --    in
+            --    ((wₐ-1 , wₜ-1 , p) 
+            --        , subst (λ x → OT x (ℕ.suc n)) wₜ≡Swₜ-1 t 
+            --        , subst (λ x → OT x 0) wₐ≡Swₐ-1 a)
             f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
             f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
                 let t = subst (λ x → OT x n) p (giveArg t' a)
                 in (t , giveArgUnderSubst p t' a)
             invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-            invˡ {(wₐ , wₜ , refl) , t' , a} {t , isGiveArg} p = {! !}
+            invˡ {(wₐ , wₜ , refl) , t , a} {ta , isGiveArg} refl = refl
             invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-            invʳ {giveArg t a , tt} {x} refl = ?
-        
-            
+            invʳ {giveArg {ℕ.zero} {wₐ} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
+            invʳ {giveArg {wₜ} {ℕ.zero} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S 0 a
+            invʳ {giveArg {ℕ.suc wₜ} {ℕ.suc wₐ} t a , tt} {(wₐ , wₜ , refl) , t , a} refl = 
+                let H = proj₂ $ f⁻¹ ((wₐ , wₜ , refl) , t , a) in
+                ≡begin 
+                    f⁻¹ ((wₐ , wₜ , refl) , t , a) 
+                ≡⟨⟩
+                    ((giveArg t a) , tt)
+                ≡∎
 
         Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
         Eq-Arg = 
