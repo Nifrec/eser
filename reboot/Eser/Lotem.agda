@@ -41,6 +41,8 @@ open import Data.Vec
 open import Function
 open import Relation.Binary.Reasoning.Syntax
 
+open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
+
 open import StreamGrids.Card
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
@@ -383,6 +385,16 @@ split<Right m s = posSummandsThenSmaller wₐ+wₜ≡m
         wₜ+wₐ≡m = proj₂ (proj₂ s)
         wₐ+wₜ≡m = subst (λ x → x ≡ m) (+-comm wₜ wₐ) wₜ+wₐ≡m
 
+
+getWeight-1 : 
+    {μ ζ : ℕ∞}
+    {S : Signature μ ζ}
+    {w n : ℕ}
+    → OpenTerms {μ} {ζ} S w n
+    → Σ[ w' ∈ ℕ ] w ≡ ℕ.suc w'
+getWeight-1 = ?
+
+
 -- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
 module ZTheoremProof
     {μ ζ : ℕ∞}
@@ -407,6 +419,15 @@ module ZTheoremProof
     IsGiveArg (mk-nullary _) = ⊥
     IsGiveArg (mk-multiary _) = ⊥
     IsGiveArg (giveArg _ _) = ⊤
+
+    giveArgUnderSubst
+        : {w wₐ wₜ : ℕ}
+        → {n : ℕ}
+        → (p : (ℕ.suc wₐ + ℕ.suc wₜ ≡ w))
+        → (t : OpenTerms {μ} {ζ} S (ℕ.suc wₜ) (ℕ.suc n))
+        → (a : OpenTerms {μ} {ζ} S (ℕ.suc wₐ) 0)
+        → IsGiveArg (subst (λ x → OT x n) p (giveArg t a))
+    giveArgUnderSubst refl t a = tt
 
     OT-Nul : ℕ → ℕ → Set
     OT-Nul w n = Σ[ t ∈ OT w n ] (IsNullary t)
@@ -499,6 +520,49 @@ module ZTheoremProof
                 ≃ 
                 ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
         Eq-split n s = ≃-× (Hₜ s n) (Hₐ s)
+
+        OT-Arg-Unfolded : ℕ → ℕ → Set
+        OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
+                           (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)))
+
+        -- This needs to be defines for all (w , n)
+        -- otherwise we cannot pattern match the input to f
+        -- to something of the form `giveArg t a`, since w would be
+        -- fixed and Agda can't assume arbitrary wₜ and wₐ if there
+        -- is a constraint wₜ + wₐ ≗ w for non-variable w. 
+        Eq-Arg-FirstStep : (w n : ℕ) → OT-Arg w n ≃ OT-Arg-Unfolded w n
+        Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
+            where
+            f : (OT-Arg w n) → OT-Arg-Unfolded w n
+            f (giveArg {wₜ} {wₐ} t a , tt) = 
+                let wₜ-1 = proj₁ (getWeight-1 t) in
+                let wₜ≡Swₜ-1 = proj₂ (getWeight-1 t) in
+                let wₐ-1 = proj₁ (getWeight-1 a) in
+                let wₐ≡Swₐ-1 = proj₂ (getWeight-1 a) in
+                let p : ℕ.suc wₐ-1 + ℕ.suc wₜ-1 ≡ wₐ + wₜ
+                    p = ≡begin 
+                            ℕ.suc wₐ-1 + ℕ.suc wₜ-1   
+                        ≡⟨ cong (λ x → ℕ.suc wₐ-1 + x) (sym wₜ≡Swₜ-1) ⟩ 
+                            ℕ.suc wₐ-1 + wₜ
+                        ≡⟨ cong ( _+ wₜ)  (sym wₐ≡Swₐ-1) ⟩
+                            wₐ + wₜ
+                        --≡⟨ +-comm wₜ wₐ ⟩
+                        --    wₐ + wₜ
+                        ≡∎
+                in
+                ((wₐ-1 , wₜ-1 , p) 
+                    , subst (λ x → OT x (ℕ.suc n)) wₜ≡Swₜ-1 t 
+                    , subst (λ x → OT x 0) wₐ≡Swₐ-1 a)
+            f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
+            f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
+                let t = subst (λ x → OT x n) p (giveArg t' a)
+                in (t , giveArgUnderSubst p t' a)
+            invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+            invˡ {(wₐ , wₜ , refl) , t' , a} {t , isGiveArg} p = {! !}
+            invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+            invʳ {giveArg t a , tt} {x} refl = ?
+        
+            
 
         Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
         Eq-Arg = 
