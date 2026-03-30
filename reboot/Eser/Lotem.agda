@@ -654,6 +654,10 @@ module ZTheoremProof
             let getSplit : Fin (splitsSize w) → Splits w
                 getSplit = Inverse.from (splitsFin w)
             in
+            let
+                f : Fin (splitsSize w) → ℕ
+                f x = (Zₜ (getSplit x) n) * (Zₐ (getSplit x))
+            in
             begin 
                 OT-Arg w n
             ≃⟨ ≃-refl ⟩
@@ -668,10 +672,19 @@ module ZTheoremProof
             ≃⟨ rewr-≃-indexOf-Σ-dep (splitsFin w) ⟩
                 (Σ[ x ∈ Fin (splitsSize w) ](
                     (Fin $ Zₜ (getSplit x) n ) × (Fin $ Zₐ (getSplit x) )))
-            -- Now first rewrite the _×_ into ℕ-mult
-            -- and thereafter multiply the index-set size with the RHS size.
-            ≃⟨ ? ⟩ 
-                Fin Z-Arg
+            -- Use (Fin a) × (Fin b) ≃ Fin (a * b).
+            ≃⟨ rewr-≃-rightOf-Σ (λ x → fin-×-* (Zₜ (getSplit x) n) (Zₐ (getSplit x))) ⟩
+                (Σ[ x ∈ Fin (splitsSize w) ](
+                    (Fin $ (Zₜ (getSplit x) n) * (Zₐ (getSplit x)))))
+            ≃⟨ proj₂ (fin-Σ-fun (splitsSize w) f) ⟩
+                Fin (proj₁ (fin-Σ-fun (splitsSize w) f) )
+            ≃⟨ ? ⟩
+                --#TODO: Z-Arg isn't defined yet.
+                -- Maybe let this fun output Σ[ Z-Arg ](... ≃ ...)
+                -- and thereafter define Z-Arg to be the first proj.
+                -- Otherwise need define getSplit and splitsSize
+                -- in more general ctx etc...
+                Fin Z-Arg 
             ∎
             
 

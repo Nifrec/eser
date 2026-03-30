@@ -232,3 +232,14 @@ fin-⊎-+
     → ((Fin n) ⊎ (Fin m)) ≃ Fin (n + m)
 fin-⊎-+ n m = ≃-sym (Data.Fin.Properties.+↔⊎ {n} {m})
 
+fin-×-*
+    : (n m : ℕ)
+    → ((Fin n) × (Fin m)) ≃ Fin (n * m)
+fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
+
+fin-Σ-fun
+    : ( a : ℕ)
+    → (f : Fin a → ℕ)
+    → Σ[ z ∈ ℕ ]((Σ[ x ∈ Fin a ] Fin (f x)) ≃ (Fin z))
+fin-Σ-fun 0 f = ?
+fin-Σ-fun (suc a) f = ?
