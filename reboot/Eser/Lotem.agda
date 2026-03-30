@@ -580,8 +580,8 @@ module ZTheoremProof
 
         -- For this one, the argument `w` must be W, because it uses a call to
         -- `rec`.
-        Z-Arg : ℕ
-        Z-Arg = ?
+        --Z-Arg : ℕ
+        --Z-Arg = ?
 
         Eq-Nul : OT-Nul w n ≃ Fin Z-Nul
         Eq-Nul = ?
@@ -649,8 +649,10 @@ module ZTheoremProof
                     ((giveArg t a) , tt)
                 ≡∎
 
-        Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
-        Eq-Arg = 
+        -- It's easier to compute Z-Arg and prove the equivalence
+        -- in one go, than to define Z-Arg beforehand.
+        Z-Eq-Arg : Σ[ z ∈ ℕ ]( OT-Arg w n ≃ Fin z)
+        Z-Eq-Arg = 
             let getSplit : Fin (splitsSize w) → Splits w
                 getSplit = Inverse.from (splitsFin w)
             in
@@ -658,7 +660,11 @@ module ZTheoremProof
                 f : Fin (splitsSize w) → ℕ
                 f x = (Zₜ (getSplit x) n) * (Zₐ (getSplit x))
             in
-            begin 
+            let Z-Arg : ℕ
+                Z-Arg = proj₁ (fin-Σ-fun (splitsSize w) f)
+            in
+            (Z-Arg , 
+            (begin 
                 OT-Arg w n
             ≃⟨ ≃-refl ⟩
                 (Σ[ t ∈ OT w n ] (IsGiveArg t))
@@ -678,15 +684,13 @@ module ZTheoremProof
                     (Fin $ (Zₜ (getSplit x) n) * (Zₐ (getSplit x)))))
             ≃⟨ proj₂ (fin-Σ-fun (splitsSize w) f) ⟩
                 Fin (proj₁ (fin-Σ-fun (splitsSize w) f) )
-            ≃⟨ ? ⟩
-                --#TODO: Z-Arg isn't defined yet.
-                -- Maybe let this fun output Σ[ Z-Arg ](... ≃ ...)
-                -- and thereafter define Z-Arg to be the first proj.
-                -- Otherwise need define getSplit and splitsSize
-                -- in more general ctx etc...
-                Fin Z-Arg 
             ∎
+            ))
             
+        Z-Arg : ℕ
+        Z-Arg = proj₁ Z-Eq-Arg
+        Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
+        Eq-Arg = proj₂ Z-Eq-Arg
 
         z : ℕ
         z = Z-Nul + Z-Mul + Z-Arg
