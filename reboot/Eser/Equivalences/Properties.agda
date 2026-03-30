@@ -215,6 +215,30 @@ rewr-≃-under-⊎-3 {A} {A'} {B} {B'} {C} {C'} A≃A' B≃B' C≃C' =
 -- Rewriting expressions involving Fin
 --------------------------------------------------------------------------------
 
+fin0 : Fin 0 ≃ ⊥
+fin0 = mk≃' f f⁻¹ invˡ invʳ
+    where
+    f : Fin 0 → ⊥
+    f ()
+    f⁻¹ : ⊥ → Fin 0
+    f⁻¹ ()
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {()}
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {()}
+
+Σfin0 : (B : Fin 0 → Set) → (Σ[ x ∈ Fin 0 ] B x) ≃ ⊥
+Σfin0 B = mk≃' f f⁻¹ invˡ invʳ
+    where
+    f : Σ[ x ∈ Fin 0 ] B x → ⊥
+    f ()
+    f⁻¹ : ⊥ → Σ[ x ∈ Fin 0 ] B x
+    f⁻¹ ()
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {()}
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {()}
+
 fin-+-assoc
     : (n m l : ℕ)
     → Fin (n + (m + l)) ≃ Fin (n + m + l)
@@ -238,8 +262,18 @@ fin-×-*
 fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
 
 fin-Σ-fun
-    : ( a : ℕ)
+    : (a : ℕ)
     → (f : Fin a → ℕ)
     → Σ[ z ∈ ℕ ]((Σ[ x ∈ Fin a ] Fin (f x)) ≃ (Fin z))
-fin-Σ-fun 0 f = ?
+fin-Σ-fun 0 f = 
+    let z = 0 in
+    let H : (Σ[ x ∈ Fin 0 ] Fin (f x)) ≃ (Fin z)
+        H = begin 
+                (Σ[ x ∈ Fin 0 ] Fin (f x))
+            ≃⟨ Σfin0 (λ x → Fin (f x)) ⟩
+                ⊥
+            ≃⟨ ≃-sym fin0 ⟩
+                Fin 0
+            ∎
+    in (z , H)
 fin-Σ-fun (suc a) f = ?
