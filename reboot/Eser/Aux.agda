@@ -8,6 +8,7 @@
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum
+open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
@@ -85,6 +86,17 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
     → m ≡ l
 +-injective {zero} {m} {l} H = H
 +-injective {suc n} {m} {l} H = +-injective (suc-injective H)
+
+¬1+m+1+n≡1
+    : {m n : ℕ}
+    → (ℕ.suc m + ℕ.suc n ≡ 1)
+    → ⊥
+¬1+m+1+n≡1 {m} {n} p = 
+    let H : ℕ.suc ( ℕ.suc (m + n)) ≡ 1
+        H = trans (sym $ +-suc (ℕ.suc m) n) p
+    in
+    1+n≢0 {m + n} (suc-injective H)
+
 
 open import Data.Fin hiding (_≤_ ; _+_ ; _<_)
 open import Data.Fin.Properties hiding (_≤?_)

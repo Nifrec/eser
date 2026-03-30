@@ -366,7 +366,7 @@ Splits : ℕ → Set
 Splits w = Σ[ x ∈ ℕ ] Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
 splitsSize : ℕ → ℕ
 splitsSize 0 = 0
-splitsSize 1 = 1
+splitsSize 1 = 0
 splitsSize (suc (suc w)) = ℕ.suc w
 
 -- Given two splits with the same x, the entire splits must be equal.
@@ -413,8 +413,26 @@ splitsToSmaller w' (x , y , p)
         ≤∎)
         where open ≤-Reasoning renaming (begin_ to ≤begin_ ; _∎ to _≤∎)
 splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
-splitsFin 0 = ?
-splitsFin 1 = ?
+splitsFin 0 = mk≃' f f⁻¹ invˡ invʳ
+    where -- Trivial proof, Agda can already infer both types are empty!
+    f : Splits 0 → Fin (splitsSize 0)
+    f ()
+    f⁻¹ : Fin (splitsSize 0) → Splits 0
+    f⁻¹ ()
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {()}
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {()}
+splitsFin 1 = mk≃' f f⁻¹ invˡ invʳ
+    where -- 1+x + 1+y ≡ 1 has no solution! But we do need to tell that Agda.
+    f : Splits 1 → Fin (splitsSize 1)
+    f (x , y , p) = ⊥-elim $ ¬1+m+1+n≡1 p
+    f⁻¹ : Fin (splitsSize 1) → Splits 1
+    f⁻¹ ()
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {()}
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {(x , y , p)} = ⊥-elim $ ¬1+m+1+n≡1 p
 splitsFin w@(suc w'@(suc w'')) = mk≃' f f⁻¹ invˡ invʳ
     where
     f : Splits w → Fin (splitsSize w)
