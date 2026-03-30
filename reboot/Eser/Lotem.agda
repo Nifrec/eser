@@ -468,9 +468,6 @@ splitsFin w@(suc w'@(suc w'')) = mk≃' f f⁻¹ invˡ invʳ
                     x
                 ≡∎
         in
-        let tupleType : (x : ℕ) → Set
-            tupleType x = Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
-        in
         ≡begin 
             (x'' , y'' , p'')
         ≡⟨ splitsEqLemma w (x'' , y'' , p'') (x , y , p) H ⟩
