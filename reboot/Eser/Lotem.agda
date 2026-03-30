@@ -40,6 +40,7 @@ open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
 open import Data.Vec 
 open import Function
 open import Relation.Binary.Reasoning.Syntax
+open import Data.Fin.Properties using (fromℕ<-toℕ ; toℕ-fromℕ< ; toℕ-injective)
 
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
@@ -367,8 +368,97 @@ splitsSize : ℕ → ℕ
 splitsSize 0 = 0
 splitsSize 1 = 1
 splitsSize (suc (suc w)) = ℕ.suc w
+
+-- Given two splits with the same x, the entire splits must be equal.
+-- I.e., the first component fixes the rest of the data uniquely as well,
+-- at least up to _≡_.
+-- (Almost equivalently: for fixed x and w, 
+--  the type Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w) is proof-irrelevant).
+splitsEqLemma
+    : (w : ℕ)
+    → (s s' : Splits w)
+    → proj₁ s ≡ proj₁ s'
+    → s ≡ s'
+splitsEqLemma w (x , y , p) (x , y' , p') refl =
+    let y≡y' : y ≡ y'
+        y≡y' = suc-injective  
+               $ +-injective {ℕ.suc x} {ℕ.suc y} {ℕ.suc y'} (trans p (sym p'))
+    in
+    sublemma y≡y' p p'
+    where
+        sublemma
+            : {y y' : ℕ}
+            → (y ≡ y')
+            → (p : ℕ.suc x + ℕ.suc y ≡ w)
+            → (p' : ℕ.suc x + ℕ.suc y' ≡ w)
+            → (x , y , p) ≡ (x , y' , p')
+        sublemma {y} {y} refl p p' = cong (λ p → (x , y , p)) (≡-irrelevant p p')
+
+-- If (x , y) is a split of w then x < (w-1).
+splitsToSmaller
+    : (w' : ℕ)
+    --→ (x y : ℕ)
+    --→ (p : ℕ.suc x + ℕ.suc y ≡ w)
+    → (s : Splits (ℕ.suc w'))
+    → (proj₁ s < w')
+splitsToSmaller w' (x , y , p) 
+    = s≤s⁻¹ (≤begin
+        ℕ.suc (ℕ.suc x)
+        ≤⟨ m≤m+n (ℕ.suc $ ℕ.suc x) y ⟩
+        ℕ.suc (ℕ.suc x) + y
+        ≤-Reasoning.≡⟨ sym $ +-suc (ℕ.suc x) y ⟩
+        ℕ.suc x + ℕ.suc y
+        ≤-Reasoning.≡⟨ p ⟩
+        ℕ.suc w'
+        ≤∎)
+        where open ≤-Reasoning renaming (begin_ to ≤begin_ ; _∎ to _≤∎)
 splitsFin : (w : ℕ) → Splits w ≃ Fin (splitsSize w)
-splitsFin w = ?
+splitsFin 0 = ?
+splitsFin 1 = ?
+splitsFin w@(suc w'@(suc w'')) = mk≃' f f⁻¹ invˡ invʳ
+    where
+    f : Splits w → Fin (splitsSize w)
+    f s = fromℕ< (splitsToSmaller w' s)
+    f⁻¹ : Fin (splitsSize w) → Splits w
+    f⁻¹ x = 
+        let -- (y , p) : Σ[ y ∈ Fin (ℕ.suc w) ](toℕ x + toℕ y ≡ w)
+            (y , p) = finOppositeSuc w' x
+        in
+        (toℕ x , toℕ y , p)
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {x} {s} refl = 
+        ≡begin 
+            f s
+        ≡⟨⟩ -- Definition f
+            fromℕ< (splitsToSmaller w' s)
+        ≡⟨ fromℕ<-toℕ x (splitsToSmaller w' s) ⟩
+            x
+        ≡∎
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {s@(x , y , p)} {x'} refl =
+        let (x'' , y'' , p'') = f⁻¹ $ f s in
+        let H : x'' ≡ x
+            H = ≡begin 
+                    x''
+                ≡⟨⟩
+                    (proj₁ $ f⁻¹ $ f s)
+                ≡⟨⟩ -- Definition f
+                    (proj₁ $ f⁻¹ $ fromℕ< (splitsToSmaller w' s))
+                ≡⟨⟩ -- Definition f⁻¹
+                    (toℕ $ fromℕ< (splitsToSmaller w' s))
+                ≡⟨ toℕ-fromℕ< {x} (splitsToSmaller w' s) ⟩
+                    x
+                ≡∎
+        in
+        let tupleType : (x : ℕ) → Set
+            tupleType x = Σ[ y ∈ ℕ ](ℕ.suc x + ℕ.suc y ≡ w)
+        in
+        ≡begin 
+            (x'' , y'' , p'')
+        ≡⟨ splitsEqLemma w (x'' , y'' , p'') (x , y , p) H ⟩
+            (x , y , p)
+        ≡∎
+
 
 split<Left : (m : ℕ) → (s : Splits m) → (ℕ.suc (proj₁ s) < m)
 split<Left m s = posSummandsThenSmaller wₜ+wₐ≡m

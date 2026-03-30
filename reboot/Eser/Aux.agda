@@ -79,6 +79,13 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
     in
     elimCaseLeft H m≰a'
 
++-injective :
+    {n m l : ℕ}
+    → n + m ≡ n + l
+    → m ≡ l
++-injective {zero} {m} {l} H = H
++-injective {suc n} {m} {l} H = +-injective (suc-injective H)
+
 open import Data.Fin hiding (_≤_ ; _+_ ; _<_)
 open import Data.Fin.Properties hiding (_≤?_)
 open import Data.Product
