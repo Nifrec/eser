@@ -11,6 +11,7 @@ open import Data.Sum
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
+open import Function
 
 open import Eser.Logic
 module Eser.Aux where
@@ -77,4 +78,59 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
             (subst (λ x → m < x) Sa+Sb≡m (≤-<-trans m≤a' a'<a'+Sb))
     in
     elimCaseLeft H m≰a'
+
+open import Data.Fin hiding (_≤_ ; _+_ ; _<_)
+open import Data.Fin.Properties hiding (_≤?_)
+open import Data.Product
+
+finOpposite
+    : (w : ℕ)
+    → (x : Fin (ℕ.suc w))
+    → Σ[ y ∈ Fin (ℕ.suc w) ](toℕ x + toℕ y ≡ w)
+finOpposite w x = (opposite x , p)
+    where
+        y = opposite x
+        p =
+            begin 
+                toℕ x + toℕ y
+            ≡⟨ +-comm (toℕ x) (toℕ y) ⟩
+                toℕ y + toℕ x
+            ≡⟨ cong (λ z → z + toℕ x) (opposite-prop x) ⟩
+                ((ℕ.suc w) ∸ (ℕ.suc (toℕ x))) + (toℕ x)
+            ≡⟨⟩
+                (w ∸ (toℕ x)) + (toℕ x)
+            ≡⟨ m∸n+n≡m {w} {toℕ x} (s≤s⁻¹ $ toℕ<n x) ⟩
+                w
+            ∎
+            
+
+-- Given x ∈ Fin (w-1), there exists a y ∈ Fin (w-1)
+-- such that 1+x + 1+y ≡ w.
+-- Or equivalently, x ∈ Fin w and y ∈ Fin w and 1+x + 1+y ≡ 1+w.
+finOppositeSuc
+    : (w : ℕ)
+    → (x : Fin w)
+    → Σ[ y ∈ Fin w ]( ℕ.suc (toℕ x) + ℕ.suc (toℕ y) ≡ ℕ.suc w)
+finOppositeSuc 0 ()
+finOppositeSuc w@(suc w') x = 
+    let (y , x+y≡w') = finOpposite w' x in
+    let x' = toℕ x in
+    let y' = toℕ y in
+    let SS[x+y]≡Sw : ℕ.suc (ℕ.suc (x' + y')) ≡ ℕ.suc w
+        SS[x+y]≡Sw = cong (ℕ.suc ∘ ℕ.suc) x+y≡w'
+    in
+    let p : ℕ.suc (toℕ x) + ℕ.suc (toℕ y) ≡ ℕ.suc w
+        p = begin 
+                ℕ.suc x' + ℕ.suc y' 
+            ≡⟨  +-suc (ℕ.suc x') y'   ⟩
+                ℕ.suc (ℕ.suc x') + y'
+            ≡⟨⟩ -- Definition of _+_:
+                ℕ.suc ( ℕ.suc (x' + y'))
+            ≡⟨  SS[x+y]≡Sw ⟩
+                ℕ.suc w 
+            ∎
+    in 
+    (y , p)
+    
+        
 
