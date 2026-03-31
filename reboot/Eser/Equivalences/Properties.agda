@@ -261,6 +261,35 @@ fin-×-*
     → ((Fin n) × (Fin m)) ≃ Fin (n * m)
 fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
 
+--addLifting
+--    : {A : Set}
+--    → (n : ℕ)
+--    → f : Fin (ℕ.suc n) → A
+--    → Fin n → A
+--addLifting {A} n f = f ∘ inject₁
+
+--finmax
+--    : {n : ℕ}
+--    → Fin (ℕ.suc n)
+--finmax = 
+
+-- The sum Σ[x ∈ Fin (a + 1)](Bx)
+-- is the same as the ⊎-sum of the last element,
+-- Ba, and the remaining sum Σ[x ∈ Fin a](Bx).
+-- (Similarly how for sums numbers it holds that:
+--  ∑_{i=1}^{n+1}f(i) ≡ f(n+1) + ∑_{i=1}^{n}f(i) )
+fin-Σ-takeout-first
+    : (a : ℕ)
+    → (B : Fin (ℕ.suc a) → Set)
+    → Σ[ x ∈ Fin (ℕ.suc a) ] B x ≃ B (fromℕ a) ⊎ Σ[ x ∈ Fin a ] B (inject₁ x)
+fin-Σ-takeout-first a B = ?
+    
+
+-- A finite sum of finite sets is equivalent to a single finite set.
+--
+-- #TODO: The size 'z' is given as a rather black box,
+-- but on paper I have a proof it equals
+-- `fold (Fin (suc a)) 0 λsum.λx.(f x + sum)`.
 fin-Σ-fun
     : (a : ℕ)
     → (f : Fin a → ℕ)
@@ -276,4 +305,24 @@ fin-Σ-fun 0 f =
                 Fin 0
             ∎
     in (z , H)
-fin-Σ-fun (suc a) f = ?
+fin-Σ-fun (suc a) f = 
+    let zₐ : ℕ
+        zₐ = proj₁ $ fin-Σ-fun a (f ∘ inject₁)
+    in
+    let z : ℕ
+        z = (f $ fromℕ a) + zₐ
+    in
+    let H : (Σ[ x ∈ Fin (ℕ.suc a) ] Fin (f x)) ≃ (Fin z)
+        H = begin 
+                (Σ[ x ∈ Fin (ℕ.suc a) ] Fin (f x))
+            ≃⟨ fin-Σ-takeout-first a (Fin ∘ f) ⟩
+                ((Fin $ f $ fromℕ a) ⊎ Σ[ x ∈ Fin a ] (Fin $ f $ inject₁ x))
+            ≃⟨ rewr-≃-under-⊎-right (proj₂ $ fin-Σ-fun a (f ∘ inject₁)) ⟩
+                ((Fin $ f $ fromℕ a) ⊎ (Fin zₐ))
+            ≃⟨ fin-⊎-+ (f $ fromℕ a) zₐ ⟩
+                Fin z
+            ∎
+    in
+    (z , H)
+
+
