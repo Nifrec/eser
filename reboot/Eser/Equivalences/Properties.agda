@@ -24,7 +24,7 @@ open import Relation.Nullary
 open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
-open import Data.Fin.Properties
+open import Data.Fin.Properties 
 
 open import Function.Related.TypeIsomorphisms
 open import Function
@@ -33,6 +33,7 @@ open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Product.Function.NonDependent.Propositional using (_×-↔_)
 
 open import Eser.Equivalences.Notation
+open import Eser.Stdlib using (fin-≡-irrelevant)
 
 module Eser.Equivalences.Properties where
 
@@ -262,23 +263,30 @@ fin-×-*
     → ((Fin n) × (Fin m)) ≃ Fin (n * m)
 fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
 
---addLifting
---    : {A : Set}
---    → (n : ℕ)
---    → f : Fin (ℕ.suc n) → A
---    → Fin n → A
---addLifting {A} n f = f ∘ inject₁
+-- #TODO: does this hold? I don't know if inequality proofs are propositions!
+-- #TODO: if true, this would simplify invˡ-inj₁-case below, 
+--  making invˡ-inj₁-aux redundant. 
+--  If false, remove it.
+fin-dec-irrel
+    : {n : ℕ}
+    → {x y : Fin n}
+    → Relation.Nullary.Irrelevant (Dec (x ≡ y))
+fin-dec-irrel {n} {x} {y} (no p) (no q) = {! !}
+fin-dec-irrel {n} {x} {y} (no p) (yes q) = ⊥-elim (p q)
+fin-dec-irrel {n} {x} {y} (yes p) (no q) = ⊥-elim (q p)
+fin-dec-irrel {n} {x} {y} (yes p) (yes q) = cong yes (fin-≡-irrelevant p q)
 
---finmax
---    : {n : ℕ}
---    → Fin (ℕ.suc n)
---finmax = 
-
---meh :
---    {n m : ℕ}
---    → n ≡ m
---    → fromℕ n ≡ fromℕ m
---meh {n} {n} refl = refl
+-- Given a witness x ≡ y, all decisions of x ≐ y must output true,
+-- and by proof irrelevance, also with the same proof.
+fin-dec-irrel-witness
+    : {n : ℕ}
+    → {x y : Fin n}
+    → x ≡ y
+    → Relation.Nullary.Irrelevant (Dec (x ≡ y))
+fin-dec-irrel-witness {n} {x} {y} h (no p) (no q) = ⊥-elim (p h)
+fin-dec-irrel-witness {n} {x} {y} h (no p) (yes q) = ⊥-elim (p q)
+fin-dec-irrel-witness {n} {x} {y} h (yes p) (no q) = ⊥-elim (q p)
+fin-dec-irrel-witness {n} {x} {y} h (yes p) (yes q) = cong yes (fin-≡-irrelevant p q)
 
 -- The sum Σ[x ∈ Fin (a + 1)](Bx)
 -- is the same as the ⊎-sum of the last element,
@@ -291,45 +299,64 @@ fin-Σ-takeout-first
     → Σ[ x ∈ Fin (ℕ.suc a) ] B x ≃ B (fromℕ a) ⊎ Σ[ x ∈ Fin a ] B (inject₁ x)
 fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
     where
-    f : Σ[ x ∈ Fin (ℕ.suc a) ] B x → (B (fromℕ a) ⊎ Σ[ x ∈ Fin a ](B $ inject₁ x))
-    f (x , b) with x Data.Fin.≟ fromℕ a
-    ... | yes p = inj₁ $ subst B p b
-    ... | no  p = 
+    -- The left-to-right direction f needs to make a case distinction.
+    -- Using a `with` clause is quite confusing when writing the inversity
+    -- proof, so instead of a with clause I use an auxiliary function.
+    f'  : Σ[ x ∈ Fin (ℕ.suc a) ] ((B x) × (Dec $ x ≡ fromℕ a))
+        → (B (fromℕ a) ⊎ Σ[ x ∈ Fin a ](B $ inject₁ x))
+    f' (x , b , no p) = 
         let p' : a ≢ toℕ x
             p' H = p $ sym $ toℕ-injective $ trans (toℕ-fromℕ a) H
         in
-        inj₂ (lower₁ {n = a} x p' , subst B (sym $ inject₁-lower₁ x p') b)
+        inj₂ (lower₁ x p' , subst B (sym $ inject₁-lower₁ x p') b)
+    f' (x , b , yes p) = inj₁ (subst B p b)
+
+    f   : Σ[ x ∈ Fin (ℕ.suc a) ] B x 
+        → (B (fromℕ a) ⊎ Σ[ x ∈ Fin a ](B $ inject₁ x))
+    f (x , b) = f' (x , b , (x Data.Fin.≟ fromℕ a))
+
     f⁻¹ : (B (fromℕ a) ⊎ Σ[ x ∈ Fin a ](B $ inject₁ x)) → Σ[ x ∈ Fin (ℕ.suc a) ] B x
     f⁻¹ (inj₁ b) = (fromℕ a , b)
     f⁻¹ (inj₂ (x , b)) = (inject₁ x , b)
-    --invˡ-inj₁-case : (b ∈ B (fromℕ a)) → 
-    lemma : (b : B (fromℕ a)) → (Dec $ fromℕ a ≡ fromℕ a) → f (fromℕ a , b) ≡ inj₁ b
-    lemma b (no p) = ⊥-elim $ p refl -- fromℕ a ≢ fromℕ a cannot happen!
-    lemma b (yes refl) = 
-        let p = proof (fromℕ a Data.Fin.≟ fromℕ a) true in
-        ≡begin 
-            (f $ (fromℕ a ,  b))
-        ≡⟨⟩
-            inj₁ (subst B p b)
-        ≡⟨ ? ⟩ 
-            inj₁ b
-        ≡∎
 
+    invˡ-inj₁-aux : Σ[ p ∈(fromℕ a ≡ fromℕ a) ]((fromℕ a Data.Fin.≟ fromℕ a) ≡ (yes p))
+    invˡ-inj₁-aux = (refl , fin-dec-irrel-witness refl (fromℕ a Data.Fin.≟ fromℕ a) (yes refl)) 
+
+    invˡ-inj₁-case
+        : (b : B (fromℕ a))
+        → (p : fromℕ a ≡ fromℕ a)
+        → ((fromℕ a Data.Fin.≟ fromℕ a) ≡ (yes p))
+        → f (fromℕ a , b) ≡ inj₁ b
+    invˡ-inj₁-case b p H =
+            -- p is an equality between finite numbers; but Fin (suc a)
+            -- is an hSet so equalities are proof-irrelevant
+            -- and hence p can be contracted to refl.
+            let pIsRefl : p ≡ refl
+                pIsRefl = fin-≡-irrelevant p refl
+            in
+            ≡begin 
+                (f $ (fromℕ a ,  b))
+            ≡⟨⟩
+                f' (fromℕ a , b , (fromℕ a Data.Fin.≟ fromℕ a))
+            ≡⟨ cong (λ p → f' (fromℕ a , b , p)) H ⟩ 
+                f' (fromℕ a , b , yes p)
+            ≡⟨⟩ 
+                inj₁ (subst B p b)
+            ≡⟨ cong (λ p → inj₁ (subst B p b)) pIsRefl ⟩ 
+                inj₁ (subst B refl b)
+            ≡⟨⟩ 
+                inj₁ b
+            ≡∎
     invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-    invˡ {inj₁ b} {y} refl = lemma b (fromℕ a Data.Fin.≟ fromℕ a)
+    invˡ {inj₁ b} {a' , b} refl = 
+        let (p , H) = invˡ-inj₁-aux 
+        in invˡ-inj₁-case b p H
 
-    --with (fromℕ a Data.Fin.≟ fromℕ a)
+    --invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    --invˡ {inj₁ b} {a' , b} refl with (fromℕ a Data.Fin.≟ fromℕ a)
     --... | no  p = ⊥-elim $ p refl
-    --... | yes p = lemma b (yes p)
-    --        --≡begin 
-    --        ----    (f $ f⁻¹ $ inj₁ b)
-    --        ----≡⟨⟩
-    --        --    (f $ (fromℕ a ,  b))
-    --        --≡⟨⟩
-    --        --    inj₁ (subst B p b)
-    --        --≡⟨⟩ 
-    --        --    inj₁ b
-    --        --≡∎
+    --... | yes p = {! invˡ-inj₁-case b p refl !}
+
     invˡ {inj₂ (x , b)} {y} refl = {! !}
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {y} {x} refl = ?
