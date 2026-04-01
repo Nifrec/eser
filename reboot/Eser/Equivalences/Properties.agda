@@ -14,6 +14,7 @@ open import Data.Nat.Properties
 open import Data.Sum
 open import Data.Unit
 open import Data.Empty
+open import Data.Bool
 open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
@@ -273,6 +274,12 @@ fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
 --    → Fin (ℕ.suc n)
 --finmax = 
 
+--meh :
+--    {n m : ℕ}
+--    → n ≡ m
+--    → fromℕ n ≡ fromℕ m
+--meh {n} {n} refl = refl
+
 -- The sum Σ[x ∈ Fin (a + 1)](Bx)
 -- is the same as the ⊎-sum of the last element,
 -- Ba, and the remaining sum Σ[x ∈ Fin a](Bx).
@@ -282,7 +289,51 @@ fin-Σ-takeout-first
     : (a : ℕ)
     → (B : Fin (ℕ.suc a) → Set)
     → Σ[ x ∈ Fin (ℕ.suc a) ] B x ≃ B (fromℕ a) ⊎ Σ[ x ∈ Fin a ] B (inject₁ x)
-fin-Σ-takeout-first a B = ?
+fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
+    where
+    f : Σ[ x ∈ Fin (ℕ.suc a) ] B x → (B (fromℕ a) ⊎ Σ[ x ∈ Fin a ](B $ inject₁ x))
+    f (x , b) with x Data.Fin.≟ fromℕ a
+    ... | yes p = inj₁ $ subst B p b
+    ... | no  p = 
+        let p' : a ≢ toℕ x
+            p' H = p $ sym $ toℕ-injective $ trans (toℕ-fromℕ a) H
+        in
+        inj₂ (lower₁ {n = a} x p' , subst B (sym $ inject₁-lower₁ x p') b)
+    f⁻¹ : (B (fromℕ a) ⊎ Σ[ x ∈ Fin a ](B $ inject₁ x)) → Σ[ x ∈ Fin (ℕ.suc a) ] B x
+    f⁻¹ (inj₁ b) = (fromℕ a , b)
+    f⁻¹ (inj₂ (x , b)) = (inject₁ x , b)
+    --invˡ-inj₁-case : (b ∈ B (fromℕ a)) → 
+    lemma : (b : B (fromℕ a)) → (Dec $ fromℕ a ≡ fromℕ a) → f (fromℕ a , b) ≡ inj₁ b
+    lemma b (no p) = ⊥-elim $ p refl -- fromℕ a ≢ fromℕ a cannot happen!
+    lemma b (yes refl) = 
+        let p = proof (fromℕ a Data.Fin.≟ fromℕ a) true in
+        ≡begin 
+            (f $ (fromℕ a ,  b))
+        ≡⟨⟩
+            inj₁ (subst B p b)
+        ≡⟨ ? ⟩ 
+            inj₁ b
+        ≡∎
+
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {inj₁ b} {y} refl = lemma b (fromℕ a Data.Fin.≟ fromℕ a)
+
+    --with (fromℕ a Data.Fin.≟ fromℕ a)
+    --... | no  p = ⊥-elim $ p refl
+    --... | yes p = lemma b (yes p)
+    --        --≡begin 
+    --        ----    (f $ f⁻¹ $ inj₁ b)
+    --        ----≡⟨⟩
+    --        --    (f $ (fromℕ a ,  b))
+    --        --≡⟨⟩
+    --        --    inj₁ (subst B p b)
+    --        --≡⟨⟩ 
+    --        --    inj₁ b
+    --        --≡∎
+    invˡ {inj₂ (x , b)} {y} refl = {! !}
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {y} {x} refl = ?
+
     
 
 -- A finite sum of finite sets is equivalent to a single finite set.

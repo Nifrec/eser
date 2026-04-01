@@ -97,7 +97,6 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
     in
     1+n≢0 {m + n} (suc-injective H)
 
-
 open import Data.Fin hiding (_≤_ ; _+_ ; _<_)
 open import Data.Fin.Properties hiding (_≤?_)
 open import Data.Product
