@@ -404,10 +404,97 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
         invˡ-inj₂-case x b ¬p H
 
 
+    invʳ-sub-inj₁-case
+        : (x : Fin $ ℕ.suc a)
+        → (b : B x)
+        → (p : x ≡ fromℕ a)
+        → (H : (x Data.Fin.≟ fromℕ a) ≡ yes p)
+        → (f⁻¹ $ f (x , b)) ≡ (x , b)
+    invʳ-sub-inj₁-case x b refl H =
+            ≡begin 
+                (f⁻¹ $ f (fromℕ a , b))
+            -- Some good luck: we can recycle a sublemma of invˡ:
+            ≡⟨ cong f⁻¹ (invˡ-inj₁-case b refl H) ⟩ 
+                f⁻¹ (inj₁ b)
+            ≡⟨⟩
+                (fromℕ a , b)
+            ≡∎
 
+    --invʳ-sub-inj₂-case
+    --    : (x : Fin $ ℕ.suc a)
+    --    → (b : B x)
+    --    → (¬p : x ≢ fromℕ a)
+    --    → (H : (x Data.Fin.≟ fromℕ a) ≡ no ¬p)
+    --    → (f⁻¹ $ f (x , b)) ≡ (x , b)
+    --invʳ-sub-inj₂-case x b ¬p H =
+    --        ≡begin 
+    --            (f⁻¹ $ f (x , b))
+    --        -- Idea: recycle the invˡ-inj₂-case proof after showing
+    --        -- that x must be of the form (inject₁ x').
+    --        ≡⟨ ? ⟩
+    --            (x , b)
+    --        ≡∎
+
+    invʳ-sub-inj₂-case-inject₁
+        : (x : Fin a)
+        → (b : B (inject₁ x))
+        → (¬p : (inject₁ x) ≢ fromℕ a)
+        → (H : ((inject₁ x) Data.Fin.≟ fromℕ a) ≡ no ¬p)
+        → (f⁻¹ $ f ((inject₁ x) , b)) ≡ (inject₁ x , b)
+    invʳ-sub-inj₂-case-inject₁ x b ¬p H =
+            ≡begin 
+                (f⁻¹ $ f (inject₁ x , b))
+            ≡⟨ cong f⁻¹ $  invˡ-inj₂-case x b ¬p H ⟩
+                f⁻¹ (inj₂ (x , b))
+            ≡⟨⟩
+                (inject₁ x , b)
+            ≡∎
+
+    invʳ-sub
+        : (x : Fin $ ℕ.suc a)
+        → (b : B x)
+        → (Dec (x ≡ fromℕ a))
+        → (f⁻¹ $ f (x , b)) ≡ (x , b)
+    invʳ-sub x b (yes p') = 
+        let (p , H) = dec-yes-case {Fin $ ℕ.suc a} {λ x → x ≡ fromℕ a} 
+                                   x (λ x → x Data.Fin.≟ fromℕ a) p'
+        in
+        invʳ-sub-inj₁-case x b p H
+    invʳ-sub x b (no  ¬p') = 
+        -- Idea: recycle the invˡ-inj₂-case proof after showing
+        -- that x must be of the form (inject₁ x').
+        -- #TODO: I copied this proof from invˡ-inj₂-case which copied it from
+        -- the def of f or f⁻¹. Better to refactor it perhaps?
+        let p' : a ≢ toℕ x
+            p' z = ¬p' $ sym $ toℕ-injective $ trans (toℕ-fromℕ a) z
+        in
+        let v : Σ[ x' ∈ Fin a ](x ≡ inject₁ x')
+            v = (lower₁ x p' , sym (inject₁-lower₁ x p'))
+        in
+        let (x' , x≡inject₁x') = v in
+        let b' : B (inject₁ x')
+            b' = subst B x≡inject₁x' b
+        in
+        -- #TODO: replace below by a ¬p for (inject₁ x') to get a type correct
+        -- H.
+        let ¬p'' : (inject₁ x') ≢ fromℕ a
+            ¬p'' = subst (λ x → x ≢ fromℕ a) x≡inject₁x' ¬p'
+        in
+        let (¬p , H) = dec-no-case {Fin $ ℕ.suc a} {λ x → x ≡ fromℕ a} 
+                                   (inject₁ x') (λ x → x Data.Fin.≟ fromℕ a) ¬p''
+        in
+        let k : (f⁻¹ $ f (inject₁ x' , b')) ≡ (inject₁ x' , b')
+            k = invʳ-sub-inj₂-case-inject₁ x' b' ¬p H
+        in
+        -- #TODO: show (inject₁ x' , b') ≡ (x , b) and subst that in the above.
+        let -- tuplesEq : (inject₁ x' , b') ≡ (x , b)
+            tuplesEq = sym ( tuple-with-subst {B = B} 
+                             id x (inject₁ x') b (sym x≡inject₁x') x≡inject₁x' )
+        in
+        subst (λ t → (f⁻¹ $ f t) ≡ t) (sym tuplesEq) k
 
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-    invʳ {y} {x} refl = ?
+    invʳ {x , b} {y} refl = invʳ-sub x b (x Data.Fin.≟ fromℕ a)
 
     
 
