@@ -265,25 +265,12 @@ fin-×-*
     → ((Fin n) × (Fin m)) ≃ Fin (n * m)
 fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
 
--- #TODO: Ignore the TODOs below. instead of fin-dec-irrel-witness use
--- the tools of Eser.Dec 
+-- #TODO: Instead of fin-dec-irrel-witness use the tools of Eser.Dec 
 -- in the proof of fin-Σ-takeout-first 
 --      in the subproof of invˡ 
 --          in the inj₁ case,
 -- just as the inj₂ case does. That's simpler, doesn't depend on the
 -- proof-irrelevance of `Dec (x ≡ y)`.
--- #TODO: does this hold? I don't know if inequality proofs are propositions!
--- #TODO: if true, this would simplify invˡ-inj₁-case below, 
---  making invˡ-inj₁-aux redundant. 
---  If false, remove it.
-fin-dec-irrel
-    : {n : ℕ}
-    → {x y : Fin n}
-    → Relation.Nullary.Irrelevant (Dec (x ≡ y))
-fin-dec-irrel {n} {x} {y} (no p) (no q) = {! !}
-fin-dec-irrel {n} {x} {y} (no p) (yes q) = ⊥-elim (p q)
-fin-dec-irrel {n} {x} {y} (yes p) (no q) = ⊥-elim (q p)
-fin-dec-irrel {n} {x} {y} (yes p) (yes q) = cong yes (fin-≡-irrelevant p q)
 
 -- Given a witness x ≡ y, all decisions of x ≐ y must output true,
 -- and by proof irrelevance, also with the same proof.
@@ -420,21 +407,6 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
                 (fromℕ a , b)
             ≡∎
 
-    --invʳ-sub-inj₂-case
-    --    : (x : Fin $ ℕ.suc a)
-    --    → (b : B x)
-    --    → (¬p : x ≢ fromℕ a)
-    --    → (H : (x Data.Fin.≟ fromℕ a) ≡ no ¬p)
-    --    → (f⁻¹ $ f (x , b)) ≡ (x , b)
-    --invʳ-sub-inj₂-case x b ¬p H =
-    --        ≡begin 
-    --            (f⁻¹ $ f (x , b))
-    --        -- Idea: recycle the invˡ-inj₂-case proof after showing
-    --        -- that x must be of the form (inject₁ x').
-    --        ≡⟨ ? ⟩
-    --            (x , b)
-    --        ≡∎
-
     invʳ-sub-inj₂-case-inject₁
         : (x : Fin a)
         → (b : B (inject₁ x))
@@ -475,8 +447,6 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
         let b' : B (inject₁ x')
             b' = subst B x≡inject₁x' b
         in
-        -- #TODO: replace below by a ¬p for (inject₁ x') to get a type correct
-        -- H.
         let ¬p'' : (inject₁ x') ≢ fromℕ a
             ¬p'' = subst (λ x → x ≢ fromℕ a) x≡inject₁x' ¬p'
         in
@@ -486,12 +456,11 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
         let k : (f⁻¹ $ f (inject₁ x' , b')) ≡ (inject₁ x' , b')
             k = invʳ-sub-inj₂-case-inject₁ x' b' ¬p H
         in
-        -- #TODO: show (inject₁ x' , b') ≡ (x , b) and subst that in the above.
-        let -- tuplesEq : (inject₁ x' , b') ≡ (x , b)
-            tuplesEq = sym ( tuple-with-subst {B = B} 
-                             id x (inject₁ x') b (sym x≡inject₁x') x≡inject₁x' )
+        let tuplesEq : (inject₁ x' , b') ≡ (x , b)
+            tuplesEq = tuple-with-subst {B = B} 
+                             id x (inject₁ x') b (sym x≡inject₁x') x≡inject₁x'
         in
-        subst (λ t → (f⁻¹ $ f t) ≡ t) (sym tuplesEq) k
+        subst (λ t → (f⁻¹ $ f t) ≡ t) tuplesEq k
 
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {x , b} {y} refl = invʳ-sub x b (x Data.Fin.≟ fromℕ a)
