@@ -32,6 +32,8 @@ open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Product.Function.NonDependent.Propositional using (_×-↔_)
 
+open import Eser.Aux
+open import Eser.Dec
 open import Eser.Equivalences.Notation
 open import Eser.Stdlib using (fin-≡-irrelevant)
 
@@ -263,6 +265,13 @@ fin-×-*
     → ((Fin n) × (Fin m)) ≃ Fin (n * m)
 fin-×-* n m = ≃-sym (Data.Fin.Properties.*↔× {n} {m})
 
+-- #TODO: Ignore the TODOs below. instead of fin-dec-irrel-witness use
+-- the tools of Eser.Dec 
+-- in the proof of fin-Σ-takeout-first 
+--      in the subproof of invˡ 
+--          in the inj₁ case,
+-- just as the inj₂ case does. That's simpler, doesn't depend on the
+-- proof-irrelevance of `Dec (x ≡ y)`.
 -- #TODO: does this hold? I don't know if inequality proofs are propositions!
 -- #TODO: if true, this would simplify invˡ-inj₁-case below, 
 --  making invˡ-inj₁-aux redundant. 
@@ -347,17 +356,56 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
             ≡⟨⟩ 
                 inj₁ b
             ≡∎
+
+    invˡ-inj₂-case
+        : (x : Fin a)
+        → (b : B (inject₁ x))
+        → (¬p : inject₁ x ≢ fromℕ a)
+        → ((inject₁ x Data.Fin.≟ fromℕ a) ≡ (no ¬p))
+        → f (inject₁ x , b) ≡ inj₂ (x , b)
+    invˡ-inj₂-case x b ¬p H =
+            let p' : a ≢ toℕ (inject₁ x)
+                p' z = ¬p $ sym $ toℕ-injective $ trans (toℕ-fromℕ a) z
+            in
+            let k : lower₁ (inject₁ x) p' ≡ x
+                k = lower₁-inject₁ x
+            in
+            let R : inject₁ x ≡ (inject₁ $ lower₁ (inject₁ x) p')
+                -- We could have defined `R = cong inject₁ (sym k)`,
+                -- but that would not be the same proof as f' uses!
+                R = sym (inject₁-lower₁ (inject₁ x) p') 
+            in
+            ≡begin 
+                (f $ (inject₁ x ,  b))
+            ≡⟨⟩
+                f' (inject₁ x , b , (inject₁ x Data.Fin.≟ fromℕ a))
+            ≡⟨ cong (λ p → f' (inject₁ x , b , p)) H ⟩ 
+                f' (inject₁ x , b , no ¬p)
+            ≡⟨⟩ 
+                inj₂ (lower₁ (inject₁ x) p' , subst B (sym $ inject₁-lower₁ (inject₁ x) p') b)
+            ≡⟨ cong inj₂ $ 
+                tuple-with-subst {Fin a} {Fin $ ℕ.suc a} {B = B} 
+                                 inject₁ x (lower₁ (inject₁ x) p') b k R
+             ⟩
+                inj₂ (x , b)
+            ≡∎
+
     invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
     invˡ {inj₁ b} {a' , b} refl = 
         let (p , H) = invˡ-inj₁-aux 
         in invˡ-inj₁-case b p H
 
-    --invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-    --invˡ {inj₁ b} {a' , b} refl with (fromℕ a Data.Fin.≟ fromℕ a)
-    --... | no  p = ⊥-elim $ p refl
-    --... | yes p = {! invˡ-inj₁-case b p refl !}
+    invˡ {inj₂ (x , b)} {a' , b} refl =
+        let ¬p' : (inject₁ x ≢ fromℕ a)
+            ¬p' = ≢-sym (fromℕ≢inject₁ {n = a} {i = x})
+        in
+        let (¬p , H) = dec-no-case (inject₁ x) (λ y → (y Data.Fin.≟ fromℕ a)) ¬p'
+        in
+        invˡ-inj₂-case x b ¬p H
 
-    invˡ {inj₂ (x , b)} {y} refl = {! !}
+
+
+
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {y} {x} refl = ?
 

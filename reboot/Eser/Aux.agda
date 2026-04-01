@@ -97,6 +97,27 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
     in
     1+n≢0 {m + n} (suc-injective H)
 
+--------------------------------------------------------------------------------
+-- Rewriting equalities
+--------------------------------------------------------------------------------
+open import Relation.Binary.PropositionalEquality
+open import Data.Product
+
+tuple-with-subst
+    : {A A' : Set}
+    → {B : A' → Set}
+    → (f : A → A')
+    → (x x' : A)
+    → (b : B (f x))
+    → x' ≡ x
+    → (R : f x ≡ f x')
+    → (x' , subst B R b) ≡ (x , b)
+tuple-with-subst {A} {A'} {B} f x x b refl refl = refl
+
+--------------------------------------------------------------------------------
+-- Finite sets
+--------------------------------------------------------------------------------
+-- The imports for Fin are down here to avoid name clashes with Data.Nat.
 open import Data.Fin hiding (_≤_ ; _+_ ; _<_)
 open import Data.Fin.Properties hiding (_≤?_)
 open import Data.Product
