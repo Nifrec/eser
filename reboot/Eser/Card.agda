@@ -113,6 +113,15 @@ cardToℕ
 cardToℕ {∞} n = n
 cardToℕ {fin (suc c)} n = toℕ n
 
+cardToℕ-injective
+    : {c : ℕ∞}
+    → {n m : cardToSet c}
+    → cardToℕ n ≡ cardToℕ m
+    → n ≡ m
+cardToℕ-injective {fin (suc c)} {n} {m} H = Data.Fin.Properties.toℕ-injective H
+cardToℕ-injective {∞} {n} {m} refl = refl
+    
+
 cardTo<Dec
     : {c : ℕ∞}
     → Decidable (cardTo< {c})
@@ -224,6 +233,14 @@ elToNonempty
     → fin ℕ.zero <∞ c
 elToNonempty {fin (ℕ.suc c)} i = s≤s z≤n
 elToNonempty {∞} i = tt
+
+-- If x ∈ cardToSet c then x is smaller than c (as elements of ℕ∞).
+smallerThanCard
+    : {c : ℕ∞}
+    → (x : cardToSet c)
+    → fin (cardToℕ x) <∞ c
+smallerThanCard {fin (suc c)} x = toℕ<n {n = ℕ.suc c} x
+smallerThanCard {∞} x = tt
 
 -- Compare a natural number for equality n to a number m in (cardToSet c).
 ℕequalsCardToSetElem : {c : ℕ∞} → ℕ → (m : cardToSet c) → Set
@@ -487,6 +504,14 @@ cardLower {∞} {m} notMax = m
 cardInject : {n : ℕ∞} → (m : cardToSet n) → cardToSet (suc∞ n)
 cardInject {fin (suc n)} m = inject₁ m
 cardInject {∞} m = m
+
+cardFrom<∞
+    : {c : ℕ∞}
+    → {m : ℕ}
+    → (fin m <∞ c)
+    →  Σ[ m' ∈ cardToSet c ](cardToℕ m' ≡ m)
+cardFrom<∞ {fin (suc c)} {m} m<c = ( fromℕ< m<c , toℕ-fromℕ< m<c)
+cardFrom<∞ {∞} {m} m<c = (m , refl)
 
 -- Equality is decidable for sets of all cardinalities.
 cardToDecidableEq

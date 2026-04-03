@@ -45,6 +45,9 @@ module Eser.Equivalences.Properties where
 ≃-sym : {A B : Set} → (A ≃ B) → (B ≃ A)
 ≃-sym = ↔-sym
 
+≃-trans : {A B C : Set} → (A ≃ B) → (B ≃ C) → (A ≃ C)
+≃-trans = ↔-trans
+
 mk≃ = mk↔
 
 mk≃' 

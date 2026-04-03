@@ -44,7 +44,7 @@ open import Data.Fin.Properties using (fromℕ<-toℕ ; toℕ-fromℕ< ; toℕ-i
 
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
-open import StreamGrids.Card
+open import Eser.Card
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.Aux
@@ -176,7 +176,7 @@ noWeightlessTerms
     → (n : ℕ)
     → OpenTerms {μ} {ζ} S 0 n
     → ⊥ 
-noWeightlessTerms {μ} {ζ} S n t = ?
+noWeightlessTerms {μ} {ζ} S n t = ? -- #TODO: mave prove OT S w n → w > 0 first.
 
 --------------------------------------------------------------------------------
 -- Main theorem : all term algebras over these Signatures are enumerable
@@ -518,6 +518,55 @@ module ZTheoremProof
     IsGiveArg (mk-multiary _) = ⊥
     IsGiveArg (giveArg _ _) = ⊤
 
+    isNullaryNoArgs 
+        : {w : ℕ} 
+        → {n : ℕ} 
+        → (t : OT w n)
+        → IsNullary t
+        → n ≡ 0
+    isNullaryNoArgs {w} {0} (mk-nullary c) p = refl
+
+    -- Sublemma of lemma isNullaryWeight below.
+    -- For isNullaryWeight, either
+    -- use (t : OT w 0) and Σ[ c ∈ cardToSet μ ] (fin (w ∸ 1) <∞ μ),
+    -- which has an annoying _∸_ but allows to pattern
+    -- match t to `mk-nullary c`,
+    -- xor
+    -- use (t : OT (ℕ.suc w) 0) and Σ[ c ∈ cardToSet μ ] (fin w <∞ μ),
+    -- in which case Agda fails to rule out the giveArg case and we don't get c
+    -- via pattern matching. `getNullaryConstr` then gives c anyway.
+    getNullaryConstr
+        : {w : ℕ} 
+        → (t : OT w 0)
+        → IsNullary t
+        → Σ[ c ∈ cardToSet μ ]( w ≡ ℕ.suc (cardToℕ c) )
+    getNullaryConstr {w} (mk-nullary c) p = (c , H)
+        where
+            H : w ≡ ℕ.suc (cardToℕ c)
+            H = refl
+
+    isNullaryWeight
+        : {w : ℕ} 
+        → (t : OT (ℕ.suc w) 0)
+        → IsNullary t
+        → fin w <∞ μ
+    isNullaryWeight {w} t p =
+        let (c , Sw≡Sc) = getNullaryConstr t p
+        in
+        let w≡c : fin w ≡ fin (cardToℕ c)
+            w≡c = cong fin $ suc-injective Sw≡Sc
+        in
+        subst (λ x → x <∞ μ) (sym w≡c) (smallerThanCard c)
+
+    isNullaryUnderSubst
+        : {w : ℕ}
+        → {c : cardToSet μ}
+        → (p : (ℕ.suc (cardToℕ c) ≡ w))
+        → IsNullary (subst (λ x → OT x 0) p (mk-nullary c))
+    isNullaryUnderSubst refl = tt
+
+        
+
     giveArgUnderSubst
         : {w wₐ wₜ : ℕ}
         → {n : ℕ}
@@ -562,6 +611,147 @@ module ZTheoremProof
             inv : Inverseᵇ _≡_ _≡_ to from
             inv = (invˡ , invʳ)
  
+    isNullaryInhabited
+        : {w : ℕ}
+        → (H : fin w <∞ μ)
+        → OT-Nul (ℕ.suc w) 0
+    isNullaryInhabited {w} H = 
+        let c : cardToSet μ
+            c = proj₁ $ cardFrom<∞ H
+        in
+        let Sc≡Sw : ((ℕ.suc $ cardToℕ c) ≡ ℕ.suc w)
+            Sc≡Sw = cong ℕ.suc (proj₂ $ cardFrom<∞ H)
+        in
+        let t : OpenTerms {μ} {ζ} S (ℕ.suc w) 0
+            t = subst (λ x → OpenTerms {μ} {ζ} S x 0) Sc≡Sw (mk-nullary c)
+        in
+        (t , isNullaryUnderSubst Sc≡Sw)
+
+    --isNullaryContr
+    --    : {w : ℕ} 
+    --    → (t : OT w 0)
+    --    → (p : IsNullary t)
+    --    → t ≡  subst (λ x → OpenTerms {μ} {ζ} S x 0) 
+    --            (proj₂ $ getNullaryConstr t p) (mk-nullary $ proj₁ $ getNullaryConstr t p)
+    --isNullaryContr t H p = ?
+
+    --getNullaryConstrStrong
+    --    : {w : ℕ} 
+    --    → (t : OT w 0)
+    --    → IsNullary t
+    --    → Σ[ c ∈ cardToSet μ ]( w ≡ ℕ.suc (cardToℕ c) × t ≡ mk-nullary c)
+    --getNullaryConstrStrong {w} (mk-nullary c) p = (c , H , refl)
+    --    where
+    --        H : w ≡ ℕ.suc (cardToℕ c)
+    --        H = refl
+
+    getNullaryConstrLemma
+        : {w : ℕ} 
+        → (c : cardToSet μ)
+        → (proj₁ $ getNullaryConstr  (mk-nullary c) tt) ≡ c
+    getNullaryConstrLemma {w} c = refl
+
+
+    --lemma
+    --    : {w : ℕ} 
+    --    → (c : cardToSet μ)
+    --    → (t : OT w 0)
+    --    → IsNullary t
+    --    → (H : (ℕ.suc $ cardToℕ c) ≡ w)
+    --    → t ≡ subst (λ x → OT x 0) H (mk-nullary c)
+    --lemma c (mk-nullary c') p H = 
+    --    let c≡c' = cardToℕ-injective $ suc-injective H
+    --    in
+    --    ?
+
+    isNullaryUnique'
+        : (wt : Σ[ w ∈ ℕ ](OT w 0))
+        → (w't' : Σ[ w ∈ ℕ ](OT w 0))
+        → IsNullary (proj₂ wt)
+        → IsNullary (proj₂ w't')
+        → (H : proj₁ wt ≡ proj₁ w't')
+        → wt ≡ w't'
+    isNullaryUnique' (w , mk-nullary c) (w' , mk-nullary c') p p' H =
+        let c≡c' : c ≡ c'
+            c≡c' = cardToℕ-injective $ suc-injective H
+        in
+        cong (λ c → ((ℕ.suc $ cardToℕ c) , mk-nullary c)) c≡c'
+        
+    isNullaryUnique
+        : {w w' : ℕ} 
+        → (t : OT w 0)
+        → (t' : OT w' 0)
+        → IsNullary t
+        → IsNullary t'
+        → (H : w' ≡ w)
+        → t ≡ (subst (λ w → OT w 0) H t') 
+    isNullaryUnique {w} {w'} t t' p p' refl = 
+        let wt≡wt' : (w , t) ≡ (w , t') 
+            wt≡wt' = isNullaryUnique' (w , t) (w' , t') p p' refl
+        in
+        meh wt≡wt' 
+        where
+            meh : {w : ℕ} 
+                → {t t' : OT w 0}
+                → (w , t) ≡ (w , t')
+                → t ≡ t'
+            meh {w} {w'} refl = refl
+
+    --isNullaryUnique {w} {w'} t@(mk-nullary c) t'@(mk-nullary c') p p' refl = 
+    --    let k = getNullaryConstr {w} t p in
+    --    let k' = getNullaryConstr {w'} t' p' in ?
+        --≡begin 
+        
+        --≡⟨  ⟩
+        
+        --≡∎
+        
+
+    ---- There is at most one nullary term of weight w,
+    ---- and it is the nullary term constructed via constructor w∸1
+    --isNullaryUnique
+    --    : {w : ℕ} 
+    --    → (t t' : OT w 0)
+    --    --→ (H : fin w <∞ μ)
+    --    → IsNullary t
+    --    → IsNullary t'
+    --    → t ≡ t'
+    --isNullaryUnique {w} t t' p p' = 
+    --    let wt≡wt' : (w , t) ≡ (w , t') 
+    --        wt≡wt' = isNullaryUnique' (w , t) (w , t') p p' refl
+    --    in
+    --    let t≡t' : t ≡ t'
+    --        t≡t' = meh {w} {w} t t' wt≡wt'
+    --    in
+    --    ?
+
+    isNullaryIrrelevant
+        : {w n : ℕ}
+        → (t : OT w n)
+        → (p p' : IsNullary t)
+        → p ≡ p'
+    isNullaryIrrelevant {w} {n} (mk-nullary c) tt tt = refl
+
+    OT-Nul-Irrelevant'
+        : {w n : ℕ}
+        → {t t' : OT w n}
+        → (p : IsNullary t)
+        → (p' : IsNullary t')
+        → t ≡ t'
+        → (t , p) ≡ (t' , p')
+    OT-Nul-Irrelevant' {t = t} p p' refl = 
+        cong (λ p → (t , p)) $ isNullaryIrrelevant t p p'
+        
+    
+    OT-Nul-Irrelevant
+        : {w n : ℕ}
+        → (t t' : OT-Nul w n)
+        → t ≡ t'
+    OT-Nul-Irrelevant {w} {0} (t , p) (t' , p') = 
+        let t≡t' : t ≡ t'
+            t≡t' = isNullaryUnique t t' p p' refl
+        in
+        OT-Nul-Irrelevant' p p' t≡t' 
 
 module ZTheoremProofViaVars where
 
@@ -587,29 +777,60 @@ module ZTheoremProofViaVars where
         : (μ ζ : ℕ∞)
         → (S : Signature μ ζ)
         → (w n : ℕ)
-        → OT-Nul {μ} {ζ} S w n ≃ Fin (Z-Nul' μ ζ S w n)
-    Eq-Nul' μ ζ S w n = mk≃' f f⁻¹ invˡ invʳ
+        → Σ[ z ∈ ℕ ] (OT-Nul {μ} {ζ} S w n ≃ Fin z)
+    Eq-Nul' μ ζ S w (suc n) = (0 , ≃-trans equiv (≃-sym fin0))
         where
-        g : (μ ζ : ℕ∞)
-            → (S : Signature μ ζ)
-            → (w n : ℕ)
-            → OT-Nul {μ} {ζ} S w n → Fin (Z-Nul' μ ζ S w n)
-        --g μ ζ S w (ℕ.suc n) (mk-multiary c , ())
-        --g μ ζ S w (ℕ.suc n) (giveArg fst fst₁ , ())
-        --g (fin (ℕ.suc x)) ζ S w 0 (mk-nullary c , tt) with ((fin w) <∞? μ
-        g μ ζ S w 0 (mk-nullary c , tt) = cardInhToZero c
-        --with ((fin w) <∞? μ)
-        --... | yes p = cardInhToZero c
-        --... | no ¬p = ⊥-elim {! proof that w ≡ c is out of the fin set... !}
-
-        f = g μ ζ S w n
-
-        f⁻¹ : Fin (Z-Nul' μ ζ S w n) → OT-Nul {μ} {ζ} S w n
-        f⁻¹ = ?
-        invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-        invˡ {x} {y} refl = ?
-        invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-        invʳ {y} {x} refl = ?
+            equiv : OT-Nul {μ} {ζ} S w (ℕ.suc n) ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                f : OT-Nul {μ} {ζ} S w (ℕ.suc n) → ⊥
+                f (t , p) = 1+n≢0 $ isNullaryNoArgs S t p
+                f⁻¹ : ⊥ → OT-Nul {μ} {ζ} S w ( ℕ.suc n)
+                f⁻¹ ()
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {()} {y}
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {y} {()}
+    Eq-Nul' μ ζ S 0 0 = (0 , ≃-trans equiv (≃-sym fin0))
+        where
+            equiv : OT-Nul {μ} {ζ} S 0 0 ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                f : OT-Nul {μ} {ζ} S 0 0 → ⊥
+                f (t , _) = noWeightlessTerms {μ} {ζ} S 0 t
+                f⁻¹ : ⊥ → OT-Nul {μ} {ζ} S 0 0
+                f⁻¹ ()
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {()} {y}
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {y} {()}
+    Eq-Nul' μ ζ S (suc w) 0 with (fin w <∞? μ)
+    ... | no ¬p = (0 ,  ≃-trans equiv (≃-sym fin0))
+        where 
+            equiv : OT-Nul {μ} {ζ} S (ℕ.suc w) 0 ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                f : OT-Nul {μ} {ζ} S (ℕ.suc w) 0 → ⊥
+                f (t , isNullaryT) = ¬p (isNullaryWeight S t isNullaryT)
+                f⁻¹ : ⊥ → OT-Nul {μ} {ζ} S (ℕ.suc w) 0
+                f⁻¹ () 
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {()} {y}
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {y} {()}
+    ... | yes p = (1 , equiv)
+        where 
+            equiv : OT-Nul {μ} {ζ} S (ℕ.suc w) 0 ≃ Fin 1
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                f : OT-Nul {μ} {ζ} S (ℕ.suc w) 0 → Fin 1
+                f _ = Fin.zero
+                f⁻¹ : Fin 1 → OT-Nul {μ} {ζ} S (ℕ.suc w) 0
+                f⁻¹ _ = isNullaryInhabited S p 
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {Fin.zero} {y} refl = refl
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {t} {Fin.zero} refl = OT-Nul-Irrelevant S (f⁻¹ Fin.zero) t
 
     Z-Mul = ?
 
@@ -629,8 +850,8 @@ module WithArgs
     open ZTheoremProofViaVars
 
     w = ℕ.suc w-1
-    Z-Nul = Z-Nul' μ ζ S w n
-    Eq-Nul = Eq-Nul' μ ζ S w n 
+    Z-Nul = proj₁ $ Eq-Nul' μ ζ S w n
+    Eq-Nul = proj₂ $ Eq-Nul' μ ζ S w n 
 
     Eq-Mul : ? -- OT-Mul w n ≃ Fin Z-Mul
     Eq-Mul = ?
