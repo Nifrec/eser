@@ -627,42 +627,11 @@ module ZTheoremProof
         in
         (t , isNullaryUnderSubst Sc≡Sw)
 
-    --isNullaryContr
-    --    : {w : ℕ} 
-    --    → (t : OT w 0)
-    --    → (p : IsNullary t)
-    --    → t ≡  subst (λ x → OpenTerms {μ} {ζ} S x 0) 
-    --            (proj₂ $ getNullaryConstr t p) (mk-nullary $ proj₁ $ getNullaryConstr t p)
-    --isNullaryContr t H p = ?
-
-    --getNullaryConstrStrong
-    --    : {w : ℕ} 
-    --    → (t : OT w 0)
-    --    → IsNullary t
-    --    → Σ[ c ∈ cardToSet μ ]( w ≡ ℕ.suc (cardToℕ c) × t ≡ mk-nullary c)
-    --getNullaryConstrStrong {w} (mk-nullary c) p = (c , H , refl)
-    --    where
-    --        H : w ≡ ℕ.suc (cardToℕ c)
-    --        H = refl
-
     getNullaryConstrLemma
         : {w : ℕ} 
         → (c : cardToSet μ)
         → (proj₁ $ getNullaryConstr  (mk-nullary c) tt) ≡ c
     getNullaryConstrLemma {w} c = refl
-
-
-    --lemma
-    --    : {w : ℕ} 
-    --    → (c : cardToSet μ)
-    --    → (t : OT w 0)
-    --    → IsNullary t
-    --    → (H : (ℕ.suc $ cardToℕ c) ≡ w)
-    --    → t ≡ subst (λ x → OT x 0) H (mk-nullary c)
-    --lemma c (mk-nullary c') p H = 
-    --    let c≡c' = cardToℕ-injective $ suc-injective H
-    --    in
-    --    ?
 
     isNullaryUnique'
         : (wt : Σ[ w ∈ ℕ ](OT w 0))
@@ -696,34 +665,6 @@ module ZTheoremProof
                 → (w , t) ≡ (w , t')
                 → t ≡ t'
             meh {w} {w'} refl = refl
-
-    --isNullaryUnique {w} {w'} t@(mk-nullary c) t'@(mk-nullary c') p p' refl = 
-    --    let k = getNullaryConstr {w} t p in
-    --    let k' = getNullaryConstr {w'} t' p' in ?
-        --≡begin 
-        
-        --≡⟨  ⟩
-        
-        --≡∎
-        
-
-    ---- There is at most one nullary term of weight w,
-    ---- and it is the nullary term constructed via constructor w∸1
-    --isNullaryUnique
-    --    : {w : ℕ} 
-    --    → (t t' : OT w 0)
-    --    --→ (H : fin w <∞ μ)
-    --    → IsNullary t
-    --    → IsNullary t'
-    --    → t ≡ t'
-    --isNullaryUnique {w} t t' p p' = 
-    --    let wt≡wt' : (w , t) ≡ (w , t') 
-    --        wt≡wt' = isNullaryUnique' (w , t) (w , t') p p' refl
-    --    in
-    --    let t≡t' : t ≡ t'
-    --        t≡t' = meh {w} {w} t t' wt≡wt'
-    --    in
-    --    ?
 
     isNullaryIrrelevant
         : {w n : ℕ}
