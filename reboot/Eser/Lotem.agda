@@ -16,7 +16,7 @@
 -- This open-terms-version of Lih also has a distinctive representation of terms
 -- over a signature: Agda-constructors can only apply one argument at a time to
 -- a signature-constructor.
--- Ideas developed in March 2026,
+-- Ideas developed in March & April 2026,
 -- after the 11 March discussion with supervisors pointed out the previous
 -- approach was overly complicated and that things could have been done more
 -- general.
@@ -490,7 +490,10 @@ split<Right m s = posSummandsThenSmaller wₐ+wₜ≡m
         wₜ+wₐ≡m = proj₂ (proj₂ s)
         wₐ+wₜ≡m = subst (λ x → x ≡ m) (+-comm wₜ wₐ) wₜ+wₐ≡m
 
--- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
+-- The following definitions semantically belong to the ZTheoremProof
+-- module below, but are easier to define when the arguments of the module
+-- can be treated as variables instead.
+
 module ZTheoremProof
     {μ ζ : ℕ∞}
     (S : Signature μ ζ)
@@ -559,159 +562,202 @@ module ZTheoremProof
             inv : Inverseᵇ _≡_ _≡_ to from
             inv = (invˡ , invʳ)
  
+
+module ZTheoremProofViaVars where
+
+    open ZTheoremProof
+
+    -- Size of the subset of OpenTerms w n that are created with the mk-nullary
+    -- constructor. They never take any arguments (for n > 0 it is uninhabited)
+    -- and their weight is 1 + their index in μ (the set of nullary
+    -- constructors).
+    Z-Nul' 
+        : (μ ζ : ℕ∞)
+        → (S : Signature μ ζ)
+        → (w n : ℕ)
+        → ℕ
+    Z-Nul' μ ζ S w (suc n)  = 0 -- No nullary constructors take arguments.
+    Z-Nul' μ ζ S 0 0        = 0 -- All terms have weight at least one.
+    -- A nullary term with weight `suc w` has index w in `cardToSet μ`.
+    -- If the latter is ℕ then this term always exists; 
+    -- but if `cardToSet μ` is `Fin m` then it only exists if `w < m`.
+    Z-Nul' μ ζ S (suc w) n  = if does ((fin w) <∞? μ) then 1 else 0
+
+    Eq-Nul' 
+        : (μ ζ : ℕ∞)
+        → (S : Signature μ ζ)
+        → (w n : ℕ)
+        → OT-Nul {μ} {ζ} S w n ≃ Fin (Z-Nul' μ ζ S w n)
+    Eq-Nul' μ ζ S w n = mk≃' f f⁻¹ invˡ invʳ
+        where
+        g : (μ ζ : ℕ∞)
+            → (S : Signature μ ζ)
+            → (w n : ℕ)
+            → OT-Nul {μ} {ζ} S w n → Fin (Z-Nul' μ ζ S w n)
+        --g μ ζ S w (ℕ.suc n) (mk-multiary c , ())
+        --g μ ζ S w (ℕ.suc n) (giveArg fst fst₁ , ())
+        --g (fin (ℕ.suc x)) ζ S w 0 (mk-nullary c , tt) with ((fin w) <∞? μ
+        g μ ζ S w 0 (mk-nullary c , tt) = cardInhToZero c
+        --with ((fin w) <∞? μ)
+        --... | yes p = cardInhToZero c
+        --... | no ¬p = ⊥-elim {! proof that w ≡ c is out of the fin set... !}
+
+        f = g μ ζ S w n
+
+        f⁻¹ : Fin (Z-Nul' μ ζ S w n) → OT-Nul {μ} {ζ} S w n
+        f⁻¹ = ?
+        invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+        invˡ {x} {y} refl = ?
+        invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+        invʳ {y} {x} refl = ?
+
+    Z-Mul = ?
+
+
+-- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
     -- Submodule that also assumes a given weight w and num-remaining-args n
     -- plus the ability to perfrom Well-Founded recursion on w.
-    module WithArgs
-        (w-1 : ℕ)
-        (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
-        (n : ℕ) 
+module WithArgs
+    {μ ζ : ℕ∞}
+    (S : Signature μ ζ)
+    (w-1 : ℕ)
+    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
+    (n : ℕ) 
+    where
+
+    open ZTheoremProof {μ} {ζ} S
+    open ZTheoremProofViaVars
+
+    w = ℕ.suc w-1
+    Z-Nul = Z-Nul' μ ζ S w n
+    Eq-Nul = Eq-Nul' μ ζ S w n 
+
+    Eq-Mul : ? -- OT-Mul w n ≃ Fin Z-Mul
+    Eq-Mul = ?
+
+    Zₜ : (s : Splits w) → (n : ℕ) → ℕ
+    Zₜ s n = proj₁ (rec (split<Right w s) (ℕ.suc n))
+
+    Hₜ  : (s : Splits w) 
+        → (n : ℕ) 
+        → (OT (ℕ.suc $ proj₁ $ proj₂ s) (ℕ.suc n)) ≃ (Fin $ Zₜ s n )
+    Hₜ s n = proj₂ (rec (split<Right w s) (ℕ.suc n))
+
+    Zₐ : (s : Splits w) → ℕ
+    Zₐ s = proj₁ (rec (split<Left w s) 0)
+
+    Hₐ  : (s : Splits w) 
+        → (OT (ℕ.suc (proj₁ s)) 0) ≃ (Fin $ Zₐ s )
+    Hₐ s = proj₂ (rec (split<Left w s) 0)
+
+    Eq-split
+        : (n : ℕ)
+        → (s : Splits w)
+        →   (
+                (OT (ℕ.suc (proj₁ (proj₂ s))) (ℕ.suc n)) 
+                × 
+                (OT (ℕ.suc (proj₁ s)) 0)
+            )
+            ≃ 
+            ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
+    Eq-split n s = ≃-× (Hₜ s n) (Hₐ s) 
+
+    OT-Arg-Unfolded : ℕ → ℕ → Set
+    OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
+                       (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)))
+
+    -- This needs to be defines for all (w , n)
+    -- otherwise we cannot pattern match the input to f
+    -- to something of the form `giveArg t a`, since w would be
+    -- fixed and Agda can't assume arbitrary wₜ and wₐ if there
+    -- is a constraint wₜ + wₐ ≗ w for non-variable w. 
+    Eq-Arg-FirstStep : (w n : ℕ) → OT-Arg w n ≃ OT-Arg-Unfolded w n
+    Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
         where
+        f : (OT-Arg w n) → OT-Arg-Unfolded w n
+        f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
+        f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
+        f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
+        f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
+        f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
+            let t = subst (λ x → OT x n) p (giveArg t' a)
+            in (t , giveArgUnderSubst p t' a)
+        invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+        invˡ {(wₐ , wₜ , refl) , t , a} {ta , isGiveArg} refl = refl
+        invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+        invʳ {giveArg {ℕ.zero} {wₐ} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
+        invʳ {giveArg {wₜ} {ℕ.zero} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S 0 a
+        invʳ {giveArg {ℕ.suc wₜ} {ℕ.suc wₐ} t a , tt} {(wₐ , wₜ , refl) , t , a} refl = 
+            let H = proj₂ $ f⁻¹ ((wₐ , wₜ , refl) , t , a) in
+            ≡begin 
+                f⁻¹ ((wₐ , wₜ , refl) , t , a) 
+            ≡⟨⟩
+                ((giveArg t a) , tt)
+            ≡∎
 
-        w = ℕ.suc w-1
-        Z-Nul : ℕ
-        Z-Nul = z w n
-            where
-            z : ℕ → ℕ → ℕ
-            z w (suc n) = 0 -- No nullary constructors take arguments.
-            z 0 0 = 0       -- All terms have weight at least one.
-            z (suc w) 0 = if does ((fin w) <∞? ζ) then 1 else 0
-
-        Z-Mul = ?
-
-        -- For this one, the argument `w` must be W, because it uses a call to
-        -- `rec`.
-        --Z-Arg : ℕ
-        --Z-Arg = ?
-
-        Eq-Nul : OT-Nul w n ≃ Fin Z-Nul
-        Eq-Nul = ?
-
-        Eq-Mul : OT-Mul w n ≃ Fin Z-Mul
-        Eq-Mul = ?
-
-        Zₜ : (s : Splits w) → (n : ℕ) → ℕ
-        Zₜ s n = proj₁ (rec (split<Right w s) (ℕ.suc n))
-
-        Hₜ  : (s : Splits w) 
-            → (n : ℕ) 
-            → (OT (ℕ.suc $ proj₁ $ proj₂ s) (ℕ.suc n)) ≃ (Fin $ Zₜ s n )
-        Hₜ s n = proj₂ (rec (split<Right w s) (ℕ.suc n))
-
-        Zₐ : (s : Splits w) → ℕ
-        Zₐ s = proj₁ (rec (split<Left w s) 0)
-
-        Hₐ  : (s : Splits w) 
-            → (OT (ℕ.suc (proj₁ s)) 0) ≃ (Fin $ Zₐ s )
-        Hₐ s = proj₂ (rec (split<Left w s) 0)
-
-        Eq-split
-            : (n : ℕ)
-            → (s : Splits w)
-            →   (
-                    (OT (ℕ.suc (proj₁ (proj₂ s))) (ℕ.suc n)) 
-                    × 
-                    (OT (ℕ.suc (proj₁ s)) 0)
+    -- It's easier to compute Z-Arg and prove the equivalence
+    -- in one go, than to define Z-Arg beforehand.
+    Z-Eq-Arg : Σ[ z ∈ ℕ ]( OT-Arg w n ≃ Fin z)
+    Z-Eq-Arg = 
+        let getSplit : Fin (splitsSize w) → Splits w
+            getSplit = Inverse.from (splitsFin w)
+        in
+        let
+            f : Fin (splitsSize w) → ℕ
+            f x = (Zₜ (getSplit x) n) * (Zₐ (getSplit x))
+        in
+        let Z-Arg : ℕ
+            Z-Arg = proj₁ (fin-Σ-fun (splitsSize w) f)
+        in
+        (Z-Arg , 
+        (begin 
+            OT-Arg w n
+        ≃⟨ ≃-refl ⟩
+            (Σ[ t ∈ OT w n ] (IsGiveArg t))
+        ≃⟨ Eq-Arg-FirstStep w n ⟩
+            (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
+                (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)
                 )
-                ≃ 
-                ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
-        Eq-split n s = ≃-× (Hₜ s n) (Hₐ s) 
+            )
+        ≃⟨ rewr-≃-rightOf-Σ (Eq-split n) ⟩
+            (Σ[ s ∈ (Splits w) ]((Fin $ Zₜ s n ) × (Fin $ Zₐ s )))
+        ≃⟨ rewr-≃-indexOf-Σ-dep (splitsFin w) ⟩
+            (Σ[ x ∈ Fin (splitsSize w) ](
+                (Fin $ Zₜ (getSplit x) n ) × (Fin $ Zₐ (getSplit x) )))
+        -- Use (Fin a) × (Fin b) ≃ Fin (a * b).
+        ≃⟨ rewr-≃-rightOf-Σ (λ x → fin-×-* (Zₜ (getSplit x) n) (Zₐ (getSplit x))) ⟩
+            (Σ[ x ∈ Fin (splitsSize w) ](
+                (Fin $ (Zₜ (getSplit x) n) * (Zₐ (getSplit x)))))
+        ≃⟨ proj₂ (fin-Σ-fun (splitsSize w) f) ⟩
+            Fin (proj₁ (fin-Σ-fun (splitsSize w) f) )
+        ∎
+        ))
+        
+    Z-Arg : ℕ
+    Z-Arg = proj₁ Z-Eq-Arg
+    Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
+    Eq-Arg = proj₂ Z-Eq-Arg
 
-        OT-Arg-Unfolded : ℕ → ℕ → Set
-        OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
-                           (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)))
+    z : ℕ
+    z = Z-Nul + Z-Mul + Z-Arg
 
-        -- This needs to be defines for all (w , n)
-        -- otherwise we cannot pattern match the input to f
-        -- to something of the form `giveArg t a`, since w would be
-        -- fixed and Agda can't assume arbitrary wₜ and wₐ if there
-        -- is a constraint wₜ + wₐ ≗ w for non-variable w. 
-        Eq-Arg-FirstStep : (w n : ℕ) → OT-Arg w n ≃ OT-Arg-Unfolded w n
-        Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
-            where
-            f : (OT-Arg w n) → OT-Arg-Unfolded w n
-            f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
-            f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
-            f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
-            f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
-            f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
-                let t = subst (λ x → OT x n) p (giveArg t' a)
-                in (t , giveArgUnderSubst p t' a)
-            invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-            invˡ {(wₐ , wₜ , refl) , t , a} {ta , isGiveArg} refl = refl
-            invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-            invʳ {giveArg {ℕ.zero} {wₐ} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
-            invʳ {giveArg {wₜ} {ℕ.zero} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S 0 a
-            invʳ {giveArg {ℕ.suc wₜ} {ℕ.suc wₐ} t a , tt} {(wₐ , wₜ , refl) , t , a} refl = 
-                let H = proj₂ $ f⁻¹ ((wₐ , wₜ , refl) , t , a) in
-                ≡begin 
-                    f⁻¹ ((wₐ , wₜ , refl) , t , a) 
-                ≡⟨⟩
-                    ((giveArg t a) , tt)
-                ≡∎
-
-        -- It's easier to compute Z-Arg and prove the equivalence
-        -- in one go, than to define Z-Arg beforehand.
-        Z-Eq-Arg : Σ[ z ∈ ℕ ]( OT-Arg w n ≃ Fin z)
-        Z-Eq-Arg = 
-            let getSplit : Fin (splitsSize w) → Splits w
-                getSplit = Inverse.from (splitsFin w)
-            in
-            let
-                f : Fin (splitsSize w) → ℕ
-                f x = (Zₜ (getSplit x) n) * (Zₐ (getSplit x))
-            in
-            let Z-Arg : ℕ
-                Z-Arg = proj₁ (fin-Σ-fun (splitsSize w) f)
-            in
-            (Z-Arg , 
-            (begin 
-                OT-Arg w n
-            ≃⟨ ≃-refl ⟩
-                (Σ[ t ∈ OT w n ] (IsGiveArg t))
-            ≃⟨ Eq-Arg-FirstStep w n ⟩
-                (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
-                    (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)
-                    )
-                )
-            ≃⟨ rewr-≃-rightOf-Σ (Eq-split n) ⟩
-                (Σ[ s ∈ (Splits w) ]((Fin $ Zₜ s n ) × (Fin $ Zₐ s )))
-            ≃⟨ rewr-≃-indexOf-Σ-dep (splitsFin w) ⟩
-                (Σ[ x ∈ Fin (splitsSize w) ](
-                    (Fin $ Zₜ (getSplit x) n ) × (Fin $ Zₐ (getSplit x) )))
-            -- Use (Fin a) × (Fin b) ≃ Fin (a * b).
-            ≃⟨ rewr-≃-rightOf-Σ (λ x → fin-×-* (Zₜ (getSplit x) n) (Zₐ (getSplit x))) ⟩
-                (Σ[ x ∈ Fin (splitsSize w) ](
-                    (Fin $ (Zₜ (getSplit x) n) * (Zₐ (getSplit x)))))
-            ≃⟨ proj₂ (fin-Σ-fun (splitsSize w) f) ⟩
-                Fin (proj₁ (fin-Σ-fun (splitsSize w) f) )
-            ∎
-            ))
-            
-        Z-Arg : ℕ
-        Z-Arg = proj₁ Z-Eq-Arg
-        Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
-        Eq-Arg = proj₂ Z-Eq-Arg
-
-        z : ℕ
-        z = Z-Nul + Z-Mul + Z-Arg
-
-        zEquiv : OT w n ≃ Fin z
-        zEquiv =
-            begin 
-                OT w n
-            ≃⟨ ZsubDecompo w n ⟩
-                ((OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n))
-            ≃⟨ rewr-≃-under-⊎-3 Eq-Nul Eq-Mul Eq-Arg ⟩
-                (Fin Z-Nul ⊎ Fin Z-Mul ⊎ Fin Z-Arg)
-            ≃⟨ rewr-≃-under-⊎-right (fin-⊎-+ Z-Mul Z-Arg) ⟩
-                (Fin Z-Nul ⊎ Fin (Z-Mul + Z-Arg ))
-            ≃⟨ fin-⊎-+ Z-Nul (Z-Mul + Z-Arg) ⟩
-                Fin (Z-Nul + (Z-Mul + Z-Arg))
-            ≃⟨ fin-+-assoc Z-Nul Z-Mul Z-Arg ⟩
-                Fin (Z-Nul + Z-Mul + Z-Arg)
-            ≃⟨ ≃-refl ⟩
-                Fin z
-            ∎
+    zEquiv : OT w n ≃ Fin z
+    zEquiv =
+        begin 
+            OT w n
+        ≃⟨ ZsubDecompo w n ⟩
+            ((OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n))
+        ≃⟨ rewr-≃-under-⊎-3 Eq-Nul Eq-Mul Eq-Arg ⟩
+            (Fin Z-Nul ⊎ Fin Z-Mul ⊎ Fin Z-Arg)
+        ≃⟨ rewr-≃-under-⊎-right (fin-⊎-+ Z-Mul Z-Arg) ⟩
+            (Fin Z-Nul ⊎ Fin (Z-Mul + Z-Arg ))
+        ≃⟨ fin-⊎-+ Z-Nul (Z-Mul + Z-Arg) ⟩
+            Fin (Z-Nul + (Z-Mul + Z-Arg))
+        ≃⟨ fin-+-assoc Z-Nul Z-Mul Z-Arg ⟩
+            Fin (Z-Nul + Z-Mul + Z-Arg)
+        ≃⟨ ≃-refl ⟩
+            Fin z
+        ∎
 
 -- The main statement is as follows:
 ZTheorem 
