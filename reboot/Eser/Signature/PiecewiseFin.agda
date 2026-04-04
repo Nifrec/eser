@@ -542,7 +542,7 @@ module WithArgs
 -- The main statement is as follows:
 ZTheorem 
     : {μ ζ : ℕ∞} 
-    → (S : Signature (μ) (ζ))
+    → (S : Signature μ ζ)
     → (w : ℕ) 
     → (n : ℕ) 
     → Σ[ z ∈ ℕ ]((OpenTerms {μ} {ζ} S w n) ≃ (Fin z))

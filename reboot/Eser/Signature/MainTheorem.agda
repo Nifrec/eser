@@ -127,23 +127,6 @@ everyTermAlgEnum {∞}
 -- Big picture proof of infTermAlgEnum
 --------------------------------------------------------------------------------
 
--- #TODO: ZTheoremInhab is false and should be removed.
--- The statement should be "all OpenTerms weights reached by the jumper"
--- NOT all (w , n) inputs!
---
--- The cases where S's term algebra is finite are easy,
--- the special case where S's term algebra is infinite
--- is the real work:
-module _ {μ ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ)) where
-    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
-
-    ZTheoremInhab
-        : (J : InhabitJumper {C})
-        → (a₀ : C 1)
-        → (i : ℕ) -- Number of jumps taken
-        → Σ[ z ∈ ℕ ](C (J-iter {C} 1 a₀ J i) ≃ (Fin $ ℕ.suc z))
-    ZTheoremInhab = ?
-
 infTermAlgEnum {μ} {ζ} S = 
     --------------------------------------
     -- Unpacking earlier results
@@ -152,7 +135,7 @@ infTermAlgEnum {μ} {ζ} S =
     let ¬C0 : C 0 → ⊥ -- All terms have at least weight 1.
         ¬C0 = noWeightlessTerms {suc∞ μ} {suc∞ ζ} S 0
     in
-    let J : InhabitJumper {C}
+    let J : InhabitJumper C
         J = ?
     in
     -- There is at least one nullary constructor; let a₀ be the corresponding
@@ -167,18 +150,19 @@ infTermAlgEnum {μ} {ζ} S =
     let j : ℕ → ℕ
         j = J-iter {C} 1 a₀ J 
     in
-    -- We're only interested in terms with 0 open-argument-holes:
-    let z = λ w → proj₁ $ ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
+    let zTheoInstance : (w : ℕ) → Σ[ z ∈ ℕ ](C w ≃ Fin z)
+        -- Note: we only want closed terms, so always 0 open argument-holes.
+        zTheoInstance w = ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
     in
-    let Cw-to-Finz = λ w → proj₂ $ ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
+    let jumpTheoInstance 
+            : (i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 a₀ J i) ≃ Fin (ℕ.suc z'))
+        jumpTheoInstance = jumpTheoremInhabitJumper {C} a₀ J zTheoInstance
     in
-    -- z i is the size of C (j i), i.e., after i jumps,
-    -- not weight i!
     let z : ℕ → ℕ
-        z i = proj₁ $ ZTheoremInhab {μ} {ζ} S J a₀ i
+        z i = proj₁ $ jumpTheoInstance i
     in
     let Cw-to-Finz : (i : ℕ) → (C (j i) ≃ (Fin $ ℕ.suc $ z i))
-        Cw-to-Finz i = proj₂ $ ZTheoremInhab {μ} {ζ} S J a₀ i
+        Cw-to-Finz i = proj₂ $ jumpTheoInstance i
     in
     --------------------------------------
     -- Actual proof: chain of _≃_'s
@@ -190,9 +174,9 @@ infTermAlgEnum {μ} {ζ} S =
         (Σ[ i ∈ ℕ ] C (j i))
     -- 2. Show every inhabited weight is _≃_ to a nonempty finite set.
     ≃⟨ rewr-≃-rightOf-Σ $ Cw-to-Finz ⟩
-        (Σ[ i ∈ ℕ ] (Fin $ ℕ.suc $ z (j i)))
+        (Σ[ i ∈ ℕ ] (Fin $ ℕ.suc $ z i))
     -- 3. A ℕ-indexed sum of nonempty finite sets is _≃_ to ℕ.
-    ≃⟨ jumpTheoremInhabitJumper {C} a₀ J z ⟩
+    ≃⟨ Σfin-inf-inhabited z ⟩
         ℕ
     ∎
     

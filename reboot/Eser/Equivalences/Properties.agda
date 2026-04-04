@@ -246,6 +246,12 @@ fin0 = mk≃' f f⁻¹ invˡ invʳ
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {()}
 
+-- A ℕ-indexed sum of nonempty finite sets is equivalent to ℕ.
+Σfin-inf-inhabited
+    : (f : ℕ → ℕ)
+    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ f n) ≃ ℕ
+Σfin-inf-inhabited f = ?
+
 fin-+-assoc
     : (n m l : ℕ)
     → Fin (n + (m + l)) ≃ Fin (n + m + l)

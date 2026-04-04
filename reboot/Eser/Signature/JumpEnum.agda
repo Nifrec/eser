@@ -45,26 +45,10 @@ open import Eser.Signature.Definitions
 
 module Eser.Signature.JumpEnum where
 
---------------------------------------------------------------------------------
--- Jump theorem: given a function that jumps between inhabited finite types,
--- then the sum of all those types is equivalent to ℕ.
---------------------------------------------------------------------------------
 -- `iter f n a` returns fⁿ(a), i.e., f applied n times starting from a.
 iter : {A : Set} → (A → A) → ℕ → A → A
 iter {A} f 0 a = a
 iter {A} f (suc n) a = f (iter f n a)
-
-jumpTheorem
-    : {A : Set}
-    -- ^ Type of 'points' the jumping function can visit.
-    → (a₀ : A)
-    -- ^ Starting point.
-    → (j : A → A)
-    -- ^ Function to jump between points.
-    → (z : A → ℕ)
-    -- ^ Sizes of visited types, minus one.
-    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ z (iter j n a₀)) ≃ ℕ
-jumpTheorem = ? -- Sheet "Lih 10".
 
 --------------------------------------------------------------------------------
 -- Skip-over-⊥s theorem
@@ -77,8 +61,8 @@ jumpTheorem = ? -- Sheet "Lih 10".
 
 -- A function that jumps from one to the next inhabited type
 -- given an ℕ-indexed family of types.
-InhabitJumper : {C : ℕ → Set}  → Set
-InhabitJumper {C} 
+InhabitJumper : (C : ℕ → Set)  → Set
+InhabitJumper C 
     = {w : ℕ} 
     → C w
     → Σ[ h ∈ ℕ ] (
@@ -101,7 +85,7 @@ InhabitJumper {C}
 -- and give the point reached after n jumps.
 -- (In out use case (see below), we'll have ¬ C 0 but C 1 is inhabited, 
 -- so we start with n₀ ≔ 1).
-J-iter : {C : ℕ → Set} → (n₀ : ℕ) → C n₀ → (J : InhabitJumper {C}) → ℕ → ℕ
+J-iter : {C : ℕ → Set} → (n₀ : ℕ) → C n₀ → (J : InhabitJumper C) → ℕ → ℕ
 J-iter {C} n₀ t₀ J 0 = n₀
 --J-iter {C} n₀ t₀ J (suc n) = proj₁ $ depGIter g J' n (n₀ , t₀)
 J-iter {C} n₀ t₀ J (suc n) = proj₁ $ iter J' n (n₀ , t₀)
@@ -114,24 +98,21 @@ J-iter {C} n₀ t₀ J (suc n) = proj₁ $ iter J' n (n₀ , t₀)
 
 jumpOver⊥s
     : (C : ℕ → Set)
-    → (J : InhabitJumper {C})
+    → (J : InhabitJumper C)
     → (¬ C 0)
     → (t₀ : C 1)
     → (Σ[ w ∈ ℕ ] C w) ≃ (Σ[ n ∈ ℕ ] (C $ J-iter 1 t₀ J n))
 jumpOver⊥s _ _ _ _ = ? -- See sheet "Lih 11" backside
 
--- Special case of the jumpTheorem where 
--- the jump function is implemented via an InhabitJumper,
--- and the starting point is C 1.
 jumpTheoremInhabitJumper
     : {C : ℕ → Set}
-    -- ^ Type of 'points' the jumping function can visit.
+    -- ^ Type of 'pitstops' the jumping function can visit.
     → (a₀ : C 1)
-    -- ^ Proof the starting point 1 is inhabited.
-    → (J : InhabitJumper {C})
-    -- ^ Function to jump between points.
-    → (z : ℕ → ℕ)
-    -- ^ Sizes of visited points, minus one.
-    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ z (J-iter {C} 1 a₀ J n)) ≃ ℕ
+    -- ^ Proof the starting pitstop with index 1 is inhabited.
+    → (J : InhabitJumper C)
+    -- ^ Function to jump between pitstops.
+    → ((w : ℕ) → Σ[ z ∈ ℕ ]( C w ≃ Fin z ))
+    -- ^ Every point (incl. non-pitstops) is some finite set.
+    → ((i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 a₀ J i) ≃ Fin (ℕ.suc z')))
+    -- ^ But when only looking at pitstops, they are inhabited finite sets.
 jumpTheoremInhabitJumper = ? -- Sheet "Lih 10".
-
