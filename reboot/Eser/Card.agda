@@ -615,6 +615,12 @@ thereIsOneZero'
 thereIsOneZero' {fin (suc n)} (s≤s z≤n) (s≤s z≤n) = refl
 thereIsOneZero' {∞} h h' = refl
 
+sucZeroIsOneInℕ
+    : (c : ℕ∞)
+    → (ℕ.suc $ cardToℕ (cardToZero c)) ≡ 1
+sucZeroIsOneInℕ (fin c) = refl
+sucZeroIsOneInℕ ∞ = refl
+
 --------------------------------------------------------------------------------
 -- Unimportant/unused lemmas
 --------------------------------------------------------------------------------

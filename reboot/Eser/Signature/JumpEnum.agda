@@ -107,12 +107,101 @@ jumpOver⊥s _ _ _ _ = ? -- See sheet "Lih 11" backside
 jumpTheoremInhabitJumper
     : {C : ℕ → Set}
     -- ^ Type of 'pitstops' the jumping function can visit.
-    → (a₀ : C 1)
+    → (t₀ : C 1)
     -- ^ Proof the starting pitstop with index 1 is inhabited.
     → (J : InhabitJumper C)
     -- ^ Function to jump between pitstops.
     → ((w : ℕ) → Σ[ z ∈ ℕ ]( C w ≃ Fin z ))
     -- ^ Every point (incl. non-pitstops) is some finite set.
-    → ((i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 a₀ J i) ≃ Fin (ℕ.suc z')))
+    → ((i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 t₀ J i) ≃ Fin (ℕ.suc z')))
     -- ^ But when only looking at pitstops, they are inhabited finite sets.
 jumpTheoremInhabitJumper = ? -- Sheet "Lih 10".
+
+--------------------------------------------------------------------------------
+-- Every signature with at least one nullary constructor and at least
+-- one multiary constructor has infinitely many terms,
+-- and there are infinitely many weights such that it has a term of that weight.
+-- We can always build an InhabitJumper visiting exactly those weights
+-- (actually, there are probably many ways to do so, but showing some
+-- InhabitJumper exists is enough!)
+--
+-- Note: "at least one nullary and at least one multiary constructor"
+-- is the same as "μ ≥ 1 and ζ ≥ 1".
+-- Strictly speaking,
+-- building an InhabitJumper does not require any nullary constructor,
+-- But this is always required when applying it in the jumpOver⊥s
+-- or in the jumpTheoremInhabitJumper (to create the argument t₀) anyway.
+-- So we do require it, 
+-- since having a nullary constructor makes the implementation easier.
+--
+-- Strategy: let c be the given multiary constructor and a₀ be the given nullary
+-- constructor.
+-- Then c(a₀, a₀, a₀, ... , a₀, -) : {w} → C w → C (w + 1 + h)
+-- (c with a₀ applied one time fewer than its arity)
+-- gives a family of terms that has a member greater than any inhabited weight.
+-- (h is the index of c plus (arity(c) - 1)*(weight of a₀) = (arity(c) - 1)
+-- since a₀ weights 1.
+--------------------------------------------------------------------------------
+
+module _ {μ ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ) ) where
+
+    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
+    OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
+
+    -- Given an OpenTerm with (suc n) open argument-holes and an argument a₀,
+    -- apply a₀ n times to it, yielding an OpenTerm with 1 open hole.
+    applyArgTillAlmostFull
+        : {n : ℕ}
+        → {wₜ wₐ : ℕ}
+        → (t : OT wₜ (ℕ.suc n))
+        → (a : C wₐ)
+        → OT (n * wₐ + wₜ) 1
+    applyArgTillAlmostFull {0} t a = t
+    applyArgTillAlmostFull {ℕ.suc n} {wₜ} {wₐ} t a = 
+        let H : n * wₐ + (wₐ + wₜ) ≡ (ℕ.suc n) * wₐ + wₜ
+            H = ? -- #TODO: some annoying arithmetic rewriting.
+        in
+        subst (λ w → OT w 1) H (applyArgTillAlmostFull (giveArg t a) a)
+    
+    -- But I only care about the special case where wₜ ≡ wₐ ≡ 1...
+    -- Well, allowing any wₜ is easier with an inductive definition!
+    applyArgTillAlmostFullWeightsOne
+        : {n : ℕ}
+        → {wₜ : ℕ}
+        → (t : OT 1 (ℕ.suc n))
+        → (a : C 1)
+        → OT (n + wₜ) 1
+    applyArgTillAlmostFullWeightsOne {0} t a = ?
+    applyArgTillAlmostFullWeightsOne {ℕ.suc n} t a = ?
+
+    
+
+    mkInhabitJumper : InhabitJumper (ClosedTerms {suc∞ μ} {suc∞ ζ} S)
+    mkInhabitJumper {w} t = (h , Cw+1+h , intermEmpty)
+        where
+
+            -- Term corresponding to the first nullary term, has weight 1.
+            -- #TODO: maybe refactor this construction in a separate lemma,
+            -- will have more need for it later.
+            a₀ : C 1 
+            a₀ = subst (λ w → C w) (sucZeroIsOneInℕ μ) (mk-nullary (cardToZero μ))
+
+            -- Arity of the first multiary constructor.
+            c₀-ar : ℕ
+            c₀-ar = (arity {suc∞ μ} {suc∞ ζ} {S} (cardToZero ζ))
+
+            -- First multiary constructor without arguments applied.
+            c₀ : OT 1 c₀-ar
+            c₀ = subst (λ w → OT w c₀-ar ) (sucZeroIsOneInℕ ζ) (mk-multiary (cardToZero ζ))
+
+            
+            h : ℕ
+            h = ?
+
+            Cw+1+h : C (w + 1 + h)
+            Cw+1+h = ?
+
+            intermEmpty : ((x : ℕ) → (w < x × x < w + 1 + h) → ¬ C x) 
+            intermEmpty x (w<x , x<w+1+h) t = ? -- #TODO: get ⊥
+
+
