@@ -67,12 +67,30 @@ iter {A} f (suc n) a = f (iter f n a)
 Between : (a b : ℕ) → ℕ → Set
 Between a b ℓ = (a < ℓ) × (ℓ < b)
 
-LeastNext : (P : ℕ → Set) → (n₀ : ℕ) → Set
-LeastNext P n₀ = Σ[ h ∈ ℕ ] (
+IsLeastNext : (P : ℕ → Set) → (n₀ : ℕ) → (h : ℕ) → Set
+IsLeastNext P n₀ h = 
                 (P $ n₀ + (1 + h))
                 ×
                 ((ℓ : ℕ) → Between n₀ (n₀ + (1 + h)) ℓ → ¬ (P ℓ))
-                )
+
+LeastNext : (P : ℕ → Set) → (n₀ : ℕ) → Set
+LeastNext P n₀ = Σ[ h ∈ ℕ ] IsLeastNext P n₀ h
+
+-- Forward search with limited fuel.
+-- Search forward from a starting point n₀ until a positive instance is found, 
+-- or until the endpoint n₀ + 1 + F has been reached. 
+-- Positive instances at the startpoint P n₀ or endpoint P (n₀+1+F) 
+-- are not considered, only instances strictly inbetween.
+linearSearchForward 
+    : {P : ℕ → Set}
+    → (decP : Relation.Unary.Decidable P)
+    → (n₀ F : ℕ)
+    → (Σ[ h ∈ ℕ ](h < F × IsLeastNext P n₀ h))
+        -- ^ A positive instance is found, all earlier instances are negative.
+        ⊎
+        ((ℓ : ℕ) → Between n₀ (n₀ + (1 + F)) ℓ → ¬ P ℓ)
+        -- ^ None of the instances in the given range satisfy P.
+linearSearchForward = ?
 
 boundedSearchForward
     : {P : ℕ → Set}
@@ -80,7 +98,13 @@ boundedSearchForward
     → (n₀ : ℕ)
     → Σ[ h ∈ ℕ ] P (n₀ + (1 + h))
     → LeastNext P n₀
-boundedSearchForward {P} decP n₀ UB = ?
+boundedSearchForward {P} decP n₀ UB with linearSearchForward decP n₀ (proj₁ UB)
+... | inj₁ x = (h , Pn₀+1+h , isLeastH)
+    where
+        h = proj₁ x
+        Pn₀+1+h = proj₁ $ proj₂ $ proj₂ x
+        isLeastH = proj₂ $ proj₂ $ proj₂ x
+... | inj₂ x = (proj₁ UB , proj₂ UB , x )
 
 -- #TODO: maybe move this definition to somewhere else
 PiecewiseFin : (P : ℕ → Set) → Set
