@@ -43,6 +43,7 @@ open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.Aux
 open import Eser.Signature.Definitions
+open import Eser.Logic using (elimCaseLeft)
 
 module Eser.Signature.JumpEnum where
 
@@ -67,6 +68,22 @@ iter {A} f (suc n) a = f (iter f n a)
 Between : (a b : ℕ) → ℕ → Set
 Between a b ℓ = (a < ℓ) × (ℓ < b)
 
+-- There is no number strictly inbetween n and n + 1.
+emptyIval : (n : ℕ) → (ℓ : ℕ) → ¬ Between n (n + 1) ℓ
+emptyIval n ℓ (n<ℓ , ℓ<n+1) = 
+    let ℓ<SucN : ℓ < ℕ.suc n
+        ℓ<SucN = subst (λ x → ℓ < x) 
+                       (trans (+-suc n 0) (cong ℕ.suc $ +-identityʳ n))
+                       ℓ<n+1
+    in
+    let H : ℓ < n ⊎ ℓ ≡ n
+        H = m<1+n⇒m<n∨m≡n ℓ<SucN
+    in
+    let ℓ≡n : ℓ ≡ n
+        ℓ≡n = elimCaseLeft H (λ ℓ<n → n≮n n (Data.Nat.Properties.<-trans n<ℓ ℓ<n))
+    in
+    n≮n n (subst (λ x → n < x) ℓ≡n n<ℓ)
+
 IsLeastNext : (P : ℕ → Set) → (n₀ : ℕ) → (h : ℕ) → Set
 IsLeastNext P n₀ h = 
                 (P $ n₀ + (1 + h))
@@ -75,6 +92,35 @@ IsLeastNext P n₀ h =
 
 LeastNext : (P : ℕ → Set) → (n₀ : ℕ) → Set
 LeastNext P n₀ = Σ[ h ∈ ℕ ] IsLeastNext P n₀ h
+
+-- If n₀+1 does not satisfy P and no 0 ≤ h < F 
+-- satisfies `P (n₀ + 1 + 1 + h)`
+-- then no 0 ≤ h < F satisfies `P (n₀ + 1 + h)`.
+extensionLemma
+    : {P : ℕ → Set}
+    → (decP : Relation.Unary.Decidable P)
+    → (n₀ F : ℕ)
+    → ¬ P (n₀ + 1)
+    → ((ℓ : ℕ) → Between (n₀ + 1) (n₀ + 1 + (1 + F)) ℓ → ¬ P ℓ)
+    → ((ℓ : ℕ) → Between n₀ (n₀ + (1 + ℕ.suc F)) ℓ → ¬ P ℓ)
+--extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℕ.zero ()
+extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℓ (n₀<ℓ , ℓ<n₀+1+1+F) with ℓ Data.Nat.≟ n₀ + 1
+... | yes ℓ≡n₀+1 = subst (λ y → ¬ P y) (sym ℓ≡n₀+1) ¬Pn₀+1
+... | no  ℓ≢n₀+1 = 
+    let n₀+1<ℓ : n₀ + 1 < ℓ
+        n₀+1<ℓ = subst (λ y → y < ℓ) (sym $ +-suc n₀ 0) 
+               $ subst (λ y → 2+ y ≤ ℓ) (sym $ +-identityʳ n₀)
+               $ sucStillSmaller {n₀} {ℓ} n₀<ℓ 
+               $ subst (λ y → y ≢ ℓ) 
+                        (trans (+-suc n₀ 0) (+-identityʳ (ℕ.suc n₀)) ) 
+                        (≢-sym ℓ≢n₀+1)
+    in
+    let ℓ<n₀+1+SucF : ℓ < n₀ + 1 + (1 + F)
+        -- #TODO: Use ℓ<n₀+1+1+F : ℕ.suc ℓ ≤ n₀ + 2+ F
+        ℓ<n₀+1+SucF = {! cong (λ y → ℓ < n₀ + y) (+-suc 1 F) !}
+
+    in
+    ¬rest ℓ (n₀+1<ℓ , ℓ<n₀+1+SucF)
 
 -- Forward search with limited fuel.
 -- Search forward from a starting point n₀ until a positive instance is found, 
@@ -90,7 +136,31 @@ linearSearchForward
         ⊎
         ((ℓ : ℕ) → Between n₀ (n₀ + (1 + F)) ℓ → ¬ P ℓ)
         -- ^ None of the instances in the given range satisfy P.
-linearSearchForward = ?
+linearSearchForward {P} decP n₀ ℕ.zero = inj₂ f
+    where
+        f : (ℓ : ℕ) → Between n₀ (n₀ + 1) ℓ → ¬ P ℓ
+        f ℓ n₀<ℓ<n₀+1 = ⊥-elim $ emptyIval n₀ ℓ n₀<ℓ<n₀+1
+-- There are two possible ways to prove the (ℕ.suc F) case:
+-- 1. First decide if `P (n₀ + 1)`, if not use recursion
+--      with fuel F to check the candidates {n₀ + 1 + 1 , ..., n₀ + 1 + F}.
+-- 2. Use fuel F to check the candidates {n₀ + 1 , ..., n₀ + F},
+--      and if they all fail decide `n₀ + 1 + F`.
+-- Both ways seem more or less the same work to implement,
+-- and seem to perform almost the same actual computation.
+-- The implementation below uses option 1:
+linearSearchForward {P} decP n₀ (ℕ.suc F) with (decP (n₀ + 1))
+... | yes Pn₀+1 = inj₁ ( 0 , s≤s z≤n , Pn₀+1 , f)
+    where
+        f : (ℓ : ℕ) → Σ (ℕ.suc n₀ ≤ ℓ) (λ x → ℕ.suc ℓ ≤ n₀ + 1) → P ℓ → ⊥
+        f ℓ n₀<ℓ<n₀+1 = ⊥-elim $ emptyIval n₀ ℓ n₀<ℓ<n₀+1
+... | no ¬Pn₀+1 with linearSearchForward decP (n₀ + 1) F
+...     | inj₁ (h , h<F , x) = 
+    let h<SucF : h < ℕ.suc F
+        h<SucF = Data.Nat.Properties.<-trans h<F (n<1+n F)
+    in
+    inj₁ (ℕ.suc h , s≤s h<F , {! x !}) -- also use extensionLemma here.
+...     | inj₂ x = inj₂ $ {! extensionLemma n₀ F ¬Pn₀+1 {! x !} !}
+            
 
 boundedSearchForward
     : {P : ℕ → Set}

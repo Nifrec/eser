@@ -142,6 +142,16 @@ finOpposite w x = (opposite x , p)
                 w
             ∎
             
+sucStillSmaller
+    : {n m : ℕ}
+    → n < m
+    → ℕ.suc n ≢ m
+    → ℕ.suc n < m
+sucStillSmaller {n} {m} n<m 1+n≢m = 
+    let 1+n≡m⊎1+n<m : ℕ.suc n < m ⊎ ℕ.suc n ≡ m
+        1+n≡m⊎1+n<m = m≤n⇒m<n∨m≡n n<m
+    in
+    elimCaseRight 1+n≡m⊎1+n<m 1+n≢m
 
 -- Given x ∈ Fin (w-1), there exists a y ∈ Fin (w-1)
 -- such that 1+x + 1+y ≡ w.
