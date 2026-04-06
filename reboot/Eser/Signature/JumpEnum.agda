@@ -27,6 +27,7 @@ open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary
+open import Relation.Unary
 open import Data.Product
 open import Relation.Binary.Structures
 open import Data.Fin hiding (_+_ ; _<_ ; _≤_)
@@ -51,6 +52,49 @@ iter {A} f 0 a = a
 iter {A} f (suc n) a = f (iter f n a)
 
 --------------------------------------------------------------------------------
+-- Linearly searching forward
+--
+-- Starting from some n₀ ∈ ℕ, one can search all  {n > n₀ : n ∈ ℕ}
+-- untill the smallest number greater than n that satisfies a predicate P,
+-- provided that there is a guarrantee that this search will not take forever.
+-- I.e., provided with an upper bound on n.
+-- Such an upper bound can simply be a n' > n with a proof that P (n');
+-- then we only need to check if there is a smaller n in {n₀ + 1, ..., n' ∸ 1}
+-- that also satisfies P.
+-- If not, this gives a proof that n' is the smallest.
+--------------------------------------------------------------------------------
+-- Least number n > n₀ that satisfies P.
+Between : (a b : ℕ) → ℕ → Set
+Between a b ℓ = (a < ℓ) × (ℓ < b)
+
+LeastNext : (P : ℕ → Set) → (n₀ : ℕ) → Set
+LeastNext P n₀ = Σ[ h ∈ ℕ ] (
+                (P $ n₀ + (1 + h))
+                ×
+                ((ℓ : ℕ) → Between n₀ (n₀ + (1 + h)) ℓ → ¬ (P ℓ))
+                )
+
+boundedSearchForward
+    : {P : ℕ → Set}
+    → (decP : Relation.Unary.Decidable P)
+    → (n₀ : ℕ)
+    → Σ[ h ∈ ℕ ] P (n₀ + (1 + h))
+    → LeastNext P n₀
+boundedSearchForward {P} decP n₀ UB = ?
+
+-- #TODO: maybe move this definition to somewhere else
+PiecewiseFin : (P : ℕ → Set) → Set
+PiecewiseFin P = ((w : ℕ) → Σ[ z ∈ ℕ ]( P w ≃ Fin z ))
+
+PiecewiseFinToDec
+    : ( P : ℕ → Set)
+    → PiecewiseFin P
+    → Relation.Unary.Decidable P
+PiecewiseFinToDec P PWFin w with (PWFin w)
+... | (0 , Pw≃Fin0) = no (≃-⊥-to-¬ (≃-trans Pw≃Fin0 fin0))
+... | (suc z , Pw≃FinSucz) = yes (Inverse.from Pw≃FinSucz Fin.zero)
+
+--------------------------------------------------------------------------------
 -- Skip-over-⊥s theorem
 -- A sum over a family of types is equivalent to the sum
 -- over the same types except with the empty ones left out.
@@ -67,10 +111,10 @@ InhabitJumper C
     → C w
     → Σ[ h ∈ ℕ ] (
        --^ Jumping distance (minus one).
-       (C $ w + 1 + h) 
+       (C $ w + (1 + h)) 
        --^ The destination is inhabited, ...
        × 
-       ((x : ℕ) → (w < x × x < w + 1 + h) → ¬ C x) 
+       ((x : ℕ) → (w < x × x < w + (1 + h)) → ¬ C x) 
        --^ ... but intermediate points are not.
     )
 -- Note: the argument `C w` might seem redundant.
@@ -94,7 +138,7 @@ J-iter {C} n₀ t₀ J (suc n) = proj₁ $ iter J' n (n₀ , t₀)
         J' (w , t) = 
             let (h , t' , _) = J {w} t
             in
-            (w + 1 + h , t')
+            (w + (1 + h) , t')
 
 jumpOver⊥s
     : (C : ℕ → Set)
@@ -136,7 +180,7 @@ jumpTheoremInhabitJumper = ? -- Sheet "Lih 10".
 --
 -- Strategy: let c be the given multiary constructor and a₀ be the given nullary
 -- constructor.
--- Then c(a₀, a₀, a₀, ... , a₀, -) : {w} → C w → C (w + 1 + h)
+-- Then c(a₀, a₀, a₀, ... , a₀, -) : {w} → C w → C (w + (1 + h))
 -- (c with a₀ applied one time fewer than its arity)
 -- gives a family of terms that has a member greater than any inhabited weight.
 -- (h is the index of c plus (arity(c) - 1)*(weight of a₀) = (arity(c) - 1)
@@ -163,45 +207,83 @@ module _ {μ ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ) ) where
         in
         subst (λ w → OT w 1) H (applyArgTillAlmostFull (giveArg t a) a)
     
-    -- But I only care about the special case where wₜ ≡ wₐ ≡ 1...
-    -- Well, allowing any wₜ is easier with an inductive definition!
-    applyArgTillAlmostFullWeightsOne
-        : {n : ℕ}
-        → {wₜ : ℕ}
-        → (t : OT 1 (ℕ.suc n))
-        → (a : C 1)
-        → OT (n + wₜ) 1
-    applyArgTillAlmostFullWeightsOne {0} t a = ?
-    applyArgTillAlmostFullWeightsOne {ℕ.suc n} t a = ?
-
-    
-
-    mkInhabitJumper : InhabitJumper (ClosedTerms {suc∞ μ} {suc∞ ζ} S)
-    mkInhabitJumper {w} t = (h , Cw+1+h , intermEmpty)
-        where
-
+    -- Default upper-bound for the length of the linear-search-forward
+    -- from an inhabited C w till a C (w + 1 + h) that is inhabited again.
+    -- Idea: fill the first multiary constructor with the first nullary
+    -- until it has one argument-hole remaining, giving an (t : OpenTerm 1+h 1)
+    -- with weight 1+h ≥ 1.
+    -- Appling the proof (a : C w) as an argument to t
+    -- results in a term `giveArg t a : C (w + (1 + h))`.
+    module UpperBound where
             -- Term corresponding to the first nullary term, has weight 1.
-            -- #TODO: maybe refactor this construction in a separate lemma,
-            -- will have more need for it later.
             a₀ : C 1 
             a₀ = subst (λ w → C w) (sucZeroIsOneInℕ μ) (mk-nullary (cardToZero μ))
 
             -- Arity of the first multiary constructor.
             c₀-ar : ℕ
             c₀-ar = (arity {suc∞ μ} {suc∞ ζ} {S} (cardToZero ζ))
+            c₀-ar∸1 : ℕ
+            c₀-ar∸1 = S (cardToZero ζ)
 
             -- First multiary constructor without arguments applied.
             c₀ : OT 1 c₀-ar
             c₀ = subst (λ w → OT w c₀-ar ) (sucZeroIsOneInℕ ζ) (mk-multiary (cardToZero ζ))
 
+            -- Apply a₀ as often as possible to c₀ until one open argument-hole
+            -- remains. The weight is 1 + (c₀-ar  ∸ ) * 1 ≡ c₀-ar.
+            c₀-onemore : OT c₀-ar 1
+            c₀-onemore = subst (λ w → OT w 1) eq c₀'
+                where
+                    c₀' : OT (S (cardToZero ζ) * 1 + 1) 1
+                    c₀' = applyArgTillAlmostFull {c₀-ar∸1} {1} c₀ a₀
+                    eq : c₀-ar∸1 * 1 + 1 ≡ c₀-ar
+                    eq = ≡begin 
+                            c₀-ar∸1 * 1 + 1 
+                        ≡⟨  cong (λ x → x + 1) (*-identityʳ $ c₀-ar∸1)⟩
+                            c₀-ar∸1 + 1
+                        ≡⟨ +-comm c₀-ar∸1 1 ⟩
+                            1 + c₀-ar∸1
+                        ≡⟨⟩
+                            c₀-ar
+                        ≡∎
+                    
             
+            hMax : ℕ
+            hMax = c₀-ar∸1
+
+            app-to-c₀ : {w : ℕ} → (a : C w) → C (w + (1 + hMax))
+            app-to-c₀ {w} a = giveArg c₀-onemore a
+
+            upperBoundTerm : {w : ℕ} → C w → C (w + (1 + hMax))
+            upperBoundTerm t = app-to-c₀ t
+
+            upperBoundWeight : {w : ℕ} → C w → ℕ
+            upperBoundWeight {w} t = (w + (1 + hMax))
+
+        
+
+    mkInhabitJumper 
+        : (PiecewiseFin C) 
+        -- ^ For every weight w, we know C w ≃ Fin (z w) for some z : ℕ → ℕ.
+        → InhabitJumper (ClosedTerms {suc∞ μ} {suc∞ ζ} S)
+    mkInhabitJumper PWFin {w} t = (h , Cw+1+h , intermEmpty)
+        where
+            open UpperBound
+
+            upperBound : Σ[ h' ∈ ℕ ](C (w + (1 + h')))
+            upperBound = (hMax , upperBoundTerm t)
+
+            decC : Relation.Unary.Decidable C
+            decC = PiecewiseFinToDec C PWFin
+
+            searchOutp : LeastNext C w
+            searchOutp = boundedSearchForward {C} decC w upperBound
+
             h : ℕ
-            h = ?
+            h = proj₁ searchOutp
 
-            Cw+1+h : C (w + 1 + h)
-            Cw+1+h = ?
+            Cw+1+h : C (w + (1 + h))
+            Cw+1+h = proj₁ $ proj₂ searchOutp
 
-            intermEmpty : ((x : ℕ) → (w < x × x < w + 1 + h) → ¬ C x) 
-            intermEmpty x (w<x , x<w+1+h) t = ? -- #TODO: get ⊥
-
-
+            intermEmpty : ((x : ℕ) → (w < x × x < w + (1 + h)) → ¬ C x) 
+            intermEmpty = proj₂ $ proj₂ searchOutp
