@@ -277,11 +277,6 @@ firstOfIval
     → w ≡ a
 firstOfIval {w} {a} {b} a≤w w<b P H Pw = ?
 
---allTermsWeightGeqOne
---    : {w : ℕ}
---    → (t : C w)
---    → 1 ≤ w
---allTermsWeightGeqOne {w} t = n≢0⇒n>0 (λ w≡0 → noWeightlessTerms S 0 (subst C w≡0 t))
 
 jumpOver⊥s
     : (C : ℕ → Set)
@@ -295,18 +290,17 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
     j = J-iter 1 t₀ J
 
     monotoneLemma : Monotonic₁ _<_ _<_ j
-    monotoneLemma {i} {k} i<k = ?
+    monotoneLemma {i} {k} i<k = ? -- #TODO: this is needed, existenceLemma deps on it!
 
-    -- For all w s.t. C w is inhabited, there exists an i ∈ ℕ
-    -- s.t. w ≡ j i.
+    -- For all w s.t. C w is inhabited, there exists an i ∈ ℕ s.t. w ≡ j i.
     existenceLemma
         : (w : ℕ)
         → C w
         → Σ[ i ∈ ℕ ] w ≡ j i
     existenceLemma w t = (i , w≡ji)
         where
-            -- Note: j 0 ≡ 1.
-            -- And all terms have weight at least 1.
+            -- Note that j 0 ≡ 1, and that ¬C0 implies that 1 ≤ w.
+            -- So in particular, j 0 ≤ w must always hold. 
             j0≤w : j 0 ≤ w
             j0≤w = 
                 let H : j 0 ≤ w ⊎ w < j 0
@@ -319,8 +313,6 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
                         ¬C0 (subst C w≡0 t)
                 in
                 elimCaseRight H K
-                
-
 
             ivalLemmaOutp : Σ[ i ∈ ℕ ]( j i ≤ w × w < j (ℕ.suc i))
             ivalLemmaOutp = increasingImplIval j monotoneLemma w j0≤w
@@ -339,6 +331,7 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
 
     -- This shows that j is injective, which stengthens the above
     -- existenceLemma to 'there exists a *unique* i s.t. w ≡ j i.
+    -- #TODO: necessary, existenceRetractsJ depends on it!
     injectivityLemma : Injective _≡_ _≡_ j
     injectivityLemma {i} {k} ji≡jk = ?
 
