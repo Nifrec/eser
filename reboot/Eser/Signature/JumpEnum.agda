@@ -115,10 +115,18 @@ extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℓ (n₀<ℓ , ℓ<n₀+1+1+F) 
                         (trans (+-suc n₀ 0) (+-identityʳ (ℕ.suc n₀)) ) 
                         (≢-sym ℓ≢n₀+1)
     in
+    let bracketRewr : n₀ + (ℕ.suc $ ℕ.suc F ) ≡ n₀ + 1 + (1 + F)
+        bracketRewr =     
+                ≡begin 
+                    n₀ + (ℕ.suc $ ℕ.suc F )       
+                ≡⟨⟩
+                    n₀ + (1 + ℕ.suc F)
+                ≡⟨ sym $ +-assoc n₀ 1 (ℕ.suc F) ⟩
+                    (n₀ + 1) + ℕ.suc F
+                ≡∎
+    in
     let ℓ<n₀+1+SucF : ℓ < n₀ + 1 + (1 + F)
-        -- #TODO: Use ℓ<n₀+1+1+F : ℕ.suc ℓ ≤ n₀ + 2+ F
-        ℓ<n₀+1+SucF = {! cong (λ y → ℓ < n₀ + y) (+-suc 1 F) !}
-
+        ℓ<n₀+1+SucF = subst (λ y → ℓ < y) bracketRewr ℓ<n₀+1+1+F
     in
     ¬rest ℓ (n₀+1<ℓ , ℓ<n₀+1+SucF)
 
