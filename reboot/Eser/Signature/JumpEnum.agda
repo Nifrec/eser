@@ -43,6 +43,7 @@ open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.Aux
 open import Eser.Signature.Definitions
+open import Eser.Signature.PiecewiseFin using (noWeightlessTerms)
 open import Eser.Logic using (elimCaseLeft)
 
 module Eser.Signature.JumpEnum where
@@ -103,7 +104,6 @@ extensionLemma
     → ¬ P (n₀ + 1)
     → ((ℓ : ℕ) → Between (n₀ + 1) (n₀ + 1 + (1 + F)) ℓ → ¬ P ℓ)
     → ((ℓ : ℕ) → Between n₀ (n₀ + (1 + ℕ.suc F)) ℓ → ¬ P ℓ)
---extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℕ.zero ()
 extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℓ (n₀<ℓ , ℓ<n₀+1+1+F) 
     with ℓ Data.Nat.≟ n₀ + 1
 ... | yes ℓ≡n₀+1 = subst (λ y → ¬ P y) (sym ℓ≡n₀+1) ¬Pn₀+1
@@ -235,13 +235,93 @@ J-iter {C} n₀ t₀ J (suc n) = proj₁ $ iter J' n (n₀ , t₀)
             in
             (w + (1 + h) , t')
 
+-- If f : ℕ → ℕ is strictly increasing,
+-- then it factorises most of ℕ into the intervals
+-- [f 0 , f 1) [f 1 , f2) [f 2 , f 3) , ...
+-- and any number w ≥ f 0 falls into exactly one such interval.
+increasingImplIval
+    : (f : ℕ → ℕ)
+    → Monotonic₁ _<_ _<_ f -- ((n : ℕ) → f n < f (ℕ.suc n))
+    → (w : ℕ)
+    → f 0 ≤ w
+    → Σ[ i ∈ ℕ ]( f i ≤ w × w < f (ℕ.suc i))
+increasingImplIval f mono w f0≤w = ?
+
 jumpOver⊥s
     : (C : ℕ → Set)
     → (J : InhabitJumper C)
     → (¬ C 0)
     → (t₀ : C 1)
-    → (Σ[ w ∈ ℕ ] C w) ≃ (Σ[ n ∈ ℕ ] (C $ J-iter 1 t₀ J n))
-jumpOver⊥s _ _ _ _ = ? -- See sheet "Lih 11" backside
+    → (Σ[ w ∈ ℕ ] C w) ≃ (Σ[ i ∈ ℕ ] (C $ J-iter 1 t₀ J i))
+jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
+    where
+    j : ℕ → ℕ
+    j = J-iter 1 t₀ J
+
+    -- For all w s.t. C w is inhabited, there exists an i ∈ ℕ
+    -- s.t. w ≡ j i.
+    existenceLemma
+        : (w : ℕ)
+        → C w
+        → Σ[ i ∈ ℕ ] w ≡ j i
+    existenceLemma = ?
+
+    -- This shows that j is injective, which stengthens the above
+    -- existenceLemma to 'there exists a *unique* i s.t. w ≡ j i.
+    injectivityLemma : Injective _≡_ _≡_ j
+    injectivityLemma {i} {k} ji≡jk = ?
+
+    -- If t : C (j i) then the existenceLemma outputs the same i again.
+    -- This is because j is monotone and hence injective!
+    existenceRetractsJ
+        : (i : ℕ)
+        → (t : C (j i))
+        → (proj₁ $ existenceLemma (j i) t) ≡ i
+    existenceRetractsJ i t = 
+        let i' : ℕ
+            i' = proj₁ $ existenceLemma (j i) t
+        in
+        injectivityLemma (sym $ proj₂ $ existenceLemma (j i) t)
+
+    monotoneLemma : Monotonic₁ _<_ _<_ j
+    monotoneLemma {i} {k} i<k = ?
+
+    f : Σ[ w ∈ ℕ ] C w → Σ[ i ∈ ℕ ] (C $ j i)
+    f (w , t) = 
+        let (i , w≡ji) = existenceLemma w t
+        in
+        (i , subst C w≡ji t)
+    -- #TODO: Better make this case distinction in the def of existenceLemma?
+    --f (ℕ.zero , t) = ⊥-elim $ ¬C0 t
+    --f (ℕ.suc ℕ.zero , t) = (0 , t)
+    --f (w @ (2+ w') , t) = 
+    --    let (i , w≡ji) = existenceLemma w t
+    --    in
+    --    (i , subst C w≡ji t)
+    f⁻¹ : Σ[ i ∈ ℕ ] (C $ j i) → Σ[ w ∈ ℕ ] C w
+    f⁻¹ (i , t) = (j i , t)
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {(i , t)} {w , t} refl = 
+        let (i' , ji≡ji') = existenceLemma (j i) t
+        in
+        ≡begin 
+            f (j i , t)
+        ≡⟨⟩
+            (i' , subst C ji≡ji' t)
+        ≡⟨ tuple-with-subst {ℕ} {ℕ} {C} j i i' t (existenceRetractsJ i t) ji≡ji' ⟩
+            (i , t)
+        ≡∎
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {w , t} {i , t'} refl =
+        let (i' , w≡ji') = existenceLemma w t
+        in
+        ≡begin 
+            f⁻¹ (i' , subst C w≡ji' t)
+        ≡⟨⟩
+            (j i' ,  subst C w≡ji' t)
+        ≡⟨ tuple-with-subst {ℕ} {ℕ} {C} id w (j i') t (sym w≡ji') w≡ji' ⟩
+            (w , t)
+        ≡∎
 
 jumpTheoremInhabitJumper
     : {C : ℕ → Set}
