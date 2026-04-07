@@ -104,7 +104,8 @@ extensionLemma
     → ((ℓ : ℕ) → Between (n₀ + 1) (n₀ + 1 + (1 + F)) ℓ → ¬ P ℓ)
     → ((ℓ : ℕ) → Between n₀ (n₀ + (1 + ℕ.suc F)) ℓ → ¬ P ℓ)
 --extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℕ.zero ()
-extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℓ (n₀<ℓ , ℓ<n₀+1+1+F) with ℓ Data.Nat.≟ n₀ + 1
+extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℓ (n₀<ℓ , ℓ<n₀+1+1+F) 
+    with ℓ Data.Nat.≟ n₀ + 1
 ... | yes ℓ≡n₀+1 = subst (λ y → ¬ P y) (sym ℓ≡n₀+1) ¬Pn₀+1
 ... | no  ℓ≢n₀+1 = 
     let n₀+1<ℓ : n₀ + 1 < ℓ
@@ -115,18 +116,8 @@ extensionLemma {P} decP n₀ F ¬Pn₀+1 ¬rest ℓ (n₀<ℓ , ℓ<n₀+1+1+F) 
                         (trans (+-suc n₀ 0) (+-identityʳ (ℕ.suc n₀)) ) 
                         (≢-sym ℓ≢n₀+1)
     in
-    let bracketRewr : n₀ + (ℕ.suc $ ℕ.suc F ) ≡ n₀ + 1 + (1 + F)
-        bracketRewr =     
-                ≡begin 
-                    n₀ + (ℕ.suc $ ℕ.suc F )       
-                ≡⟨⟩
-                    n₀ + (1 + ℕ.suc F)
-                ≡⟨ sym $ +-assoc n₀ 1 (ℕ.suc F) ⟩
-                    (n₀ + 1) + ℕ.suc F
-                ≡∎
-    in
     let ℓ<n₀+1+SucF : ℓ < n₀ + 1 + (1 + F)
-        ℓ<n₀+1+SucF = subst (λ y → ℓ < y) bracketRewr ℓ<n₀+1+1+F
+        ℓ<n₀+1+SucF = subst (λ y → ℓ < y) (bracketRewr n₀ F) ℓ<n₀+1+1+F
     in
     ¬rest ℓ (n₀+1<ℓ , ℓ<n₀+1+SucF)
 
@@ -166,8 +157,10 @@ linearSearchForward {P} decP n₀ (ℕ.suc F) with (decP (n₀ + 1))
     let h<SucF : h < ℕ.suc F
         h<SucF = Data.Nat.Properties.<-trans h<F (n<1+n F)
     in
-    inj₁ (ℕ.suc h , s≤s h<F , {! x !}) -- also use extensionLemma here.
-...     | inj₂ x = inj₂ $ {! extensionLemma n₀ F ¬Pn₀+1 {! x !} !}
+    inj₁ (ℕ.suc h , s≤s h<F 
+            , subst P (sym $ bracketRewr n₀ h) (proj₁ x)
+            , extensionLemma decP n₀ h ¬Pn₀+1 (proj₂ x))
+...     | inj₂ x = inj₂ $ extensionLemma decP n₀ F ¬Pn₀+1 x
             
 
 boundedSearchForward

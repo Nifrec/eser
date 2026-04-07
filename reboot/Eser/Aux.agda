@@ -97,6 +97,17 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
     in
     1+n≢0 {m + n} (suc-injective H)
 
+
+bracketRewr : (n m : ℕ) → n + (ℕ.suc $ ℕ.suc m ) ≡ n + 1 + (1 + m)
+bracketRewr n m =     
+        begin 
+            n + (ℕ.suc $ ℕ.suc m )       
+        ≡⟨⟩
+            n + (1 + ℕ.suc m)
+        ≡⟨ sym $ +-assoc n 1 (ℕ.suc m) ⟩
+            (n + 1) + ℕ.suc m
+        ∎
+
 --------------------------------------------------------------------------------
 -- Rewriting equalities
 --------------------------------------------------------------------------------
