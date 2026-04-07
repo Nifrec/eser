@@ -44,7 +44,7 @@ open import Eser.Equivalences.Properties
 open import Eser.Aux
 open import Eser.Signature.Definitions
 open import Eser.Signature.PiecewiseFin using (noWeightlessTerms)
-open import Eser.Logic using (elimCaseLeft)
+open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 
 module Eser.Signature.JumpEnum where
 
@@ -225,9 +225,27 @@ InhabitJumper C
 -- (In out use case (see below), we'll have ¬ C 0 but C 1 is inhabited, 
 -- so we start with n₀ ≔ 1).
 J-iter : {C : ℕ → Set} → (n₀ : ℕ) → C n₀ → (J : InhabitJumper C) → ℕ → ℕ
-J-iter {C} n₀ t₀ J 0 = n₀
---J-iter {C} n₀ t₀ J (suc n) = proj₁ $ depGIter g J' n (n₀ , t₀)
-J-iter {C} n₀ t₀ J (suc n) = proj₁ $ iter J' n (n₀ , t₀)
+J-iter {C} n₀ t₀ J i = proj₁ $ iter J' i (n₀ , t₀)
+    where
+        J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
+        J' (w , t) = 
+            let (h , t' , _) = J {w} t
+            in
+            (w + (1 + h) , t')
+
+J-iter-ival-empty 
+    : {C : ℕ → Set} 
+    → (n₀ : ℕ) 
+    → (t₀ : C n₀)
+    → (J : InhabitJumper C) 
+    → (i : ℕ) 
+    → ((ℓ : ℕ) 
+        → (Between (J-iter {C} n₀ t₀ J i) (J-iter {C} n₀ t₀ J (ℕ.suc i)) ℓ)
+        → ¬ C ℓ
+      )
+J-iter-ival-empty {C} n₀ t₀ J 0 = proj₂ $ proj₂ $ J {n₀} t₀
+J-iter-ival-empty {C} n₀ t₀ J i@(ℕ.suc i') = proj₂ $ proj₂ $ J (proj₂ $ iter J' i (n₀ , t₀))
+    -- iter J' (ℕ.suc i) (n₀ , t₀)
     where
         J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
         J' (w , t) = 
@@ -247,6 +265,24 @@ increasingImplIval
     → Σ[ i ∈ ℕ ]( f i ≤ w × w < f (ℕ.suc i))
 increasingImplIval f mono w f0≤w = ?
 
+-- If w ∈ [a , b) and we know t ∈ C w and ¬ C i for all i ∈ (a , b)
+-- then it must be that w ≡ a.
+firstOfIval
+    : {w a b : ℕ}
+    → a ≤ w
+    → w < b
+    → (P : ℕ → Set)
+    → ((ℓ : ℕ) → Between a b ℓ → ¬ P ℓ)
+    → P w
+    → w ≡ a
+firstOfIval {w} {a} {b} a≤w w<b P H Pw = ?
+
+--allTermsWeightGeqOne
+--    : {w : ℕ}
+--    → (t : C w)
+--    → 1 ≤ w
+--allTermsWeightGeqOne {w} t = n≢0⇒n>0 (λ w≡0 → noWeightlessTerms S 0 (subst C w≡0 t))
+
 jumpOver⊥s
     : (C : ℕ → Set)
     → (J : InhabitJumper C)
@@ -258,13 +294,48 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
     j : ℕ → ℕ
     j = J-iter 1 t₀ J
 
+    monotoneLemma : Monotonic₁ _<_ _<_ j
+    monotoneLemma {i} {k} i<k = ?
+
     -- For all w s.t. C w is inhabited, there exists an i ∈ ℕ
     -- s.t. w ≡ j i.
     existenceLemma
         : (w : ℕ)
         → C w
         → Σ[ i ∈ ℕ ] w ≡ j i
-    existenceLemma = ?
+    existenceLemma w t = (i , w≡ji)
+        where
+            -- Note: j 0 ≡ 1.
+            -- And all terms have weight at least 1.
+            j0≤w : j 0 ≤ w
+            j0≤w = 
+                let H : j 0 ≤ w ⊎ w < j 0
+                    H = Data.Nat.Properties.≤-<-connex (j 0) w
+                in
+                let K : ¬ w < j 0
+                    K w<j0 = 
+                        let w≡0 = n<1⇒n≡0 w<j0
+                        in
+                        ¬C0 (subst C w≡0 t)
+                in
+                elimCaseRight H K
+                
+
+
+            ivalLemmaOutp : Σ[ i ∈ ℕ ]( j i ≤ w × w < j (ℕ.suc i))
+            ivalLemmaOutp = increasingImplIval j monotoneLemma w j0≤w
+            i : ℕ
+            i = proj₁ ivalLemmaOutp
+            ji≤w : j i ≤ w
+            ji≤w = proj₁ $ proj₂ ivalLemmaOutp
+            w<jSucI : w < j (ℕ.suc i)
+            w<jSucI = proj₂ $ proj₂ ivalLemmaOutp
+
+            ¬rest : (ℓ : ℕ) → Between (j i) (j (ℕ.suc i)) ℓ → ¬ C ℓ
+            ¬rest = J-iter-ival-empty {C} 1 t₀ J i
+
+            w≡ji : w ≡ j i
+            w≡ji = firstOfIval {w} {j i} {j (ℕ.suc i)} ji≤w w<jSucI C ¬rest t
 
     -- This shows that j is injective, which stengthens the above
     -- existenceLemma to 'there exists a *unique* i s.t. w ≡ j i.
@@ -282,9 +353,6 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
             i' = proj₁ $ existenceLemma (j i) t
         in
         injectivityLemma (sym $ proj₂ $ existenceLemma (j i) t)
-
-    monotoneLemma : Monotonic₁ _<_ _<_ j
-    monotoneLemma {i} {k} i<k = ?
 
     f : Σ[ w ∈ ℕ ] C w → Σ[ i ∈ ℕ ] (C $ j i)
     f (w , t) = 
