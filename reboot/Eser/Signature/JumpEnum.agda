@@ -45,6 +45,7 @@ open import Eser.Aux
 open import Eser.Signature.Definitions
 open import Eser.Signature.PiecewiseFin using (noWeightlessTerms)
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
+open import Eser.Monotone
 
 module Eser.Signature.JumpEnum where
 
@@ -289,8 +290,38 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
     j : ℕ → ℕ
     j = J-iter 1 t₀ J
 
-    monotoneLemma : Monotonic₁ _<_ _<_ j
-    monotoneLemma {i} {k} i<k = ? -- #TODO: this is needed, existenceLemma deps on it!
+    piecewiseIncrLemma : (i : ℕ) → j i < j (ℕ.suc i) 
+    -- This proof uses the following definitional equalities:
+    -- j 0 ≗ 1
+    -- j 1 ≗ proj₁ $ (1 + (1 + h))
+    --  where
+    --      (h , _ , _) ≗ J {1} t₀
+    piecewiseIncrLemma 0 = m<m+1+n 1 h
+        where
+            h = proj₁ $ J {1} t₀
+    piecewiseIncrLemma (i@(suc i')) = m<m+1+n (j i) h
+        where
+            -- #TODO: def J' below is copied from J-iter;
+            -- refactor! avoid duplicate code!
+            J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
+            J' (w , t) = 
+                let (h , t' , _) = J {w} t
+                in
+                (w + (1 + h) , t')
+            h  = proj₁ $ J (proj₂ $ iter J' i (1 , t₀))
+            tₕ = proj₁ $ proj₂ $ J (proj₂ $ iter J' i (1 , t₀))
+            
+            H : iter J' (ℕ.suc i) (1 , t₀) ≡ (proj₁ (iter J' i (1 , t₀)) + (1 + h) , tₕ)
+            H = refl --#TODO: make this nicer.
+                --≡begin 
+                --    iter J' (ℕ.suc i) (1 , t₀)                
+                --≡⟨⟩
+                --    ( J' (iter J' i (1 , t₀)))
+                --≡∎
+
+
+    monotoneLemma : ℕ<Monotone j
+    monotoneLemma = piecewiseIncrImplMono {j} piecewiseIncrLemma
 
     -- For all w s.t. C w is inhabited, there exists an i ∈ ℕ s.t. w ≡ j i.
     existenceLemma
@@ -332,8 +363,8 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
     -- This shows that j is injective, which stengthens the above
     -- existenceLemma to 'there exists a *unique* i s.t. w ≡ j i.
     -- #TODO: necessary, existenceRetractsJ depends on it!
-    injectivityLemma : Injective _≡_ _≡_ j
-    injectivityLemma {i} {k} ji≡jk = ?
+    injectivityLemma : ℕInjective j
+    injectivityLemma = monotoneImplInjective {j} monotoneLemma
 
     -- If t : C (j i) then the existenceLemma outputs the same i again.
     -- This is because j is monotone and hence injective!
