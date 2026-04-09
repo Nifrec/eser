@@ -87,11 +87,23 @@ piecewiseIncrImplMono {f} H {m} {n} m<n =
     in
     subst (λ x → f m < f x) (sym n≡Sk+m) fm<fSk+m
 
+a<b→fa≡fb→MonoF→⊥
+    : {a b : ℕ}
+    → {f : ℕ → ℕ}
+    → ℕ<Monotone f
+    → a < b
+    → f a ≡ f b
+    → ⊥
+a<b→fa≡fb→MonoF→⊥ {a} {b} {f} H a<b fa≡fb = <⇒≢ (H a<b) fa≡fb
+
 monotoneImplInjective
     : {f : ℕ → ℕ}
     → ℕ<Monotone f
     → ℕInjective f
-monotoneImplInjective {f} H = ?
+monotoneImplInjective {f} H {m} {n} fm≡fn with <-cmp m n
+... | tri< m<n  _   _   = ⊥-elim $ a<b→fa≡fb→MonoF→⊥ H m<n fm≡fn 
+... | tri≈ _    m≡n _   = m≡n
+... | tri> _    _   n<m = ⊥-elim $ a<b→fa≡fb→MonoF→⊥ H n<m (sym fm≡fn)
 
 -- If f : ℕ → ℕ is strictly increasing,
 -- then it factorises most of ℕ into the intervals
