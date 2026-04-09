@@ -273,6 +273,9 @@ module WithSigAsArg
         in
         cong (λ c → ((ℕ.suc $ cardToℕ c) , mk-nullary c)) c≡c'
         
+    -- #TODO: Nic : IsNullaryUnique only needs H, not top-lvl function.
+    -- Since we're always inputting refl, can as well remove it as argument
+    -- here. Then can also remove w'.
     isNullaryUnique
         : {w w' : ℕ} 
         → (t : OT w 0)
