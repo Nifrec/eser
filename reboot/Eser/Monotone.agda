@@ -94,16 +94,16 @@ a<b→fa≡fb→MonoF→⊥
     → a < b
     → f a ≡ f b
     → ⊥
-a<b→fa≡fb→MonoF→⊥ {a} {b} {f} H a<b fa≡fb = <⇒≢ (H a<b) fa≡fb
+a<b→fa≡fb→MonoF→⊥ {a} {b} {f} mono a<b fa≡fb = <⇒≢ (mono a<b) fa≡fb
 
 monotoneImplInjective
     : {f : ℕ → ℕ}
     → ℕ<Monotone f
     → ℕInjective f
-monotoneImplInjective {f} H {m} {n} fm≡fn with <-cmp m n
-... | tri< m<n  _   _   = ⊥-elim $ a<b→fa≡fb→MonoF→⊥ H m<n fm≡fn 
+monotoneImplInjective {f} mono {m} {n} fm≡fn with <-cmp m n
+... | tri< m<n  _   _   = ⊥-elim $ a<b→fa≡fb→MonoF→⊥ mono m<n fm≡fn 
 ... | tri≈ _    m≡n _   = m≡n
-... | tri> _    _   n<m = ⊥-elim $ a<b→fa≡fb→MonoF→⊥ H n<m (sym fm≡fn)
+... | tri> _    _   n<m = ⊥-elim $ a<b→fa≡fb→MonoF→⊥ mono n<m (sym fm≡fn)
 
 -- If f : ℕ → ℕ is strictly increasing,
 -- then it factorises most of ℕ into the intervals
@@ -111,13 +111,57 @@ monotoneImplInjective {f} H {m} {n} fm≡fn with <-cmp m n
 -- and any number w ≥ f 0 falls into exactly one such interval.
 increasingImplIval
     : (f : ℕ → ℕ)
-    → Monotonic₁ _<_ _<_ f -- ((n : ℕ) → f n < f (ℕ.suc n))
+    → ℕ<Monotone f
     → (w : ℕ)
     → f 0 ≤ w
     → Σ[ i ∈ ℕ ]( f i ≤ w × w < f (ℕ.suc i))
-increasingImplIval f mono w f0≤w = ?
+increasingImplIval f mono 0 f0≤w =
+    let f0≡0 : f 0 ≡ 0
+        f0≡0 = n≤0⇒n≡0 (f0≤w)
+    in
+    let 0<f1 : 0 < f 1
+        0<f1 = subst (λ x → x < f 1) f0≡0 (mono $ s≤s z≤n)
+    in
+    (0 , f0≤w , 0<f1)
+-- Inductive case.
+-- First case distinction on f 0 ≤ suc w.
+--  If f0≡Sw then i ≔ 0 works.
+--  If f0<Sw then also f0 ≤ w,
+--      so we can make a recursive call giving an i s.t. f i ≤ w < f (suc i).
+--      This also implies `suc w ≤ f (suc i)`.
+--      Then the "i for suc w" is either i or suc i,
+--      depending on whether `suc w ≤ f (suc i)` is `≡` or `<` respectively.
+increasingImplIval f mono (suc w) f0≤Sw with (m≤n⇒m<n∨m≡n f0≤Sw) 
+... | inj₂ f0≡Sw = (0 
+                   , subst (λ x → f 0 ≤ x) f0≡Sw ≤-refl
+                   , subst (λ x → x < f 1) f0≡Sw (mono $ s≤s z≤n))
+... | inj₁ f0<Sw =
+    let w≤Sw : w ≤ ℕ.suc w
+        w≤Sw = n≤1+n w
+    in
+    let (i , fi≤w , w<fSi) = increasingImplIval f mono w (s≤s⁻¹ f0<Sw)
+    in
+    let Sw≤fSi : ℕ.suc w ≤ f (ℕ.suc i)
+        Sw≤fSi = w<fSi -- By definition of `a < b ≗ suc a ≤ b`.
+    in
+    caseDistinction i fi≤w $ m≤n⇒m<n∨m≡n Sw≤fSi
+    where
+        caseDistinction 
+            : (i : ℕ)
+            → f i ≤ w
+            → (ℕ.suc w < f (ℕ.suc i)) ⊎ (ℕ.suc w ≡ f (ℕ.suc i))
+            →  Σ[ i ∈ ℕ ] (f i ≤ ℕ.suc w × ℕ.suc w < f (ℕ.suc i))
+        caseDistinction i fi≤w (inj₁ Sw<fSi) = 
+            (i , ≤-trans fi≤w (n≤1+n w) , Sw<fSi)
+        caseDistinction i _ (inj₂ Sw≡fSi) = 
+            (ℕ.suc i 
+            , ≡→≤ (sym Sw≡fSi)
+            , subst (λ x → x < (f $ ℕ.suc $ ℕ.suc i)) 
+                    (sym Sw≡fSi) 
+                    (mono $ n<1+n (ℕ.suc i))
+            )
 
--- If w ∈ [a , b) and we know t ∈ C w and ¬ C i for all i ∈ (a , b)
+-- If w ∈ [a , b) and we know t ∈ P w and ¬ P i for all i ∈ (a , b)
 -- then it must be that w ≡ a.
 firstOfIval
     : {w a b : ℕ}
