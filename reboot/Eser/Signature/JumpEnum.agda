@@ -247,7 +247,7 @@ J-iter-ival-empty
 J-iter-ival-empty {C} n₀ t₀ J 0 = proj₂ $ proj₂ $ J {n₀} t₀
 J-iter-ival-empty {C} n₀ t₀ J i@(ℕ.suc i') = proj₂ $ proj₂ $ J (proj₂ $ iter J' i (n₀ , t₀))
     -- iter J' (ℕ.suc i) (n₀ , t₀)
-    where
+    module IterableJumper where
         J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
         J' (w , t) = 
             let (h , t' , _) = J {w} t
@@ -291,7 +291,7 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
     j = J-iter 1 t₀ J
 
     piecewiseIncrLemma : (i : ℕ) → j i < j (ℕ.suc i) 
-    -- This proof uses the following definitional equalities:
+    -- The proof for i≡0 uses the following definitional equalities:
     -- j 0 ≗ 1
     -- j 1 ≗ proj₁ $ (1 + (1 + h))
     --  where
@@ -301,23 +301,22 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
             h = proj₁ $ J {1} t₀
     piecewiseIncrLemma (i@(suc i')) = m<m+1+n (j i) h
         where
-            -- #TODO: def J' below is copied from J-iter;
-            -- refactor! avoid duplicate code!
-            J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
-            J' (w , t) = 
-                let (h , t' , _) = J {w} t
-                in
-                (w + (1 + h) , t')
+            -- We import J' from the def of J-iter;
+            -- this is the iterable version of J.
+            open IterableJumper 1 t₀ J i using (J')
             h  = proj₁ $ J (proj₂ $ iter J' i (1 , t₀))
             tₕ = proj₁ $ proj₂ $ J (proj₂ $ iter J' i (1 , t₀))
             
-            H : iter J' (ℕ.suc i) (1 , t₀) ≡ (proj₁ (iter J' i (1 , t₀)) + (1 + h) , tₕ)
-            H = refl --#TODO: make this nicer.
-                --≡begin 
-                --    iter J' (ℕ.suc i) (1 , t₀)                
-                --≡⟨⟩
-                --    ( J' (iter J' i (1 , t₀)))
-                --≡∎
+            -- The above use of m<m+1+n works because `j (suc i)` is equal to
+            -- the following two exporessions, and the proj₁ of the RHS
+            -- is of the desired form m+(1+n).
+            -- Note that m  ≔ j i is the base weight of the (wᵢ , tᵢ)
+            -- starting point of the last jump. j i outputs wᵢ,
+            -- j (ℕ.suc i) outputs w₁ + (1 + h).
+            H : iter J' (ℕ.suc i) (1 , t₀) 
+                ≡ 
+                (proj₁ (iter J' i (1 , t₀)) + (1 + h) , tₕ)
+            H = refl
 
 
     monotoneLemma : ℕ<Monotone j
@@ -383,13 +382,6 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
         let (i , w≡ji) = existenceLemma w t
         in
         (i , subst C w≡ji t)
-    -- #TODO: Better make this case distinction in the def of existenceLemma?
-    --f (ℕ.zero , t) = ⊥-elim $ ¬C0 t
-    --f (ℕ.suc ℕ.zero , t) = (0 , t)
-    --f (w @ (2+ w') , t) = 
-    --    let (i , w≡ji) = existenceLemma w t
-    --    in
-    --    (i , subst C w≡ji t)
     f⁻¹ : Σ[ i ∈ ℕ ] (C $ j i) → Σ[ w ∈ ℕ ] C w
     f⁻¹ (i , t) = (j i , t)
     invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
