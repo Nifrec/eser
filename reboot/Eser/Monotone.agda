@@ -31,6 +31,8 @@ open import Relation.Binary.Structures
 open import Function
 open import Relation.Binary.Reasoning.Syntax
 
+open import Eser.Aux
+
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
 module Eser.Monotone where
@@ -73,3 +75,27 @@ monotoneImplInjective
     → ℕ<Monotone f
     → ℕInjective f
 monotoneImplInjective {f} H = ?
+
+-- If f : ℕ → ℕ is strictly increasing,
+-- then it factorises most of ℕ into the intervals
+-- [f 0 , f 1) [f 1 , f2) [f 2 , f 3) , ...
+-- and any number w ≥ f 0 falls into exactly one such interval.
+increasingImplIval
+    : (f : ℕ → ℕ)
+    → Monotonic₁ _<_ _<_ f -- ((n : ℕ) → f n < f (ℕ.suc n))
+    → (w : ℕ)
+    → f 0 ≤ w
+    → Σ[ i ∈ ℕ ]( f i ≤ w × w < f (ℕ.suc i))
+increasingImplIval f mono w f0≤w = ?
+
+-- If w ∈ [a , b) and we know t ∈ C w and ¬ C i for all i ∈ (a , b)
+-- then it must be that w ≡ a.
+firstOfIval
+    : {w a b : ℕ}
+    → a ≤ w
+    → w < b
+    → (P : ℕ → Set)
+    → ((ℓ : ℕ) → Between a b ℓ → ¬ P ℓ)
+    → P w
+    → w ≡ a
+firstOfIval {w} {a} {b} a≤w w<b P H Pw = ?

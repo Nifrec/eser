@@ -1,5 +1,5 @@
 -- Module      : Eser.Signature.Aux
--- Description : Very general (and well-known) auxiliary lemmas
+-- Description : Very general (and well-known) definitions and lemmas
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -8,6 +8,7 @@
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum
+open import Data.Product
 open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
@@ -16,11 +17,17 @@ open import Function
 
 open import Eser.Logic
 module Eser.Aux where
--- This is defined in the stdlib, according to the documentation,
--- but for some reason I cannot import it.
-∸-suc : {n m : ℕ} → m ≤ n → suc n ∸ m ≡ suc (n ∸ m)
-∸-suc z≤n       = refl
-∸-suc (s≤s m≤n) = ∸-suc m≤n
+
+--------------------------------------------------------------------------------
+-- General mathematical definitions
+--------------------------------------------------------------------------------
+
+Between : (a b : ℕ) → ℕ → Set
+Between a b ℓ = (a < ℓ) × (ℓ < b)
+
+--------------------------------------------------------------------------------
+-- Natural number arithmetic
+--------------------------------------------------------------------------------
 
 m∸Sn≤m∸n
     : (n m : ℕ)

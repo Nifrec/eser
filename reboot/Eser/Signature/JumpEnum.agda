@@ -66,10 +66,6 @@ iter {A} f (suc n) a = f (iter f n a)
 -- that also satisfies P.
 -- If not, this gives a proof that n' is the smallest.
 --------------------------------------------------------------------------------
--- Least number n > n₀ that satisfies P.
-Between : (a b : ℕ) → ℕ → Set
-Between a b ℓ = (a < ℓ) × (ℓ < b)
-
 -- There is no number strictly inbetween n and n + 1.
 emptyIval : (n : ℕ) → (ℓ : ℕ) → ¬ Between n (n + 1) ℓ
 emptyIval n ℓ (n<ℓ , ℓ<n+1) = 
@@ -245,39 +241,14 @@ J-iter-ival-empty
         → ¬ C ℓ
       )
 J-iter-ival-empty {C} n₀ t₀ J 0 = proj₂ $ proj₂ $ J {n₀} t₀
-J-iter-ival-empty {C} n₀ t₀ J i@(ℕ.suc i') = proj₂ $ proj₂ $ J (proj₂ $ iter J' i (n₀ , t₀))
-    -- iter J' (ℕ.suc i) (n₀ , t₀)
+J-iter-ival-empty {C} n₀ t₀ J i@(ℕ.suc i') = 
+    proj₂ $ proj₂ $ J (proj₂ $ iter J' i (n₀ , t₀))
     module IterableJumper where
         J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
         J' (w , t) = 
             let (h , t' , _) = J {w} t
             in
             (w + (1 + h) , t')
-
--- If f : ℕ → ℕ is strictly increasing,
--- then it factorises most of ℕ into the intervals
--- [f 0 , f 1) [f 1 , f2) [f 2 , f 3) , ...
--- and any number w ≥ f 0 falls into exactly one such interval.
-increasingImplIval
-    : (f : ℕ → ℕ)
-    → Monotonic₁ _<_ _<_ f -- ((n : ℕ) → f n < f (ℕ.suc n))
-    → (w : ℕ)
-    → f 0 ≤ w
-    → Σ[ i ∈ ℕ ]( f i ≤ w × w < f (ℕ.suc i))
-increasingImplIval f mono w f0≤w = ?
-
--- If w ∈ [a , b) and we know t ∈ C w and ¬ C i for all i ∈ (a , b)
--- then it must be that w ≡ a.
-firstOfIval
-    : {w a b : ℕ}
-    → a ≤ w
-    → w < b
-    → (P : ℕ → Set)
-    → ((ℓ : ℕ) → Between a b ℓ → ¬ P ℓ)
-    → P w
-    → w ≡ a
-firstOfIval {w} {a} {b} a≤w w<b P H Pw = ?
-
 
 jumpOver⊥s
     : (C : ℕ → Set)
@@ -361,7 +332,6 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
 
     -- This shows that j is injective, which stengthens the above
     -- existenceLemma to 'there exists a *unique* i s.t. w ≡ j i.
-    -- #TODO: necessary, existenceRetractsJ depends on it!
     injectivityLemma : ℕInjective j
     injectivityLemma = monotoneImplInjective {j} monotoneLemma
 

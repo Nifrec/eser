@@ -20,5 +20,12 @@ open import Data.Nat
 open import Relation.Binary.Definitions using (Irrelevant)
 
 module Eser.Stdlib where
-    fin-≡-irrelevant : {n : ℕ} → Irrelevant {A = Fin n} _≡_
-    fin-≡-irrelevant = Decidable⇒UIP.≡-irrelevant Data.Fin.Properties._≟_
+
+fin-≡-irrelevant : {n : ℕ} → Irrelevant {A = Fin n} _≡_
+fin-≡-irrelevant = Decidable⇒UIP.≡-irrelevant Data.Fin.Properties._≟_
+
+-- This is defined in the stdlib, according to the documentation,
+-- but for some reason I cannot import it.
+∸-suc : {n m : ℕ} → m Data.Nat.≤ n → suc n ∸ m ≡ suc (n ∸ m)
+∸-suc z≤n       = refl
+∸-suc (s≤s m≤n) = ∸-suc m≤n
