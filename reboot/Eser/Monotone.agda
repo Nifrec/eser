@@ -32,6 +32,7 @@ open import Function
 open import Relation.Binary.Reasoning.Syntax
 
 open import Eser.Aux
+open import Eser.Stdlib using (∸-suc)
 
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
@@ -45,30 +46,46 @@ module Eser.Monotone where
 ℕInjective : (ℕ → ℕ) → Set
 ℕInjective = Injective _≡_ _≡_
 
-
+-- If m < n then there exist a nonzero k s.t. n ≡ k + m.
+smallerToSum : {m n : ℕ} → m < n → Σ[ k ∈ ℕ ] n ≡ ℕ.suc k + m
+smallerToSum {m} {n} m<n = 
+    let k = n ∸ ℕ.suc m in
+    let Sk+m≡n : ℕ.suc k + m ≡ n
+        Sk+m≡n = 
+            ≡begin 
+                ℕ.suc k + m 
+            ≡⟨⟩
+                ℕ.suc (n ∸ ℕ.suc m) + m
+            ≡⟨ cong (_+ m) (sym $ ∸-suc m<n)  ⟩
+                (n ∸ m) + m
+            ≡⟨ m∸n+n≡m (<⇒≤ m<n) ⟩
+                n
+            ≡∎
+    in (k , sym Sk+m≡n)
+    
+-- If f n < f (ℕ.suc n) then we can inductively see that
+-- f n < f (1 + n) < f (2 + n) < f (3 + n) < ... < f(ℕ.suc k + n)
 piecewiseIncrImplMonoLemma
     : {f : ℕ → ℕ}
     → ((n : ℕ) → f n < f (ℕ.suc n))
     → ((n k : ℕ) → f n < f (ℕ.suc k + n))
-piecewiseIncrImplMonoLemma {f} H n k = 
-    ?
-    where
-        -- #TODO: refactor to somewhere else
-        lemma : {m n : ℕ} → m < n → Σ[ k ∈ ℕ ] n ≡ k + m
-        lemma {0} {n} (s≤s z≤n) = (n , sym ( +-identityʳ n))
-        lemma {suc m} {suc (suc n)} (s≤s (s≤s m<n)) = 
-            let (k' , n≡k'+m) = lemma (s≤s m<n)
-            in
-            (ℕ.suc k' , ? ) -- (subst (λ x → n ≡ x) (+-suc k' m) n≡k'+m))
+piecewiseIncrImplMonoLemma {f} H n 0 = H n
+piecewiseIncrImplMonoLemma {f} H n (ℕ.suc k) = 
+    let fn<fSk+n = piecewiseIncrImplMonoLemma H n k
+    in
+    <-trans fn<fSk+n (H $ ℕ.suc k + n)
 
--- If f (suc n) > f n for all n, then that already implies that
--- f is monotone.
+-- If f (suc n) > f n for all n, then that already implies that f is monotone.
 piecewiseIncrImplMono
     : {f : ℕ → ℕ}
     → ((n : ℕ) → f n < f (ℕ.suc n))
     → ℕ<Monotone f
-piecewiseIncrImplMono {f} H {m} {n} (s≤s z≤n) = {! !}
-piecewiseIncrImplMono {f} H {m} {n} (s≤s (s≤s m<n)) = {! !}
+piecewiseIncrImplMono {f} H {m} {n} m<n = 
+    let (k , n≡Sk+m) = smallerToSum m<n
+    in
+    let fm<fSk+m = piecewiseIncrImplMonoLemma H m k
+    in
+    subst (λ x → f m < f x) (sym n≡Sk+m) fm<fSk+m
 
 monotoneImplInjective
     : {f : ℕ → ℕ}
