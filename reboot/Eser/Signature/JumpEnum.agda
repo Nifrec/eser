@@ -472,7 +472,7 @@ module _ {μ ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ) ) where
     applyArgTillAlmostFull {0} t a = t
     applyArgTillAlmostFull {ℕ.suc n} {wₜ} {wₐ} t a = 
         let H : n * wₐ + (wₐ + wₜ) ≡ (ℕ.suc n) * wₐ + wₜ
-            H = ? -- #TODO: some annoying arithmetic rewriting.
+            H = n*a+[a+b]≡Sn*a+b n wₐ wₜ
         in
         subst (λ w → OT w 1) H (applyArgTillAlmostFull (giveArg t a) a)
     

@@ -128,6 +128,37 @@ nullOrSuc
 nullOrSuc 0 = inj₁ refl
 nullOrSuc (suc n') = inj₂ $ (n' , refl)
 
+-- *-suc but with some reordering of the operands
+-- (which is equivalent since * and + are commutative).
+*-suc-rev
+    : (n m : ℕ)
+    → n * m + m ≡ (ℕ.suc n) * m
+*-suc-rev n m =
+    begin 
+        n * m + m
+    ≡⟨ cong (_+ m) (*-comm n m) ⟩
+        m * n + m
+    ≡⟨ +-comm (m * n) m ⟩
+        m + m * n
+    ≡⟨ sym $ *-suc m n ⟩
+        m * (ℕ.suc n)
+    ≡⟨ *-comm m (ℕ.suc n) ⟩
+        (ℕ.suc n) * m
+    ∎
+    
+n*a+[a+b]≡Sn*a+b
+    : (n a b : ℕ)
+    → n * a + (a + b) ≡ (ℕ.suc n) * a + b
+n*a+[a+b]≡Sn*a+b n a b = 
+    begin 
+        n * a + (a + b)
+    ≡⟨  sym $ +-assoc (n * a) a b ⟩
+        (n * a + a) + b
+    ≡⟨ cong (_+ b) (*-suc-rev n a) ⟩
+        (ℕ.suc n) * a + b
+    ∎
+    
+
 --------------------------------------------------------------------------------
 -- Rewriting equalities
 --------------------------------------------------------------------------------
