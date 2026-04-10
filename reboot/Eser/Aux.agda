@@ -120,6 +120,14 @@ m<m+1+n m n = m<m+n m $ 0<1+n {n}
 
 ≡→≤ : {m n : ℕ} → m ≡ n → m ≤ n
 ≡→≤ {m} {n} refl = ≤-refl
+
+-- Every number is either 0 or the successor of another number.
+nullOrSuc
+    : (n : ℕ)
+    → n ≡ 0 ⊎ Σ[ n' ∈ ℕ ]( n ≡ ℕ.suc n')
+nullOrSuc 0 = inj₁ refl
+nullOrSuc (suc n') = inj₂ $ (n' , refl)
+
 --------------------------------------------------------------------------------
 -- Rewriting equalities
 --------------------------------------------------------------------------------

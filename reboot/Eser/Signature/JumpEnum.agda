@@ -223,12 +223,24 @@ InhabitJumper C
 -- so we start with n₀ ≔ 1).
 J-iter : {C : ℕ → Set} → (n₀ : ℕ) → C n₀ → (J : InhabitJumper C) → ℕ → ℕ
 J-iter {C} n₀ t₀ J i = proj₁ $ iter J' i (n₀ , t₀)
-    where
+    module IterableJumper where
         J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
         J' (w , t) = 
             let (h , t' , _) = J {w} t
             in
             (w + (1 + h) , t')
+
+-- Same as J-iter, but return the inhabitant at the endpoint instead
+-- of the index of the endpoint.
+J-iter-endpoint 
+    : {C : ℕ → Set} 
+    → (n₀ : ℕ) 
+    → (t₀ : C n₀)
+    → (J : InhabitJumper C) 
+    → (i : ℕ)
+    → C (J-iter n₀ t₀ J i)
+J-iter-endpoint {C} n₀ t₀ J i = proj₂ $ iter J' i (n₀ , t₀)
+    where open IterableJumper {C} n₀ t₀ J i
 
 J-iter-ival-empty 
     : {C : ℕ → Set} 
@@ -243,12 +255,7 @@ J-iter-ival-empty
 J-iter-ival-empty {C} n₀ t₀ J 0 = proj₂ $ proj₂ $ J {n₀} t₀
 J-iter-ival-empty {C} n₀ t₀ J i@(ℕ.suc i') = 
     proj₂ $ proj₂ $ J (proj₂ $ iter J' i (n₀ , t₀))
-    module IterableJumper where
-        J' : Σ[ w ∈ ℕ ] C w → Σ[ w ∈ ℕ ] C w
-        J' (w , t) = 
-            let (h , t' , _) = J {w} t
-            in
-            (w + (1 + h) , t')
+    where open IterableJumper {C} n₀ t₀ J i
 
 jumpOver⊥s
     : (C : ℕ → Set)
@@ -388,7 +395,40 @@ jumpTheoremInhabitJumper
     -- ^ Every point (incl. non-pitstops) is some finite set.
     → ((i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 t₀ J i) ≃ Fin (ℕ.suc z')))
     -- ^ But when only looking at pitstops, they are inhabited finite sets.
-jumpTheoremInhabitJumper = ? -- Sheet "Lih 10".
+jumpTheoremInhabitJumper {C} t₀ J pitstops i = (z' , Hz')
+    where
+        j = J-iter {C} 1 t₀ J
+        j' = J-iter-endpoint {C} 1 t₀ J
+        z  = proj₁ $ pitstops $ j i
+        Cw≃FinZ = proj₂ $ pitstops $ j i
+        
+        w : ℕ
+        w = j i
+
+        z≡0⊎z≡Sz' : (z ≡ 0) ⊎ (Σ[ z' ∈ ℕ ] z ≡ ℕ.suc z')
+        z≡0⊎z≡Sz' = nullOrSuc z
+
+        -- The case z≡0 cannot happen, because all pitstops are inhabited,
+        -- so we have a term tᵢ ≔ j' i : C w which
+        -- contradicts C w ≃ Fin 0 ≃ ⊥.
+        z≢0 : z ≢ 0
+        z≢0 z≡0 = 
+            let Cw≃Fin0 : C w ≃ Fin 0
+                Cw≃Fin0 = subst (λ x → C w ≃ Fin x) z≡0 Cw≃FinZ
+            in
+            let Cw≃⊥ = C w ≃ ⊥
+                Cw≃⊥ = ≃-trans Cw≃Fin0 fin0
+            in
+            Inverse.to Cw≃⊥ (j' i)
+
+        z≡Sz' : Σ[ z' ∈ ℕ ] z ≡ ℕ.suc z'
+        z≡Sz' = elimCaseLeft z≡0⊎z≡Sz' z≢0
+        
+        z' : ℕ
+        z' = proj₁ z≡Sz'
+
+        Hz' : C w ≃ Fin (ℕ.suc z')
+        Hz' = subst (λ x → C w ≃ Fin x) (proj₂ z≡Sz') Cw≃FinZ
 
 --------------------------------------------------------------------------------
 -- Every signature with at least one nullary constructor and at least
