@@ -244,6 +244,13 @@ module WithSigAsArg
         → (proj₁ $ getNullaryConstr  (mk-nullary c) tt) ≡ c
     getNullaryConstrLemma {w} c = refl
 
+    -- We have to abstract equality of the weights of t and t'
+    -- into a separate hypothesis H : w ≡ w',
+    -- since Agda gets stuck in an unification problem otherwise
+    -- when pattern-matching t and t'; 
+    -- Agda cannot tell if 
+    -- ℕ.suc (arity c) ≗ w ≗ ℕ.suc (arity c') has a solution.
+    -- For this reason, the proof below breaks when trying to replace H by refl.
     isNullaryUnique'
         : (wt : Σ[ w ∈ ℕ ](OT w 0))
         → (w't' : Σ[ w ∈ ℕ ](OT w 0))
@@ -257,28 +264,17 @@ module WithSigAsArg
         in
         cong (λ c → ((ℕ.suc $ cardToℕ c) , mk-nullary c)) c≡c'
         
-    -- #TODO: Nic : IsNullaryUnique only needs H, not top-lvl function.
-    -- Since we're always inputting refl, can as well remove it as argument
-    -- here. Then can also remove w'.
     isNullaryUnique
-        : {w w' : ℕ} 
-        → (t : OT w 0)
-        → (t' : OT w' 0)
+        : {w : ℕ} 
+        → (t t' : OT w 0)
         → IsNullary t
         → IsNullary t'
-        → (H : w' ≡ w)
-        → t ≡ (subst (λ w → OT w 0) H t') 
-    isNullaryUnique {w} {w'} t t' p p' refl = 
+        → t ≡ t'
+    isNullaryUnique {w} t t' p p' = 
         let wt≡wt' : (w , t) ≡ (w , t') 
-            wt≡wt' = isNullaryUnique' (w , t) (w' , t') p p' refl
+            wt≡wt' = isNullaryUnique' (w , t) (w , t') p p' refl
         in
-        meh wt≡wt' 
-        where
-            meh : {w : ℕ} 
-                → {t t' : OT w 0}
-                → (w , t) ≡ (w , t')
-                → t ≡ t'
-            meh {w} {w'} refl = refl
+        openTermsEquality S wt≡wt' 
 
     isNullaryIrrelevant
         : {w n : ℕ}
@@ -307,7 +303,7 @@ module WithSigAsArg
 
     OT-Nul-Irrelevant {w} {0} (t , p) (t' , p') = 
         let t≡t' : t ≡ t'
-            t≡t' = isNullaryUnique t t' p p' refl
+            t≡t' = isNullaryUnique t t' p p'
         in
         OT-Nul-Irrelevant' p p' t≡t' 
 
