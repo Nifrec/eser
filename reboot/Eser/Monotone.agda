@@ -107,13 +107,13 @@ monotoneImplInjective {f} mono {m} {n} fm≡fn with <-cmp m n
 -- then it factorises most of ℕ into the intervals
 -- [f 0 , f 1) [f 1 , f2) [f 2 , f 3) , ...
 -- and any number w ≥ f 0 falls into exactly one such interval.
-increasingImplIval
+ℕ<MonoImplIval
     : (f : ℕ → ℕ)
     → ℕ<Monotone f
     → (w : ℕ)
     → f 0 ≤ w
     → Σ[ i ∈ ℕ ]( f i ≤ w × w < f (ℕ.suc i))
-increasingImplIval f mono 0 f0≤w =
+ℕ<MonoImplIval f mono 0 f0≤w =
     let f0≡0 : f 0 ≡ 0
         f0≡0 = n≤0⇒n≡0 (f0≤w)
     in
@@ -129,7 +129,7 @@ increasingImplIval f mono 0 f0≤w =
 --      This also implies `suc w ≤ f (suc i)`.
 --      Then the "i for suc w" is either i or suc i,
 --      depending on whether `suc w ≤ f (suc i)` is `≡` or `<` respectively.
-increasingImplIval f mono (suc w) f0≤Sw with (m≤n⇒m<n∨m≡n f0≤Sw) 
+ℕ<MonoImplIval f mono (suc w) f0≤Sw with (m≤n⇒m<n∨m≡n f0≤Sw) 
 ... | inj₂ f0≡Sw = (0 
                    , subst (λ x → f 0 ≤ x) f0≡Sw ≤-refl
                    , subst (λ x → x < f 1) f0≡Sw (mono $ s≤s z≤n))
@@ -137,7 +137,7 @@ increasingImplIval f mono (suc w) f0≤Sw with (m≤n⇒m<n∨m≡n f0≤Sw)
     let w≤Sw : w ≤ ℕ.suc w
         w≤Sw = n≤1+n w
     in
-    let (i , fi≤w , w<fSi) = increasingImplIval f mono w (s≤s⁻¹ f0<Sw)
+    let (i , fi≤w , w<fSi) = ℕ<MonoImplIval f mono w (s≤s⁻¹ f0<Sw)
     in
     let Sw≤fSi : ℕ.suc w ≤ f (ℕ.suc i)
         Sw≤fSi = w<fSi -- By definition of `a < b ≗ suc a ≤ b`.

@@ -316,7 +316,7 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
                 elimCaseRight H K
 
             ivalLemmaOutp : Σ[ i ∈ ℕ ]( j i ≤ w × w < j (ℕ.suc i))
-            ivalLemmaOutp = increasingImplIval j monotoneLemma w j0≤w
+            ivalLemmaOutp = ℕ<MonoImplIval j monotoneLemma w j0≤w
             i : ℕ
             i = proj₁ ivalLemmaOutp
             ji≤w : j i ≤ w
