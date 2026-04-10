@@ -86,31 +86,15 @@ open import Data.Fin.Properties using (fromℕ<-toℕ ; toℕ-fromℕ< ; toℕ-i
 
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
+open import Eser.Aux
 open import Eser.Card
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
-open import Eser.Aux
 open import Eser.Signature.Definitions
+open import Eser.Signature.Properties
 open import Eser.Signature.Splits
 
 module Eser.Signature.PiecewiseFin where
-
---#TODO: move this stuff about minimum weights to other file.
---#TODO: uncomment xor remove allTermsWeightGeqOne.
--- All terms have at least weight 1.
-noWeightlessTerms 
-    : {μ ζ : ℕ∞} 
-    → (S : Signature μ ζ) 
-    → (n : ℕ)
-    → OpenTerms {μ} {ζ} S 0 n
-    → ⊥ 
-noWeightlessTerms {μ} {ζ} S n t = ? -- #TODO: mave prove OT S w n → w > 0 first.
-
---allTermsWeightGeqOne
---    : {w : ℕ}
---    → (t : C w)
---    → 1 ≤ w
---allTermsWeightGeqOne {w} t = n≢0⇒n>0 (λ w≡0 → noWeightlessTerms S 0 (subst C w≡0 t))
 
 --------------------------------------------------------------------------------
 -- Theorem: there are finitely many terms of a fixed weight
