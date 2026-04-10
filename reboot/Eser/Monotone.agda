@@ -12,8 +12,6 @@
 -- form in the stdlib, but I haven't been able to find them.
 
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Level
 open import Data.Nat
 open import Data.Nat.Properties
@@ -171,4 +169,6 @@ firstOfIval
     → ((ℓ : ℕ) → Between a b ℓ → ¬ P ℓ)
     → P w
     → w ≡ a
-firstOfIval {w} {a} {b} a≤w w<b P H Pw = ?
+firstOfIval {w} {a} {b} a≤w w<b P H Pw with (m≤n⇒m<n∨m≡n a≤w)
+... | inj₁ a<w = ⊥-elim (H w (a<w , w<b) Pw)
+... | inj₂ a≡w = sym a≡w
