@@ -137,8 +137,8 @@ module WithSigAsArg
         → n ≡ 0
     isNullaryNoArgs {w} {0} (mk-nullary c) p = refl
 
-    -- Sublemma of lemma isNullaryWeight below.
-    -- For isNullaryWeight, either
+    -- Sublemma of lemma isNullaryWeightLemma below.
+    -- For isNullaryWeightLemma, either
     -- use (t : OT w 0) and Σ[ c ∈ cardToSet μ ] (fin (w ∸ 1) <∞ μ),
     -- which has an annoying _∸_ but allows to pattern
     -- match t to `mk-nullary c`,
@@ -156,12 +156,12 @@ module WithSigAsArg
             H : w ≡ ℕ.suc (cardToℕ c)
             H = refl
 
-    isNullaryWeight
+    isNullaryWeightLemma
         : {w : ℕ} 
         → (t : OT (ℕ.suc w) 0)
         → IsNullary t
         → fin w <∞ μ
-    isNullaryWeight {w} t p =
+    isNullaryWeightLemma {w} t p =
         let (c , Sw≡Sc) = getNullaryConstr t p
         in
         let w≡c : fin w ≡ fin (cardToℕ c)
@@ -377,7 +377,7 @@ module WithSigAsArg
             equiv = mk≃' f f⁻¹ invˡ invʳ
                 where
                 f : OT-Nul (ℕ.suc w) 0 → ⊥
-                f (t , isNullaryT) = ¬p (isNullaryWeight t isNullaryT)
+                f (t , isNullaryT) = ¬p (isNullaryWeightLemma t isNullaryT)
                 f⁻¹ : ⊥ → OT-Nul (ℕ.suc w) 0
                 f⁻¹ () 
                 invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
@@ -398,6 +398,79 @@ module WithSigAsArg
                 invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
                 invʳ {t} {Fin.zero} refl = OT-Nul-Irrelevant (f⁻¹ Fin.zero) t
 
+    getN 
+        : {w' : ℕ}
+        → (h : fin w' <∞ ζ)
+        → ℕ
+    getN {w'} h = arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h
+
+    getMultiaryConstr
+        : {w n : ℕ} 
+        → (t : OT w n)
+        → IsEmptyMultiary t
+        → Σ[ c ∈ cardToSet ζ ]( w ≡ ℕ.suc (cardToℕ c) × n ≡ arity {μ} {ζ} {S} c)
+    getMultiaryConstr {w} {n} (mk-multiary c) p = (c , Hw , Hn)
+        where
+            Hw : w ≡ ℕ.suc (cardToℕ c)
+            Hw = refl
+            Hn : n ≡ arity {μ} {ζ} {S} c
+            Hn = refl
+
+    isMultiaryWeightLemma
+        : {w' n : ℕ} 
+        → (t : OT (ℕ.suc w') n)
+        → IsEmptyMultiary t
+        → fin w' <∞ ζ
+    isMultiaryWeightLemma {w} t p =
+        let (c , Sw≡Sc , _) = getMultiaryConstr t p
+        in
+        let w≡c : fin w ≡ fin (cardToℕ c)
+            w≡c = cong fin $ suc-injective Sw≡Sc
+        in
+        subst (λ x → x <∞ ζ) (sym w≡c) (smallerThanCard c)
+
+    isMultiaryNumHolesLemma
+        : {w' n : ℕ} 
+        → (t : OT (ℕ.suc w') n)
+        → (p : IsEmptyMultiary t)
+        → n ≡ getN (isMultiaryWeightLemma t p)
+    isMultiaryNumHolesLemma {w'} {n} t p = 
+        let (c , Sw≡Sc , n≡ar) = getMultiaryConstr t p in
+        let w'≡c : w' ≡ cardToℕ c
+            w'≡c = suc-injective Sw≡Sc
+        in
+        let h : fin w' <∞ ζ
+            h = isMultiaryWeightLemma t p
+        in
+        let w'≡fromH = sym $ proj₂ $ cardFrom<∞ h
+        in
+        let c≡fromH : c ≡ (proj₁ $ cardFrom<∞ h)
+            c≡fromH = cardToℕ-injective $ trans (sym w'≡c) w'≡fromH
+        in
+        ≡begin 
+            n
+        ≡⟨ n≡ar ⟩
+            arity {μ} {ζ} {S} c
+        ≡⟨ cong (arity {μ} {ζ} {S}) c≡fromH ⟩
+            (arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h)
+        ≡⟨⟩
+            (arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ $ isMultiaryWeightLemma t p)
+        ≡⟨⟩
+            getN (isMultiaryWeightLemma t p)
+        ≡∎
+
+    isMultiaryNumHolesLemma'
+        : {w' n : ℕ} 
+        → (t : OT (ℕ.suc w') n)
+        → (p : IsEmptyMultiary t)
+        → (k : fin w' <∞ ζ)
+        → n ≡ getN k
+    isMultiaryNumHolesLemma' {w'} {n} t p k = 
+        let H : isMultiaryWeightLemma t p ≡ k
+            H = <∞-irrel (isMultiaryWeightLemma t p) k
+        in 
+        subst (λ k → n ≡ getN k) H (isMultiaryNumHolesLemma t p)
+
     Eq-Mul' 
         : (w n : ℕ)
         → Σ[ z ∈ ℕ ] (OT-Mul w n ≃ Fin z)
@@ -415,9 +488,33 @@ module WithSigAsArg
                 invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
                 invʳ {y} {()}
     Eq-Mul' (suc w') n with (fin w' <∞? ζ)
-    ... | no ¬w'<ζ = ?
-    ... | yes w'<ζ with (n Data.Nat.≟ (arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ w'<ζ))
-    ...     | no ¬n≡arity = ?
+    ... | no ¬w'<ζ = (0 ,  ≃-trans equiv (≃-sym fin0))
+        where 
+            equiv : OT-Mul (ℕ.suc w') n ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                    f : OT-Mul (ℕ.suc w') n → ⊥
+                    f (t , p) = ¬w'<ζ (isMultiaryWeightLemma t p)
+                    f⁻¹ : ⊥ → OT-Mul (ℕ.suc w') n
+                    f⁻¹ () 
+                    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                    invˡ {()} {y}
+                    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                    invʳ {(y)} {()}
+    ... | yes w'<ζ with (n Data.Nat.≟ (getN w'<ζ))
+    ...     | no ¬n≡arity = (0 ,  ≃-trans equiv (≃-sym fin0))
+        where 
+            equiv : OT-Mul (ℕ.suc w') n ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                    f : OT-Mul (ℕ.suc w') n → ⊥
+                    f (t , p) = ¬n≡arity (isMultiaryNumHolesLemma' t p w'<ζ)
+                    f⁻¹ : ⊥ → OT-Mul (ℕ.suc w') n
+                    f⁻¹ () 
+                    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                    invˡ {()} {y}
+                    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                    invʳ {(y)} {()}
     ...     | yes n≡arity = 
                 -- Maybe subst n in output instead of giving it as an arg.
                 let (t* , isCenterT*) = OT-Mul-isContr w' w'<ζ -- n≡arity
@@ -432,12 +529,6 @@ module WithSigAsArg
                 in
                 (1 , contr≃Fin1 isContrOTM)
         where
-            getN 
-                : {w' : ℕ}
-                → (h : fin w' <∞ ζ)
-                → ℕ
-            getN {w'} h = arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h
-
             mk-multiaryWithW&N
                 : (w n : ℕ)
                 → (c : cardToSet ζ)
@@ -548,6 +639,11 @@ module WithArgs
     Z-Nul = proj₁ $ Eq-Nul' w n
     Eq-Nul = proj₂ $ Eq-Nul' w n 
 
+    Z-Mul : ℕ
+    Z-Mul = proj₁ $ Eq-Mul' w n
+    Eq-Mul : OT-Mul w n ≃ Fin Z-Mul
+    Eq-Mul = proj₂ $ Eq-Mul' w n
+
     Zₜ : (s : Splits w) → (n : ℕ) → ℕ
     Zₜ s n = proj₁ (rec (split<Right w s) (ℕ.suc n))
 
@@ -650,12 +746,6 @@ module WithArgs
     Z-Arg = proj₁ Z-Eq-Arg
     Eq-Arg : OT-Arg w n ≃ Fin Z-Arg
     Eq-Arg = proj₂ Z-Eq-Arg
-
-    Z-Mul : ℕ
-    Z-Mul = ?
-
-    Eq-Mul : OT-Mul w n ≃ Fin Z-Mul
-    Eq-Mul = ?
 
     z : ℕ
     z = Z-Nul + Z-Mul + Z-Arg

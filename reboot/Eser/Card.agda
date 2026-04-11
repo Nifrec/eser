@@ -61,6 +61,12 @@ fin n <∞? ∞ = true because (ofʸ tt)
 
 _<∞b_ : ℕ∞ → ℕ∞ → Bool
 n <∞b m = does (m <∞? n)
+
+<∞-irrel : Relation.Binary.Definitions.Irrelevant _<∞_
+<∞-irrel {fin x} {fin y} = Data.Nat.Properties.≤-irrelevant
+<∞-irrel {fin x} {∞} p q = refl
+<∞-irrel {∞} {fin y} ()
+<∞-irrel {∞} {∞} ()
 --------------------------------------------------------------------------------
 -- Tools for converting between cardinalities and sets.
 --------------------------------------------------------------------------------
