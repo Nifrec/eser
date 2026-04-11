@@ -768,6 +768,29 @@ module WithArgs
             Fin z
         ∎
 
+openTermsWeightless≃Fin0
+    : {μ ζ : ℕ∞} 
+    → (S : Signature μ ζ)
+    → (n : ℕ)
+    → OpenTerms {μ} {ζ} S 0 n ≃ Fin 0
+-- #TODO: almost same proof occurs in Eq-Nul' and Eq-Mul' in the w ≗ cases.
+-- This redundancy can probably be avoided?
+openTermsWeightless≃Fin0 {μ} {ζ} S n = ≃-trans equiv (≃-sym fin0)
+        where
+            OT = OpenTerms {μ} {ζ} S
+            equiv : OT 0 n ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                f : OT 0 n → ⊥
+                f t = noWeightlessTerms S n t
+                f⁻¹ : ⊥ → OT 0 n
+                f⁻¹ ()
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {()} {t}
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {t} {()}
+
+
 -- The main statement is as follows:
 ZTheorem 
     : {μ ζ : ℕ∞} 
@@ -778,11 +801,11 @@ ZTheorem
 ZTheorem {μ} {ζ} S w = <-rec (ZP S) f w
     where
         f : (w : ℕ) → (rec : {w' : ℕ} → w' < w → ZP {μ} {ζ} S w') → ZP {μ} {ζ} S w
-        f 0 _ = λ n → (0 , ?) -- #TODO: proof that OT 0 n is always empty.
-        f (suc w) rec n = (z , p)
+        f 0 _ = λ n → (0 , openTermsWeightless≃Fin0 {μ} {ζ} S n)
+        f (suc w') rec n = (z , zEquiv)
             where
-                z = {! ZTheoremProof.z {μ} {ζ} S w rec n !}
-                p = {! ZTheoremProof.equiv {μ} {ζ} S w rec n !}
+                z = WithArgs.z {μ} {ζ} S w' rec n
+                zEquiv = WithArgs.zEquiv {μ} {ζ} S w' rec n
 
 
 -- Alternative presentation of the ZTheorem: give the sizes of the finite
