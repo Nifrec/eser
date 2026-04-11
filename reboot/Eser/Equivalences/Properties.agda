@@ -244,6 +244,30 @@ fin0 = mk≃' f f⁻¹ invˡ invʳ
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {()}
 
+isContrFin1
+    : isContr (Fin 1)
+isContrFin1 = (Fin.zero , isCenter)
+    where
+        isCenter : (x : Fin 1) → (Fin.zero ≡ x)
+        isCenter (Fin.zero) = refl
+
+-- All contractible types are equivalent to Fin 1.
+contr≃Fin1
+    : {A : Set}
+    → isContr A
+    → A ≃ Fin 1
+contr≃Fin1 {A} (a , isCenter) = mk≃' f f⁻¹ invˡ invʳ
+    where
+    f : A → Fin 1
+    f a = Fin.zero
+    f⁻¹ : Fin 1 → A
+    f⁻¹ _ = a
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {Fin.zero} {a'} refl = (proj₂ isContrFin1) (f a')
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {a'} {Fin.zero} refl = isCenter a'
+
+
 Σfin0 : (B : Fin 0 → Set) → (Σ[ x ∈ Fin 0 ] B x) ≃ ⊥
 Σfin0 B = mk≃' f f⁻¹ invˡ invʳ
     where

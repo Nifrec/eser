@@ -45,6 +45,16 @@ openTermsEquality
     → t ≡ t'
 openTermsEquality S refl = refl
 
+openTermsEqualityW&N
+    : {μ ζ : ℕ∞}
+    → (S : Signature μ ζ)
+    → {w n : ℕ}
+    → {t t' : OpenTerms {μ} {ζ} S w n}
+    → _≡_ {A = Σ[ w ∈ ℕ ] Σ[ n ∈ ℕ ](OpenTerms {μ} {ζ} S w n)} (w , n , t) (w , n , t')
+    -- ^ Just (w , n , t) ≡ (w , n , t'). Agda needed some help finding the base type.
+    → t ≡ t'
+openTermsEqualityW&N S refl = refl
+
 -- All terms have at least weight 1.
 noWeightlessTerms 
     : {μ ζ : ℕ∞} 

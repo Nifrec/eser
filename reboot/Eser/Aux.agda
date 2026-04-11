@@ -21,9 +21,43 @@ module Eser.Aux where
 --------------------------------------------------------------------------------
 -- General mathematical definitions
 --------------------------------------------------------------------------------
+isContr : (A : Set) → Set
+isContr A = Σ[ a ∈ A ]((a' : A) → a ≡ a')
 
 Between : (a b : ℕ) → ℕ → Set
 Between a b ℓ = (a < ℓ) × (ℓ < b)
+ 
+--------------------------------------------------------------------------------
+-- Substitution of equalities
+--------------------------------------------------------------------------------
+
+doubleSubst
+    : {A B : Set}
+    → (X : A → B → Set)
+    → {a a' : A}
+    → {b b' : B} 
+    → (ha : a ≡ a')
+    → (hb : b ≡ b')
+    → X a b
+    → X a' b'
+doubleSubst X refl refl x = x
+
+proj₁₂ 
+    : {A : Set}
+    → {B : A → Set}
+    → {C : (a : A) → B a → Set}
+    → (x : Σ[ a ∈ A ](Σ[ b ∈ B a ] C a b))
+    → B (proj₁ x)
+proj₁₂ = proj₁ ∘ proj₂
+
+proj₃ 
+    : {A : Set}
+    → {B : A → Set}
+    → {C : (a : A) → B a → Set}
+    → (x : Σ[ a ∈ A ](Σ[ b ∈ B a ] C a b))
+    → C (proj₁ x) (proj₁ $ proj₂ x)
+proj₃ = proj₂ ∘ proj₂
+
 
 --------------------------------------------------------------------------------
 -- Natural number arithmetic

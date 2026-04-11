@@ -176,7 +176,22 @@ module WithSigAsArg
         → IsNullary (subst (λ x → OT x 0) p (mk-nullary c))
     isNullaryUnderSubst refl = tt
 
+    -- #TODO: remove?
+    isMultiaryUnderSubst
+        : {w : ℕ}
+        → {c : cardToSet ζ}
+        → (p : (ℕ.suc (cardToℕ c) ≡ w))
+        → IsEmptyMultiary (subst (λ x → OT x (arity {μ} {ζ} {S} c)) p (mk-multiary {μ} {ζ} {S} c))
+    isMultiaryUnderSubst refl = tt
         
+    isMultiaryUnderDoubleSubst
+        : {w n : ℕ}
+        → {c : cardToSet ζ}
+        → (p : (ℕ.suc (cardToℕ c) ≡ w))
+        → (h : (arity {μ} {ζ} {S} c ≡ n))
+        → IsEmptyMultiary (doubleSubst OT p h (mk-multiary {μ} {ζ} {S} c))
+    isMultiaryUnderDoubleSubst refl refl = tt
+
 
     giveArgUnderSubst
         : {w wₐ wₜ : ℕ}
@@ -296,8 +311,8 @@ module WithSigAsArg
     
     OT-Nul-Irrelevant
         : {w n : ℕ}
-        → (t t' : OT-Nul w n)
-        → t ≡ t'
+        → (tp t'p' : OT-Nul w n)
+        → tp ≡ t'p'
     OT-Nul-Irrelevant {w} {suc n} (t , p) (t' , p') = 
         ⊥-elim $ 1+n≢0 $ isNullaryNoArgs t p
 
@@ -382,6 +397,186 @@ module WithSigAsArg
                 invˡ {Fin.zero} {y} refl = refl
                 invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
                 invʳ {t} {Fin.zero} refl = OT-Nul-Irrelevant (f⁻¹ Fin.zero) t
+
+    Eq-Mul' 
+        : (w n : ℕ)
+        → Σ[ z ∈ ℕ ] (OT-Mul w n ≃ Fin z)
+    Eq-Mul' 0 n = (0 , ≃-trans equiv (≃-sym fin0))
+        where
+            equiv : OT-Mul 0 n ≃ ⊥
+            equiv = mk≃' f f⁻¹ invˡ invʳ
+                where
+                f : OT-Mul 0 n → ⊥
+                f (t , _) = noWeightlessTerms S n t
+                f⁻¹ : ⊥ → OT-Mul 0 n
+                f⁻¹ ()
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {()} {y}
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {y} {()}
+    Eq-Mul' (suc w') n with (fin w' <∞? ζ)
+    ... | no ¬w'<ζ = ?
+    ... | yes w'<ζ with (n Data.Nat.≟ (arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ w'<ζ))
+    ...     | no ¬n≡arity = ?
+    ...     | yes n≡arity = 
+                -- Maybe subst n in output instead of giving it as an arg.
+                let (t* , isCenterT*) = OT-Mul-isContr w' w'<ζ -- n≡arity
+                in
+                let isContrOTM' : isContr (OT-Mul (ℕ.suc w') (getN w'<ζ))
+                    isContrOTM' = OT-Mul-isContr w' w'<ζ
+                in
+                let isContrOTM : isContr (OT-Mul (ℕ.suc w') n)
+                    isContrOTM = subst (λ n → isContr (OT-Mul (ℕ.suc w') n)) 
+                                       (sym n≡arity) 
+                                       isContrOTM'
+                in
+                (1 , contr≃Fin1 isContrOTM)
+        where
+            getN 
+                : {w' : ℕ}
+                → (h : fin w' <∞ ζ)
+                → ℕ
+            getN {w'} h = arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h
+
+            getMultiaryConstr
+                : {w n : ℕ} 
+                → (t : OT w n)
+                → IsEmptyMultiary t
+                → Σ[ c ∈ cardToSet ζ ]( w ≡ ℕ.suc (cardToℕ c) )
+            getMultiaryConstr {w} (mk-multiary c) p = (c , H)
+                where
+                    H : w ≡ ℕ.suc (cardToℕ c)
+                    H = refl
+
+            mk-multiaryWithW&N
+                : (w n : ℕ)
+                → (c : cardToSet ζ)
+                → (w ≡ ℕ.suc (cardToℕ c))
+                → (n ≡ arity {μ} {ζ} {S} c)
+                → OT-Mul w n
+            mk-multiaryWithW&N w n c w≡c n≡ar = 
+                let t : OT w n 
+                    t = doubleSubst OT (sym w≡c) (sym n≡ar) (mk-multiary c)
+                in
+                (t , isMultiaryUnderDoubleSubst (sym w≡c) (sym n≡ar))
+
+            constrTermUniqueness
+                : (c c' : cardToSet ζ)
+                → (hw  : ℕ.suc (cardToℕ c) ≡ ℕ.suc (cardToℕ c'))
+                → (hn  : arity {μ} {ζ} {S} c ≡ arity {μ} {ζ} {S} c')
+                → (mk-multiary c , tt)
+                  ≡ 
+                  (mk-multiaryWithW&N 
+                        (ℕ.suc (cardToℕ c)) 
+                        (arity {μ} {ζ} {S} c) c' hw hn)
+            constrTermUniqueness c c' hw hn = {! !}
+
+            --constrTermUniqueness
+            --    : {w n : ℕ}
+            --    → (c c' : cardToSet ζ)
+            --    → (hw  : w ≡ ℕ.suc (cardToℕ c))
+            --    → (hn  : n ≡ arity {μ} {ζ} {S} c)
+            --    → (hw'  : w ≡ ℕ.suc (cardToℕ c'))
+            --    → (hn'  : n ≡ arity {μ} {ζ} {S} c')
+            --    → (mk-multiaryWithW&N w n c hw hn) ≡ (mk-multiaryWithW&N w n c' hw' hn')
+            --constrTermUniqueness {w} {n} c c' refl refl hw' hn' = {! !}
+
+            isMultiaryUnique'
+                : (wnt    : Σ[ w ∈ ℕ ](Σ[ n ∈ ℕ ] OT w n))
+                → (w'n't' : Σ[ w ∈ ℕ ](Σ[ n ∈ ℕ ] OT w n))
+                → IsEmptyMultiary (proj₃ wnt)
+                → IsEmptyMultiary (proj₃ w'n't')
+                → (Hw : proj₁ wnt  ≡ proj₁ w'n't')
+                → (Hn : proj₁₂ wnt ≡ proj₁₂ w'n't')
+                → wnt ≡ w'n't'
+            isMultiaryUnique' (w , n , mk-multiary c) 
+                              (w' , n' , mk-multiary c') 
+                              p p' Hw Hn =
+                let c≡c' : c ≡ c'
+                    c≡c' = cardToℕ-injective $ suc-injective Hw
+                in
+                cong (λ c → ((ℕ.suc $ cardToℕ c) 
+                             , arity {μ} {ζ} {S} c 
+                             , mk-multiary c)
+                     ) c≡c'
+
+            isMultiaryUnique
+                : {w n : ℕ} 
+                → (t t' : OT w n)
+                → IsEmptyMultiary t
+                → IsEmptyMultiary t'
+                → t ≡ t'
+            isMultiaryUnique {w} {n} t t' p p' = 
+                let wnt≡wnt' : (w , n , t) ≡ (w , n , t') 
+                    wnt≡wnt' = isMultiaryUnique' (w , n , t) (w , n , t') p p' refl refl
+                in
+                openTermsEqualityW&N S wnt≡wnt' 
+
+            -- There is at most one proof that a term is multiary.
+            -- So two equal multiary terms share the same proof of multiariness.
+            contractMuliarinessProofs
+                : {w n : ℕ}
+                → {t t' : OT w n}
+                → t ≡ t'
+                → (p : IsEmptyMultiary t)
+                → (p' : IsEmptyMultiary t')
+                → (t , p) ≡ (t' , p')
+            contractMuliarinessProofs {w} {n} {t} {t} refl p p' = cong (λ p → (t , p)) p≡p'
+                where
+                    isMultiaryIrrelevant 
+                        : {w n : ℕ} 
+                        → {t : OT w n}
+                        → (p p' : IsEmptyMultiary t)
+                        → p ≡ p'
+                    isMultiaryIrrelevant {w} {n} {(mk-multiary c)} tt tt = refl
+
+                    p≡p' = isMultiaryIrrelevant {w} {n} {t} p p'
+
+            -- OT-Mul w n is a proposition that is inhabited if and only if
+            -- 1. w ≗ suc w'
+            --      Weightless terms (w ≡ 0) don't exist.
+            -- 2. h : fin w' <∞ ζ 
+            --      Otherwise there is no constructor of weight w.
+            -- 3. n ≡ ℕ.suc $ arity $ proj₁ $ cardFrom<∞ h
+            --      Otherwise it has the wrong number of open argument-holes.
+            OT-Mul-isContr
+                : (w' : ℕ)
+                → (h : fin w' <∞ ζ)
+                → isContr ( OT-Mul (ℕ.suc w') (getN h))
+            OT-Mul-isContr w' h = (t*p* , isCenterT*)
+                where
+                    -- Constructor of contraction center.
+                    c* : cardToSet ζ
+                    c* = proj₁ $ cardFrom<∞ h
+                    w'≡c* : w' ≡ cardToℕ c*
+                    w'≡c* = sym $ proj₂ $ cardFrom<∞ h
+                    -- Term of contraction center.
+                    t*p* = mk-multiaryWithW&N (ℕ.suc w') (getN h) c* (cong ℕ.suc w'≡c*) refl
+                    --t* = subst (λ x → OT (ℕ.suc x) (getN h))
+                    --            (proj₂ $ cardFrom<∞ h)
+                    --            (mk-multiary $ proj₁ $ cardFrom<∞ h)
+                    --isMultiaryT* : IsEmptyMultiary t*
+                    --isMultiaryT* = ?
+                    t* = proj₁ t*p*
+                    p* = proj₂ t*p*
+                    w = ℕ.suc w'
+                    isCenterT* : (tp : OT-Mul (ℕ.suc w') (getN h)) → t*p* ≡ tp
+                    isCenterT* (t , p) = 
+                        let t*≡t : t* ≡ t
+                            t*≡t = isMultiaryUnique {ℕ.suc w'} {getN h} t* t p* p
+                        in
+                        contractMuliarinessProofs t*≡t p* p 
+                        --let c : cardToSet ζ
+                        --    c = proj₁ $ getMultiaryConstr t isMultiaryT
+                        --in
+                        --let Sw'≡Sc = proj₂ $ getMultiaryConstr t isMultiaryT in
+                        --let w'≡c : w' ≡ cardToℕ c
+                        --    w'≡c = suc-injective Sw'≡Sc 
+                        --in
+                        ----let t*≡mkFromC : t* ≡ mk-multiary c
+                        ----    t*≡mkFromC = ?
+                        ----in
+                        --{! !}
 
 -- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
 -- Submodule that also assumes a given weight w and num-remaining-args n
