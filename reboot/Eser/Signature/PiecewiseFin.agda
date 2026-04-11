@@ -438,16 +438,6 @@ module WithSigAsArg
                 → ℕ
             getN {w'} h = arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h
 
-            getMultiaryConstr
-                : {w n : ℕ} 
-                → (t : OT w n)
-                → IsEmptyMultiary t
-                → Σ[ c ∈ cardToSet ζ ]( w ≡ ℕ.suc (cardToℕ c) )
-            getMultiaryConstr {w} (mk-multiary c) p = (c , H)
-                where
-                    H : w ≡ ℕ.suc (cardToℕ c)
-                    H = refl
-
             mk-multiaryWithW&N
                 : (w n : ℕ)
                 → (c : cardToSet ζ)
@@ -459,27 +449,6 @@ module WithSigAsArg
                     t = doubleSubst OT (sym w≡c) (sym n≡ar) (mk-multiary c)
                 in
                 (t , isMultiaryUnderDoubleSubst (sym w≡c) (sym n≡ar))
-
-            constrTermUniqueness
-                : (c c' : cardToSet ζ)
-                → (hw  : ℕ.suc (cardToℕ c) ≡ ℕ.suc (cardToℕ c'))
-                → (hn  : arity {μ} {ζ} {S} c ≡ arity {μ} {ζ} {S} c')
-                → (mk-multiary c , tt)
-                  ≡ 
-                  (mk-multiaryWithW&N 
-                        (ℕ.suc (cardToℕ c)) 
-                        (arity {μ} {ζ} {S} c) c' hw hn)
-            constrTermUniqueness c c' hw hn = {! !}
-
-            --constrTermUniqueness
-            --    : {w n : ℕ}
-            --    → (c c' : cardToSet ζ)
-            --    → (hw  : w ≡ ℕ.suc (cardToℕ c))
-            --    → (hn  : n ≡ arity {μ} {ζ} {S} c)
-            --    → (hw'  : w ≡ ℕ.suc (cardToℕ c'))
-            --    → (hn'  : n ≡ arity {μ} {ζ} {S} c')
-            --    → (mk-multiaryWithW&N w n c hw hn) ≡ (mk-multiaryWithW&N w n c' hw' hn')
-            --constrTermUniqueness {w} {n} c c' refl refl hw' hn' = {! !}
 
             isMultiaryUnique'
                 : (wnt    : Σ[ w ∈ ℕ ](Σ[ n ∈ ℕ ] OT w n))
@@ -552,11 +521,6 @@ module WithSigAsArg
                     w'≡c* = sym $ proj₂ $ cardFrom<∞ h
                     -- Term of contraction center.
                     t*p* = mk-multiaryWithW&N (ℕ.suc w') (getN h) c* (cong ℕ.suc w'≡c*) refl
-                    --t* = subst (λ x → OT (ℕ.suc x) (getN h))
-                    --            (proj₂ $ cardFrom<∞ h)
-                    --            (mk-multiary $ proj₁ $ cardFrom<∞ h)
-                    --isMultiaryT* : IsEmptyMultiary t*
-                    --isMultiaryT* = ?
                     t* = proj₁ t*p*
                     p* = proj₂ t*p*
                     w = ℕ.suc w'
@@ -566,17 +530,6 @@ module WithSigAsArg
                             t*≡t = isMultiaryUnique {ℕ.suc w'} {getN h} t* t p* p
                         in
                         contractMuliarinessProofs t*≡t p* p 
-                        --let c : cardToSet ζ
-                        --    c = proj₁ $ getMultiaryConstr t isMultiaryT
-                        --in
-                        --let Sw'≡Sc = proj₂ $ getMultiaryConstr t isMultiaryT in
-                        --let w'≡c : w' ≡ cardToℕ c
-                        --    w'≡c = suc-injective Sw'≡Sc 
-                        --in
-                        ----let t*≡mkFromC : t* ≡ mk-multiary c
-                        ----    t*≡mkFromC = ?
-                        ----in
-                        --{! !}
 
 -- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
 -- Submodule that also assumes a given weight w and num-remaining-args n
