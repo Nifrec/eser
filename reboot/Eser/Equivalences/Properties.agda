@@ -62,19 +62,8 @@ mk≃'
 mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
 
 --------------------------------------------------------------------------------
--- Basic surjection properties.
---------------------------------------------------------------------------------
-module _ where
-    open import Function.Properties.Surjection
-
-    ->>-refl : Reflexive _->>_
-    ->>-refl = Function.Properties.Surjection.refl
-
-    
---------------------------------------------------------------------------------
 -- Very basic ≃-rewriting theorems
 --------------------------------------------------------------------------------
-
 
 -- If a ≡ a' then B a ≃ B a'.
 ≃-subst
@@ -113,18 +102,7 @@ module _ where
 --------------------------------------------------------------------------------
 
 module _ where
-    open import Data.Product.Function.Dependent.Propositional renaming (Σ-⇔ to Σ-stdlib)
-
-    -- One can project a surjection out of any equivalence.
-    equiv-impl-surj
-        : {A B : Set}
-        → A ≃ B
-        → A ->> B
-    equiv-impl-surj {A} {B} A≃B = surj
-        where
-            A→B : A → B
-            A→B = Inverse.to A≃B
-            surj = LeftInverse.surjection $ Inverse.leftInverse A≃B
+    open import Data.Product.Function.Dependent.Propositional using (Σ-↔)
 
     -- If Ba ≃ Ca for all a ∈ A then Σ[a∈A]Ba ≃ Σ[a∈A]Ca.
     rewr-≃-rightOf-Σ
@@ -132,10 +110,10 @@ module _ where
         → {B C : A → Set}
         → ((a : A) → (B a ≃ C a))
         → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
-    rewr-≃-rightOf-Σ H = Σ-stdlib (->>-refl) g 
+    rewr-≃-rightOf-Σ {A} {B} {C} H = Σ-↔ (≃-refl) H' 
         where
-            f = ?
-            g = ?
+            H' : {a : A} → (B a ≃ C a)
+            H' {a} = H a
 
     -- If A ≃ A' and B does NOT depend on A then
     -- Σ[a∈A]B ≃ Σ[a'∈A']B
