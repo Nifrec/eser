@@ -13,24 +13,24 @@
 -- Strategy:
 -- 1. OT 0 n ≃ Fin 0 since there are terms of weight 0.
 -- 2. for w = suc ŵ:
---  OT w n ≡ (OT⁰ w n) ⊎ (OTᵉ w n) ⊎ (OTᵃ w n)
+--  OT w n ≡ (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n)
 --      where 
---          OT⁰ w n are the terms in OT w n made with mk-nullary.
+--          OT-Nul w n are the terms in OT w n made with mk-nullary.
 --          OT⁼ w n are the terms in OT w n made with mk-multiary,
 --              i.e., constructors without any aguments applied.
---          OTᵃ w n are the terms in OT w n made with giveArg,
+--          OT-Arg w n are the terms in OT w n made with giveArg,
 --              i.e., constructors with one or more arguments applied.
--- 3. OT⁰ w (suc n) ≃ Fin 0 always, 
+-- 3. OT-Nul w (suc n) ≃ Fin 0 always, 
 --      because nullary constructors don't need arguments. 
---    OT⁰ w 0 ≃ Fin 1 if there are at least w nullary constructors,
---      and OT⁰ w 0 ≃ ⊥ otherwise; 
+--    OT-Nul w 0 ≃ Fin 1 if there are at least w nullary constructors,
+--      and OT-Nul w 0 ≃ ⊥ otherwise; 
 --      only the term with index w-1 has weight w,
 --      but it doesn't exist if the set of nullary constructors
 --      is smaller than Fin w.
--- 3. OTᵉ w n ≃ Fin 1 if there are at least w constructors
+-- 3. OT-Mul w n ≃ Fin 1 if there are at least w constructors
 --      and the constructor with index w-1 has arity n.
---      Otherwise OTᵉ w n ≃ Fin 0
--- 4. showing OTᵃ w n ≃ Fin (żᵃ w n) is the only hard case.
+--      Otherwise OT-Mul w n ≃ Fin 0
+-- 4. showing OT-Arg w n ≃ Fin (ż-Arg w n) is the only hard case.
 --      How many open terms of the form `giveArg t a`
 --      of weight w needing n more arguments exist?
 --      Well note the following data is required to build such a term:
@@ -45,7 +45,7 @@
 --      so if w ≡ wₐ + wₜ then both wₐ < w and wₜ < w must hold. 
 --      Consequently, we can make recursive calls with arguments wₐ and wₜ.
 -- 5. So define 
---  OTᵃ w n ≔ Σ[(wₜ,wₐ,p) ∈ Splits w](OT wₜ (suc n)) × (OT wₐ 0)
+--  OT-Arg w n ≔ Σ[(wₜ,wₐ,p) ∈ Splits w](OT wₜ (suc n)) × (OT wₐ 0)
 --          ≃ Σ[Fin( ŵ )] Fin(ż wₜ n) × Fin(ż wₐ 0)
 -- 6. Here `Splits w` (for any w ≗ suc ŵ) is the set of splits of w into 
 --      two non-zero numbers that sum to w.
@@ -60,8 +60,6 @@
 --      which has exactly one solution for all x ∈ {0, ..., ŵ-1},
 --      if ŵ ≥ 1 and none if ŵ ≡ 0, but then x ∈ ⊥ anyway.
 --      Hence the solutions are in bijection to the choice of x ∈ Fin ŵ.
-
-{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
@@ -94,127 +92,43 @@ open import Eser.Signature.Definitions
 open import Eser.Signature.Properties
 open import Eser.Signature.Splits
 
-module Eser.Signature.PiecewiseFin where
+module Eser.Signature.PiecewiseFin
+    {μ ζ : ℕ∞}
+    (S : Signature μ ζ)
+    where
+
+open import Eser.Signature.PiecewiseFin.Definitions using (ZP)
 
 --------------------------------------------------------------------------------
 -- Theorem: there are finitely many terms of a fixed weight
 --
 -- I.e., `OpenTerms w n ≃ Fin (z n w)` for all w ∈ ℕ for some z : ℕ → ℕ → ℕ
 --------------------------------------------------------------------------------
-ZP  : {μ ζ : ℕ∞} 
-    → (S : Signature (μ) (ζ))
-    → (w : ℕ) 
-    → Set
-ZP {μ} {ζ} S w = (n : ℕ) → Σ[ z ∈ ℕ ]( OpenTerms {μ} {ζ} S w n ≃ Fin z )
-
-module WithSigAsArg
+ 
+-- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
+-- Submodule that also assumes a given weight w and num-remaining-args n
+-- plus the ability to perfrom Well-Founded recursion on w.
+module WithArgs
     {μ ζ : ℕ∞}
     (S : Signature μ ζ)
+    (w-1 : ℕ)
+    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
+    (n : ℕ) 
     where
-
-    OT = OpenTerms {μ} {ζ} S
-
-    IsNullary : {w : ℕ} → {n : ℕ} → OT w n → Set
-    IsNullary (mk-nullary _) = ⊤
-    IsNullary (mk-multiary _) = ⊥
-    IsNullary (giveArg _ _) = ⊥
-
-    IsEmptyMultiary : {w : ℕ} → {n : ℕ} → OT w n → Set
-    IsEmptyMultiary (mk-nullary _) = ⊥
-    IsEmptyMultiary (mk-multiary _) = ⊤
-    IsEmptyMultiary (giveArg _ _) = ⊥
-
-    IsGiveArg : {w : ℕ} → {n : ℕ} → OT w n → Set
-    IsGiveArg (mk-nullary _) = ⊥
-    IsGiveArg (mk-multiary _) = ⊥
-    IsGiveArg (giveArg _ _) = ⊤
-
-    isNullaryNoArgs 
-        : {w : ℕ} 
-        → {n : ℕ} 
-        → (t : OT w n)
-        → IsNullary t
-        → n ≡ 0
-    isNullaryNoArgs {w} {0} (mk-nullary c) p = refl
-
-    -- Sublemma of lemma isNullaryWeightLemma below.
-    -- For isNullaryWeightLemma, either
-    -- use (t : OT w 0) and Σ[ c ∈ cardToSet μ ] (fin (w ∸ 1) <∞ μ),
-    -- which has an annoying _∸_ but allows to pattern
-    -- match t to `mk-nullary c`,
-    -- xor
-    -- use (t : OT (ℕ.suc w) 0) and Σ[ c ∈ cardToSet μ ] (fin w <∞ μ),
-    -- in which case Agda fails to rule out the giveArg case and we don't get c
-    -- via pattern matching. `getNullaryConstr` then gives c anyway.
-    getNullaryConstr
-        : {w : ℕ} 
-        → (t : OT w 0)
-        → IsNullary t
-        → Σ[ c ∈ cardToSet μ ]( w ≡ ℕ.suc (cardToℕ c) )
-    getNullaryConstr {w} (mk-nullary c) p = (c , H)
-        where
-            H : w ≡ ℕ.suc (cardToℕ c)
-            H = refl
-
-    isNullaryWeightLemma
-        : {w : ℕ} 
-        → (t : OT (ℕ.suc w) 0)
-        → IsNullary t
-        → fin w <∞ μ
-    isNullaryWeightLemma {w} t p =
-        let (c , Sw≡Sc) = getNullaryConstr t p
-        in
-        let w≡c : fin w ≡ fin (cardToℕ c)
-            w≡c = cong fin $ suc-injective Sw≡Sc
-        in
-        subst (λ x → x <∞ μ) (sym w≡c) (smallerThanCard c)
-
-    isNullaryUnderSubst
-        : {w : ℕ}
-        → {c : cardToSet μ}
-        → (p : (ℕ.suc (cardToℕ c) ≡ w))
-        → IsNullary (subst (λ x → OT x 0) p (mk-nullary c))
-    isNullaryUnderSubst refl = tt
-
-    -- #TODO: remove?
-    isMultiaryUnderSubst
-        : {w : ℕ}
-        → {c : cardToSet ζ}
-        → (p : (ℕ.suc (cardToℕ c) ≡ w))
-        → IsEmptyMultiary (subst (λ x → OT x (arity {μ} {ζ} {S} c)) p (mk-multiary {μ} {ζ} {S} c))
-    isMultiaryUnderSubst refl = tt
-        
-    isMultiaryUnderDoubleSubst
-        : {w n : ℕ}
-        → {c : cardToSet ζ}
-        → (p : (ℕ.suc (cardToℕ c) ≡ w))
-        → (h : (arity {μ} {ζ} {S} c ≡ n))
-        → IsEmptyMultiary (doubleSubst OT p h (mk-multiary {μ} {ζ} {S} c))
-    isMultiaryUnderDoubleSubst refl refl = tt
-
-
-    giveArgUnderSubst
-        : {w wₐ wₜ : ℕ}
-        → {n : ℕ}
-        → (p : (ℕ.suc wₐ + ℕ.suc wₜ ≡ w))
-        → (t : OpenTerms {μ} {ζ} S (ℕ.suc wₜ) (ℕ.suc n))
-        → (a : OpenTerms {μ} {ζ} S (ℕ.suc wₐ) 0)
-        → IsGiveArg (subst (λ x → OT x n) p (giveArg t a))
-    giveArgUnderSubst refl t a = tt
-
-    OT-Nul : ℕ → ℕ → Set
-    OT-Nul w n = Σ[ t ∈ OT w n ] (IsNullary t)
-
-    OT-Mul : ℕ → ℕ → Set
-    OT-Mul w n = Σ[ t ∈ OT w n ] (IsEmptyMultiary t)
-
-    OT-Arg : ℕ → ℕ → Set
-    OT-Arg w n = Σ[ t ∈ OT w n ] (IsGiveArg t)
+    open import Eser.Signature.PiecewiseFin.OTNullary {μ} {ζ} S
+    open import Eser.Signature.PiecewiseFin.OTMultiary {μ} {ζ} S
+    open import Eser.Signature.PiecewiseFin.OTGiveArg
+    open Eser.Signature.PiecewiseFin.OTGiveArg.WithSignature.AlsoWithW-1&Rec&N 
+        {μ} {ζ} S w-1 rec n hiding (w)
+    open Eser.Signature.PiecewiseFin.Definitions {μ} {ζ} S
 
     -- Trivial sublemma: OT w n is an Agda-inductive type, and hence the sum
     -- over all of its Agda-constructors of the subsets of the terms
     -- constructed with that constructor.
-    ZsubDecompo : (w : ℕ) → (n : ℕ) → OT w n ≃ (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n)
+    ZsubDecompo 
+        : (w : ℕ) 
+        → (n : ℕ) 
+        → OT w n ≃ (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n)
     ZsubDecompo w n = mk≃ {to = to} {from = from} inv
         where 
             to : OT w n → (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n)
@@ -236,511 +150,17 @@ module WithSigAsArg
             invʳ {giveArg _ _} {x} refl = refl
             inv : Inverseᵇ _≡_ _≡_ to from
             inv = (invˡ , invʳ)
- 
-    isNullaryInhabited
-        : {w : ℕ}
-        → (H : fin w <∞ μ)
-        → OT-Nul (ℕ.suc w) 0
-    isNullaryInhabited {w} H = 
-        let c : cardToSet μ
-            c = proj₁ $ cardFrom<∞ H
-        in
-        let Sc≡Sw : ((ℕ.suc $ cardToℕ c) ≡ ℕ.suc w)
-            Sc≡Sw = cong ℕ.suc (proj₂ $ cardFrom<∞ H)
-        in
-        let t : OpenTerms {μ} {ζ} S (ℕ.suc w) 0
-            t = subst (λ x → OpenTerms {μ} {ζ} S x 0) Sc≡Sw (mk-nullary c)
-        in
-        (t , isNullaryUnderSubst Sc≡Sw)
-
-    getNullaryConstrLemma
-        : {w : ℕ} 
-        → (c : cardToSet μ)
-        → (proj₁ $ getNullaryConstr  (mk-nullary c) tt) ≡ c
-    getNullaryConstrLemma {w} c = refl
-
-    -- We have to abstract equality of the weights of t and t'
-    -- into a separate hypothesis H : w ≡ w',
-    -- since Agda gets stuck in an unification problem otherwise
-    -- when pattern-matching t and t'; 
-    -- Agda cannot tell if 
-    -- ℕ.suc (arity c) ≗ w ≗ ℕ.suc (arity c') has a solution.
-    -- For this reason, the proof below breaks when trying to replace H by refl.
-    isNullaryUnique'
-        : (wt : Σ[ w ∈ ℕ ](OT w 0))
-        → (w't' : Σ[ w ∈ ℕ ](OT w 0))
-        → IsNullary (proj₂ wt)
-        → IsNullary (proj₂ w't')
-        → (H : proj₁ wt ≡ proj₁ w't')
-        → wt ≡ w't'
-    isNullaryUnique' (w , mk-nullary c) (w' , mk-nullary c') p p' H =
-        let c≡c' : c ≡ c'
-            c≡c' = cardToℕ-injective $ suc-injective H
-        in
-        cong (λ c → ((ℕ.suc $ cardToℕ c) , mk-nullary c)) c≡c'
-        
-    isNullaryUnique
-        : {w : ℕ} 
-        → (t t' : OT w 0)
-        → IsNullary t
-        → IsNullary t'
-        → t ≡ t'
-    isNullaryUnique {w} t t' p p' = 
-        let wt≡wt' : (w , t) ≡ (w , t') 
-            wt≡wt' = isNullaryUnique' (w , t) (w , t') p p' refl
-        in
-        openTermsEquality S wt≡wt' 
-
-    isNullaryIrrelevant
-        : {w n : ℕ}
-        → (t : OT w n)
-        → (p p' : IsNullary t)
-        → p ≡ p'
-    isNullaryIrrelevant {w} {n} (mk-nullary c) tt tt = refl
-
-    OT-Nul-Irrelevant'
-        : {w n : ℕ}
-        → {t t' : OT w n}
-        → (p : IsNullary t)
-        → (p' : IsNullary t')
-        → t ≡ t'
-        → (t , p) ≡ (t' , p')
-    OT-Nul-Irrelevant' {t = t} p p' refl = 
-        cong (λ p → (t , p)) $ isNullaryIrrelevant t p p'
-        
-    
-    OT-Nul-Irrelevant
-        : {w n : ℕ}
-        → (tp t'p' : OT-Nul w n)
-        → tp ≡ t'p'
-    OT-Nul-Irrelevant {w} {suc n} (t , p) (t' , p') = 
-        ⊥-elim $ 1+n≢0 $ isNullaryNoArgs t p
-
-    OT-Nul-Irrelevant {w} {0} (t , p) (t' , p') = 
-        let t≡t' : t ≡ t'
-            t≡t' = isNullaryUnique t t' p p'
-        in
-        OT-Nul-Irrelevant' p p' t≡t' 
-
---------------------------------------------------------------------------------
--- Size of subset of nullary-constructed open terms
---------------------------------------------------------------------------------
-    -- Size of the subset of OpenTerms w n that are created with the mk-nullary
-    -- constructor. They never take any arguments (for n > 0 it is uninhabited)
-    -- and their weight is 1 + their index in μ (the set of nullary
-    -- constructors).
-    Z-Nul' 
-        : (μ ζ : ℕ∞)
-        → (S : Signature μ ζ)
-        → (w n : ℕ)
-        → ℕ
-    Z-Nul' μ ζ S w (suc n)  = 0 -- No nullary constructors take arguments.
-    Z-Nul' μ ζ S 0 0        = 0 -- All terms have weight at least one.
-    -- A nullary term with weight `suc w` has index w in `cardToSet μ`.
-    -- If the latter is ℕ then this term always exists; 
-    -- but if `cardToSet μ` is `Fin m` then it only exists if `w < m`.
-    Z-Nul' μ ζ S (suc w) n  = if does ((fin w) <∞? μ) then 1 else 0
-
-    Eq-Nul' 
-        : (w n : ℕ)
-        → Σ[ z ∈ ℕ ] (OT-Nul w n ≃ Fin z)
-    Eq-Nul' w (suc n) = (0 , ≃-trans equiv (≃-sym fin0))
-        where
-            equiv : OT-Nul w (ℕ.suc n) ≃ ⊥
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                f : OT-Nul w (ℕ.suc n) → ⊥
-                f (t , p) = 1+n≢0 $ isNullaryNoArgs t p
-                f⁻¹ : ⊥ → OT-Nul w ( ℕ.suc n)
-                f⁻¹ ()
-                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                invˡ {()} {y}
-                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                invʳ {y} {()}
-    Eq-Nul' 0 0 = (0 , ≃-trans equiv (≃-sym fin0))
-        where
-            equiv : OT-Nul 0 0 ≃ ⊥
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                f : OT-Nul 0 0 → ⊥
-                f (t , _) = noWeightlessTerms S 0 t
-                f⁻¹ : ⊥ → OT-Nul 0 0
-                f⁻¹ ()
-                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                invˡ {()} {y}
-                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                invʳ {y} {()}
-    Eq-Nul' (suc w) 0 with (fin w <∞? μ)
-    ... | no ¬p = (0 ,  ≃-trans equiv (≃-sym fin0))
-        where 
-            equiv : OT-Nul (ℕ.suc w) 0 ≃ ⊥
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                f : OT-Nul (ℕ.suc w) 0 → ⊥
-                f (t , isNullaryT) = ¬p (isNullaryWeightLemma t isNullaryT)
-                f⁻¹ : ⊥ → OT-Nul (ℕ.suc w) 0
-                f⁻¹ () 
-                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                invˡ {()} {y}
-                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                invʳ {y} {()}
-    ... | yes p = (1 , equiv)
-        where 
-            equiv : OT-Nul (ℕ.suc w) 0 ≃ Fin 1
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                f : OT-Nul (ℕ.suc w) 0 → Fin 1
-                f _ = Fin.zero
-                f⁻¹ : Fin 1 → OT-Nul (ℕ.suc w) 0
-                f⁻¹ _ = isNullaryInhabited p 
-                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                invˡ {Fin.zero} {y} refl = refl
-                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                invʳ {t} {Fin.zero} refl = OT-Nul-Irrelevant (f⁻¹ Fin.zero) t
-
-    getN 
-        : {w' : ℕ}
-        → (h : fin w' <∞ ζ)
-        → ℕ
-    getN {w'} h = arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h
-
-    getMultiaryConstr
-        : {w n : ℕ} 
-        → (t : OT w n)
-        → IsEmptyMultiary t
-        → Σ[ c ∈ cardToSet ζ ]( w ≡ ℕ.suc (cardToℕ c) × n ≡ arity {μ} {ζ} {S} c)
-    getMultiaryConstr {w} {n} (mk-multiary c) p = (c , Hw , Hn)
-        where
-            Hw : w ≡ ℕ.suc (cardToℕ c)
-            Hw = refl
-            Hn : n ≡ arity {μ} {ζ} {S} c
-            Hn = refl
-
-    isMultiaryWeightLemma
-        : {w' n : ℕ} 
-        → (t : OT (ℕ.suc w') n)
-        → IsEmptyMultiary t
-        → fin w' <∞ ζ
-    isMultiaryWeightLemma {w} t p =
-        let (c , Sw≡Sc , _) = getMultiaryConstr t p
-        in
-        let w≡c : fin w ≡ fin (cardToℕ c)
-            w≡c = cong fin $ suc-injective Sw≡Sc
-        in
-        subst (λ x → x <∞ ζ) (sym w≡c) (smallerThanCard c)
-
-    isMultiaryNumHolesLemma
-        : {w' n : ℕ} 
-        → (t : OT (ℕ.suc w') n)
-        → (p : IsEmptyMultiary t)
-        → n ≡ getN (isMultiaryWeightLemma t p)
-    isMultiaryNumHolesLemma {w'} {n} t p = 
-        let (c , Sw≡Sc , n≡ar) = getMultiaryConstr t p in
-        let w'≡c : w' ≡ cardToℕ c
-            w'≡c = suc-injective Sw≡Sc
-        in
-        let h : fin w' <∞ ζ
-            h = isMultiaryWeightLemma t p
-        in
-        let w'≡fromH = sym $ proj₂ $ cardFrom<∞ h
-        in
-        let c≡fromH : c ≡ (proj₁ $ cardFrom<∞ h)
-            c≡fromH = cardToℕ-injective $ trans (sym w'≡c) w'≡fromH
-        in
-        ≡begin 
-            n
-        ≡⟨ n≡ar ⟩
-            arity {μ} {ζ} {S} c
-        ≡⟨ cong (arity {μ} {ζ} {S}) c≡fromH ⟩
-            (arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ h)
-        ≡⟨⟩
-            (arity {μ} {ζ} {S} $ proj₁ $ cardFrom<∞ $ isMultiaryWeightLemma t p)
-        ≡⟨⟩
-            getN (isMultiaryWeightLemma t p)
-        ≡∎
-
-    isMultiaryNumHolesLemma'
-        : {w' n : ℕ} 
-        → (t : OT (ℕ.suc w') n)
-        → (p : IsEmptyMultiary t)
-        → (k : fin w' <∞ ζ)
-        → n ≡ getN k
-    isMultiaryNumHolesLemma' {w'} {n} t p k = 
-        let H : isMultiaryWeightLemma t p ≡ k
-            H = <∞-irrel (isMultiaryWeightLemma t p) k
-        in 
-        subst (λ k → n ≡ getN k) H (isMultiaryNumHolesLemma t p)
-
-    Eq-Mul' 
-        : (w n : ℕ)
-        → Σ[ z ∈ ℕ ] (OT-Mul w n ≃ Fin z)
-    Eq-Mul' 0 n = (0 , ≃-trans equiv (≃-sym fin0))
-        where
-            equiv : OT-Mul 0 n ≃ ⊥
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                f : OT-Mul 0 n → ⊥
-                f (t , _) = noWeightlessTerms S n t
-                f⁻¹ : ⊥ → OT-Mul 0 n
-                f⁻¹ ()
-                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                invˡ {()} {y}
-                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                invʳ {y} {()}
-    Eq-Mul' (suc w') n with (fin w' <∞? ζ)
-    ... | no ¬w'<ζ = (0 ,  ≃-trans equiv (≃-sym fin0))
-        where 
-            equiv : OT-Mul (ℕ.suc w') n ≃ ⊥
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                    f : OT-Mul (ℕ.suc w') n → ⊥
-                    f (t , p) = ¬w'<ζ (isMultiaryWeightLemma t p)
-                    f⁻¹ : ⊥ → OT-Mul (ℕ.suc w') n
-                    f⁻¹ () 
-                    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                    invˡ {()} {y}
-                    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                    invʳ {(y)} {()}
-    ... | yes w'<ζ with (n Data.Nat.≟ (getN w'<ζ))
-    ...     | no ¬n≡arity = (0 ,  ≃-trans equiv (≃-sym fin0))
-        where 
-            equiv : OT-Mul (ℕ.suc w') n ≃ ⊥
-            equiv = mk≃' f f⁻¹ invˡ invʳ
-                where
-                    f : OT-Mul (ℕ.suc w') n → ⊥
-                    f (t , p) = ¬n≡arity (isMultiaryNumHolesLemma' t p w'<ζ)
-                    f⁻¹ : ⊥ → OT-Mul (ℕ.suc w') n
-                    f⁻¹ () 
-                    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                    invˡ {()} {y}
-                    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                    invʳ {(y)} {()}
-    ...     | yes n≡arity = 
-                -- Maybe subst n in output instead of giving it as an arg.
-                let (t* , isCenterT*) = OT-Mul-isContr w' w'<ζ -- n≡arity
-                in
-                let isContrOTM' : isContr (OT-Mul (ℕ.suc w') (getN w'<ζ))
-                    isContrOTM' = OT-Mul-isContr w' w'<ζ
-                in
-                let isContrOTM : isContr (OT-Mul (ℕ.suc w') n)
-                    isContrOTM = subst (λ n → isContr (OT-Mul (ℕ.suc w') n)) 
-                                       (sym n≡arity) 
-                                       isContrOTM'
-                in
-                (1 , contr≃Fin1 isContrOTM)
-        where
-            mk-multiaryWithW&N
-                : (w n : ℕ)
-                → (c : cardToSet ζ)
-                → (w ≡ ℕ.suc (cardToℕ c))
-                → (n ≡ arity {μ} {ζ} {S} c)
-                → OT-Mul w n
-            mk-multiaryWithW&N w n c w≡c n≡ar = 
-                let t : OT w n 
-                    t = doubleSubst OT (sym w≡c) (sym n≡ar) (mk-multiary c)
-                in
-                (t , isMultiaryUnderDoubleSubst (sym w≡c) (sym n≡ar))
-
-            isMultiaryUnique'
-                : (wnt    : Σ[ w ∈ ℕ ](Σ[ n ∈ ℕ ] OT w n))
-                → (w'n't' : Σ[ w ∈ ℕ ](Σ[ n ∈ ℕ ] OT w n))
-                → IsEmptyMultiary (proj₃ wnt)
-                → IsEmptyMultiary (proj₃ w'n't')
-                → (Hw : proj₁ wnt  ≡ proj₁ w'n't')
-                → (Hn : proj₁₂ wnt ≡ proj₁₂ w'n't')
-                → wnt ≡ w'n't'
-            isMultiaryUnique' (w , n , mk-multiary c) 
-                              (w' , n' , mk-multiary c') 
-                              p p' Hw Hn =
-                let c≡c' : c ≡ c'
-                    c≡c' = cardToℕ-injective $ suc-injective Hw
-                in
-                cong (λ c → ((ℕ.suc $ cardToℕ c) 
-                             , arity {μ} {ζ} {S} c 
-                             , mk-multiary c)
-                     ) c≡c'
-
-            isMultiaryUnique
-                : {w n : ℕ} 
-                → (t t' : OT w n)
-                → IsEmptyMultiary t
-                → IsEmptyMultiary t'
-                → t ≡ t'
-            isMultiaryUnique {w} {n} t t' p p' = 
-                let wnt≡wnt' : (w , n , t) ≡ (w , n , t') 
-                    wnt≡wnt' = isMultiaryUnique' (w , n , t) (w , n , t') p p' refl refl
-                in
-                openTermsEqualityW&N S wnt≡wnt' 
-
-            -- There is at most one proof that a term is multiary.
-            -- So two equal multiary terms share the same proof of multiariness.
-            contractMuliarinessProofs
-                : {w n : ℕ}
-                → {t t' : OT w n}
-                → t ≡ t'
-                → (p : IsEmptyMultiary t)
-                → (p' : IsEmptyMultiary t')
-                → (t , p) ≡ (t' , p')
-            contractMuliarinessProofs {w} {n} {t} {t} refl p p' = cong (λ p → (t , p)) p≡p'
-                where
-                    isMultiaryIrrelevant 
-                        : {w n : ℕ} 
-                        → {t : OT w n}
-                        → (p p' : IsEmptyMultiary t)
-                        → p ≡ p'
-                    isMultiaryIrrelevant {w} {n} {(mk-multiary c)} tt tt = refl
-
-                    p≡p' = isMultiaryIrrelevant {w} {n} {t} p p'
-
-            -- OT-Mul w n is a proposition that is inhabited if and only if
-            -- 1. w ≗ suc w'
-            --      Weightless terms (w ≡ 0) don't exist.
-            -- 2. h : fin w' <∞ ζ 
-            --      Otherwise there is no constructor of weight w.
-            -- 3. n ≡ ℕ.suc $ arity $ proj₁ $ cardFrom<∞ h
-            --      Otherwise it has the wrong number of open argument-holes.
-            OT-Mul-isContr
-                : (w' : ℕ)
-                → (h : fin w' <∞ ζ)
-                → isContr ( OT-Mul (ℕ.suc w') (getN h))
-            OT-Mul-isContr w' h = (t*p* , isCenterT*)
-                where
-                    -- Constructor of contraction center.
-                    c* : cardToSet ζ
-                    c* = proj₁ $ cardFrom<∞ h
-                    w'≡c* : w' ≡ cardToℕ c*
-                    w'≡c* = sym $ proj₂ $ cardFrom<∞ h
-                    -- Term of contraction center.
-                    t*p* = mk-multiaryWithW&N (ℕ.suc w') (getN h) c* (cong ℕ.suc w'≡c*) refl
-                    t* = proj₁ t*p*
-                    p* = proj₂ t*p*
-                    w = ℕ.suc w'
-                    isCenterT* : (tp : OT-Mul (ℕ.suc w') (getN h)) → t*p* ≡ tp
-                    isCenterT* (t , p) = 
-                        let t*≡t : t* ≡ t
-                            t*≡t = isMultiaryUnique {ℕ.suc w'} {getN h} t* t p* p
-                        in
-                        contractMuliarinessProofs t*≡t p* p 
-
--- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
--- Submodule that also assumes a given weight w and num-remaining-args n
--- plus the ability to perfrom Well-Founded recursion on w.
-module WithArgs
-    {μ ζ : ℕ∞}
-    (S : Signature μ ζ)
-    (w-1 : ℕ)
-    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
-    (n : ℕ) 
-    where
-
-    open WithSigAsArg {μ} {ζ} S
 
     w = ℕ.suc w-1
+    Z-Nul : ℕ
     Z-Nul = proj₁ $ Eq-Nul' w n
+    Eq-Nul : OT-Nul w n ≃ Fin Z-Nul
     Eq-Nul = proj₂ $ Eq-Nul' w n 
 
     Z-Mul : ℕ
     Z-Mul = proj₁ $ Eq-Mul' w n
     Eq-Mul : OT-Mul w n ≃ Fin Z-Mul
     Eq-Mul = proj₂ $ Eq-Mul' w n
-
-    Zₜ : (s : Splits w) → (n : ℕ) → ℕ
-    Zₜ s n = proj₁ (rec (split<Right w s) (ℕ.suc n))
-
-    Hₜ  : (s : Splits w) 
-        → (n : ℕ) 
-        → (OT (ℕ.suc $ proj₁ $ proj₂ s) (ℕ.suc n)) ≃ (Fin $ Zₜ s n )
-    Hₜ s n = proj₂ (rec (split<Right w s) (ℕ.suc n))
-
-    Zₐ : (s : Splits w) → ℕ
-    Zₐ s = proj₁ (rec (split<Left w s) 0)
-
-    Hₐ  : (s : Splits w) 
-        → (OT (ℕ.suc (proj₁ s)) 0) ≃ (Fin $ Zₐ s )
-    Hₐ s = proj₂ (rec (split<Left w s) 0)
-
-    Eq-split
-        : (n : ℕ)
-        → (s : Splits w)
-        →   (
-                (OT (ℕ.suc (proj₁ (proj₂ s))) (ℕ.suc n)) 
-                × 
-                (OT (ℕ.suc (proj₁ s)) 0)
-            )
-            ≃ 
-            ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
-    Eq-split n s = ≃-× (Hₜ s n) (Hₐ s) 
-
-    OT-Arg-Unfolded : ℕ → ℕ → Set
-    OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
-                       (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)))
-
-    -- This needs to be defines for all (w , n)
-    -- otherwise we cannot pattern match the input to f
-    -- to something of the form `giveArg t a`, since w would be
-    -- fixed and Agda can't assume arbitrary wₜ and wₐ if there
-    -- is a constraint wₜ + wₐ ≗ w for non-variable w. 
-    Eq-Arg-FirstStep : (w n : ℕ) → OT-Arg w n ≃ OT-Arg-Unfolded w n
-    Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
-        where
-        f : (OT-Arg w n) → OT-Arg-Unfolded w n
-        f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
-        f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
-        f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
-        f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
-        f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
-            let t = subst (λ x → OT x n) p (giveArg t' a)
-            in (t , giveArgUnderSubst p t' a)
-        invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-        invˡ {(wₐ , wₜ , refl) , t , a} {ta , isGiveArg} refl = refl
-        invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-        invʳ {giveArg {ℕ.zero} {wₐ} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
-        invʳ {giveArg {wₜ} {ℕ.zero} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S 0 a
-        invʳ {giveArg {ℕ.suc wₜ} {ℕ.suc wₐ} t a , tt} {(wₐ , wₜ , refl) , t , a} refl = 
-            let H = proj₂ $ f⁻¹ ((wₐ , wₜ , refl) , t , a) in
-            ≡begin 
-                f⁻¹ ((wₐ , wₜ , refl) , t , a) 
-            ≡⟨⟩
-                ((giveArg t a) , tt)
-            ≡∎
-
-    -- It's easier to compute Z-Arg and prove the equivalence
-    -- in one go, than to define Z-Arg beforehand.
-    Z-Eq-Arg : Σ[ z ∈ ℕ ]( OT-Arg w n ≃ Fin z)
-    Z-Eq-Arg = 
-        let getSplit : Fin (splitsSize w) → Splits w
-            getSplit = Inverse.from (splitsFin w)
-        in
-        let
-            f : Fin (splitsSize w) → ℕ
-            f x = (Zₜ (getSplit x) n) * (Zₐ (getSplit x))
-        in
-        let Z-Arg : ℕ
-            Z-Arg = proj₁ (fin-Σ-fun (splitsSize w) f)
-        in
-        (Z-Arg , 
-        (begin 
-            OT-Arg w n
-        ≃⟨ ≃-refl ⟩
-            (Σ[ t ∈ OT w n ] (IsGiveArg t))
-        ≃⟨ Eq-Arg-FirstStep w n ⟩
-            (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
-                (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)
-                )
-            )
-        ≃⟨ rewr-≃-rightOf-Σ (Eq-split n) ⟩
-            (Σ[ s ∈ (Splits w) ]((Fin $ Zₜ s n ) × (Fin $ Zₐ s )))
-        ≃⟨ rewr-≃-indexOf-Σ-dep (splitsFin w) ⟩
-            (Σ[ x ∈ Fin (splitsSize w) ](
-                (Fin $ Zₜ (getSplit x) n ) × (Fin $ Zₐ (getSplit x) )))
-        -- Use (Fin a) × (Fin b) ≃ Fin (a * b).
-        ≃⟨ rewr-≃-rightOf-Σ (λ x → fin-×-* (Zₜ (getSplit x) n) (Zₐ (getSplit x))) ⟩
-            (Σ[ x ∈ Fin (splitsSize w) ](
-                (Fin $ (Zₜ (getSplit x) n) * (Zₐ (getSplit x)))))
-        ≃⟨ proj₂ (fin-Σ-fun (splitsSize w) f) ⟩
-            Fin (proj₁ (fin-Σ-fun (splitsSize w) f) )
-        ∎
-        ))
         
     Z-Arg : ℕ
     Z-Arg = proj₁ Z-Eq-Arg
@@ -806,7 +226,6 @@ ZTheorem {μ} {ζ} S w = <-rec (ZP S) f w
             where
                 z = WithArgs.z {μ} {ζ} S w' rec n
                 zEquiv = WithArgs.zEquiv {μ} {ζ} S w' rec n
-
 
 -- Alternative presentation of the ZTheorem: give the sizes of the finite
 -- sets as a function z : (w : ℕ) → (n : ℕ) → (<size of OT w n> : ℕ).
