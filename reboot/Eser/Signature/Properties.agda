@@ -50,8 +50,10 @@ openTermsEqualityW&N
     → (S : Signature μ ζ)
     → {w n : ℕ}
     → {t t' : OpenTerms {μ} {ζ} S w n}
-    → _≡_ {A = Σ[ w ∈ ℕ ] Σ[ n ∈ ℕ ](OpenTerms {μ} {ζ} S w n)} (w , n , t) (w , n , t')
-    -- ^ Just (w , n , t) ≡ (w , n , t'). Agda needed some help finding the base type.
+    → _≡_ {A = Σ[ w ∈ ℕ ] Σ[ n ∈ ℕ ](OpenTerms {μ} {ζ} S w n)} 
+          (w , n , t) (w , n , t')
+    -- ^ Just (w , n , t) ≡ (w , n , t'). 
+    -- Agda needed some help finding the base type.
     → t ≡ t'
 openTermsEqualityW&N S refl = refl
 
@@ -62,7 +64,8 @@ noWeightlessTerms
     → (n : ℕ)
     → OpenTerms {μ} {ζ} S 0 n
     → ⊥ 
-noWeightlessTerms {μ} {ζ} S n t = ? -- #TODO: mave prove OT S w n → w > 0 first.
+noWeightlessTerms {μ} {ζ} S n t = ?
+-- #TODO: mave prove OT S w n → w > 0 first.
 
 --#TODO: uncomment xor remove allTermsWeightGeqOne.
 --allTermsWeightGeqOne

@@ -37,6 +37,7 @@ open import Eser.Aux
 open import Eser.Signature.Definitions
 open import Eser.Signature.PiecewiseFin
 open import Eser.Signature.JumpEnum
+open import Eser.Signature.Properties
 
 module Eser.Signature.MainTheorem where
 

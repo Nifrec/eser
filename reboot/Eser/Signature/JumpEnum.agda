@@ -12,8 +12,6 @@
 -- (and skipping over all intermediate x'' with f(x'') = 0)
 -- is sufficient to establish the equivalence.
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties
@@ -43,7 +41,6 @@ open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.Aux
 open import Eser.Signature.Definitions
-open import Eser.Signature.PiecewiseFin using (noWeightlessTerms)
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
 open import Eser.Monotone
 
