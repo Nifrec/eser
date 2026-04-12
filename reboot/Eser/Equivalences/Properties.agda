@@ -313,11 +313,91 @@ contr≃Fin1 {A} (a , isCenter) = mk≃' f f⁻¹ invˡ invʳ
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {()}
 
+-- #TODO: move to more appropriate file
+finMaxOrSmaller
+    : {n : ℕ}
+    → (x : Fin $ ℕ.suc n)
+    → x ≡ fromℕ n ⊎ x Data.Fin.< fromℕ n
+finMaxOrSmaller {n} x = ?
+
+-- The stdlib's definition of surjectivity is a bit indirect
+-- because it also allows other relations than _≡_.
+-- The stdlib's definition of surjectivity says that:
+--      (b : B) → surjectiveAt f b
+surjectiveAt
+    : {A B : Set}
+    → (f : A → B)
+    → (b : B)
+    → Set
+surjectiveAt {A} {B} f b = Σ[ a ∈ A ] ({a' : A} → a' ≡ a → f a' ≡ b)
+
+finEndoSuc
+    : {n : ℕ}
+    → (x : Fin $ ℕ.suc n)
+    → (x Data.Fin.< fromℕ n)
+    → Σ[ x' ∈ (Fin $ ℕ.suc n) ](ℕ.suc (toℕ x) ≡ toℕ x)
+finEndoSuc {n} x x<n = (x' , ?)
+    where
+    -- #TODO: eh now x' ≡ x. That's the wrong number...
+    -- Use Suc toℕ x ≤ n -> suc toℕ x < suc n,
+    -- which allows to use fromℕ<.
+    x' = fromℕ< (subst (λ z → toℕ x Data.Nat.< z) (toℕ-fromℕ n) x<n)
+
 -- A ℕ-indexed sum of nonempty finite sets is equivalent to ℕ.
 Σfin-inf-inhabited
-    : (f : ℕ → ℕ)
-    → Σ[ n ∈ ℕ ](Fin $ ℕ.suc $ f n) ≃ ℕ
-Σfin-inf-inhabited f = ?
+    : (g : ℕ → ℕ)
+    → Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) ≃ ℕ
+-- Proof: give a function and show it is injective and surjective.
+Σfin-inf-inhabited g = ⤖⇒↔ $ mk⤖ (injF , surjF)
+    where
+        From = Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i)
+
+        open import Function.Properties.Bijection using (⤖⇒↔)
+        f' : Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) → ℕ
+        -- Currying the input makes the termination checker see we make progress
+        -- on the first argument. 
+        -- When giving pairs (i , x) it would complain.
+        f : (i : ℕ) → (Fin $ ℕ.suc $ g i) → ℕ
+        f' (i , x) = f i x
+
+        -- Get the number that f assigns to the last element of Fin (g (i ∸ 1)),
+        -- if it exists, otherwise return 0.
+        --maxOfPrev : ℕ → ℕ
+        --maxOfPrev 0 = 0
+        --maxOfPrev (suc i) = f i (fromℕ $ g i)
+
+        f 0 x = toℕ x
+        f (suc i) x = (toℕ x) + 1 + f i  (fromℕ (g i))
+        
+        injF : Injective _≡_ _≡_ f'
+        injF = ?
+        surjF : Surjective _≡_ _≡_ f'
+        surjF 0 = ((0 , Fin.zero) , lemma)
+            where
+                lemma : 
+                    {y : Σ[ i ∈ ℕ ] (Fin $ ℕ.suc $ g i)}
+                    → (y ≡ (0 , Fin.zero))
+                    → f' y ≡ 0
+                lemma {0 , Fin.zero} refl = refl
+        surjF n@(suc n') =
+            let ((i , x) , p) = surjF n' in
+            let f'ix≡n' : f' (i , x) ≡ n'
+                f'ix≡n' = p {i , x} refl
+            in
+            caseDistinction i x (finMaxOrSmaller {g i} x)
+            where
+                caseDistinction 
+                    : (i : ℕ) 
+                    → (x : Fin $ ℕ.suc $ g i)
+                    → (x ≡ fromℕ (g i) ⊎ x Data.Fin.< fromℕ (g i))
+                    → surjectiveAt f' n
+                caseDistinction i x (inj₁ x≡max) = ?
+                caseDistinction i x (inj₂ x<max) = ?
+                    -- Then there exists an 1+x ∈ Fin $ suc $ g i as well,
+                    -- and f' (i , 1+x)  ≗ 1 + 1 + x + f'(i∸1 , fromℕ (g i∸1))
+                    --                   ≗ 1 + f'(i , x)
+                    --                   ≡ 1 + n'
+                    --                   ≡ n                 ∎
 
 fin-+-assoc
     : (n m l : ℕ)
