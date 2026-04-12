@@ -61,6 +61,22 @@ mk≃'
     → A ≃ B
 mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
 
+module _ where
+    open Inverse using (to ; from ; inverse)
+    open import Eser.Definitions using (_≈_)
+    open import Function.Consequences.Propositional
+        
+    FromToHomot
+        : {A B : Set}
+        → (H : A ≃ B)
+        → ((from H) ∘ (to H)) ≈ (id {A = A})
+    FromToHomot {A} {B} H = inverseʳ⇒strictlyInverseʳ $ proj₂ $ inverse H
+
+    ToFromHomot
+        : {A B : Set}
+        → (H : A ≃ B)
+        → ((to H) ∘ (from H)) ≈ (id {A = B})
+    ToFromHomot {A} {B} H = inverseˡ⇒strictlyInverseˡ $ proj₁ $ inverse H
 --------------------------------------------------------------------------------
 -- Very basic ≃-rewriting theorems
 --------------------------------------------------------------------------------
@@ -73,7 +89,6 @@ mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
     → a ≡ a'
     → B a ≃ B a'
 ≃-subst {A} {B} {a} a≡a' = subst (λ x → B a ≃ B x) a≡a' (≃-refl {B a})
-
 
 ≡-to-≃ 
     : { A A' : Set}
@@ -115,14 +130,6 @@ module _ where
             H' : {a : A} → (B a ≃ C a)
             H' {a} = H a
 
-    -- If A ≃ A' and B does NOT depend on A then
-    -- Σ[a∈A]B ≃ Σ[a'∈A']B
-    rewr-≃-indexOf-Σ-indep
-        : {A A' B : Set}
-        → A ≃ A'
-        → (Σ[ a ∈ A ] B) ≃ (Σ[ a' ∈ A' ] B)
-    rewr-≃-indexOf-Σ-indep {A} {A'} {B} A≃A' = ?
-
     -- If f : A ≃ A' then Σ[a∈A]Ba ≃ Σ[a'∈A']B(f(a)).
     -- Note that we have to precompose B with f to make it type-check.
     rewr-≃-indexOf-Σ-dep
@@ -130,7 +137,26 @@ module _ where
         → {B : A → Set}
         → (A≃A' : A ≃ A')
         → (Σ[ a ∈ A ] B a) ≃ (Σ[ a' ∈ A' ] B (Inverse.from A≃A' a'))
-    rewr-≃-indexOf-Σ-dep {A} {A'} {B} A≃A' = ?
+    rewr-≃-indexOf-Σ-dep {A} {A'} {B} A≃A' = Σ-↔ A≃A' H
+        where
+            f : A → A'
+            f = Inverse.to A≃A'
+            g : A' → A
+            g = Inverse.from A≃A'
+            H : {a : A} → B a ≃ (B $ g $ f a)
+            H {a} = 
+                let Ba≃Ba : B a ≃ B a
+                    Ba≃Ba = ≃-refl
+                in
+                subst (λ x → B a ≃ B x) (sym $ FromToHomot A≃A' a) Ba≃Ba
+
+    -- Special case of above:
+    -- If A ≃ A' and B does NOT depend on A then Σ[a∈A]B ≃ Σ[a'∈A']B
+    rewr-≃-indexOf-Σ-indep
+        : {A A' B : Set}
+        → A ≃ A'
+        → (Σ[ a ∈ A ] B) ≃ (Σ[ a' ∈ A' ] B)
+    rewr-≃-indexOf-Σ-indep {A} {A'} {B} = rewr-≃-indexOf-Σ-dep {A} {A'} {λ a → B}
 
 --------------------------------------------------------------------------------
 -- Rewriting binary sums _⊎_
