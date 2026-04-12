@@ -6,8 +6,6 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Level
 open import Data.Nat
 open import Data.Nat.Properties
@@ -39,6 +37,10 @@ open import Eser.Stdlib using (fin-≡-irrelevant)
 
 module Eser.Equivalences.Properties where
 
+--------------------------------------------------------------------------------
+-- Basic equivalence properties and convenient constructor.
+--------------------------------------------------------------------------------
+
 ≃-refl : {A : Set} → (A ≃ A)
 ≃-refl = ↔-refl
 
@@ -58,6 +60,16 @@ mk≃'
     → (invr : Inverseʳ _≡_ _≡_ to from)
     → A ≃ B
 mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
+
+--------------------------------------------------------------------------------
+-- Basic surjection properties.
+--------------------------------------------------------------------------------
+module _ where
+    open import Function.Properties.Surjection
+
+    ->>-refl : Reflexive _->>_
+    ->>-refl = Function.Properties.Surjection.refl
+
     
 --------------------------------------------------------------------------------
 -- Very basic ≃-rewriting theorems
@@ -100,31 +112,48 @@ mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
 -- Rewriting dependent sums Σ
 --------------------------------------------------------------------------------
 
+module _ where
+    open import Data.Product.Function.Dependent.Propositional renaming (Σ-⇔ to Σ-stdlib)
 
--- If Ba ≃ Ca for all a ∈ A then Σ[a∈A]Ba ≃ Σ[a∈A]Ca.
-rewr-≃-rightOf-Σ
-    : {A : Set}
-    → {B C : A → Set}
-    → ((a : A) → (B a ≃ C a))
-    → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
-rewr-≃-rightOf-Σ H = ?
+    -- One can project a surjection out of any equivalence.
+    equiv-impl-surj
+        : {A B : Set}
+        → A ≃ B
+        → A ->> B
+    equiv-impl-surj {A} {B} A≃B = surj
+        where
+            A→B : A → B
+            A→B = Inverse.to A≃B
+            surj = LeftInverse.surjection $ Inverse.leftInverse A≃B
 
--- If A ≃ A' and B does NOT depend on A then
--- Σ[a∈A]B ≃ Σ[a'∈A']B
-rewr-≃-indexOf-Σ-indep
-    : {A A' B : Set}
-    → A ≃ A'
-    → (Σ[ a ∈ A ] B) ≃ (Σ[ a' ∈ A' ] B)
-rewr-≃-indexOf-Σ-indep {A} {A'} {B} A≃A' = ?
+    -- If Ba ≃ Ca for all a ∈ A then Σ[a∈A]Ba ≃ Σ[a∈A]Ca.
+    rewr-≃-rightOf-Σ
+        : {A : Set}
+        → {B C : A → Set}
+        → ((a : A) → (B a ≃ C a))
+        → (Σ[ a ∈ A ] B a) ≃ (Σ[ a ∈ A ] C a)
+    rewr-≃-rightOf-Σ H = Σ-stdlib (->>-refl) g 
+        where
+            f = ?
+            g = ?
 
--- If f : A ≃ A' then Σ[a∈A]Ba ≃ Σ[a'∈A']B(f(a)).
--- Note that we have to precompose B with f to make it type-check.
-rewr-≃-indexOf-Σ-dep
-    : {A A' : Set}
-    → {B : A → Set}
-    → (A≃A' : A ≃ A')
-    → (Σ[ a ∈ A ] B a) ≃ (Σ[ a' ∈ A' ] B (Inverse.from A≃A' a'))
-rewr-≃-indexOf-Σ-dep {A} {A'} {B} A≃A' = ?
+    -- If A ≃ A' and B does NOT depend on A then
+    -- Σ[a∈A]B ≃ Σ[a'∈A']B
+    rewr-≃-indexOf-Σ-indep
+        : {A A' B : Set}
+        → A ≃ A'
+        → (Σ[ a ∈ A ] B) ≃ (Σ[ a' ∈ A' ] B)
+    rewr-≃-indexOf-Σ-indep {A} {A'} {B} A≃A' = ?
+
+    -- If f : A ≃ A' then Σ[a∈A]Ba ≃ Σ[a'∈A']B(f(a)).
+    -- Note that we have to precompose B with f to make it type-check.
+    rewr-≃-indexOf-Σ-dep
+        : {A A' : Set}
+        → {B : A → Set}
+        → (A≃A' : A ≃ A')
+        → (Σ[ a ∈ A ] B a) ≃ (Σ[ a' ∈ A' ] B (Inverse.from A≃A' a'))
+    rewr-≃-indexOf-Σ-dep {A} {A'} {B} A≃A' = ?
+
 --------------------------------------------------------------------------------
 -- Rewriting binary sums _⊎_
 --------------------------------------------------------------------------------

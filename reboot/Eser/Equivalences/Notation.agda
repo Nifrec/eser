@@ -40,6 +40,10 @@ open import Relation.Binary.Reasoning.Syntax
 
 module Eser.Equivalences.Notation where
 
+--------------------------------------------------------------------------------
+-- Notation for equivalences
+--------------------------------------------------------------------------------
+
 infixr 1 _≃_
 _≃_ : Set → Set → Set
 A ≃ B = A ↔ B
@@ -50,3 +54,11 @@ module ≃-Reasoning where
   open end-syntax {A = Set}   _≃_ ↔-refl public
 open ≃-Reasoning public
 
+--------------------------------------------------------------------------------
+-- Notation for surjections
+--------------------------------------------------------------------------------
+
+-- In my font, '↠' looks really messed up. So define a synonym for it:
+infixr 1 _->>_
+_->>_ : Set → Set → Set
+A ->> B = A ↠ B
