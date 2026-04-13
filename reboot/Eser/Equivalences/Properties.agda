@@ -377,12 +377,6 @@ finEndoSuc {n} x x<n = (x'' , p)
         f : (i : ℕ) → (Fin $ ℕ.suc $ g i) → ℕ
         f' (i , x) = f i x
 
-        -- Get the number that f assigns to the last element of Fin (g (i ∸ 1)),
-        -- if it exists, otherwise return 0.
-        --maxOfPrev : ℕ → ℕ
-        --maxOfPrev 0 = 0
-        --maxOfPrev (suc i) = f i (fromℕ $ g i)
-
         f 0 x = toℕ x
         f (suc i) x = (toℕ x) + 1 + f i  (fromℕ (g i))
         
@@ -409,53 +403,74 @@ finEndoSuc {n} x x<n = (x'' , p)
                     → (x ≡ fromℕ (g i) ⊎ x Data.Fin.< fromℕ (g i))
                     → (f' (i , x) ≡ n')
                     → surjectiveAt f' n
-                caseDistinction i x (inj₁ x≡max) f'ix≡n' = ?
-                caseDistinction i x (inj₂ x<max) f'ix≡n' = 
-                    ((i , 1+x) , q)
-                        where
-                            1+x : Fin $ ℕ.suc $ g i
-                            1+x = proj₁ $ finEndoSuc x x<max
+                caseDistinction i x (inj₁ x≡max) f'ix≡n' 
+                    = ((ℕ.suc i , Fin.zero) , q)
+                    where
+                        q   : {ix' : From} 
+                            → ix' ≡ (ℕ.suc i , Fin.zero) 
+                            → f' ix' ≡ n
+                        q  refl = 
+                            ≡begin 
+                                f' (ℕ.suc i , Fin.zero)
+                            ≡⟨⟩
+                                1 + 0 + f i (fromℕ (g i))
+                            ≡⟨⟩
+                                1 + f i (fromℕ (g i))
+                            ≡⟨ cong (λ y → 1 + f i y) (sym x≡max) ⟩ 
+                                1 + f i x
+                            ≡⟨⟩
+                                ℕ.suc (f i x)
+                            ≡⟨⟩
+                                ℕ.suc (f' (i , x))
+                            ≡⟨ cong ℕ.suc f'ix≡n' ⟩
+                                ℕ.suc n'
+                            ≡⟨⟩
+                                n
+                            ≡∎
+                caseDistinction i x (inj₂ x<max) f'ix≡n' = ((i , 1+x) , q)
+                    where
+                        1+x : Fin $ ℕ.suc $ g i
+                        1+x = proj₁ $ finEndoSuc x x<max
 
-                            p : ℕ.suc (toℕ x ) ≡ toℕ 1+x
-                            p = proj₂ $ finEndoSuc x x<max
+                        p : ℕ.suc (toℕ x ) ≡ toℕ 1+x
+                        p = proj₂ $ finEndoSuc x x<max
 
-                            q : { ix' : From} → ix' ≡ (i , 1+x) → f' ix' ≡ n
-                            -- f is defined by a case distinction on i,
-                            -- so we need to make the same case distinction
-                            -- here.
-                            q {(0 , x')} refl = 
-                                ≡begin 
-                                    f' (0 , x')
-                                ≡⟨⟩
-                                    toℕ x'
-                                ≡⟨ proj₂-eq-fin-tuples x' 1+x refl ⟩
-                                    toℕ (1+x)
-                                ≡⟨ sym p ⟩
-                                    ℕ.suc (toℕ x)  
-                                ≡⟨ cong ℕ.suc f'ix≡n' ⟩
-                                    ℕ.suc n'
-                                ≡⟨⟩
-                                    n    
-                                ≡∎
-                            q {suc i' , x'} refl = 
-                                -- Note: i ≗ ℕ.suc i' in this context.
-                                -- NOT i ≗ i'.
-                                ≡begin 
-                                    f' (ℕ.suc i' , 1+x)
-                                ≡⟨⟩ 
-                                    toℕ 1+x + 1 + (f i' (fromℕ (g i'))) 
-                                ≡⟨ cong 
-                                    (λ y → y + 1 + (f i' (fromℕ (g i')))) 
-                                    (sym p) 
-                                ⟩
-                                    ℕ.suc (toℕ x) + 1 + (f i' (fromℕ (g i'))) 
-                                ≡⟨⟩
-                                    ℕ.suc ( f' (ℕ.suc i' , x))
-                                ≡⟨ cong ℕ.suc f'ix≡n' ⟩
-                                    ℕ.suc n' 
-                                ≡⟨⟩
-                                    n    
-                                ≡∎
+                        q : { ix' : From} → ix' ≡ (i , 1+x) → f' ix' ≡ n
+                        -- f is defined by a case distinction on i,
+                        -- so we need to make the same case distinction in q.
+                        q {(0 , x')} refl = 
+                            ≡begin 
+                                f' (0 , x')
+                            ≡⟨⟩
+                                toℕ x'
+                            ≡⟨ proj₂-eq-fin-tuples x' 1+x refl ⟩
+                                toℕ (1+x)
+                            ≡⟨ sym p ⟩
+                                ℕ.suc (toℕ x)  
+                            ≡⟨ cong ℕ.suc f'ix≡n' ⟩
+                                ℕ.suc n'
+                            ≡⟨⟩
+                                n    
+                            ≡∎
+                        q {suc i' , x'} refl = 
+                            -- Note: i ≗ ℕ.suc i' in this context.
+                            -- NOT i ≗ i'.
+                            ≡begin 
+                                f' (ℕ.suc i' , 1+x)
+                            ≡⟨⟩ 
+                                toℕ 1+x + 1 + (f i' (fromℕ (g i'))) 
+                            ≡⟨ cong 
+                                (λ y → y + 1 + (f i' (fromℕ (g i')))) 
+                                (sym p) 
+                            ⟩
+                                ℕ.suc (toℕ x) + 1 + (f i' (fromℕ (g i'))) 
+                            ≡⟨⟩
+                                ℕ.suc ( f' (ℕ.suc i' , x))
+                            ≡⟨ cong ℕ.suc f'ix≡n' ⟩
+                                ℕ.suc n' 
+                            ≡⟨⟩
+                                n    
+                            ≡∎
 
 fin-+-assoc
     : (n m l : ℕ)
