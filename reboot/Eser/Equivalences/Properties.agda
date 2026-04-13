@@ -331,17 +331,34 @@ surjectiveAt
     → Set
 surjectiveAt {A} {B} f b = Σ[ a ∈ A ] ({a' : A} → a' ≡ a → f a' ≡ b)
 
+-- If x is not the maximum element of a finite set,
+-- then 1+x also exists in the same finite set.
 finEndoSuc
     : {n : ℕ}
     → (x : Fin $ ℕ.suc n)
     → (x Data.Fin.< fromℕ n)
-    → Σ[ x' ∈ (Fin $ ℕ.suc n) ](ℕ.suc (toℕ x) ≡ toℕ x)
-finEndoSuc {n} x x<n = (x' , ?)
+    → Σ[ x' ∈ (Fin $ ℕ.suc n) ](ℕ.suc (toℕ x) ≡ toℕ x')
+finEndoSuc {n} x x<n = (x'' , p)
     where
-    -- #TODO: eh now x' ≡ x. That's the wrong number...
-    -- Use Suc toℕ x ≤ n -> suc toℕ x < suc n,
-    -- which allows to use fromℕ<.
-    x' = fromℕ< (subst (λ z → toℕ x Data.Nat.< z) (toℕ-fromℕ n) x<n)
+        x' : ℕ
+        x' = ℕ.suc $ toℕ x
+
+        x'<Sn : x' Data.Nat.< ℕ.suc n
+        x'<Sn = s≤s $ subst (λ z → toℕ x Data.Nat.< z) (toℕ-fromℕ n) x<n
+
+        x'' : Fin $ ℕ.suc n
+        x'' = fromℕ< x'<Sn
+
+        p : ℕ.suc (toℕ x) ≡ toℕ x''
+        p = ≡begin 
+                ℕ.suc (toℕ x)
+            ≡⟨⟩
+                x'
+            ≡⟨ sym $ toℕ-fromℕ< {x'} x'<Sn ⟩
+                toℕ (fromℕ< x'<Sn)
+            ≡⟨⟩
+                toℕ x''
+            ≡∎
 
 -- A ℕ-indexed sum of nonempty finite sets is equivalent to ℕ.
 Σfin-inf-inhabited
