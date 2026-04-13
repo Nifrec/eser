@@ -277,5 +277,24 @@ finOppositeSuc w@(suc w') x =
     in 
     (y , p)
     
-        
+
+-- Given two pairs (i , x), (i' , x') ∈ Σ[ n ∈ ℕ ] Fin n
+-- such that (i , x) ≡ (i' , x')
+-- then it follows that both i ≡ i' and toℕ x ≡ toℕ x'.
+-- (Note: we can't say x ≡ x'; that'd be ill-typed, unless we add a subst with i
+-- ≡ i').
+proj₁-eq-fin-tuples 
+    : {i i' : ℕ}
+    → {x : Fin i}
+    → {x' : Fin i'}
+    → (i , x) ≡ (i' , x')
+    → i ≡ i'
+proj₁-eq-fin-tuples {i} {i} refl = refl
+proj₂-eq-fin-tuples 
+    : {i i' : ℕ}
+    → (x : Fin i)
+    → (x' : Fin i')
+    → (i , x) ≡ (i' , x')
+    → toℕ x ≡ toℕ x'
+proj₂-eq-fin-tuples {i} {i} x x refl = refl
 

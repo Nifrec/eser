@@ -401,20 +401,61 @@ finEndoSuc {n} x x<n = (x'' , p)
             let f'ix≡n' : f' (i , x) ≡ n'
                 f'ix≡n' = p {i , x} refl
             in
-            caseDistinction i x (finMaxOrSmaller {g i} x)
+            caseDistinction i x (finMaxOrSmaller {g i} x) f'ix≡n'
             where
                 caseDistinction 
                     : (i : ℕ) 
                     → (x : Fin $ ℕ.suc $ g i)
                     → (x ≡ fromℕ (g i) ⊎ x Data.Fin.< fromℕ (g i))
+                    → (f' (i , x) ≡ n')
                     → surjectiveAt f' n
-                caseDistinction i x (inj₁ x≡max) = ?
-                caseDistinction i x (inj₂ x<max) = ?
-                    -- Then there exists an 1+x ∈ Fin $ suc $ g i as well,
-                    -- and f' (i , 1+x)  ≗ 1 + 1 + x + f'(i∸1 , fromℕ (g i∸1))
-                    --                   ≗ 1 + f'(i , x)
-                    --                   ≡ 1 + n'
-                    --                   ≡ n                 ∎
+                caseDistinction i x (inj₁ x≡max) f'ix≡n' = ?
+                caseDistinction i x (inj₂ x<max) f'ix≡n' = 
+                    ((i , 1+x) , q)
+                        where
+                            1+x : Fin $ ℕ.suc $ g i
+                            1+x = proj₁ $ finEndoSuc x x<max
+
+                            p : ℕ.suc (toℕ x ) ≡ toℕ 1+x
+                            p = proj₂ $ finEndoSuc x x<max
+
+                            q : { ix' : From} → ix' ≡ (i , 1+x) → f' ix' ≡ n
+                            -- f is defined by a case distinction on i,
+                            -- so we need to make the same case distinction
+                            -- here.
+                            q {(0 , x')} refl = 
+                                ≡begin 
+                                    f' (0 , x')
+                                ≡⟨⟩
+                                    toℕ x'
+                                ≡⟨ proj₂-eq-fin-tuples x' 1+x refl ⟩
+                                    toℕ (1+x)
+                                ≡⟨ sym p ⟩
+                                    ℕ.suc (toℕ x)  
+                                ≡⟨ cong ℕ.suc f'ix≡n' ⟩
+                                    ℕ.suc n'
+                                ≡⟨⟩
+                                    n    
+                                ≡∎
+                            q {suc i' , x'} refl = 
+                                -- Note: i ≗ ℕ.suc i' in this context.
+                                -- NOT i ≗ i'.
+                                ≡begin 
+                                    f' (ℕ.suc i' , 1+x)
+                                ≡⟨⟩ 
+                                    toℕ 1+x + 1 + (f i' (fromℕ (g i'))) 
+                                ≡⟨ cong 
+                                    (λ y → y + 1 + (f i' (fromℕ (g i')))) 
+                                    (sym p) 
+                                ⟩
+                                    ℕ.suc (toℕ x) + 1 + (f i' (fromℕ (g i'))) 
+                                ≡⟨⟩
+                                    ℕ.suc ( f' (ℕ.suc i' , x))
+                                ≡⟨ cong ℕ.suc f'ix≡n' ⟩
+                                    ℕ.suc n' 
+                                ≡⟨⟩
+                                    n    
+                                ≡∎
 
 fin-+-assoc
     : (n m l : ℕ)
