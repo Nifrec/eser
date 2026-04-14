@@ -373,6 +373,7 @@ finEndoSuc {n} x x<n = (x'' , p)
         _ℕ≤_ = Data.Nat._≤_
         ℕ<-trans = Data.Nat.Properties.<-trans
         ℕ<-≤-trans = Data.Nat.Properties.<-≤-trans
+        ℕ≤-<-trans = Data.Nat.Properties.<-≤-trans
         open import Function.Properties.Bijection using (⤖⇒↔)
         f' : Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) → ℕ
         -- Currying the input makes the termination checker see we make progress
@@ -463,6 +464,79 @@ finEndoSuc {n} x x<n = (x'' , p)
                 H' = greaterThanG0 {i} (fromℕ $ g $ ℕ.suc i)
             in
             ℕ<-trans H (n<k→m+n<m+k (toℕ x + 1) H')
+
+        -- If i<i' then f assigns the last element of Fin (g (suc i))
+        -- a greater number than g (suc i) + f' (i , fromℕ (g i)),
+        incrLemma
+            : {i i' : ℕ}
+            → i ℕ< i'
+            → g (ℕ.suc i) + f' (i , fromℕ (g i)) ℕ< f' (i' , fromℕ (g i'))
+        incrLemma {i} {i'} i<i' = ? -- See sheet 6 backpage
+
+        -- For a fixed i, f is ≤-monotone in the elements of Fin $ ℕ.suc $ g i.
+        -- We only need the special cases where we compare an element with the
+        -- min or the max of the finite set.
+        ≥minOfSet
+            : {i : ℕ}
+            → (x : Fin $ ℕ.suc $ g i)
+            → f' (i , Fin.zero) ℕ≤ f' (i , x)
+        ≥minOfSet = ?
+        ≤maxOfSet
+            : {i : ℕ}
+            → (x : Fin $ ℕ.suc $ g i)
+            → f' (i , x) ℕ≤ f' (i , fromℕ (g i))
+        ≤maxOfSet = ?
+
+        -- Injectivity proof for the case where both:
+        -- * inputs are of the form (suc i , x) (suc i' , x')
+        -- * i < i'
+        injF-suci-ineq-case
+            : {i i' : ℕ}
+            → (x : Fin $ ℕ.suc $ g $ ℕ.suc i)
+            → (x' : Fin $ ℕ.suc $ g $ ℕ.suc i')
+            → i ℕ< i'
+            → f' (ℕ.suc i , x) ≡ f' (ℕ.suc i' , x')
+            → _≡_ {A = From} (ℕ.suc i , x) (ℕ.suc i' , x')
+            --^ Agda got confused about the base type when giving just:
+            --  (ℕ.suc i , x) ≡ (ℕ.suc i' , x')
+        injF-suci-ineq-case {i} {i'} x x' i<i' outpEq = 
+            let H : 1 + g (ℕ.suc i) + f' (i , fromℕ (g i)) 
+                    ℕ< 
+                    1 + 0 + f' (i' , fromℕ (g i'))
+                H = s≤s $ incrLemma i<i'
+            in
+            -- Swap order of summands.
+            let H' : g (ℕ.suc i) + 1 + f' (i , fromℕ (g i)) 
+                    ℕ< 
+                    0 + 1 + f' (i' , fromℕ (g i'))
+                H' = ?
+            in
+            -- This is what H actually says, up to a toℕ∘fromℕ ≈ id conversion.
+            -- This is the most extreme case where
+            -- x ≗ g (ℕ.suc i) is maximal
+            -- and 
+            -- x' ≗ 0
+            -- is minimal.
+            let H'' : f' (ℕ.suc i , fromℕ (g $ ℕ.suc i)) 
+                      ℕ< 
+                      f' (ℕ.suc i' , Fin.zero)
+                H'' = subst 
+                    (λ y → (
+                            y + 1 + f' (i , fromℕ (g i)) 
+                            ℕ< 
+                            0 + 1 + f' (i' , fromℕ (g i'))
+                    )) 
+                    (sym $ toℕ-fromℕ (g $ ℕ.suc i))
+                    H'
+            in
+            let H''' : f' (ℕ.suc i , x)
+                      ℕ< 
+                      f' (ℕ.suc i' , x')
+                H''' = ℕ≤-<-trans (s≤s $ ≤maxOfSet x) 
+                                  (ℕ<-≤-trans H'' (≥minOfSet x'))
+            in
+            ⊥-elim $ n≮n (f' (ℕ.suc i , x))
+                (subst (λ v → f' (ℕ.suc i , x) ℕ< v) (sym outpEq) H''')
         
         injF : Injective _≡_ _≡_ f'
         injF {0 , x}     {0 , x'}      H = 
@@ -513,10 +587,11 @@ finEndoSuc {n} x x<n = (x'' , p)
                     H
             in
             cong (λ ((i , x)) → ℕ.suc i , x) K
-        ... | tri< i<i' _ _ = ?
-        ... | tri> _ _ i'<i = ?
-
-
+        -- The next two cases are symmetric, so we prove them
+        -- once as a lemma, and simply swap the inputs and apply sym to get the
+        -- other case.
+        ... | tri< i<i' _ _ = injF-suci-ineq-case x x' i<i' H
+        ... | tri> _ _ i'<i = sym $ injF-suci-ineq-case x' x i'<i (sym H)
 
         surjF : Surjective _≡_ _≡_ f'
         surjF 0 = ((0 , Fin.zero) , lemma)
