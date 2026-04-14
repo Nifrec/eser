@@ -368,7 +368,11 @@ finEndoSuc {n} x x<n = (x'' , p)
 Σfin-inf-inhabited g = ⤖⇒↔ $ mk⤖ (injF , surjF)
     where
         From = Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i)
-
+        infix 4 _ℕ<_ _ℕ≤_
+        _ℕ<_ = Data.Nat._<_
+        _ℕ≤_ = Data.Nat._≤_
+        ℕ<-trans = Data.Nat.Properties.<-trans
+        ℕ<-≤-trans = Data.Nat.Properties.<-≤-trans
         open import Function.Properties.Bijection using (⤖⇒↔)
         f' : Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) → ℕ
         -- Currying the input makes the termination checker see we make progress
@@ -379,9 +383,141 @@ finEndoSuc {n} x x<n = (x'' , p)
 
         f 0 x = toℕ x
         f (suc i) x = (toℕ x) + 1 + f i  (fromℕ (g i))
+
+
+        -- #TODO: move those basic arithmetic results somewhere else?
+        -- (Don't forget to also take the ℕ< etc.)
+        m<n+1+m
+            : (m n : ℕ)
+            → m ℕ< n + 1 + m
+        m<n+1+m = ?
+
+        m<n+1+TFm
+            : (m n : ℕ)
+            → m ℕ< n + 1 + (toℕ $ fromℕ m)
+        m<n+1+TFm m n = 
+            subst (λ y → m ℕ< n + 1 + y) (sym $ toℕ-fromℕ m) (m<n+1+m m n)
+
+        n<k→m+n<m+k
+            : {n k : ℕ}
+            → (m : ℕ)
+            → n ℕ< k
+            → m + n ℕ< m + k
+        n<k→m+n<m+k {n} {k} m n<k = +-monoʳ-< m n<k
+
+        --Tx+1+y≡Tx'+1+y→x≡x'
+        --    : {n n' : ℕ}
+        --    → (x : Fin n)
+        --    → (x' : Fin n')
+        --    → (y y' : ℕ)
+        --    → (n ≡ n')
+        --    → (y ≡ y')
+        --    → toℕ x + 1 + y ≡ toℕ x' + 1 + y'
+        --    → (n , x) ≡ (n' , x')
+        --Tx+1+y≡Tx'+1+y→x≡x' {n} x x' y y refl refl H = cong (λ x → (n , x)) H'
+        --    where
+        --        H'' : toℕ x ≡ toℕ x'
+        --        H'' = +-injective-right $ +-injective-right H
+        --        H' : x ≡ x'
+        --        H' = toℕ-injective H''
+        Tx+1+y≡Tx'+1+y→x≡x'
+            : {n n' : ℕ}
+            → (h : ℕ → ℕ)
+            → (x : Fin (h n))
+            → (x' : Fin (h n'))
+            → (y y' : ℕ)
+            → (n ≡ n')
+            → (y ≡ y')
+            → toℕ x + 1 + y ≡ toℕ x' + 1 + y'
+            → (n , x) ≡ (n' , x')
+        Tx+1+y≡Tx'+1+y→x≡x' {n} h x x' y y refl refl H = cong (λ x → (n , x)) H'
+            where
+                H'' : toℕ x ≡ toℕ x'
+                H'' = +-injective-right $ +-injective-right H
+                H' : x ≡ x'
+                H' = toℕ-injective H''
+                
+
+
+        -- Every element in the ith finite set is ≤ than g i,
+        -- which is the maximum element of that set.
+        smallerThanGi
+            : {i : ℕ}
+            → (x : Fin $ ℕ.suc $ g i)
+            → toℕ x Data.Nat.≤ g i
+        smallerThanGi {i} x = s≤s⁻¹ $ toℕ<n x
+
+        -- Any element of the (i+1)th set is mapped by f to a number
+        -- greater than the last element of the 0th set.
+        greaterThanG0
+            : {i : ℕ}
+            → (x : Fin $ ℕ.suc $ g $ ℕ.suc i)
+            → (g 0) ℕ< (f (ℕ.suc i) x) 
+        greaterThanG0 {0} x = m<n+1+TFm (g 0) (toℕ x)
+
+        greaterThanG0 {suc i} x = 
+            let H : g 0 ℕ< toℕ x + 1 + g 0 
+                H = m<n+1+m (g 0) (toℕ x)
+            in
+            let H' : g 0 ℕ< f (ℕ.suc i) (fromℕ $ g $ ℕ.suc i)
+                H' = greaterThanG0 {i} (fromℕ $ g $ ℕ.suc i)
+            in
+            ℕ<-trans H (n<k→m+n<m+k (toℕ x + 1) H')
         
         injF : Injective _≡_ _≡_ f'
-        injF = ?
+        injF {0 , x}     {0 , x'}      H = 
+            -- Use that f 0 x ≗ toℕ x, so H : toℕ x ≡ toℕ x'.
+            let x≡x' : x ≡ x'
+                x≡x' = toℕ-injective H
+            in
+            cong (λ x → (0 , x)) x≡x'
+        injF {suc i , x} {0 , x'} eqOutp = ⊥-elim contra
+            module MixCaseContradiction where 
+                H : g 0 ℕ< f' (ℕ.suc i , x) 
+                H = greaterThanG0 {i} x
+                
+                H' : toℕ x' ℕ≤ g 0 -- The LHS equals `f 0 x'`.
+                H' = smallerThanGi x'
+                
+                H'' : f' (ℕ.suc i , x) ℕ≤ g 0
+                H'' = subst (λ y → y ℕ≤ g 0) (sym eqOutp) H'
+                
+                H''' : g 0 ℕ< g 0
+                H''' = ℕ<-≤-trans H H''
+                contra : ⊥
+                contra = n≮n (g 0) H'''
+        injF {0 , x} {suc i' , x'} H = 
+            -- Same as previous case after swapping the inputs.
+            ⊥-elim $ MixCaseContradiction.contra i' x' x (sym H)
+        injF {suc i , x} {suc i' , x'} H with Data.Nat.<-cmp i i'
+            -- Three cases: i ≡ i' , i < i' or i' < i.
+            -- The last two cases are symmetric, and both contradict H.
+            -- The first case is easier, since +-injectivity using H
+            -- gives toℕ x ≡ toℕ x'
+        ... | tri≈ _ i≡i' _ = 
+            let Si≡Si' = cong ℕ.suc i≡i'
+            in
+            let K = Tx+1+y≡Tx'+1+y→x≡x' 
+                --{ℕ.suc $ g $ ℕ.suc i} 
+                --{ℕ.suc $ g $ ℕ.suc i'} 
+                    {i}
+                    {i'}
+                    (ℕ.suc ∘ g ∘ ℕ.suc)
+                    x 
+                    x' 
+                    (f i (fromℕ $ g i))
+                    (f i' (fromℕ $ g i'))
+                    i≡i'
+                    --(cong (ℕ.suc ∘ g ∘ ℕ.suc) i≡i')
+                    (cong (λ i → f i (fromℕ $ g i)) i≡i')
+                    H
+            in
+            cong (λ ((i , x)) → ℕ.suc i , x) K
+        ... | tri< i<i' _ _ = ?
+        ... | tri> _ _ i'<i = ?
+
+
+
         surjF : Surjective _≡_ _≡_ f'
         surjF 0 = ((0 , Fin.zero) , lemma)
             where

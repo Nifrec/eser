@@ -121,12 +121,31 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
     in
     elimCaseLeft H m≰a'
 
-+-injective :
-    {n m l : ℕ}
++-injective
+    : {n m l : ℕ}
     → n + m ≡ n + l
     → m ≡ l
 +-injective {zero} {m} {l} H = H
 +-injective {suc n} {m} {l} H = +-injective (suc-injective H)
+
++-injective-right
+    : {n m l : ℕ}
+    → m + n ≡ l + n
+    → m ≡ l
++-injective-right {n} {m} {l} m+n≡l+n =
+    let H : n + m ≡ n + l
+        H = begin 
+                n + m
+            ≡⟨ +-comm n m ⟩
+                m + n
+            ≡⟨ m+n≡l+n ⟩
+                l + n
+            ≡⟨ +-comm l n ⟩
+                n + l
+            ∎
+    in +-injective H
+        
+    
 
 ¬1+m+1+n≡1
     : {m n : ℕ}
