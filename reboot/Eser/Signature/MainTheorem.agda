@@ -73,7 +73,26 @@ closedTermAlgEnum
     : {μ : ℕ∞}
     → (S : Signature μ (fin 0))
     → AllTerms {μ} {fin 0} S ≃ cardToSet μ
-closedTermAlgEnum = ?
+closedTermAlgEnum {μ} S = mk≃' f f⁻¹ invˡ invʳ
+    where
+    -- If there are no multiary constructors, then there is no way
+    -- to construct any strictly open term!
+    noStrictOpenTerms
+        : { w n : ℕ}
+        → (t : OpenTerms {μ} {fin 0} S w (ℕ.suc n))
+        → ⊥
+    noStrictOpenTerms {w} {n} (giveArg t a) = noStrictOpenTerms t
+
+    f : AllTerms {μ} {fin 0} S → cardToSet μ
+    f (w , mk-nullary c) = c
+    f (w , giveArg t a) = ⊥-elim $ noStrictOpenTerms t
+    f⁻¹ : cardToSet μ → AllTerms {μ} {fin 0} S
+    f⁻¹ c = (ℕ.suc (cardToℕ c) , mk-nullary c)
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {c} {(w , mk-nullary c)} refl = refl
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {(w , mk-nullary c)} {c} refl = refl
+    invʳ {(w , giveArg t a)} {c} refl = ⊥-elim $ noStrictOpenTerms t
 
 -- The term algebra of a signature without nullary constructors
 -- is always empty. There are no atomic terms, and therefore also no arguments
