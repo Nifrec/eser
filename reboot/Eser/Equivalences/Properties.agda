@@ -363,7 +363,8 @@ fin-dec-irrel-witness
 fin-dec-irrel-witness {n} {x} {y} h (no p) (no q) = ⊥-elim (p h)
 fin-dec-irrel-witness {n} {x} {y} h (no p) (yes q) = ⊥-elim (p q)
 fin-dec-irrel-witness {n} {x} {y} h (yes p) (no q) = ⊥-elim (q p)
-fin-dec-irrel-witness {n} {x} {y} h (yes p) (yes q) = cong yes (fin-≡-irrelevant p q)
+fin-dec-irrel-witness {n} {x} {y} h (yes p) (yes q) = 
+    cong yes (fin-≡-irrelevant p q)
 
 -- The sum Σ[x ∈ Fin (a + 1)](Bx)
 -- is the same as the ⊎-sum of the last element,
@@ -396,8 +397,10 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
     f⁻¹ (inj₁ b) = (fromℕ a , b)
     f⁻¹ (inj₂ (x , b)) = (inject₁ x , b)
 
-    invˡ-inj₁-aux : Σ[ p ∈(fromℕ a ≡ fromℕ a) ]((fromℕ a Data.Fin.≟ fromℕ a) ≡ (yes p))
-    invˡ-inj₁-aux = (refl , fin-dec-irrel-witness refl (fromℕ a Data.Fin.≟ fromℕ a) (yes refl)) 
+    invˡ-inj₁-aux : Σ[ p ∈(fromℕ a ≡ fromℕ a) ](
+                                    (fromℕ a Data.Fin.≟ fromℕ a) ≡ (yes p))
+    invˡ-inj₁-aux = (refl , fin-dec-irrel-witness refl 
+                            (fromℕ a Data.Fin.≟ fromℕ a) (yes refl)) 
 
     invˡ-inj₁-case
         : (b : B (fromℕ a))
@@ -450,7 +453,8 @@ fin-Σ-takeout-first a B = mk≃' f f⁻¹ invˡ invʳ
             ≡⟨ cong (λ p → f' (inject₁ x , b , p)) H ⟩ 
                 f' (inject₁ x , b , no ¬p)
             ≡⟨⟩ 
-                inj₂ (lower₁ (inject₁ x) p' , subst B (sym $ inject₁-lower₁ (inject₁ x) p') b)
+                inj₂ (lower₁ (inject₁ x) p' , subst B 
+                                        (sym $ inject₁-lower₁ (inject₁ x) p') b)
             ≡⟨ cong inj₂ $ 
                 tuple-with-subst {Fin a} {Fin $ ℕ.suc a} {B = B} 
                                  inject₁ x (lower₁ (inject₁ x) p') b k R
