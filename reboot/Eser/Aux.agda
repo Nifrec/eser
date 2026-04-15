@@ -242,6 +242,12 @@ module Σfin-inf-inhabited-arithmetic where
             0<n+1 : 0 ℕ< n + 1
             0<n+1 = subst (λ y → 0 ℕ< y) (+-comm 1 n) (s≤s z≤n)
 
+    n+m<n+1+m
+        : (m n : ℕ)
+        → n + m ℕ< n + 1 + m
+    n+m<n+1+m m n = subst (λ y → n + m ℕ< y) (sym $ +-assoc n 1 m)
+        $ +-monoʳ-< n (n<1+n m)
+
     m<n+1+TFm
         : (m n : ℕ)
         → m ℕ< n + 1 + (toℕ $ fromℕ m)

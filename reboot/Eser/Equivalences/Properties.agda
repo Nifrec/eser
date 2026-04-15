@@ -374,7 +374,6 @@ finEndoSuc {n} x x<n = (x'' , p)
         f 0 x = toℕ x
         f (suc i) x = (toℕ x) + 1 + f i  (fromℕ (g i))
 
-
         -- Every element in the ith finite set is ≤ than g i,
         -- which is the maximum element of that set.
         smallerThanGi
@@ -406,7 +405,94 @@ finEndoSuc {n} x x<n = (x'' , p)
             : {i i' : ℕ}
             → i ℕ< i'
             → g (ℕ.suc i) + f' (i , fromℕ (g i)) ℕ< f' (i' , fromℕ (g i'))
-        incrLemma {i} {i'} i<i' = ? -- See sheet 6 backpage
+        incrLemma {i} {i'} i<i' with (m≤n⇒m<n∨m≡n i<i')
+        -- i<i' leaves two possible cases : suc i < i' or suc i ≡ i'.
+        ... | inj₁ Si<i' = ℕ<-trans H'''
+                (subst (λ y → g (ℕ.suc j) + 1 + g (ℕ.suc i) + f' (i , fromℕ (g i))
+                              ℕ<
+                              y
+                       ) H H')
+                where
+                    
+                    j : ℕ
+                    j = ?
+                    i'≡sucj : i' ≡ ℕ.suc j
+                    i'≡sucj = ?
+                    i<j : i ℕ< j
+                    i<j = ?
+
+                    H : g (ℕ.suc j) + 1 + f' (j , fromℕ (g j)) ≡ f' (i' , fromℕ (g i'))
+                    H = subst (λ y → y + 1 + f' (j , fromℕ (g j)) ≡ f'(i' , fromℕ (g i')))
+                              (toℕ-fromℕ (g $ ℕ.suc j))
+                        $ cong (λ y → f' (y , fromℕ (g y))) (sym i'≡sucj)
+
+                    -- #TODO: either use WF recursion, or eval in fresh cx
+                    -- where we can PaMa i' to (suc j) cuz Si<i' is argument
+                    -- with only possible constructor of form `s≤s _`.
+                    -- Latter is probably easier.
+                    H' : g (ℕ.suc j) + 1 + g (ℕ.suc i) + f' (i , fromℕ (g i))
+                         ℕ<
+                         g (ℕ.suc j) + 1 + f' (j , fromℕ (g j))
+                    H' = subst 
+                            (λ y → y ℕ< g (ℕ.suc j) + 1 + f' (j , fromℕ (g j)))
+                            (sym $ +-assoc (g (ℕ.suc j) + 1) 
+                                     (g (ℕ.suc i))
+                                     (f' (i , fromℕ (g i)))
+                            )
+                        $ +-monoʳ-< (g (ℕ.suc j) + 1) $ incrLemma i<j
+
+                    H''' : g (ℕ.suc i) + f' (i , fromℕ (g i))
+                          ℕ<
+                          g (ℕ.suc j) + 1 + g (ℕ.suc i) + f' (i , fromℕ (g i))
+                    H''' = subst (λ y → g (ℕ.suc i) + f' (i , fromℕ (g i)) ℕ< y)
+                                 (sym $ +-assoc (g ( ℕ.suc j) + 1) 
+                                                (g $ ℕ.suc i) 
+                                                (f' (i , fromℕ (g i)))
+                                 )
+                            $ m<n+1+m (g (ℕ.suc i) + f' (i , fromℕ (g i))) 
+                                      (g (ℕ.suc j))
+                    --H' : g (ℕ.suc j) + 1 + g (ℕ.suc i) + 1 + f' (i , fromℕ (g i))
+                    --     ℕ<
+                    --     g (ℕ.suc j) + 1 + f' (j , fromℕ (g j))
+                    --H' = ?
+
+                    --H'' : g (ℕ.suc i) + f' (i , fromℕ (g i))
+                    --      ℕ<
+                    --      g (ℕ.suc i) + 1 + f' (i , fromℕ (g i))
+                    --H'' = n+m<n+1+m (f' (i , fromℕ (g i))) (g (ℕ.suc i))
+
+                    --H''' : g (ℕ.suc i) + f' (i , fromℕ (g i))
+                    --      ℕ<
+                    --      g (ℕ.suc j) + 1 + g (ℕ.suc i) + 1 + f' (i , fromℕ (g i))
+                    --H''' = {! m<n+1+m 
+                    --        (g (ℕ.suc i) + f' (i , fromℕ (g i)))
+                    --        (g (ℕ.suc j) + 1 + g (ℕ.suc i))
+                    --        !}
+
+
+                        
+        ... | inj₂ Si≡i' = 
+            let H : (toℕ $ fromℕ $ g (ℕ.suc i)) + 1 + f' (i , fromℕ (g i)) 
+                    ≡ 
+                    f' (i' , fromℕ (g i'))
+                H = cong (λ j → f' (j , fromℕ (g j))) Si≡i'
+            in
+            -- Remove the annoying toℕ-fromℕ =.
+            let H' : g (ℕ.suc i) + 1 + f' (i , fromℕ (g i)) 
+                    ≡ 
+                    f' (i' , fromℕ (g i'))
+                H' = subst (λ y → y + 1 + f' (i , fromℕ (g i)) 
+                                  ≡ f' (i' , fromℕ (g i')))
+                           (toℕ-fromℕ (g $ ℕ.suc i))
+                           H
+            in
+            -- The .. + 1 + ... ensures the above is greater than
+            let H'' : g (ℕ.suc i) + f' (i , fromℕ (g i))
+                     ℕ<
+                     g (ℕ.suc i) + 1 + f' (i , fromℕ (g i)) 
+                H'' = n+m<n+1+m (f' (i , fromℕ (g i))) (g $ ℕ.suc i)
+            in
+            subst (λ y → g (ℕ.suc i) + f' (i , fromℕ (g i)) ℕ< y) H' H''
 
         -- For a fixed i, f is ≤-monotone in the elements of Fin $ ℕ.suc $ g i.
         -- We only need the special cases where we compare an element with the
