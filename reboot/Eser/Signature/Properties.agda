@@ -5,7 +5,6 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
-{-# OPTIONS --allow-unsolved-metas #-}
 
 -- #TODO: remove unused imports
 open import Level
@@ -57,20 +56,27 @@ openTermsEqualityW&N
     → t ≡ t'
 openTermsEqualityW&N S refl = refl
 
--- All terms have at least weight 1.
+-- Every open term has weight at least 1, which follows
+-- directly from the constructors of OpenTerms.
+allTermsNonzeroWeight
+    : {μ ζ : ℕ∞} 
+    → (S : Signature μ ζ) 
+    → {w n : ℕ}
+    → OpenTerms {μ} {ζ} S w n
+    → 0 < w
+allTermsNonzeroWeight {μ} {ζ} S {w} {n} (mk-nullary c) = s≤s z≤n
+allTermsNonzeroWeight {μ} {ζ} S {w} {n} (mk-multiary c) = s≤s z≤n
+allTermsNonzeroWeight {μ} {ζ} S {w} {n} (giveArg {wₜ} {wₐ} t a) = 
+    let 0<wₐ : 0 < wₐ
+        0<wₐ = allTermsNonzeroWeight S a
+    in
+    <-≤-trans 0<wₐ (m≤m+n wₐ wₜ)
+
+-- No terms with weight 0 exist; all terms have at least weight 1.
 noWeightlessTerms 
     : {μ ζ : ℕ∞} 
     → (S : Signature μ ζ) 
     → (n : ℕ)
     → OpenTerms {μ} {ζ} S 0 n
     → ⊥ 
-noWeightlessTerms {μ} {ζ} S n t = ?
--- #TODO: mave prove OT S w n → w > 0 first.
-
---#TODO: uncomment xor remove allTermsWeightGeqOne.
---allTermsWeightGeqOne
---    : {w : ℕ}
---    → (t : C w)
---    → 1 ≤ w
---allTermsWeightGeqOne {w} t = n≢0⇒n>0 (λ w≡0 → noWeightlessTerms S 0 (subst C w≡0 t))
-
+noWeightlessTerms {μ} {ζ} S n t = n≮0 $ allTermsNonzeroWeight S t
