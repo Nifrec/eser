@@ -219,6 +219,17 @@ m<n→Sm>n⊎Sm≡n {m} {n} m<n =
     in
     m≤n⇒m<n∨m≡n Sm≤n
 
+-- Sublemma of injF-suci-ineq-case in Eser.Equivalence.Properties.
++-comm-both-sides
+    : (a b c n m k : ℕ)
+    → a + b + c < n + m + k
+    → b + a + c < m + n + k
++-comm-both-sides a b c n m k H = 
+    subst (λ y → y + c < m + n + k) (+-comm a b)
+    $ subst (λ y → a + b + c < y + k) (+-comm n m) H
+
+
+
 --------------------------------------------------------------------------------
 -- ℕ-Arithmetic used in the injectivity proof of Σfin-inf-inhabited
 --------------------------------------------------------------------------------

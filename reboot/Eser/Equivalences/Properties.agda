@@ -526,13 +526,15 @@ finEndoSuc {n} x x<n = (x'' , p)
             let H' : g (ℕ.suc i) + 1 + f' (i , fromℕ (g i)) 
                     ℕ< 
                     0 + 1 + f' (i' , fromℕ (g i'))
-                H' = ?
+                H' = +-comm-both-sides 1 (g $ ℕ.suc i) (f' (i , fromℕ (g i)))
+                                       0 1             (f' (i' , fromℕ (g i')))
+                                       H
             in
             -- This is what H actually says, up to a toℕ∘fromℕ ≈ id conversion.
             -- This is the most extreme case where
-            -- x ≗ g (ℕ.suc i) is maximal
+            --      x ≗ g (ℕ.suc i) is maximal
             -- and 
-            -- x' ≗ 0
+            --      x' ≗ 0
             -- is minimal.
             let H'' : f' (ℕ.suc i , fromℕ (g $ ℕ.suc i)) 
                       ℕ< 
