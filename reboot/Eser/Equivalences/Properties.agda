@@ -379,13 +379,16 @@ finEndoSuc {n} x x<n = (x'' , p)
         f 0 x = toℕ x
         f (suc i) x = (toℕ x) + 1 + f i  (fromℕ (g i))
 
-
         -- #TODO: move those basic arithmetic results somewhere else?
         -- (Don't forget to also take the ℕ< etc.)
         m<n+1+m
             : (m n : ℕ)
             → m ℕ< n + 1 + m
-        m<n+1+m = ?
+        m<n+1+m m n = m<n+m m {n + 1} 0<n+1
+            where
+                0<n+1 : 0 ℕ< n + 1
+                0<n+1 = subst (λ y → 0 ℕ< y) (+-comm 1 n) (s≤s z≤n)
+
 
         m<n+1+TFm
             : (m n : ℕ)
