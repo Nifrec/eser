@@ -30,7 +30,7 @@ open import Relation.Nullary
 open import Data.Unit.Properties using (⊤-irrelevant)
 open import Function
 
-open import StreamGrids.Fin
+open import Eser.Fin
 
 module Eser.Card where
 

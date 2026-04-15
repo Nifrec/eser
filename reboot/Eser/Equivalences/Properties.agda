@@ -34,6 +34,7 @@ open import Eser.Aux
 open import Eser.Dec
 open import Eser.Equivalences.Notation
 open import Eser.Stdlib using (fin-≡-irrelevant)
+open import Eser.Fin using (finMaxOrSmaller)
 
 module Eser.Equivalences.Properties where
 
@@ -312,22 +313,6 @@ contr≃Fin1 {A} (a , isCenter) = mk≃' f f⁻¹ invˡ invʳ
     invˡ {()}
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {()}
-
--- #TODO: move to more appropriate file
-finMaxOrSmaller
-    : {n : ℕ}
-    → (x : Fin $ ℕ.suc n)
-    → x ≡ fromℕ n ⊎ x Data.Fin.< fromℕ n
-finMaxOrSmaller {n} x =
-    let x≤n : x Data.Fin.≤ fromℕ n
-        x≤n = ≤fromℕ x
-    in
-    -- Fin.≤ is defined via the toℕ projection to ℕ,
-    -- but _≡_ on Fin is not; so we have to cast _≡_ to Fin manually.
-    let H : toℕ x ≡ toℕ (fromℕ n) ⊎ x Data.Fin.< fromℕ n
-        H = Data.Sum.swap $ m≤n⇒m<n∨m≡n x≤n
-    in
-    Data.Sum.map₁ toℕ-injective H
 
 -- The stdlib's definition of surjectivity is a bit indirect
 -- because it also allows other relations than _≡_.
