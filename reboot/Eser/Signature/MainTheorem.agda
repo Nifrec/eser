@@ -82,7 +82,23 @@ emptyTermAlgEmpty
     : {ζ : ℕ∞}
     → (S : Signature (fin 0) ζ )
     → (AllTerms {fin 0} {ζ} S) ≃ ⊥
-emptyTermAlgEmpty = ?
+emptyTermAlgEmpty {ζ} S = mk≃' f f⁻¹ invˡ invʳ
+    where
+    -- We need to abstract the weight, so that Agda can pattern-match
+    -- the term with `giveArg t w`.
+    f' : {w : ℕ} → OpenTerms {fin 0} {ζ} S w 0 → ⊥
+    f' (giveArg t a) = f' a
+
+    f : AllTerms {fin 0} {ζ} S → ⊥
+    f (w , t) = f' t
+    
+    f⁻¹ : ⊥ → AllTerms {fin 0} {ζ} S
+    f⁻¹ ()
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {()} 
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {_} {()}
+
 
 -- The term algebra of a signature with at least one nullary constructor a
 -- (so an atomic term) and at least one multiarty constructor c
@@ -136,24 +152,24 @@ infTermAlgEnum {μ} {ζ} S =
     let ¬C0 : C 0 → ⊥ -- All terms have at least weight 1.
         ¬C0 = noWeightlessTerms {suc∞ μ} {suc∞ ζ} S 0
     in
+    let zTheoInstance : (w : ℕ) → Σ[ z ∈ ℕ ](C w ≃ Fin z)
+        -- Note: we only want closed terms, so always 0 open argument-holes.
+        zTheoInstance w = ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
+    in
     let J : InhabitJumper C
-        J = ?
+        J = mkInhabitJumper {μ} {ζ} S zTheoInstance
     in
     -- There is at least one nullary constructor; let a₀ be the corresponding
     -- term. We need a subst to remind Agda that it always has weight 1.
     let a₀ : C 1
         a₀ =
             let H : (ℕ.suc $ cardToℕ $ cardToZero μ) ≡ 1
-                H = ?
+                H = sucZeroIsOneInℕ μ
             in
             subst C H (mk-nullary (cardToZero μ))
     in
     let j : ℕ → ℕ
         j = J-iter {C} 1 a₀ J 
-    in
-    let zTheoInstance : (w : ℕ) → Σ[ z ∈ ℕ ](C w ≃ Fin z)
-        -- Note: we only want closed terms, so always 0 open argument-holes.
-        zTheoInstance w = ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
     in
     let jumpTheoInstance 
             : (i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 a₀ J i) ≃ Fin (ℕ.suc z'))

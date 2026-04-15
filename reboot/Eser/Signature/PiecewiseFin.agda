@@ -92,10 +92,7 @@ open import Eser.Signature.Definitions
 open import Eser.Signature.Properties
 open import Eser.Signature.Splits
 
-module Eser.Signature.PiecewiseFin
-    {μ ζ : ℕ∞}
-    (S : Signature μ ζ)
-    where
+module Eser.Signature.PiecewiseFin where
 
 open import Eser.Signature.PiecewiseFin.Definitions using (ZP)
 
