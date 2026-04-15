@@ -144,8 +144,6 @@ posSummandsThenSmaller {a} {b} {m} Sa+Sb≡m =
                 n + l
             ∎
     in +-injective H
-        
-    
 
 ¬1+m+1+n≡1
     : {m n : ℕ}

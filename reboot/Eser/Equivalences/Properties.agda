@@ -31,6 +31,7 @@ open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Product.Function.NonDependent.Propositional using (_×-↔_)
 
 open import Eser.Aux
+open import Eser.Fin
 open import Eser.Dec
 open import Eser.Equivalences.Notation
 open import Eser.Stdlib using (fin-≡-irrelevant)
@@ -488,12 +489,20 @@ finEndoSuc {n} x x<n = (x'' , p)
             : {i : ℕ}
             → (x : Fin $ ℕ.suc $ g i)
             → f' (i , Fin.zero) ℕ≤ f' (i , x)
-        ≥minOfSet = ?
+        ≥minOfSet {ℕ.zero} x = z≤n
+        -- First get 0 < x, then use that `_+ 1` and `_+ f' (...)` are monotone.
+        ≥minOfSet {ℕ.suc i} x = +-monoˡ-≤ (f' (i , fromℕ (g i)) ) 
+                              $ +-monoˡ-≤ 1 z≤n
         ≤maxOfSet
             : {i : ℕ}
             → (x : Fin $ ℕ.suc $ g i)
             → f' (i , x) ℕ≤ f' (i , fromℕ (g i))
-        ≤maxOfSet = ?
+        ≤maxOfSet {ℕ.zero} x = fin≤TFMax {g 0} x
+        ≤maxOfSet {ℕ.suc i} x =
+            let H : toℕ x ℕ≤ (toℕ $ fromℕ $ g $ ℕ.suc i)
+                H = fin≤TFMax {g $ ℕ.suc i} x
+            in
+            +-monoˡ-≤ (f' (i , fromℕ (g i))) $ +-monoˡ-≤ 1 H
 
         -- Injectivity proof for the case where both:
         -- * inputs are of the form (suc i , x) (suc i' , x')
