@@ -362,13 +362,8 @@ finEndoSuc {n} x x<n = (x'' , p)
 Σfin-inf-inhabited g = ⤖⇒↔ $ mk⤖ (injF , surjF)
     where
         From = Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i)
-        infix 4 _ℕ<_ _ℕ≤_
-        _ℕ<_ = Data.Nat._<_
-        _ℕ≤_ = Data.Nat._≤_
-        ℕ<-trans = Data.Nat.Properties.<-trans
-        ℕ<-≤-trans = Data.Nat.Properties.<-≤-trans
-        ℕ≤-<-trans = Data.Nat.Properties.<-≤-trans
         open import Function.Properties.Bijection using (⤖⇒↔)
+        open Σfin-inf-inhabited-arithmetic
         f' : Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) → ℕ
         -- Currying the input makes the termination checker see we make progress
         -- on the first argument. 
@@ -378,63 +373,6 @@ finEndoSuc {n} x x<n = (x'' , p)
 
         f 0 x = toℕ x
         f (suc i) x = (toℕ x) + 1 + f i  (fromℕ (g i))
-
-        -- #TODO: move those basic arithmetic results somewhere else?
-        -- (Don't forget to also take the ℕ< etc.)
-        m<n+1+m
-            : (m n : ℕ)
-            → m ℕ< n + 1 + m
-        m<n+1+m m n = m<n+m m {n + 1} 0<n+1
-            where
-                0<n+1 : 0 ℕ< n + 1
-                0<n+1 = subst (λ y → 0 ℕ< y) (+-comm 1 n) (s≤s z≤n)
-
-
-        m<n+1+TFm
-            : (m n : ℕ)
-            → m ℕ< n + 1 + (toℕ $ fromℕ m)
-        m<n+1+TFm m n = 
-            subst (λ y → m ℕ< n + 1 + y) (sym $ toℕ-fromℕ m) (m<n+1+m m n)
-
-        n<k→m+n<m+k
-            : {n k : ℕ}
-            → (m : ℕ)
-            → n ℕ< k
-            → m + n ℕ< m + k
-        n<k→m+n<m+k {n} {k} m n<k = +-monoʳ-< m n<k
-
-        --Tx+1+y≡Tx'+1+y→x≡x'
-        --    : {n n' : ℕ}
-        --    → (x : Fin n)
-        --    → (x' : Fin n')
-        --    → (y y' : ℕ)
-        --    → (n ≡ n')
-        --    → (y ≡ y')
-        --    → toℕ x + 1 + y ≡ toℕ x' + 1 + y'
-        --    → (n , x) ≡ (n' , x')
-        --Tx+1+y≡Tx'+1+y→x≡x' {n} x x' y y refl refl H = cong (λ x → (n , x)) H'
-        --    where
-        --        H'' : toℕ x ≡ toℕ x'
-        --        H'' = +-injective-right $ +-injective-right H
-        --        H' : x ≡ x'
-        --        H' = toℕ-injective H''
-        Tx+1+y≡Tx'+1+y→x≡x'
-            : {n n' : ℕ}
-            → (h : ℕ → ℕ)
-            → (x : Fin (h n))
-            → (x' : Fin (h n'))
-            → (y y' : ℕ)
-            → (n ≡ n')
-            → (y ≡ y')
-            → toℕ x + 1 + y ≡ toℕ x' + 1 + y'
-            → (n , x) ≡ (n' , x')
-        Tx+1+y≡Tx'+1+y→x≡x' {n} h x x' y y refl refl H = cong (λ x → (n , x)) H'
-            where
-                H'' : toℕ x ≡ toℕ x'
-                H'' = +-injective-right $ +-injective-right H
-                H' : x ≡ x'
-                H' = toℕ-injective H''
-                
 
 
         -- Every element in the ith finite set is ≤ than g i,

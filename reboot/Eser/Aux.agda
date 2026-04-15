@@ -211,6 +211,68 @@ n*a+[a+b]≡Sn*a+b n a b =
         (ℕ.suc n) * a + b
     ∎
     
+m<n→Sm>n⊎Sm≡n
+    : {m n : ℕ}
+    → m < n
+    → ℕ.suc m < n ⊎ ℕ.suc m ≡ n
+m<n→Sm>n⊎Sm≡n {m} {n} m<n = 
+    let Sm≤n : ℕ.suc m ≤ n
+        Sm≤n = m<n
+    in
+    m≤n⇒m<n∨m≡n Sm≤n
+
+--------------------------------------------------------------------------------
+-- ℕ-Arithmetic used in the injectivity proof of Σfin-inf-inhabited
+--------------------------------------------------------------------------------
+module Σfin-inf-inhabited-arithmetic where
+    infix 4 _ℕ<_ _ℕ≤_
+    _ℕ<_ = Data.Nat._<_
+    _ℕ≤_ = Data.Nat._≤_
+    ℕ<-trans = Data.Nat.Properties.<-trans
+    ℕ<-≤-trans = Data.Nat.Properties.<-≤-trans
+    ℕ≤-<-trans = Data.Nat.Properties.<-≤-trans
+    open import Data.Fin hiding (_+_)
+    open import Data.Fin.Properties
+
+    m<n+1+m
+        : (m n : ℕ)
+        → m ℕ< n + 1 + m
+    m<n+1+m m n = m<n+m m {n + 1} 0<n+1
+        where
+            0<n+1 : 0 ℕ< n + 1
+            0<n+1 = subst (λ y → 0 ℕ< y) (+-comm 1 n) (s≤s z≤n)
+
+    m<n+1+TFm
+        : (m n : ℕ)
+        → m ℕ< n + 1 + (toℕ $ fromℕ m)
+    m<n+1+TFm m n = 
+        subst (λ y → m ℕ< n + 1 + y) (sym $ toℕ-fromℕ m) (m<n+1+m m n)
+
+    n<k→m+n<m+k
+        : {n k : ℕ}
+        → (m : ℕ)
+        → n ℕ< k
+        → m + n ℕ< m + k
+    n<k→m+n<m+k {n} {k} m n<k = +-monoʳ-< m n<k
+
+    Tx+1+y≡Tx'+1+y→x≡x'
+        : {n n' : ℕ}
+        → (h : ℕ → ℕ)
+        → (x : Fin (h n))
+        → (x' : Fin (h n'))
+        → (y y' : ℕ)
+        → (n ≡ n')
+        → (y ≡ y')
+        → toℕ x + 1 + y ≡ toℕ x' + 1 + y'
+        → (n , x) ≡ (n' , x')
+    Tx+1+y≡Tx'+1+y→x≡x' {n} h x x' y y refl refl H = cong (λ x → (n , x)) H'
+        where
+            H'' : toℕ x ≡ toℕ x'
+            H'' = +-injective-right $ +-injective-right H
+            H' : x ≡ x'
+            H' = toℕ-injective H''
+            
+
 
 --------------------------------------------------------------------------------
 -- Rewriting equalities
