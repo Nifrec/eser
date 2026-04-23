@@ -66,7 +66,6 @@ mk≃' {A} {B} to from invl invr = mk↔ (invl , invr)
 
 module _ where
     open Inverse using (to ; from ; inverse)
-    open import Eser.Definitions using (_≈_)
     open import Function.Consequences.Propositional
         
     FromToHomot
