@@ -64,7 +64,8 @@ _/_ {A} A≃ℕ (nf , nfleq , nffix) = Σ[ a ∈ A ]( nf (φ a) ≡ φ a)
 --------------------------------------------------------------------------------
 -- Morphisms in and out of quotients.
 --
--- The notation is based on Nuo Li's "Quotient Types in Type Theory" (2014).
+-- The notation is based on §4 of 
+--      Nuo Li, "Quotient Types in Type Theory" (2014)
 -- The proofs are quite trivial, since our quotient elements are defined
 -- in terms of a normal-from function.
 --------------------------------------------------------------------------------
