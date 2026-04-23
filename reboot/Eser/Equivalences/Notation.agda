@@ -38,6 +38,7 @@ open import Function
 open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open import Relation.Binary.Reasoning.Syntax
 
+open import Eser.Aux using (_≈_)
 module Eser.Equivalences.Notation where
 
 --------------------------------------------------------------------------------
@@ -47,6 +48,25 @@ module Eser.Equivalences.Notation where
 infixr 1 _≃_
 _≃_ : Set → Set → Set
 A ≃ B = A ↔ B
+
+-- Convenient getter methods for the _≃_ relation.
+-- We get functions A → B and B → A whose compositions
+-- are homomorphic to the identities on A and B respectively.
+module _ {A B : Set} (A≃B : A ≃ B) where
+    open import Function.Consequences.Propositional 
+        using (inverseˡ⇒strictlyInverseˡ ; inverseʳ⇒strictlyInverseʳ)
+    ≃-to : A → B
+    ≃-to = Inverse.to A≃B
+
+    ≃-from : B → A
+    ≃-from = Inverse.from A≃B
+
+    ≃-toFrom : (≃-to ∘ ≃-from) ≈ id {_} {B}
+    ≃-toFrom = inverseˡ⇒strictlyInverseˡ $ Inverse.inverseˡ A≃B
+
+    ≃-fromTo : (≃-from ∘ ≃-to) ≈ id {_} {A}
+    ≃-fromTo = inverseʳ⇒strictlyInverseʳ $ Inverse.inverseʳ A≃B
+
 
 module ≃-Reasoning where
   open begin-syntax {A = Set} _≃_ {_≃_} id public
