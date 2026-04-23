@@ -27,20 +27,7 @@ open import Function hiding (_↔_)
 
 
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
---open import Relation.Nullary
---open ≡-Reasoning
---open import Data.Nat.Properties
---open import Data.Fin
---open import Data.Fin.Properties
---open import Data.Fin.Induction
---open import Data.Empty
 open import Data.List hiding (lookup ; last)
---open import Data.List.Relation.Unary.AllPairs using (AllPairs)
---open import Data.List.Relation.Unary.All using (All)
---open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
---open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
---open import Data.List.Membership.Propositional.Properties using (∈-lookup)
---open import Data.List.Relation.Unary.Any using (Any)
 
 module Eser.Definitions where
 
@@ -542,4 +529,3 @@ DecLocProp P = (n : ℕ) → (v : Vec ℕ n) → Dec (P n v)
 -- A localisible property whose local restrictions Pₙ are all decidable.
 LocallyDecProp : Set₁
 LocallyDecProp = Σ[ P ∈ LocalisibleProp ](DecLocProp (Ploc P))
-    
