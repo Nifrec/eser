@@ -2,3 +2,4 @@
 * Now I only used A ≃ ℕ as enumerable types, finite A should also be supported.
 * Definable quotient stuff of Li and Hofmann.
 * Our way of ℤ vs Li's quotients.
+* Commuting triangle of lift: (lift g ∘ [ _ ]) ~ g

@@ -81,6 +81,19 @@ proj₃
     → C (proj₁ x) (proj₁ $ proj₂ x)
 proj₃ = proj₂ ∘ proj₂
 
+-- If first elements of pairs are equal, and the second elements
+-- are proof-irrelevant, then the whole pairs are also equal.
+restIsProofIrrel 
+    : {A : Set} 
+    → {B : A → Set} 
+    → ((a : A) → Relation.Nullary.Irrelevant (B a))
+    → {a a' : A}
+    → (b : B a)
+    → (b' : B a')
+    → (a ≡ a')
+    → (a , b) ≡ (a' , b')
+restIsProofIrrel H {a} {a} b b' refl =
+    cong (λ b → (a , b)) (H a b b')
 
 --------------------------------------------------------------------------------
 -- Natural number arithmetic

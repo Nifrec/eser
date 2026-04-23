@@ -54,7 +54,10 @@ A ≃ B = A ↔ B
 -- are homomorphic to the identities on A and B respectively.
 module _ {A B : Set} (A≃B : A ≃ B) where
     open import Function.Consequences.Propositional 
-        using (inverseˡ⇒strictlyInverseˡ ; inverseʳ⇒strictlyInverseʳ)
+        using (inverseˡ⇒strictlyInverseˡ 
+              ; inverseʳ⇒strictlyInverseʳ
+              ; inverseʳ⇒injective
+              )
     ≃-to : A → B
     ≃-to = Inverse.to A≃B
 
@@ -67,6 +70,8 @@ module _ {A B : Set} (A≃B : A ≃ B) where
     ≃-fromTo : (≃-from ∘ ≃-to) ≈ id {_} {A}
     ≃-fromTo = inverseʳ⇒strictlyInverseʳ $ Inverse.inverseʳ A≃B
 
+    ≃-from-injective : Injective _≡_ _≡_ ≃-from 
+    ≃-from-injective = Bijection.injective $ ↔⇒⤖ (↔-sym A≃B)
 
 module ≃-Reasoning where
   open begin-syntax {A = Set} _≃_ {_≃_} id public
