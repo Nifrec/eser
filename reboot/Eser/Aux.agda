@@ -5,15 +5,19 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
+open import Level
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum
 open import Data.Product
 open import Data.Empty
 open import Relation.Nullary
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
-open import Function
+open import Data.List
+open import Data.Fin using (Fin)
+open import Function hiding (_↔_)
 
 open import Eser.Logic
 module Eser.Aux where
@@ -21,6 +25,40 @@ module Eser.Aux where
 --------------------------------------------------------------------------------
 -- General mathematical definitions
 --------------------------------------------------------------------------------
+indices : {A : Set} → List A → Set
+indices {A} L = Fin (Data.List.length L)
+
+-- Biimplication: existance of functions both ways, 
+-- they do not need to be inverses of each other.
+_↔_ : (A B : Set) → Set
+A ↔ B = (A → B) × (B → A)
+
+-- Homotopy between functions, i.e., pointwise equality.
+-- I.e., the functions are the same input-output map,
+-- but may have different implementations.
+-- A more general, but rather overcomplicated and confusing, definition
+-- can be found in the stdlib in Function.Relation.Binary.Setoid.Equality.
+_≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
+_≈_ {A} {B} f g = (a : A) → f a ≡ g a
+
+≈-sym : {A : Set} → {B : A → Set} → Symmetric (_≈_ {A} {B})
+≈-sym {A} {B} {f} {g} f≈g a = sym (f≈g a)
+
+-- Equivalence between two types.
+-- The stdlib uses an overly general definition
+-- what requires also showing `n ≈₁ m → (f n) ≈₂ (f m)`
+-- given setoids (N, ≈₁) and (M, ≈₂).
+-- We just use propositional equality _≡_ for both the domain and codomain,
+record HomotEquivalence (Left Right : Set) : Set where 
+    field
+        LR : Left → Right
+        RL : Right → Left
+        homotLRL : (RL ∘ LR) ≈ id
+        homotRLR : (LR ∘ RL) ≈ id
+
+_≃_ : Set → Set → Set
+A ≃ B = HomotEquivalence A B
+
 isContr : (A : Set) → Set
 isContr A = Σ[ a ∈ A ]((a' : A) → a ≡ a')
 
@@ -227,6 +265,29 @@ m<n→Sm>n⊎Sm≡n {m} {n} m<n =
 +-comm-both-sides a b c n m k H = 
     subst (λ y → y + c < m + n + k) (+-comm a b)
     $ subst (λ y → a + b + c < y + k) (+-comm n m) H
+
+
+--------------------------------------------------------------------------------
+-- Properties of ≡ᵇ used in Eser.EqRel.Conversions
+--------------------------------------------------------------------------------
+open import Data.Bool using (true)
+
+numIsItself : (n : ℕ) → (n ≡ᵇ n) ≡ true
+numIsItself zero = refl
+numIsItself (ℕ.suc n) = numIsItself n
+
+numEqualSym : (n m : ℕ) → (n ≡ᵇ m) ≡ true → (m ≡ᵇ n) ≡ true
+numEqualSym ℕ.zero ℕ.zero n≡m = refl
+numEqualSym (ℕ.suc n) (ℕ.suc m) Sn≡Sm = numEqualSym n m Sn≡Sm
+
+numEqualTrans : 
+    (n m ℓ : ℕ) 
+    → (n ≡ᵇ m) ≡ true 
+    → (m ≡ᵇ ℓ) ≡ true
+    → (n ≡ᵇ ℓ) ≡ true
+numEqualTrans ℕ.zero ℕ.zero ℕ.zero n≡m m≡ℓ = refl
+numEqualTrans (ℕ.suc n) (ℕ.suc m) (ℕ.suc ℓ) Sn≡Sm Sm≡Sℓ = 
+    numEqualTrans n m ℓ Sn≡Sm Sm≡Sℓ
 
 
 
