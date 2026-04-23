@@ -44,21 +44,6 @@ _≈_ {A} {B} f g = (a : A) → f a ≡ g a
 ≈-sym : {A : Set} → {B : A → Set} → Symmetric (_≈_ {A} {B})
 ≈-sym {A} {B} {f} {g} f≈g a = sym (f≈g a)
 
--- Equivalence between two types.
--- The stdlib uses an overly general definition
--- what requires also showing `n ≈₁ m → (f n) ≈₂ (f m)`
--- given setoids (N, ≈₁) and (M, ≈₂).
--- We just use propositional equality _≡_ for both the domain and codomain,
-record HomotEquivalence (Left Right : Set) : Set where 
-    field
-        LR : Left → Right
-        RL : Right → Left
-        homotLRL : (RL ∘ LR) ≈ id
-        homotRLR : (LR ∘ RL) ≈ id
-
-_≃_ : Set → Set → Set
-A ≃ B = HomotEquivalence A B
-
 isContr : (A : Set) → Set
 isContr A = Σ[ a ∈ A ]((a' : A) → a ≡ a')
 

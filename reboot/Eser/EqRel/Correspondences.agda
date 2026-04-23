@@ -5,7 +5,8 @@
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
--- RelToFun and FunToRel form an isomorphism 'up to proj₁ homotopy'.
+-- The conversions RelToFun and FunToRel form an 
+-- isomorphism 'up to proj₁ homotopy'.
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_)
 open import Data.Bool.Properties using (¬-not ; not-¬)
@@ -25,24 +26,12 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; ≤-<-trans ; n≤
 open ≡-Reasoning
 
 open import Eser.Logic using (elimCaseLeft ; elimCaseRight)
---open import Relation.Nullary
---open ≡-Reasoning
---open import Data.Nat.Properties
---open import Data.Fin
---open import Data.Fin.Properties
---open import Data.Fin.Induction
---open import Data.Empty
---open import Data.List
---open import Data.List.Relation.Unary.AllPairs using (AllPairs)
---open import Data.List.Relation.Unary.All using (All)
---open import Data.List.Relation.Binary.Suffix.Heterogeneous using (Suffix)
---open import Data.List.Membership.Propositional using (_∈_ ; _∉_ )
---open import Data.List.Membership.Propositional.Properties using (∈-lookup)
---open import Data.List.Relation.Unary.Any using (Any)
 
-open import Eser.Definitions
+open import Eser.Aux
+open import Eser.EqRel.Definitions
+open import Eser.EqRel.Conversions
 
-module Eser.Correspondences where
+module Eser.EqRel.Correspondences where
 
 --------------------------------------------------------------------------------
 -- Part 1 : FRF(f) ≈ f
@@ -296,23 +285,6 @@ RFRLemma
         )
 RFRLemma R = refl
 
--- #TODO: remove? currently it is more of a personal note.
---
--- If f, g : A → B → C
--- have that (f a b) ≡ (g a b),
--- then we can prove that 
---      λ(a, b) ∈ A×B → f a b
---  is homotopic to
---      λ(a, b) ∈ A×B → g a b
---  (and also that f a ≈ g a for all a : A,
---  but we CANNOT prove that f ≈ g without function extensionality).
-doubleArgHomot
-    : {A B C : Set}
-    → (f g : A → B → C)
-    → ((a : A) → (b : B) → f a b ≡ g a b)
-    → uncurry f ≈ uncurry g
-doubleArgHomot R S H = uncurry H
-
 -- Mapping a decidable equivalence to a NFFunction and back
 -- yields the same relation as one started with,
 -- up to first-projection homotopy.
@@ -349,12 +321,13 @@ RFRHomot R (n , m) =
 -- (1) Prel R            <-> AllRestr (RelToFun R) Ploc
 -- (2) Prel (FunToRel) f <-> AllRestr f Ploc
 --------------------------------------------------------------------------------
-open LocalisibleProp
+open import Eser.EqRel.LocalisiblePred
+open LocalisiblePred
 
 -- (1) This direction is trivial, since it holds by definition
 -- of a localisible property.
 RelToFunPresvProps
-    : (P : LocalisibleProp)
+    : (P : LocalisiblePred)
     → (R : DecEquiv)
     → Prel P R ↔ AllRestr ((proj₁ ∘ RelToFun) R) (Ploc P)
 RelToFunPresvProps P R = correspondence P R
@@ -405,7 +378,7 @@ homotRestrictLift {f} {g} f≈g (ℕ.suc n) =
 homotsPreserveAllRestrSat→
     : {f g : ℕ → ℕ}
     → (f ≈ g)
-    → (Ploc : LocProp)
+    → (Ploc : LocPred)
     → AllRestr f Ploc → AllRestr g Ploc
 homotsPreserveAllRestrSat→ {f} {g} f≈g Ploc AllRestrF n = 
     subst (λ vec → Ploc n vec) (homotRestrictLift f≈g n) (AllRestrF n)
@@ -414,7 +387,7 @@ homotsPreserveAllRestrSat→ {f} {g} f≈g Ploc AllRestrF n =
 homotsPreserveAllRestrSat
     : {f g : ℕ → ℕ}
     → (f ≈ g)
-    → (Ploc : LocProp)
+    → (Ploc : LocPred)
     → AllRestr f Ploc ↔ AllRestr g Ploc
 homotsPreserveAllRestrSat f≈g Ploc = 
     let LtoR = homotsPreserveAllRestrSat→ f≈g Ploc
@@ -424,11 +397,11 @@ homotsPreserveAllRestrSat f≈g Ploc =
     (LtoR , RtoL)
 
 FunToRelPresvProps→
-    : (P : LocalisibleProp)
+    : (P : LocalisiblePred)
     → (f : NFFun)
     → Prel P (FunToRel f) 
     → AllRestr (proj₁ f) (Ploc P)
-FunToRelPresvProps→ (localisibleProp Prel Ploc corresp) f PrelR =
+FunToRelPresvProps→ (localisiblePred Prel Ploc corresp) f PrelR =
     let R : DecEquiv
         R = FunToRel f
     in
@@ -441,11 +414,11 @@ FunToRelPresvProps→ (localisibleProp Prel Ploc corresp) f PrelR =
     homotsPreserveAllRestrSat→ FRFf≈f Ploc H
 
 FunToRelPresvProps←
-    : (P : LocalisibleProp)
+    : (P : LocalisiblePred)
     → (f : NFFun)
     → AllRestr (proj₁ f) (Ploc P)
     → Prel P (FunToRel f) 
-FunToRelPresvProps← (localisibleProp Prel Ploc corresp) f PlocF =
+FunToRelPresvProps← (localisiblePred Prel Ploc corresp) f PlocF =
     -- We cannot apply the definition of a localisible property
     -- because f is not of the shape `RelToFun R`.
     -- However, we can map f first to a relation and then back to a function f',
@@ -466,7 +439,7 @@ FunToRelPresvProps← (localisibleProp Prel Ploc corresp) f PlocF =
 
 -- (2) That FunToRel preserves properties is not so trivial.
 FunToRelPresvProps
-    : (P : LocalisibleProp)
+    : (P : LocalisiblePred)
     → (f : NFFun)
     → Prel P (FunToRel f) ↔ AllRestr (proj₁ f) (Ploc P)
 FunToRelPresvProps P f = (FunToRelPresvProps→ P f , FunToRelPresvProps← P f)

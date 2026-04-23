@@ -42,9 +42,12 @@ open import Relation.Nullary -- Needed for with-abstractions on decidable ≡.
 open import Function hiding (_↔_)
 
 
+open import Eser.Equivalences
 open import Eser.EqRel
 
 module Eser.Quotient.Definitions where
 
-todo : ⊥
-todo = 1
+-- Quotient type of an enumerated type A by a relation (the latter being
+-- represented by a normal-form function).
+_/_ : {A : Set} → (A ≃ ℕ) → NFFun → Set
+_/_ {A} A≃ℕ (f , nfleqF , nffixF) = Σ[ a ∈ A ]( f a ≡ a)

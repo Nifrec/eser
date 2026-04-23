@@ -80,8 +80,8 @@ nf-fix : NFFix nf
 nf-fix = ?
 
 -- Actual integers: quotient of ℤ' by the relation encoded in nf.
-_/_ : {A : Set} → (A ≃ ℕ) → NFFun → Set
-_/_ {A} A≃ℕ (f , nfleqF , nffixF) = Σ[ a ∈ A ]( f a ≡ a)
+ℤ : Set
+ℤ = ℤEnum / (nf , nf-leq , nf-fix)
 
 --------------------------------------------------------------------------------
 -- Proof that ℤ are indeed the integers
