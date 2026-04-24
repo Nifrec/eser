@@ -15,3 +15,4 @@ open import Eser.Signature.MainTheorem public
 open import Eser.Signature.Properties public
 open import Eser.Signature.Splits public
 open import Eser.Signature.JumpEnum public
+open import Eser.Signature.Recursion public

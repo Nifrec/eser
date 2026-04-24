@@ -40,7 +40,8 @@ open import Eser.Card
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.Aux
-open import Eser.Signature
+open import Eser.Signature.Definitions
+open import Eser.Signature.MainTheorem
 open import Eser.EqRel
 open import Eser.Quotient.Definitions
 
