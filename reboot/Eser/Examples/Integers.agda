@@ -50,12 +50,24 @@ module Eser.Examples.Integers where
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
---syntax
 
 -- All closed terms over ℤSig.
 -- It still has different elements, for example, for `P S 0`, `S P 0` and `0`.
 ℤ' : Set
 ℤ' = AllTerms {fin 1} {fin 2} ℤSig
+
+-- More familiar notation: 
+-- O represents 0.
+-- S (-) is the successor function.
+-- P (-) is the predecessor function.
+O : ℤ'
+O = (1 , mk-nullary Fin.zero)
+
+S : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
+S {w} a = (w + 1 , giveArg (mk-multiary Fin.zero) a)
+
+P : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
+P {w} a = (w + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
 
 -- The closed terms over this signature are enumerable.
 ℤenum : ℤ' ≃ ℕ
