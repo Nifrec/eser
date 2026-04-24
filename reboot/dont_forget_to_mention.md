@@ -3,3 +3,6 @@
 * Definable quotient stuff of Li and Hofmann.
 * Our way of ℤ vs Li's quotients.
 * Commuting triangle of lift: (lift g ∘ [ _ ]) ~ g
+* «-rec is only implemented for signatures with inf sizes
+* #EXT and #TODOs (put in readme)
+* Argument how OpenTerms could be constructed without new inductive type.
