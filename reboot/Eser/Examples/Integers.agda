@@ -13,7 +13,7 @@
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties
-open import Data.Nat
+open import Data.Nat hiding (_/_)
 open import Data.Nat.Properties
 open import Data.Nat.Induction
 open import Data.Sum
@@ -37,6 +37,9 @@ open import Eser.Card
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.Aux
+open import Eser.Signature
+open import Eser.EqRel
+open import Eser.Quotient.Definitions
 
 module Eser.Examples.Integers where
 
@@ -45,7 +48,7 @@ module Eser.Examples.Integers where
 -- Two 1-ary constructors: S and P
 ℤSig : Signature (fin 1) (fin 2)
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
-ℤSig (Fin.Suc Fin.zero) = 0         -- The arity - 1 of P is 0.
+ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
 --syntax
 
@@ -55,8 +58,8 @@ module Eser.Examples.Integers where
 ℤ' = AllTerms {fin 1} {fin 2} ℤSig
 
 -- The closed terms over this signature are enumerable.
-ℤEnum : ℤ' ≃ ℕ
-ZEnum = ?
+ℤenum : ℤ' ≃ ℕ
+ℤenum = infTermAlgEnum {fin 0} {fin 1} ℤSig
 
 ℤenc : ℤ' → ℕ
 ℤenc = Inverse.to ℤenum
@@ -81,7 +84,7 @@ nf-fix = ?
 
 -- Actual integers: quotient of ℤ' by the relation encoded in nf.
 ℤ : Set
-ℤ = ℤEnum / (nf , nf-leq , nf-fix)
+ℤ = ℤenum / (nf , nf-leq , nf-fix)
 
 --------------------------------------------------------------------------------
 -- Proof that ℤ are indeed the integers
@@ -97,7 +100,8 @@ nf-fix = ?
 --      negsuc n = - (n+1)
 -- (This interpretation avoids having distinct +0 and -0.
 --------------------------------------------------------------------------------
-module StdlibInt = open Data.Integer
+import Data.Integer
+module StdlibInt = Data.Integer
 
 ℤcorrectness : ℤ ≃ StdlibInt.ℤ
 ℤcorrectness = ?
