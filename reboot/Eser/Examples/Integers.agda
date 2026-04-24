@@ -50,7 +50,6 @@ module Eser.Examples.Integers where
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
-
 -- All closed terms over ℤSig.
 -- It still has different elements, for example, for `P S 0`, `S P 0` and `0`.
 ℤ' : Set
@@ -69,6 +68,12 @@ S {w} a = (w + 1 , giveArg (mk-multiary Fin.zero) a)
 P : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
 P {w} a = (w + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
 
+two : ℤ'
+two = S (proj₂ (S (proj₂ O)))
+-- `two` normalises, as expected, to:
+-- (3 , giveArg (mk-multiary Fin.zero)  
+--              (giveArg (mk-multiary Fin.zero) (mk-nullary Fin.zero)))
+
 -- The closed terms over this signature are enumerable.
 ℤenum : ℤ' ≃ ℕ
 ℤenum = infTermAlgEnum {fin 0} {fin 1} ℤSig
@@ -81,11 +86,19 @@ P {w} a = (w + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
 
 -- Normal form function. We first define it on closed terms of ℤ'.
 -- Thereafter we abstract it to ℕ → ℕ via the equivalence ℤ' ≃ ℕ.
-nf' : ℤ' → ℤ'
-nf' z = ?
+nf' : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
+nf' {w} (mk-nullary Fin.zero) = {! !}
+nf' {w} (giveArg t (mk-nullary c)) = {! !}
+nf' {w} (giveArg t (giveArg t₁ t₂)) = {! !}
+--nf' : ℤ' → ℤ'
+--nf' (w , mk-nullary Fin.zero) = {! !}
+--nf' (w , giveArg t t₁) = {! !}
+----nf' (w , O ) = (w , O)
+--meh = nf' two
+--nf' (w , giveArg t a) = {! !}
 
 nf : ℕ → ℕ
-nf = ℤenc ∘ nf' ∘ ℤdec
+nf = {! ℤenc ∘ nf' ∘ ℤdec !}
 
 -- Proofs that `nf` satisfies the properties of a normal-form function.
 nf-leq : NFLeq nf
