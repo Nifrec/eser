@@ -9,6 +9,34 @@
 -- quotienting the inductive type z ::= 0 | S z | P z with a successor- and
 -- predecessor-constructor, over the relation (P S z) ~ z ~ (S P z).
 -- (i.e., the relation 1 - 1 = 0 = -1 + 1).
+--
+-- Implementation note: we define the terms of
+-- z ::= 0 | S z | P z
+-- both via the `data` keyword (as ℤ')
+-- and as the closed terms (as 𝕋) over a signature ℤSig.
+-- In principle, we could do all the proofs and correspondences without
+-- using the `data` keyword, but this gets thorny because Agda cannot do proper
+-- pattern-matching on the elements of ℤ' because it fails to unify 
+-- the wₐ + wₜ index in the output of giveArg.
+-- This can probably be circumvented by proving that 
+-- termCharacterisation
+--  : {w : ℕ} 
+--  → (t : ClosedTerms ℤSig w) 
+--  → (t ≡ O) 
+--      ⊎ Σ[ a ∈ ℤ' ] (t ≡ S (proj₂ a))
+--      ⊎ Σ[ a ∈ ℤ' ] (t ≡ P (proj₂ a))
+-- where:
+-- O : ℤ'
+-- O = (1 , mk-nullary Fin.zero)
+
+-- S : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
+-- S {w} a = (w + 1 , giveArg (mk-multiary Fin.zero) a)
+
+-- P : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
+-- P {w} a = (w + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
+--
+-- But this approach is less readable and more work
+-- than defining the raw terms just via the `data` keyword.
 
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
@@ -43,6 +71,12 @@ open import Eser.Quotient.Definitions
 
 module Eser.Examples.Integers where
 
+-- Terms of the grammar z ::= 0 | S z | P z.
+data ℤ' : Set where
+    O : ℤ'
+    S : ℤ' → ℤ'
+    P : ℤ' → ℤ'
+
 -- Signature representing the inductive type z ::= 0 | S z | P z.
 -- One nullary constructor: 0
 -- Two 1-ary constructors: S and P
@@ -50,55 +84,45 @@ module Eser.Examples.Integers where
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
--- All closed terms over ℤSig.
--- It still has different elements, for example, for `P S 0`, `S P 0` and `0`.
-ℤ' : Set
-ℤ' = AllTerms {fin 1} {fin 2} ℤSig
+-- Set of all closed terms over ℤSig.
+-- It still has different elements, 
+-- for example, for `P S 0`, `S P 0` and `0`.
+𝕋 : Set
+𝕋 = AllTerms {fin 1} {fin 2} ℤSig
+--
+-- ℤ' is equivalent to the set of all closed terms over ℤSig.
+ℤ'≃𝕋 : ℤ' ≃ 𝕋
+ℤ'≃𝕋 = ?
 
--- More familiar notation: 
--- O represents 0.
--- S (-) is the successor function.
--- P (-) is the predecessor function.
-O : ℤ'
-O = (1 , mk-nullary Fin.zero)
-
-S : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
-S {w} a = (w + 1 , giveArg (mk-multiary Fin.zero) a)
-
-P : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
-P {w} a = (w + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
-
-two : ℤ'
-two = S (proj₂ (S (proj₂ O)))
--- `two` normalises, as expected, to:
--- (3 , giveArg (mk-multiary Fin.zero)  
---              (giveArg (mk-multiary Fin.zero) (mk-nullary Fin.zero)))
-
--- The closed terms over this signature are enumerable.
 ℤenum : ℤ' ≃ ℕ
-ℤenum = infTermAlgEnum {fin 0} {fin 1} ℤSig
+ℤenum = ≃-trans ℤ'≃𝕋 (infTermAlgEnum {fin 0} {fin 1} ℤSig)
 
-ℤenc : ℤ' → ℕ
-ℤenc = Inverse.to ℤenum
+--φ : ℤ' → ℕ
+--φ = ≃-to ℤ'enum
 
-ℤdec : ℕ → ℤ'
-ℤdec = Inverse.from ℤenum
+--φ⁻¹ : ℕ → ℤ'
+--φ⁻¹ = ≃-from ℤ'enum
 
--- Normal form function. We first define it on closed terms of ℤ'.
--- Thereafter we abstract it to ℕ → ℕ via the equivalence ℤ' ≃ ℕ.
-nf' : {w : ℕ} → ClosedTerms {fin 1} {fin 2} ℤSig w → ℤ'
-nf' {w} (mk-nullary Fin.zero) = {! !}
-nf' {w} (giveArg t (mk-nullary c)) = {! !}
-nf' {w} (giveArg t (giveArg t₁ t₂)) = {! !}
---nf' : ℤ' → ℤ'
---nf' (w , mk-nullary Fin.zero) = {! !}
---nf' (w , giveArg t t₁) = {! !}
-----nf' (w , O ) = (w , O)
---meh = nf' two
---nf' (w , giveArg t a) = {! !}
+--φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
+--φ∘φ⁻¹≈id = ≃-toFrom ℤ'enum
+
+--φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
+--φ⁻¹∘φ≈id = ≃-fromTo ℤ'enum
+
+open ForEnumSet ℤenum
+
+nf' : ℤ' → ℤ'
+nf' O = O
+nf' (S O) = S O
+nf' (P O) = P O
+nf' (S (P t)) = nf' t
+nf' (P (S t)) = nf' t
+nf' (S (S t)) = S $ S $ nf' t
+nf' (P (P t)) = P $ P $ nf' t
+
 
 nf : ℕ → ℕ
-nf = {! ℤenc ∘ nf' ∘ ℤdec !}
+nf = φ ∘ nf' ∘ φ⁻¹ 
 
 -- Proofs that `nf` satisfies the properties of a normal-form function.
 nf-leq : NFLeq nf
