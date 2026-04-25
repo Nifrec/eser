@@ -6,3 +6,5 @@
 * «-rec is only implemented for signatures with inf sizes
 * #EXT and #TODOs (put in readme)
 * Argument how OpenTerms could be constructed without new inductive type.
+* `(ℕ → Bool) / ~` (where `~` denotes homotopy) cannot be constructed 
+    because `ℕ → Bool` cannot be enumerated (by a diagonalisation argument).
