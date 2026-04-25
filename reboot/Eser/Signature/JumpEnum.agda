@@ -455,8 +455,9 @@ jumpTheoremInhabitJumper {C} t₀ J pitstops i = (z' , Hz')
 
 module _ {μ ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ) ) where
 
-    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
-    OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
+    private
+        C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
+        OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
 
     -- Given an OpenTerm with (suc n) open argument-holes and an argument a₀,
     -- apply a₀ n times to it, yielding an OpenTerm with 1 open hole.
