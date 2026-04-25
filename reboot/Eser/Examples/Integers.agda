@@ -84,52 +84,53 @@ data ℤ' : Set where
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
--- Set of all closed terms over ℤSig.
--- It still has different elements, 
--- for example, for `P S 0`, `S P 0` and `0`.
-𝕋 : Set
-𝕋 = AllTerms {fin 1} {fin 2} ℤSig
---
--- ℤ' is equivalent to the set of all closed terms over ℤSig.
-ℤ'≃𝕋 : ℤ' ≃ 𝕋
-ℤ'≃𝕋 = ?
-
-ℤenum : ℤ' ≃ ℕ
-ℤenum = ≃-trans ℤ'≃𝕋 (infTermAlgEnum {fin 0} {fin 1} ℤSig)
-
-open ForEnumSet ℤenum
-
-nf' : ℤ' → ℤ'
-nf' O = O
-nf' (S O) = S O
-nf' (P O) = P O
-nf' (S (P t)) = nf' t
-nf' (P (S t)) = nf' t
-nf' (S (S t)) = S $ S $ nf' t
-nf' (P (P t)) = P $ P $ nf' t
-
-nf : ℕ → ℕ
-nf = φ ∘ nf' ∘ φ⁻¹ 
-
---------------------------------------------------------------------------------
--- #TODO: probably remove/rename/retype stuff in this section.
---------------------------------------------------------------------------------
-
--- Proofs that `nf` satisfies the properties of a normal-form function.
-nf-leq : NFLeq nf
-nf-leq = ?
-
-nf-fix : NFFix nf
-nf-fix = ?
-
--- Actual integers: quotient of ℤ' by the relation encoded in nf.
-ℤ : Set
-ℤ = ℤenum / (nf , nf-leq , nf-fix)
 
 --------------------------------------------------------------------------------
 -- NF without inductive type
 --------------------------------------------------------------------------------
 module DEPRECATED where
+    -- Set of all closed terms over ℤSig.
+    -- It still has different elements, 
+    -- for example, for `P S 0`, `S P 0` and `0`.
+    𝕋 : Set
+    𝕋 = AllTerms {fin 1} {fin 2} ℤSig
+    --
+    -- ℤ' is equivalent to the set of all closed terms over ℤSig.
+    ℤ'≃𝕋 : ℤ' ≃ 𝕋
+    ℤ'≃𝕋 = ?
+
+    ℤenum : ℤ' ≃ ℕ
+    ℤenum = ≃-trans ℤ'≃𝕋 (infTermAlgEnum {fin 0} {fin 1} ℤSig)
+
+    open ForEnumSet ℤenum
+
+    nf' : ℤ' → ℤ'
+    nf' O = O
+    nf' (S O) = S O
+    nf' (P O) = P O
+    nf' (S (P t)) = nf' t
+    nf' (P (S t)) = nf' t
+    nf' (S (S t)) = S $ S $ nf' t
+    nf' (P (P t)) = P $ P $ nf' t
+
+    nf : ℕ → ℕ
+    nf = φ ∘ nf' ∘ φ⁻¹ 
+
+    --------------------------------------------------------------------------------
+    -- #TODO: probably remove/rename/retype stuff in this section.
+    --------------------------------------------------------------------------------
+
+    -- Proofs that `nf` satisfies the properties of a normal-form function.
+    nf-leq : NFLeq nf
+    nf-leq = ?
+
+    nf-fix : NFFix nf
+    nf-fix = ?
+
+    -- Actual integers: quotient of ℤ' by the relation encoded in nf.
+    ℤ : Set
+    ℤ = ℤenum / (nf , nf-leq , nf-fix)
+
     C : ℕ → Set
     C = ClosedTerms {fin 1} {fin 2} ℤSig
 
@@ -168,6 +169,32 @@ module DEPRECATED where
     pama-lemma (fst , giveArg snd snd₁) = {! !}
 
 --------------------------------------------------------------------------------
+-- TODO: move this to another file
+--
+-- Tools for lifting (properties of) function on A to functions on ℕ.
+--------------------------------------------------------------------------------
+module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
+    open ForEnumSet A≃ℕ
+
+    elift : (A → A) → ℕ → ℕ
+    elift f = φ ∘ f ∘ φ⁻¹
+
+    elift-leq
+        : (f : A → A)
+        → ((a : A) → f a «= a)
+        → ((n : ℕ) → (elift f) n ≤ n)
+    elift-leq = ?
+
+    elift-fix
+        : (f : A → A)
+        → ((a : A) → f (f a) ≡ f a)
+        -- → ((n : ℕ) → (elift f $ elift f $ n) ≡ (elift f $ n))
+        → ((n : ℕ) → (elift f ( elift f n)) ≡ (elift f n))
+    elift-fix = ?
+
+
+
+--------------------------------------------------------------------------------
 -- NF without inductive type without weights
 --------------------------------------------------------------------------------
 module NoWeights where
@@ -187,6 +214,11 @@ module NoWeights where
 
     𝐏 : C → C
     𝐏 = giveArg-nw $ mk-multiary-nw $ Fin.suc Fin.zero
+
+    C≃ℕ : C ≃ ℕ
+    C≃ℕ = infTermAlgEnumNW {fin 0} {fin 1} ℤSig
+
+    open ForEnumSet C≃ℕ
 
     pama-strictly-open
         : (t : OT 1)
@@ -224,9 +256,20 @@ module NoWeights where
     -- Normalisation function defined on terms of ℤSig.
     -- It essentially implements nf' above, but acts on the representation
     -- of terms of ℤSig instead of ℤ'.
-    f : C → C
-    f t = f' t $ pama-lemma t
+    private 
+        Codom : C → Set
+        Codom t = Σ[ t' ∈ C ] (t' «= t)
+
+    f : (t : C) → Σ[ t' ∈ C ] (t' «= t)
+    f t = «-rec {Codom} F t
         where
+            F : ( (t : C) → ((t' : C) → (t' « t) → Codom t') → Codom t)
+            f'  : (t : C) 
+                → ((t' : C) → (t' « t) → Codom t')
+                → t ≡ 𝟎 ⊎ Σ[ a ∈ C ] (t ≡ 𝐒 a) ⊎ Σ[ a ∈ C ] (t ≡ 𝐏 a)
+                → Codom t
+            F t rec = f' t rec (pama-lemma t)
+
             -- Nested case distinction on the form of t.
             -- See below for the annotated cases.
             fₛ  : (t a : C) 
@@ -238,25 +281,120 @@ module NoWeights where
                 → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
                 → C
 
-            f'  : (t : C) 
-                → t ≡ 𝟎 ⊎ Σ[ a ∈ C ] (t ≡ 𝐒 a) ⊎ Σ[ a ∈ C ] (t ≡ 𝐏 a)
-                → C
-            f' t (inj₁ t≡𝟎) = 𝟎
-            f' t (inj₂ (inj₁ (a , t≡𝐒a))) = fₛ t a t≡𝐒a (pama-lemma a)
-            f' t (inj₂ (inj₂ (a , t≡𝐏a))) = fₚ t a t≡𝐏a (pama-lemma a)
+            f' t rec (inj₁ t≡𝟎) = (𝟎 , ?)
+            f' t rec (inj₂ (inj₁ (a , t≡𝐒a))) = fₛ t a t≡𝐒a (pama-lemma a) , ?
+            f' t rec (inj₂ (inj₂ (a , t≡𝐏a))) = fₚ t a t≡𝐏a (pama-lemma a) , ?
 
             -- Case 1 : t ≡ 𝐒 𝟎, which is already normal.
             fₛ t a refl (inj₁ a≡𝟎) = 𝐒 𝟎 
             -- Case 2 : t ≡ 𝐒 𝐒 a'; return 𝐒 𝐒 (f a')
-            fₛ t a refl (inj₂ (inj₁  (a' , a≡𝐒a'))) = 𝐒 ( 𝐒 ( f a'))
+            fₛ t a refl (inj₂ (inj₁  (a' , a≡𝐒a'))) = 𝐒 ( 𝐒 ( {! f a' !}))
             -- Case 3 : t ≡ 𝐒 𝐏 a'; inversity applies, so return (f a')
-            fₛ t a refl (inj₂ ( inj₂ (a' , a≡𝐏a'))) = f a'
+            fₛ t a refl (inj₂ ( inj₂ (a' , a≡𝐏a'))) = {! f a' !}
             -- Case 4 : t ≡ 𝐏 𝟎, which is already normal.
             fₚ t a refl (inj₁ a≡𝟎) = 𝐏 𝟎 
             -- Case 5 : t ≡ 𝐏 𝐒 a'; inversity applies, so return f a'
-            fₚ t a refl (inj₂ (inj₁  (a' , a≡𝐒a'))) = f a'
+            fₚ t a refl (inj₂ (inj₁  (a' , a≡𝐒a'))) = {! f a' !}
             -- Case 6 : t ≡ 𝐏 𝐏 a'; return (f a')
-            fₚ t a refl (inj₂ ( inj₂ (a' , a≡𝐏a'))) = 𝐏 (𝐏 (f a'))
+            fₚ t a refl (inj₂ ( inj₂ (a' , a≡𝐏a'))) = 𝐏 (𝐏 ({! f a' !}))
+
+    ---- Normalisation function defined on terms of ℤSig.
+    ---- It essentially implements nf' above, but acts on the representation
+    ---- of terms of ℤSig instead of ℤ'.
+    --f : C → C
+    --f t = f' t $ pama-lemma t
+    --    where
+    --        -- Nested case distinction on the form of t.
+    --        -- See below for the annotated cases.
+    --        fₛ  : (t a : C) 
+    --            → (t ≡ 𝐒 a)
+    --            → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
+    --            → C
+    --        fₚ  : (t a : C) 
+    --            → (t ≡ 𝐏 a)
+    --            → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
+    --            → C
+
+    --        f'  : (t : C) 
+    --            → t ≡ 𝟎 ⊎ Σ[ a ∈ C ] (t ≡ 𝐒 a) ⊎ Σ[ a ∈ C ] (t ≡ 𝐏 a)
+    --            → C
+    --        f' t (inj₁ t≡𝟎) = 𝟎
+    --        f' t (inj₂ (inj₁ (a , t≡𝐒a))) = fₛ t a t≡𝐒a (pama-lemma a)
+    --        f' t (inj₂ (inj₂ (a , t≡𝐏a))) = fₚ t a t≡𝐏a (pama-lemma a)
+
+    --        -- Case 1 : t ≡ 𝐒 𝟎, which is already normal.
+    --        fₛ t a refl (inj₁ a≡𝟎) = 𝐒 𝟎 
+    --        -- Case 2 : t ≡ 𝐒 𝐒 a'; return 𝐒 𝐒 (f a')
+    --        fₛ t a refl (inj₂ (inj₁  (a' , a≡𝐒a'))) = 𝐒 ( 𝐒 ( f a'))
+    --        -- Case 3 : t ≡ 𝐒 𝐏 a'; inversity applies, so return (f a')
+    --        fₛ t a refl (inj₂ ( inj₂ (a' , a≡𝐏a'))) = f a'
+    --        -- Case 4 : t ≡ 𝐏 𝟎, which is already normal.
+    --        fₚ t a refl (inj₁ a≡𝟎) = 𝐏 𝟎 
+    --        -- Case 5 : t ≡ 𝐏 𝐒 a'; inversity applies, so return f a'
+    --        fₚ t a refl (inj₂ (inj₁  (a' , a≡𝐒a'))) = f a'
+    --        -- Case 6 : t ≡ 𝐏 𝐏 a'; return (f a')
+    --        fₚ t a refl (inj₂ ( inj₂ (a' , a≡𝐏a'))) = 𝐏 (𝐏 (f a'))
+
+    -- Normalisation function defined on terms of ℤSig.
+    -- It essentially implements nf' above, but acts on the representation
+    -- of terms of ℤSig instead of ℤ'.
+    g : C → C
+    g t = g' t $ pama-lemma t
+        where
+            -- Nested case distinction on the form of t.
+            -- See below for the annotated cases.
+            gₛ  : (t a : C) 
+                → (t ≡ 𝐒 a)
+                → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
+                → C
+            gₚ  : (t a : C) 
+                → (t ≡ 𝐏 a)
+                → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
+                → C
+
+            g'  : (t : C) 
+                → t ≡ 𝟎 ⊎ Σ[ a ∈ C ] (t ≡ 𝐒 a) ⊎ Σ[ a ∈ C ] (t ≡ 𝐏 a)
+                → C
+            g' t (inj₁ t≡𝟎) = 𝟎
+            g' t (inj₂ (inj₁ (a , refl))) = gₛ t a refl (pama-lemma a)
+            g' t (inj₂ (inj₂ (a , refl))) = gₚ t a refl (pama-lemma a)
+
+            -- Case 1 : t ≡ 𝐒 𝟎, which is already normal.
+            gₛ t a refl (inj₁ refl) = 𝐒 𝟎 
+            -- Case 2 : t ≡ 𝐒 𝐒 a'; return 𝐒 𝐒 (g a')
+            gₛ t a refl (inj₂ (inj₁  (a' , refl))) = 𝐒 ( 𝐒 ( g a'))
+            -- Case 3 : t ≡ 𝐒 𝐏 a'; inversity applies, so return (g a')
+            gₛ t a refl (inj₂ ( inj₂ (a' , refl))) = g a'
+            -- Case 4 : t ≡ 𝐏 𝟎, which is already normal.
+            gₚ t a refl (inj₁ refl) = 𝐏 𝟎 
+            -- Case 5 : t ≡ 𝐏 𝐒 a'; inversity applies, so return g a'
+            gₚ t a refl (inj₂ (inj₁  (a' , refl))) = g a'
+            -- Case 6 : t ≡ 𝐏 𝐏 a'; return (g a')
+            gₚ t a refl (inj₂ ( inj₂ (a' , refl))) = 𝐏 (𝐏 (g a'))
+
+    nf' : C → C
+    nf' = proj₁ ∘ f
+
+    nf'-leq
+        : (t : C)
+        → nf' t «= t
+    nf'-leq = proj₂ ∘ f
+
+    nf'-fix
+        : (t : C)
+        → nf' (nf' t) ≡ nf' t
+    nf'-fix t = ?
+
+    open EnumLifts {C} C≃ℕ
+
+    --nf : ℕ → ℕ
+    --nf = elift nf'
+
+    --nf-leq : NFLeq nf
+    --nf-leq = elift-leq nf' nf'-leq
+
+    --nf-fix : NFFix nf
+    --nf-fix = {! elift-fix nf' nf'-fix!}
 
 --------------------------------------------------------------------------------
 -- Proof that ℤ are indeed the integers
@@ -274,6 +412,9 @@ module NoWeights where
 --------------------------------------------------------------------------------
 import Data.Integer
 module StdlibInt = Data.Integer
+
+ℤ : Set
+ℤ = ?
 
 ℤcorrectness : ℤ ≃ StdlibInt.ℤ
 ℤcorrectness = ?
