@@ -262,7 +262,7 @@ module NoWeights where
 
     f : (t : C) → Σ[ t' ∈ C ] (t' «= t)
     f t = «-rec {Codom} F t
-        where
+        module C-NF where 
             F : ( (t : C) → ((t' : C) → (t' « t) → Codom t') → Codom t)
             f'  : (t : C) 
                 → ((t' : C) → (t' « t) → Codom t')
@@ -355,6 +355,7 @@ module NoWeights where
             g'  : (t : C) 
                 → t ≡ 𝟎 ⊎ Σ[ a ∈ C ] (t ≡ 𝐒 a) ⊎ Σ[ a ∈ C ] (t ≡ 𝐏 a)
                 → C
+
             g' t (inj₁ t≡𝟎) = 𝟎
             g' t (inj₂ (inj₁ (a , refl))) = gₛ t a refl (pama-lemma a)
             g' t (inj₂ (inj₂ (a , refl))) = gₚ t a refl (pama-lemma a)
@@ -372,18 +373,34 @@ module NoWeights where
             -- Case 6 : t ≡ 𝐏 𝐏 a'; return (g a')
             gₚ t a refl (inj₂ ( inj₂ (a' , refl))) = 𝐏 (𝐏 (g a'))
 
-    nf' : C → C
-    nf' = proj₁ ∘ f
 
-    nf'-leq
-        : (t : C)
-        → nf' t «= t
-    nf'-leq = proj₂ ∘ f
+    --g : C → C
+    --g = proj₁ ∘ f
 
-    nf'-fix
+    --g-leq
+    --    : (t : C)
+    --    → g t «= t
+    --g-leq = proj₂ ∘ f
+
+    g-fix
         : (t : C)
-        → nf' (nf' t) ≡ nf' t
-    nf'-fix t = ?
+        → g (g t) ≡ g t
+    g-fix t with pama-lemma t
+    ... | inj₁ t≡𝟎 = refl
+    ... | inj₂ (inj₂ (a , t≡𝐏a)) = {! !}
+    -- Case t ≡ 𝐒 a
+    ... | inj₂ (inj₁ (a , refl)) with pama-lemma a
+    -- Subcase t ≡ 𝐒 𝟎
+    ...     | inj₁ refl = ?
+    -- Subcase t ≡ 𝐒 𝐒 a'. 
+    ...     | inj₂ (inj₁ (a' , refl)) =
+            let gga'≡ga' : g (g a') ≡ g a'
+                gga'≡ga' = g-fix a'
+                in
+                -- # TODO: Agda doesn't see that g (𝐒 (𝐒 a')) ≗ 𝐒 (𝐒 (g a'))
+                cong (λ x → 𝐒 (𝐒 x)) gga'≡ga'
+    -- Subcase t ≡ 𝐒 𝐏 a'. Then g (𝐒 𝐏 a') ≗ a', so apply the induction hyp:
+    ...     | inj₂ (inj₂ (a' , refl)) = g-fix a'
 
     open EnumLifts {C} C≃ℕ
 
