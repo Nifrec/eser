@@ -253,6 +253,70 @@ module NoWeights where
     ... | inj₁ t≡𝐒 = inj₂ $ inj₁ $ (a , cong (λ t → giveArg-nw t a) t≡𝐒)
     ... | inj₂ t≡𝐏 = inj₂ $ inj₂ $ (a , cong (λ t → giveArg-nw t a) t≡𝐏)
 
+
+    PaMaCases : (t : C) → Set
+    PaMaCases t = t ≡ 𝟎 
+                  ⊎ 
+                  t ≡ 𝐒 𝟎 
+                  ⊎ 
+                  t ≡ 𝐏 𝟎 
+                  ⊎ 
+                  Σ[ a ∈ C ] (t ≡ 𝐒 (𝐒 a)) 
+                  ⊎
+                  Σ[ a ∈ C ] (t ≡ 𝐒 (𝐏 a)) 
+                  ⊎ 
+                  Σ[ a ∈ C ] (t ≡ 𝐏 (𝐒 a))
+                  ⊎ 
+                  Σ[ a ∈ C ] (t ≡ 𝐏 (𝐏 a))
+    case1 : {t : C} → t ≡ 𝟎 → PaMaCases t
+    case1 = inj₁
+    case2 : {t : C} → t ≡ 𝐒 𝟎 → PaMaCases t
+    case2 = inj₂ ∘ inj₁
+    case3 : {t : C} → t ≡ 𝐏 𝟎 → PaMaCases t
+    case3 = inj₂ ∘ inj₂ ∘ inj₁
+    case4 : {t : C} → Σ[ a ∈ C ] (t ≡ 𝐒 (𝐒 a)) → PaMaCases t
+    case4 = inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₁
+    case5 : {t : C} → Σ[ a ∈ C ] (t ≡ 𝐒 (𝐏 a)) → PaMaCases t
+    case5 = inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₁
+    case6 : {t : C} → Σ[ a ∈ C ] (t ≡ 𝐏 (𝐒 a)) → PaMaCases t
+    case6 = inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₁
+    case7 : {t : C} → Σ[ a ∈ C ] (t ≡ 𝐏 (𝐏 a)) → PaMaCases t
+    case7 = inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₂ ∘ inj₂ 
+    --^ Fun fact: case7 is the only one ending in inj₂
+
+    -- Iterating the pama-lemma gives 7 cases
+    double-pama-lemma : (t : C) → PaMaCases t
+    double-pama-lemma t = sublemma t (pama-lemma t)
+        where
+            sublemma 
+                : (t : C) 
+                → t ≡ 𝟎 ⊎ Σ[ a ∈ C ] (t ≡ 𝐒 a) ⊎ Σ[ a ∈ C ] (t ≡ 𝐏 a)
+                → PaMaCases t
+            sublemmaₛ
+                : (t a : C) 
+                → t ≡ 𝐒 a
+                → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
+                → PaMaCases t
+            sublemmaₚ
+                : (t a : C) 
+                → t ≡ 𝐏 a
+                → a ≡ 𝟎 ⊎ Σ[ a' ∈ C ] (a ≡ 𝐒 a') ⊎ Σ[ a' ∈ C ] (a ≡ 𝐏 a')
+                → PaMaCases t
+            sublemma t (inj₁ refl) = case1 refl
+            sublemma t (inj₂ (inj₁ (a , refl))) = sublemmaₛ t a refl (pama-lemma a)
+            sublemma t (inj₂ (inj₂ (a , refl))) = sublemmaₚ t a refl (pama-lemma a)
+          
+            sublemmaₛ t a refl (inj₁ refl) = case2 refl
+            sublemmaₛ t a refl (inj₂ (inj₁ (a' , refl))) = case4 (a' , refl)
+            sublemmaₛ t a refl (inj₂ (inj₂ (a' , refl))) = case5 (a' , refl)
+          
+            sublemmaₚ t a refl (inj₁ refl) = case3 refl
+            sublemmaₚ t a refl (inj₂ (inj₁ (a' , refl))) = case6 (a' , refl)
+            sublemmaₚ t a refl (inj₂ (inj₂ (a' , refl))) = case7 (a' , refl)
+          
+    --double-pama-lemma (mk-nullary-nw Fin.zero) = inj₁ refl
+    --double-pama-lemma (giveArg-nw t a) with pama-strictly-open t
+
     -- Normalisation function defined on terms of ℤSig.
     -- It essentially implements nf' above, but acts on the representation
     -- of terms of ℤSig instead of ℤ'.
@@ -398,7 +462,7 @@ module NoWeights where
                 gga'≡ga' = g-fix a'
                 in
                 -- # TODO: Agda doesn't see that g (𝐒 (𝐒 a')) ≗ 𝐒 (𝐒 (g a'))
-                cong (λ x → 𝐒 (𝐒 x)) gga'≡ga'
+                {! cong (λ x → 𝐒 (𝐒 x)) gga'≡ga' !}
     -- Subcase t ≡ 𝐒 𝐏 a'. Then g (𝐒 𝐏 a') ≗ a', so apply the induction hyp:
     ...     | inj₂ (inj₂ (a' , refl)) = g-fix a'
 
