@@ -56,7 +56,44 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
 
     -- Equality between open terms is decidable.
     decEquality : {n : ℕ} → (t t' : OTNW n) → Relation.Nullary.Dec (t ≡ t')
-    decEquality = ?
+    decEquality {n} (mk-nullary-nw c) (mk-nullary-nw c') with cardToDecidableEq μ c c'
+    ... | yes refl = yes refl
+    ... | no c≢c' = no λ { refl → c≢c' refl}
+    decEquality {n} (mk-nullary-nw c) (giveArg-nw t' t'') = no λ { () }
+    decEquality {n} t@(mk-multiary-nw c) t' = ans 
+        where
+            lemma 
+                : {n' : ℕ}
+                → (t' : OTNW n')
+                → n ≡ n'
+                → Relation.Nullary.Dec (_≡_ {A = Σ[ n ∈ ℕ ](OTNW n)} 
+                                        (n , mk-multiary-nw c) (n' , t'))
+            lemma (mk-multiary-nw c') n≡n' with cardToDecidableEq ζ c c'
+            ... | yes refl = yes refl
+            ... | no c≢c' = no λ { refl → c≢c' refl}
+            lemma (giveArg-nw t' t'') n≡n' = no λ { () }
+
+            ans : Relation.Nullary.Dec (t ≡ t')
+            ans with lemma t' refl
+            ... | yes refl = yes refl
+            ... | no pairsIneq = no λ {refl → pairsIneq refl}
+
+    decEquality {n} (giveArg-nw t t₁) (mk-nullary-nw c) = no λ { () }
+    decEquality {n} (giveArg-nw t t₁) (mk-multiary-nw c) = no λ { () }
+    decEquality {n} (giveArg-nw t a) (giveArg-nw t' a') = ans
+        where
+            yesIfBothSubterms 
+                : {t t' : OTNW (ℕ.suc n)} 
+                → {a a' : OTNW 0}
+                → (Relation.Nullary.Dec (t ≡ t'))
+                → (Relation.Nullary.Dec (a ≡ a'))
+                → Relation.Nullary.Dec (giveArg-nw t a ≡ giveArg-nw t' a')
+            yesIfBothSubterms (yes refl) (yes refl) = yes refl
+            yesIfBothSubterms (yes refl) (no a≢a') = no λ { refl → a≢a' refl }
+            yesIfBothSubterms (no t≢t') _ = no λ { refl → t≢t' refl }
+
+            ans = yesIfBothSubterms (decEquality {ℕ.suc n} t t')
+                              (decEquality {0} a a')
 
     ----------------------------------------------------------------------------
     -- Recomputing the weights
