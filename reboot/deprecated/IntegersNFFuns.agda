@@ -330,6 +330,25 @@
     --nf-fix : NFFix nf
     --nf-fix = {! elift-fix nf' nf'-fix!}
 
+module DEPRECATED where
+    -- Set of all closed terms over ℤSig.
+    -- It still has different elements, 
+    -- for example, for `P S 0`, `S P 0` and `0`.
+    𝕋 : Set
+    𝕋 = AllTerms {fin 1} {fin 2} ℤSig
+    --
+    -- ℤ' is equivalent to the set of all closed terms over ℤSig.
+    ℤ'≃𝕋 : ℤ' ≃ 𝕋
+    ℤ'≃𝕋 = ?
+
+    ℤenum : ℤ' ≃ ℕ
+    ℤenum = ≃-trans ℤ'≃𝕋 (infTermAlgEnum {fin 0} {fin 1} ℤSig)
+
+    open ForEnumSet ℤenum
+
+
+    nf : ℕ → ℕ
+    nf = φ ∘ nf' ∘ φ⁻¹ 
     --------------------------------------------------------------------------------
     -- #TODO: probably remove/rename/retype stuff in this section.
     --------------------------------------------------------------------------------

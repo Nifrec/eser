@@ -82,8 +82,6 @@ module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
         → ((n : ℕ) → (elift f ( elift f n)) ≡ (elift f n))
     elift-fix = ?
 
-
-
 --------------------------------------------------------------------------------
 -- NF without inductive type without weights
 --------------------------------------------------------------------------------
@@ -96,15 +94,292 @@ module NoWeights where
         OT : ℕ → Set
         OT = OpenTermsNW {fin 1} {fin 2} ℤSig
 
-    w : OT 0 → OT 0
+    --------------------------------------------------------------------------------
+    -- Normal-form function
+    --------------------------------------------------------------------------------
+    -- *Intuitively*, the function should simply be this:
+    nf' : ℤ' → ℤ'
+    nf' O = O
+    nf' (S O) = S O
+    nf' (P O) = P O
+    nf' (S (P t)) = nf' t
+    nf' (P (S t)) = nf' t
+    nf' (S (S t)) = S $ nf' $ S t
+    nf' (P (P t)) = P $ nf' $ P t
+
+    -- THIS IS WRONG!
+    counterexample : nf' (S $ S $ P $ P O) ≡ (S $ P O)
+    counterexample = refl
+
+    -- I implement this function below, but rewrote the `with` clauses
+    -- into explicit functions to make it easier to prove things about it:
+    f' : ℤ' → ℤ'
+    f' O = O
+    f' (S z) with f' z
+    ... | O = S O
+    ... | S z' = S (S z')
+    ... | P z' = z'
+    f' (P z) with f' z
+    ... | O = P O
+    ... | S z' = z'
+    ... | P z' = P (P z')
+
+    -- First 'with' clause of f, when the input is S z.
+    f-Sz : ℤ' → ℤ'
+    f-Sz O = S O
+    f-Sz (S z') = S (S z')
+    f-Sz (P z') = z'
+    -- Second 'with' clause of f, when the input is P z.
+    f-Pz : ℤ' → ℤ'
+    f-Pz O = P O
+    f-Pz (S z') = z'
+    f-Pz (P z') = P (P z')
+    -- Actual top-level function.
+    f : ℤ' → ℤ'
+    f O = O
+    f (S z) = f-Sz (f z)
+    f (P z) = f-Pz (f z)
+
+    module IsCleanPredicates where
+        IsZero : ℤ' → Set
+        IsZero O = ⊤
+        IsZero (S z) = ⊥
+        IsZero (P z) = ⊥
+
+        IsPos : ℤ' → Set
+        IsPos O = ⊥
+        IsPos (S O) = ⊤
+        IsPos (S (S z)) = IsPos (S z)
+        IsPos (S (P z)) = ⊥
+        IsPos (P z) = ⊥
+
+        IsNeg : ℤ' → Set
+        IsNeg O = ⊥
+        IsNeg (S z) = ⊥
+        IsNeg (P O) = ⊤
+        IsNeg (P (P z)) = IsNeg (P z)
+        IsNeg (P (S z)) = ⊥
+
+        IsClean : ℤ' → Set
+        IsClean z = IsZero z ⊎ IsPos z ⊎ IsNeg z
+
+        f-Sz-presv-cleanness
+            : (z : ℤ')
+            → IsClean z
+            → IsClean (f-Sz z)
+        f-Sz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₁ tt
+        f-Sz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₂ $ inj₁ tt
+        f-Sz-presv-cleanness (S (S z)) (inj₂ (inj₁ x)) = inj₂ $ inj₁ x
+        f-Sz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₁ tt
+        f-Sz-presv-cleanness (P (P z)) (inj₂ (inj₂ y)) = inj₂ $ inj₂ y
+
+        f-Pz-presv-cleanness
+            : (z : ℤ')
+            → IsClean z
+            → IsClean (f-Pz z)
+        f-Pz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₂ tt
+        f-Pz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₂ $ inj₂ tt
+        f-Pz-presv-cleanness (P (P z)) (inj₂ (inj₂ x)) = inj₂ $ inj₂ x
+        f-Pz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₁ tt
+        f-Pz-presv-cleanness (S (S z)) (inj₂ (inj₁ y)) = inj₂ $ inj₁ y
+
+        is-clean-S-downgrade
+            : {z : ℤ'}
+            → IsClean (S z)
+            → IsClean z
+        is-clean-S-downgrade {O} k@(inj₂ (inj₁ tt)) = inj₁ tt
+        is-clean-S-downgrade {S z} k@(inj₂ (inj₁ x)) = k
+
+        is-clean-P-downgrade
+            : {z : ℤ'}
+            → IsClean (P z)
+            → IsClean z
+        is-clean-P-downgrade {O} k@(inj₂ (inj₂ tt)) = inj₁ tt
+        is-clean-P-downgrade {P z} k@(inj₂ (inj₂ x)) = k
+
+        f-presv-cleanness 
+            : (z : ℤ')
+            → IsClean z
+            → IsClean (f z)
+        f-presv-cleanness O (inj₁ tt) = inj₁ tt
+        f-presv-cleanness O (inj₂ (inj₁ ()))
+        f-presv-cleanness O (inj₂ (inj₂ ()))
+        f-presv-cleanness (S z) k@(inj₂ (inj₁ x)) = 
+            f-Sz-presv-cleanness (f z) IH
+            where
+                IH : IsClean (f z)
+                IH = f-presv-cleanness z (is-clean-S-downgrade k)
+        f-presv-cleanness (P z) k@(inj₂ (inj₂ x)) = 
+            f-Pz-presv-cleanness (f z) IH
+            where
+                IH : IsClean (f z)
+                IH = f-presv-cleanness z (is-clean-P-downgrade k)
+
+        f-cleans : (z : ℤ') → IsClean (f z)
+        f-cleans O = inj₁ tt
+        f-cleans (S z) = f-Sz-presv-cleanness (f z) IH
+            where 
+                IH : IsClean (f z)
+                IH = f-cleans z
+        f-cleans (P z) = f-Pz-presv-cleanness (f z) IH
+            where 
+                IH : IsClean (f z)
+                IH = f-cleans z
+
+    open IsCleanPredicates
+
+    f-fixes-on-clean-inp : (z : ℤ') → IsClean z → f z ≡ z
+    f-fixes-on-clean-inp O k = refl
+    f-fixes-on-clean-inp (S O) (inj₂ (inj₁ x)) = refl
+    f-fixes-on-clean-inp (S (S z)) k@(inj₂ (inj₁ x)) = 
+        ≡begin 
+            f (S (S z))
+        ≡⟨⟩
+            f-Sz (f (S z))
+        ≡⟨ cong f-Sz $ f-fixes-on-clean-inp (S z) (is-clean-S-downgrade {S z} k) ⟩
+            f-Sz (S z)
+        ≡⟨⟩
+            S (S z)
+        ≡∎
+    f-fixes-on-clean-inp (P (P z)) k@(inj₂ (inj₁ x)) =
+        ≡begin 
+            f (P (P z))
+        ≡⟨⟩
+            f-Pz (f (P z))
+        ≡⟨ cong f-Pz $ f-fixes-on-clean-inp (P z) (is-clean-P-downgrade {P z} k) ⟩
+            f-Pz (P z)
+        ≡⟨⟩
+            P (P z)
+        ≡∎
+
+    f-fix : (z : ℤ') → f (f z) ≡ f z
+    f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
+
+    --f-fix : (z : ℤ') → f (f z) ≡ f z
+    --f-fix O = refl
+    --f-fix (S z) with f z
+    --... | O = refl
+    --... | S z' = f-fix 
+    --... | P z' = ?
+    --f-fix (P z) = {! !}
+
+    -- This typechecks and terminates, and showing it reaches a fixed point
+    -- after 1 application is not so hard.
+    -- What is hard, however, is proving it outputs a term whose ℕ-encoding
+    -- is ≤ than the input.
+
+    -- So instead we define a normal-form function w : C → C on
+    -- the no-weight representation of terms over ℤSig.
+    -- This was tricky to implement, since we need to do nested pattern-matching
+    -- (to get the cases S S t, P S t, S P t, P P t),
+    -- which got Agda's termination checker really confused.
+    -- It seems nested pattern-matching does not work as expected for *indexed*
+    -- inductive types, and OT is still indexed by the number of open holes.
+    --
+    -- The solution
+    -- Only do one layer of pattern-matching, and use an auxiliary function
+    -- to perform the second match.
+    -- Give the auxiliary function the data needed to reconstruct the original
+    -- input term when needed (that's `t'`, see below).
+    -- The function can be hard to read, but one can mentally use the following
+    -- macros:
+    𝟎 : C
+    𝟎 = mk-nullary-nw Fin.zero
+
+    𝐒 : C → C
+    𝐒 = giveArg-nw $ mk-multiary-nw Fin.zero 
+
+    {-# DISPLAY giveArg-nw (mk-multiary-nw Fin.zero) t = 𝐒 t #-}
+
+    𝐏 : C → C
+    𝐏 = giveArg-nw $ mk-multiary-nw $ Fin.suc Fin.zero
+
+    w : C → C
     w' : OT 1 → OT 0 → OT 0
+    -- Case t ≗ 𝟎. Just return 𝟎.
     w t@(mk-nullary-nw c) = t
     w (giveArg-nw t' a) = w' t' a
+    -- Case t ≗ 𝐒 𝟎 xor t ≡ 𝐏 𝟎. This is already normal, just return t ≗
+    -- giveArg-nw t' a. (Whether it is 𝐒 or 𝐏 depends on t').
     w' t' a@(mk-nullary-nw c) = giveArg-nw t' a
-    w' t' a@(giveArg-nw t'' a') with decEquality {fin 1} {fin 2} ℤSig t' t''
-    ... | yes refl = giveArg-nw t' $ w' t'' a'
-    ... | no  t'≢t'' = w a'
+    w' t' a@(giveArg-nw t'' a') = 
+        sublemma (decEquality {fin 1} {fin 2} ℤSig t' t'')
+        module WImpl where
+            sublemma : (q : Relation.Nullary.Dec (t' ≡ t''))
+                → OT 0
+            sublemma (yes refl) = giveArg-nw t' $ w' t'' a'
+            sublemma (no t'≢t'') = w a'
+    ---- Case t' ≡ t''. Then the original input is of the form P P a'
+    ---- xor S S a'. So return P P (nf a') xor S S (nf a') respectively.
+    --... | yes refl = giveArg-nw t' $ w' t'' a'
+    ---- Case t' ≢ t''. Then the original input is of the form S P a'
+    ---- xor P S a'. So apply inversity between S and P, and return: nf a'.
+    --... | no  t'≢t'' = w a'
+    --w' t' a@(giveArg-nw t'' a') with decEquality {fin 1} {fin 2} ℤSig t' t''
+    ---- Case t' ≡ t''. Then the original input is of the form P P a'
+    ---- xor S S a'. So return P P (nf a') xor S S (nf a') respectively.
+    --... | yes refl = giveArg-nw t' $ w' t'' a'
+    ---- Case t' ≢ t''. Then the original input is of the form S P a'
+    ---- xor P S a'. So apply inversity between S and P, and return: nf a'.
+    --... | no  t'≢t'' = w a'
 
+    open WImpl
+
+    w-fix
+        : (t : C)
+        → w (w t) ≡ w t
+    w'-fix
+        : (t' : OT 1)
+        → (a : OT 0)
+        → w (w' t' a) ≡ w (giveArg-nw t' a)
+    w-fix (mk-nullary-nw c) = refl
+    w-fix (giveArg-nw t' a) = w'-fix t' a
+    w'-fix t' a@(mk-nullary-nw c) = refl
+    --w'-fix t' a@(giveArg-nw t'' a') = sublemma $ decEquality {fin 1} {fin 2} ℤSig t' t''
+    --    where
+    --        sublemma 
+    --            : (q : Relation.Nullary.Dec (t' ≡ t''))
+    --            → decEquality {fin 1} {fin 2} ℤSig t' t'' ≡ q
+    --            → w (w' t' a) ≡ w (giveArg-nw t' a)
+    --        sublemma q refl = 
+    --            ≡begin 
+    --                w (w' t' (giveArg-nw t' a') )
+    --            ≡⟨⟩
+    --                w (giveArg-nw t' $ w' t'' a')
+    --            ≡⟨ ? ⟩
+    --               (w' t' (giveArg-nw t' a') )
+    --            ≡∎
+    --        sublemma (no t'≢t'') refl = ?
+    --... | no t'≢t'' = ?
+    w'-fix t' a@(giveArg-nw t'' a') with (decEquality {fin 1} {fin 2} ℤSig t' t'')
+    -- Case t' ≡ t''. Then the original input is of the form P P a'
+    -- xor S S a'. 
+    ... | yes refl = 
+        let H : sublemma t' t' a' (yes refl) ≡ giveArg-nw t' (w' t'' a')
+            H = refl
+        in 
+        ≡begin 
+            w (sublemma t' t' a' (yes refl))
+        ≡⟨⟩
+            w (giveArg-nw t' ( w' t'' a'))
+        ≡⟨⟩
+            w (giveArg-nw t' ( w (giveArg-nw t'' a')))
+        ≡⟨ cong (λ x → w (giveArg-nw t' x)) $ sym $ w'-fix t'' a' ⟩
+            w (giveArg-nw t' ( w (w' t'' a')))
+        ≡⟨ ? ⟩  -- cong w-fix !
+            w (giveArg-nw t' (w' t'' a'))
+            -- Eh we have a circle now...
+        ≡⟨ ? ⟩
+            sublemma t' t' a' (yes refl)
+        ≡⟨⟩
+            giveArg-nw t' ( w' t'' a')
+        --≡⟨⟩
+        --    w ( giveArg-nw t' a)
+        ≡∎
+        
+    -- Case t' ≢ t''. Then the original input is of the form S P a'
+    -- xor P S a'. So apply inversity between S and P, and return: nf a'.
+    ... | no  t'≢t''  = ?
 
           
 --------------------------------------------------------------------------------
@@ -129,3 +404,5 @@ module StdlibInt = Data.Integer
 
 ℤcorrectness : ℤ ≃ StdlibInt.ℤ
 ℤcorrectness = ?
+
+-- #EXT: Add addition?
