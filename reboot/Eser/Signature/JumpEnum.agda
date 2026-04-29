@@ -14,7 +14,7 @@
 
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
-open import Data.Bool.Properties
+open import Data.Bool.Properties hiding (<-cmp)
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Nat.Induction
@@ -261,7 +261,7 @@ jumpOver⊥s
     → (t₀ : C 1)
     → (Σ[ w ∈ ℕ ] C w) ≃ (Σ[ i ∈ ℕ ] (C $ J-iter 1 t₀ J i))
 jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
-    where
+    module JumpOver⊥sProof where
     j : ℕ → ℕ
     j = J-iter 1 t₀ J
 
@@ -380,6 +380,60 @@ jumpOver⊥s C J ¬C0 t₀ = mk≃' f f⁻¹ invˡ invʳ
         ≡⟨ tuple-with-subst {ℕ} {ℕ} {C} id w (j i') t (sym w≡ji') w≡ji' ⟩
             (w , t)
         ≡∎
+
+-- If closed term t has a lower weight than t',
+-- and the jumpOver⊥s equivalence maps them
+-- to (i , t₁) and (i', t₁') then i < i'.
+-- I.e., lower weight => earlier jump-stop.
+jumpOver⊥s-mono
+    : (C : ℕ → Set)
+    → (J : InhabitJumper C)
+    → (¬C0 : ¬ C 0)
+    → (t₀ : C 1)
+    → {w w' : ℕ}
+    → (t : C w)
+    → (t' : C w')
+    → w < w'
+    → (proj₁ $ ≃-to (jumpOver⊥s C J ¬C0 t₀) (w , t))
+        <
+      (proj₁ $ ≃-to (jumpOver⊥s C J ¬C0 t₀) (w' , t'))
+jumpOver⊥s-mono C J ¬C0 t₀ {w} {w'} t t' w<w' = i<i'
+    where
+        -- #TODO move this lemma to file of def ℕ<Mono.
+        -- If f is monotone and f n < f m, then we must also have n < m.
+        ℕ<MonotoneReflect
+            : {n m : ℕ}
+            → (f : ℕ → ℕ)
+            → ℕ<Monotone f
+            → f n < f m
+            → n < m
+        ℕ<MonotoneReflect {n} {m} f monoF fn<fm with <-cmp m n
+        ... | tri< m<n  _   _   = 
+            ⊥-elim $ n≮n (f n) $ Data.Nat.Properties.<-trans fn<fm (monoF m<n)
+        ... | tri≈ _    m≡n _   = 
+            ⊥-elim $ n≮n (f n) $ subst (λ x → f n < f x) m≡n fn<fm
+        ... | tri> _    _   n<m = n<m
+
+        open JumpOver⊥sProof C J ¬C0 t₀
+
+        i : ℕ
+        i = proj₁ $ existenceLemma w t
+        w≡ji : w ≡ j i
+        w≡ji = proj₂ $ existenceLemma w t
+        i' : ℕ
+        i' = proj₁ $ existenceLemma w' t'
+        w'≡ji' : w' ≡ j i'
+        w'≡ji' = proj₂ $ existenceLemma w' t'
+
+        ji<ji' : j i < j i'
+        ji<ji' = 
+            subst (λ x → j i < x) (w'≡ji')
+            $
+            subst (λ x → x < w') (w≡ji) w<w'
+
+        i<i' : i < i'
+        i<i' = ℕ<MonotoneReflect {i} {i'} j monotoneLemma ji<ji'
+
 
 jumpTheoremInhabitJumper
     : {C : ℕ → Set}
