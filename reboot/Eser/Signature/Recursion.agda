@@ -107,6 +107,4 @@ module ForSignature
     𝕋≃ℕ : 𝕋 ≃ ℕ
     𝕋≃ℕ = infTermAlgEnum {μ'} {ζ'} S
 
-    open ForEnumSet 𝕋≃ℕ public
-
-
+    open ForEnumSet 𝕋≃ℕ public -- This already gives <<-rec for the signature.

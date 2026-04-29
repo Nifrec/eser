@@ -80,3 +80,4 @@ noWeightlessTerms
     → OpenTerms {μ} {ζ} S 0 n
     → ⊥ 
 noWeightlessTerms {μ} {ζ} S n t = n≮0 $ allTermsNonzeroWeight S t
+

@@ -260,19 +260,7 @@ module NoWeights where
     f-fix : (z : ℤ') → f (f z) ≡ f z
     f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
 
-    --f-fix : (z : ℤ') → f (f z) ≡ f z
-    --f-fix O = refl
-    --f-fix (S z) with f z
-    --... | O = refl
-    --... | S z' = f-fix 
-    --... | P z' = ?
-    --f-fix (P z) = {! !}
-
-    -- This typechecks and terminates, and showing it reaches a fixed point
-    -- after 1 application is not so hard.
-    -- What is hard, however, is proving it outputs a term whose ℕ-encoding
-    -- is ≤ than the input.
-
+    -- #TODO: Comment below is outdated.
     -- So instead we define a normal-form function w : C → C on
     -- the no-weight representation of terms over ℤSig.
     -- This was tricky to implement, since we need to do nested pattern-matching
