@@ -6,6 +6,8 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --allow-unsolved-metas #-}
+
 open import Level
 open import Data.Nat
 open import Data.Nat.Properties
@@ -322,6 +324,17 @@ contr≃Fin1 {A} (a , isCenter) = mk≃' f f⁻¹ invˡ invʳ
 -- Proof: give a function and show it is injective and surjective.
 -- See file Eser/Equivalences/Properties/SigmaFinInfInhabitedProof.agda
 Σfin-inf-inhabited g = Σfin-inf-inhabited-proof g
+
+Σfin-inf-inhabited-mono
+    : {i i' : ℕ}
+    → i Data.Nat.< i'
+    → (g : ℕ → ℕ)
+    → (x : Fin $ ℕ.suc $ g i)
+    → (x' : Fin $ ℕ.suc $ g i')
+    → ≃-to (Σfin-inf-inhabited g) (i , x) 
+        Data.Nat.<
+      ≃-to (Σfin-inf-inhabited g) (i' , x') 
+Σfin-inf-inhabited-mono {i} {i'} i<i' g x x' = ? -- # TODO: remove pragma when done.
 
 fin-+-assoc
     : (n m l : ℕ)

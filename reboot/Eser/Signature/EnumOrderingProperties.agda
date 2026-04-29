@@ -62,6 +62,7 @@ smallerWeightSmallerIdx
     : {wₐ wₓ : ℕ}
     → (a : C wₐ)
     → (x : C wₓ)
+    → wₐ < wₓ
     → (φ (wₐ , a)) < (φ (wₓ , x))
 
 -- Corollary: giveArg t a always comes later in the enum than the argument a.
@@ -74,7 +75,7 @@ giveArgBigger
     → (φ (wₐ , a)) < (φ (wₐ + wₜ , giveArg t a))
 
 
-smallerWeightSmallerIdx {wₐ} {wₓ} a x = ans
+smallerWeightSmallerIdx {wₐ} {wₓ} a x wₐ<wₓ = ans
     where
         ------------------------------------------------------------------------
         -- Break down the equivalence φ : AllTerms S ~> ℕ
@@ -98,38 +99,37 @@ smallerWeightSmallerIdx {wₐ} {wₓ} a x = ans
         -- and since wₐ < wₓ, it must be that x lives in a later jump-stop than
         -- a.
         iₐ : ℕ
-        iₐ = ?
+        iₐ = proj₁ $ α (wₐ , a)
         iₓ : ℕ
-        iₓ = ?
+        iₓ = proj₁ $ α (wₓ , x)
 
-        H₂ : iₐ < iₓ
-        H₂ = ?
+        H₁ : iₐ < iₓ
+        H₁ = jumpOver⊥s-mono C J ¬C0 a₀ {wₐ} {wₓ} a x wₐ<wₓ
 
         -- Our enumeration maps all inhabited sets of AllTerms of a given weight
         -- to a finite set. It does this for every jump stop,
         -- so now show that this preserves iₐ and iₓ.
         iₐ' : ℕ
-        iₐ' = ? 
-        H₃ : iₐ ≡ iₐ' 
-        H₃ = ?
+        iₐ' = proj₁ $ β $ α (wₐ , a)
+        H₂ : iₐ ≡ iₐ' 
+        H₂ = refl
 
         iₓ' : ℕ
-        iₓ' = ?
-        H₄ : iₓ ≡ iₓ' 
-        H₄ = ?
+        iₓ' = proj₁ $ β $ α (wₓ , x)
+        H₃ : iₓ ≡ iₓ' 
+        H₃ = refl
+
+        H₄ : iₐ' < iₓ'
+        H₄ = H₁
 
         -- Finally, show that Σfin-inf-inhabited maps terms (i', t')
         -- with i' <ℕ i to a lower number than (i , t).
+        ans : φ (wₐ , a) < φ (wₓ , x)
+        ans = Σfin-inf-inhabited-mono H₁ z (proj₂ $ β $ α (wₐ , a)) (proj₂ $ β $ α $ (wₓ , x))
+        TODO : Set
+        TODO = ? -- #TODO: prove the Σfin-inf-inhabited-mono lemma.
 
-        H₅ : ?
-        H₅ = ?
-
-        -- And now we put the whole equivalence together...
-        -- #TODO.
-        --
-        ans = ?
-
-giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x
+giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x H
     where
         wₓ : ℕ
         wₓ = wₐ + wₜ

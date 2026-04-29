@@ -8,3 +8,4 @@
 * Argument how OpenTerms could be constructed without new inductive type.
 * `(ℕ → Bool) / ~` (where `~` denotes homotopy) cannot be constructed 
     because `ℕ → Bool` cannot be enumerated (by a diagonalisation argument).
+* Remove all `{-# OPTIONS --allow-unsolved-metas #-}` and use the `safe` pragma.
