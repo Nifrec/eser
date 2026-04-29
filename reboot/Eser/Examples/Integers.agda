@@ -168,6 +168,8 @@ module NoWeights where
             → IsClean z
             → IsClean (f-Sz z)
         f-Sz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₁ tt
+        f-Sz-presv-cleanness O (inj₂ (inj₁ ()))
+        f-Sz-presv-cleanness O (inj₂ (inj₂ ()))
         f-Sz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₂ $ inj₁ tt
         f-Sz-presv-cleanness (S (S z)) (inj₂ (inj₁ x)) = inj₂ $ inj₁ x
         f-Sz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₁ tt
@@ -178,6 +180,8 @@ module NoWeights where
             → IsClean z
             → IsClean (f-Pz z)
         f-Pz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₂ tt
+        f-Pz-presv-cleanness O (inj₂ (inj₁ ()))
+        f-Pz-presv-cleanness O (inj₂ (inj₂ ()))
         f-Pz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₂ $ inj₂ tt
         f-Pz-presv-cleanness (P (P z)) (inj₂ (inj₂ x)) = inj₂ $ inj₂ x
         f-Pz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₁ tt
@@ -230,7 +234,7 @@ module NoWeights where
 
     f-fixes-on-clean-inp : (z : ℤ') → IsClean z → f z ≡ z
     f-fixes-on-clean-inp O k = refl
-    f-fixes-on-clean-inp (S O) (inj₂ (inj₁ x)) = refl
+    f-fixes-on-clean-inp (S O) (inj₂ (inj₁ tt)) = refl
     f-fixes-on-clean-inp (S (S z)) k@(inj₂ (inj₁ x)) = 
         ≡begin 
             f (S (S z))
@@ -241,7 +245,8 @@ module NoWeights where
         ≡⟨⟩
             S (S z)
         ≡∎
-    f-fixes-on-clean-inp (P (P z)) k@(inj₂ (inj₁ x)) =
+    f-fixes-on-clean-inp (P O) (inj₂ (inj₂ tt)) = refl
+    f-fixes-on-clean-inp (P (P z)) k@(inj₂ (inj₂ x)) =
         ≡begin 
             f (P (P z))
         ≡⟨⟩
