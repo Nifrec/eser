@@ -18,7 +18,7 @@ open import Data.Unit
 open import Data.Empty
 open import Relation.Binary
 open import Relation.Binary.Definitions
-open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality hiding (J)
 open import Relation.Nullary
 open import Data.Product
 open import Relation.Binary.Structures
@@ -165,42 +165,6 @@ everyTermAlgEnum {∞}
 
 infTermAlgEnum {μ} {ζ} S = 
     --------------------------------------
-    -- Unpacking earlier results
-    --------------------------------------
-    let C = ClosedTerms {suc∞ μ} {suc∞ ζ} S in
-    let ¬C0 : C 0 → ⊥ -- All terms have at least weight 1.
-        ¬C0 = noWeightlessTerms {suc∞ μ} {suc∞ ζ} S 0
-    in
-    let zTheoInstance : (w : ℕ) → Σ[ z ∈ ℕ ](C w ≃ Fin z)
-        -- Note: we only want closed terms, so always 0 open argument-holes.
-        zTheoInstance w = ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
-    in
-    let J : InhabitJumper C
-        J = mkInhabitJumper {μ} {ζ} S zTheoInstance
-    in
-    -- There is at least one nullary constructor; let a₀ be the corresponding
-    -- term. We need a subst to remind Agda that it always has weight 1.
-    let a₀ : C 1
-        a₀ =
-            let H : (ℕ.suc $ cardToℕ $ cardToZero μ) ≡ 1
-                H = sucZeroIsOneInℕ μ
-            in
-            subst C H (mk-nullary (cardToZero μ))
-    in
-    let j : ℕ → ℕ
-        j = J-iter {C} 1 a₀ J 
-    in
-    let jumpTheoInstance 
-            : (i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 a₀ J i) ≃ Fin (ℕ.suc z'))
-        jumpTheoInstance = jumpTheoremInhabitJumper {C} a₀ J zTheoInstance
-    in
-    let z : ℕ → ℕ
-        z i = proj₁ $ jumpTheoInstance i
-    in
-    let Cw-to-Finz : (i : ℕ) → (C (j i) ≃ (Fin $ ℕ.suc $ z i))
-        Cw-to-Finz i = proj₂ $ jumpTheoInstance i
-    in
-    --------------------------------------
     -- Actual proof: chain of _≃_'s
     --------------------------------------
     begin 
@@ -215,5 +179,41 @@ infTermAlgEnum {μ} {ζ} S =
     ≃⟨ Σfin-inf-inhabited z ⟩
         ℕ
     ∎
-    
+    module MainTheoremProof where
+        --------------------------------------
+        -- Unpacking earlier results
+        --------------------------------------
+        C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
+        ¬C0 : C 0 → ⊥ -- All terms have at least weight 1.
+        ¬C0 = noWeightlessTerms {suc∞ μ} {suc∞ ζ} S 0
+        
+        zTheoInstance : (w : ℕ) → Σ[ z ∈ ℕ ](C w ≃ Fin z)
+        -- Note: we only want closed terms, so always 0 open argument-holes.
+        zTheoInstance w = ZTheorem {suc∞ μ} {suc∞ ζ} S w 0
+        
+        J : InhabitJumper C
+        J = mkInhabitJumper {μ} {ζ} S zTheoInstance
+        
+        -- There is at least one nullary constructor; 
+        -- let a₀ be the corresponding term. 
+        -- We need a subst to remind Agda that it always has weight 1.
+        a₀ : C 1
+        a₀ =
+            let H : (ℕ.suc $ cardToℕ $ cardToZero μ) ≡ 1
+                H = sucZeroIsOneInℕ μ
+            in
+            subst C H (mk-nullary (cardToZero μ))
+        
+        j : ℕ → ℕ
+        j = J-iter {C} 1 a₀ J 
+        
+        jumpTheoInstance 
+            : (i : ℕ) → Σ[ z' ∈ ℕ ] (C (J-iter {C} 1 a₀ J i) ≃ Fin (ℕ.suc z'))
+        jumpTheoInstance = jumpTheoremInhabitJumper {C} a₀ J zTheoInstance
+        
+        z : ℕ → ℕ
+        z i = proj₁ $ jumpTheoInstance i
+        
+        Cw-to-Finz : (i : ℕ) → (C (j i) ≃ (Fin $ ℕ.suc $ z i))
+        Cw-to-Finz i = proj₂ $ jumpTheoInstance i
 
