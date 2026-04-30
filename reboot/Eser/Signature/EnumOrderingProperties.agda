@@ -36,6 +36,7 @@ open import Eser.Card
 open import Eser.Signature.Definitions
 open import Eser.Signature.MainTheorem 
 open import Eser.Signature.JumpEnum
+open import Eser.Signature.Properties
 open import Eser.Equivalences
 
 
@@ -128,14 +129,13 @@ smallerWeightSmallerIdx {wₐ} {wₓ} a x wₐ<wₓ = ans
         ans = Σfin-inf-inhabited-mono z H₁ (proj₂ $ β $ α (wₐ , a)) 
                                            (proj₂ $ β $ α $ (wₓ , x))
 
-giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x H
+giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x wₐ<wₜ
     where
         wₓ : ℕ
         wₓ = wₐ + wₜ
+
         x : C wₓ
         x = giveArg t a
 
-        -- The goal is to show that the number of x 
-        -- (in the enumeration of AllTerms S) is greater than that of a.
-        H : wₐ < wₓ
-        H = ? -- Use wₜ ≥ 1.
+        wₐ<wₓ : wₐ < wₐ + wₜ
+        wₐ<wₓ = Data.Nat.Properties.m<m+n wₐ $ allTermsNonzeroWeight S t
