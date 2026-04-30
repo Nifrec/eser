@@ -85,7 +85,7 @@ finEndoSuc {n} x x<n = (x'' , p)
     → Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) ≃ ℕ
 -- Proof: give a function and show it is injective and surjective.
 Σfin-inf-inhabited-proof g = ⤖⇒↔ $ mk⤖ (injF , surjF)
-    where
+    module SigmaFinInfInhabitedProofImpl where
         From = Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i)
         open import Function.Properties.Bijection using (⤖⇒↔)
         open Σfin-inf-inhabited-arithmetic

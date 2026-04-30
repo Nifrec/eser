@@ -6,8 +6,6 @@
 -- Stability   : experimental
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Level
 open import Data.Nat
 open import Data.Nat.Properties
@@ -325,16 +323,107 @@ contr≃Fin1 {A} (a , isCenter) = mk≃' f f⁻¹ invˡ invʳ
 -- See file Eser/Equivalences/Properties/SigmaFinInfInhabitedProof.agda
 Σfin-inf-inhabited g = Σfin-inf-inhabited-proof g
 
-Σfin-inf-inhabited-mono
-    : {i i' : ℕ}
-    → i Data.Nat.< i'
-    → (g : ℕ → ℕ)
-    → (x : Fin $ ℕ.suc $ g i)
-    → (x' : Fin $ ℕ.suc $ g i')
-    → ≃-to (Σfin-inf-inhabited g) (i , x) 
-        Data.Nat.<
-      ≃-to (Σfin-inf-inhabited g) (i' , x') 
-Σfin-inf-inhabited-mono {i} {i'} i<i' g x x' = ? -- # TODO: remove pragma when done.
+module _ (g : ℕ → ℕ) where
+    open Σfin-inf-inhabited-arithmetic
+
+    -- This imports also `f : (i : ℕ) → (Fin $ ℕ.suc $ g i) → ℕ`,
+    -- which is definitionally equal to `≃-to $ Σfin-inf-inhabited g`.
+    open SigmaFinInfInhabitedProofImpl g
+    
+
+    Σfin-inf-inhabited-mono
+        : {i' i : ℕ}
+        → i' Data.Nat.< i
+        → (x' : Fin $ ℕ.suc $ g i')
+        → (x : Fin $ ℕ.suc $ g i)
+        → ≃-to (Σfin-inf-inhabited g) (i' , x') 
+            ℕ<
+          ≃-to (Σfin-inf-inhabited g) (i , x) 
+    -- Prove by induction on i'.
+    Σfin-inf-inhabited-mono {0} {i@(suc j)} i'<i x' x = fx'<fx
+        where
+            x'≤g0 : toℕ x' ℕ≤ g 0
+            x'≤g0 = smallerThanGi {0} x'
+
+            g0<fx : g 0 ℕ< f i x
+            g0<fx = greaterThanG0 {j} x
+
+            fx'≡x' : f 0 x' ≡ toℕ x'
+            fx'≡x' = refl
+
+            fx'<fx : f 0 x' ℕ< f i x
+            fx'<fx = ≤-<-trans x'≤g0 g0<fx
+    Σfin-inf-inhabited-mono {i'@(suc j')} {i@(suc j)} i'<i x' x = ans
+        where
+            j'<j : j' ℕ< j
+            j'<j = s≤s⁻¹ i'<i
+
+            -- We can perform one normalisation step both
+            -- on f i' x' and on f i x. Just for documentation:
+            H₀' : f i' x' ≡ toℕ x' + 1 + f j' (fromℕ $ g j')
+            H₀' = refl
+            H₀ : toℕ x + 1 + f j (fromℕ $ g j) ≡ f i x
+            H₀ = refl
+            -- In practise it's more convenient to reorder the summands:
+            H' : 1 + toℕ x' + f j' (fromℕ $ g j') ≡ f i' x'
+            H' = sym $ cong (λ y → y + f j' (fromℕ $ g j')) $ +-comm (toℕ x') 1
+            H : 1 + toℕ x + f j (fromℕ $ g j) ≡ f i x
+            H = sym $ cong (λ y  → y + f j (fromℕ $ g j)) $ +-comm (toℕ x) 1  
+
+            x'≤gi' : toℕ x' ℕ≤ (toℕ $ fromℕ $ g i')
+            x'≤gi' = subst (λ y → toℕ x' ℕ≤ y) 
+                           (sym $ toℕ-fromℕ $ g i') 
+                           (smallerThanGi x')
+
+            fx'≤fgi' : 1 + toℕ x' + f j' (fromℕ $ g j') 
+                       ℕ≤ 
+                       1 + (toℕ $ fromℕ $ g i') + f j' (fromℕ $ g j')
+            fx'≤fgi' = s≤s ans
+                where
+                    ans : toℕ x' + f j' (fromℕ $ g j') ℕ≤ 
+                        (toℕ $ fromℕ $ g i') + f j' (fromℕ $ g j')
+                    ans = +-monoˡ-≤ (f j' (fromℕ $ g j')) x'≤gi'
+                    
+            fgi'<1+fgj : 1 + (toℕ $ fromℕ $ g i') + f j' (fromℕ $ g j')
+                       ℕ< 
+                       1 + f j (fromℕ $ g j)
+            fgi'<1+fgj = s≤s ans
+                where
+                    ans : (toℕ $ fromℕ $ g i') + f j' (fromℕ $ g j') 
+                          ℕ<
+                          f j (fromℕ $ g j)
+                    ans = subst 
+                          (λ y → y + f j' (fromℕ $ g j') ℕ< f j (fromℕ $ g j)) 
+                          (sym $ toℕ-fromℕ $ g i')
+                          $ incrLemma {j'} {j} j'<j
+
+            1+fgj≤fx : 1 + f j (fromℕ $ g j)
+                       ℕ≤ 
+                       1 + toℕ x + f j (fromℕ $ g j)
+            1+fgj≤fx = +-monoˡ-≤ (f j (fromℕ $ g j)) 1≤1+x
+                where
+                    1≤1+x : 1 ℕ≤ 1 + toℕ x
+                    1≤1+x = s≤s $ z≤n {toℕ x}
+            -- Now chain the ≤ < and ≤ above:
+            fx'<fx : 1 + toℕ x' + f j' (fromℕ $ g j')
+                     ℕ<
+                     1 + toℕ x + f j (fromℕ $ g j)
+            fx'<fx = <-≤-trans (≤-<-trans fx'≤fgi' fgi'<1+fgj) 1+fgj≤fx
+
+            -- And unswap the summands:
+            ans : toℕ x' + 1 + f j' (fromℕ $ g j')
+                  ℕ<
+                  toℕ x + 1 + f j (fromℕ $ g j)
+            ans = subst (λ y → y ℕ< f i x) H'
+                  $ subst (λ y → 1 + toℕ x' + f j' (fromℕ $ g j') ℕ< y) H fx'<fx
+
+            
+
+
+
+            
+
+
 
 fin-+-assoc
     : (n m l : ℕ)

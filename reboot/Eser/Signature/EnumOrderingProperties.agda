@@ -125,9 +125,8 @@ smallerWeightSmallerIdx {wₐ} {wₓ} a x wₐ<wₓ = ans
         -- Finally, show that Σfin-inf-inhabited maps terms (i', t')
         -- with i' <ℕ i to a lower number than (i , t).
         ans : φ (wₐ , a) < φ (wₓ , x)
-        ans = Σfin-inf-inhabited-mono H₁ z (proj₂ $ β $ α (wₐ , a)) (proj₂ $ β $ α $ (wₓ , x))
-        TODO : Set
-        TODO = ? -- #TODO: prove the Σfin-inf-inhabited-mono lemma.
+        ans = Σfin-inf-inhabited-mono z H₁ (proj₂ $ β $ α (wₐ , a)) 
+                                           (proj₂ $ β $ α $ (wₓ , x))
 
 giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x H
     where
