@@ -58,6 +58,8 @@ data ℤ' : Set where
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
+
+
 --------------------------------------------------------------------------------
 -- TODO: move this to another file
 --
@@ -259,6 +261,70 @@ module NoWeights where
 
     f-fix : (z : ℤ') → f (f z) ≡ f z
     f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
+
+    --------------------------------------------------------------------------------
+    -- Shorter-term relation ⊑ on ℤ'
+    --
+    -- The height of a term is the number of connectives.
+    --------------------------------------------------------------------------------
+    module ShorterTermOrder where
+        _⊑_ : Rel ℤ' 0ℓ 
+        O ⊑ O = ⊤
+        O ⊑ S z = ⊤
+        O ⊑ P z = ⊤
+
+        S z ⊑ O = ⊥
+        S z ⊑ S z' = z ⊑ z'
+        S z ⊑ P z' = z ⊑ z'
+
+        P z ⊑ O = ⊥
+        P z ⊑ S z' = z ⊑ z'
+        P z ⊑ P z' = z ⊑ z'
+
+        S-mono : (z z' : ℤ') → z ⊑ z' → S z ⊑ S z'
+        S-mono z z' z⊑z' = z⊑z'
+        P-mono : (z z' : ℤ') → z ⊑ z' → P z ⊑ P z'
+        P-mono z z' z⊑z' = z⊑z'
+        S-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ S z'
+        P-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ P z'
+
+        S-increasing O z' z⊑z' = tt
+        S-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
+        S-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
+        S-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
+        S-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
+
+        P-increasing O z' z⊑z' = tt
+        P-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
+        P-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
+        P-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
+        P-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
+
+        ⊑-refl : (z : ℤ') → z ⊑ z
+        ⊑-refl O = tt
+        ⊑-refl (S z) = S-mono z z (⊑-refl z)
+        ⊑-refl (P z) = P-mono z z (⊑-refl z)
+
+        f-Sz-decreasing : (z : ℤ') → f-Sz z ⊑ S z
+        f-Sz-decreasing O = tt
+        f-Sz-decreasing (S z) = ⊑-refl z
+        f-Sz-decreasing (P z) = 
+            S-increasing z (P z) $ P-increasing z z $ ⊑-refl z
+
+        f-Pz-decreasing : (z : ℤ') → f-Pz z ⊑ S z
+        f-Pz-decreasing O = tt
+        f-Pz-decreasing (S z) =
+            S-increasing z (S z) $ S-increasing z z $ ⊑-refl z
+        f-Pz-decreasing (P z) = ⊑-refl z
+
+    open ShorterTermOrder
+
+    f-leq : (z : ℤ') → f z ⊑ z
+    f-leq O = tt
+    f-leq (S z) = ?
+    f-leq (P z) = ?
+
+
 
     -- #TODO: Comment below is outdated.
     -- So instead we define a normal-form function w : C → C on
