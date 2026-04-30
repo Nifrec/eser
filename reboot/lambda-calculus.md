@@ -1,4 +1,12 @@
 ## Normalising non-terminating λ-expressions
+
+**Edit:**
+Bad idea that won't work.
+`λ f . f (f (f (f f) ) ) (λ x . c)` where `c` is a constant
+expands after 1 β-reduction, but eventually reaches the fixpoint `c`.
+So picking the shortest out of 1-β-step and 1-anti-β-step is too greedy.
+There would be different classes for computationally equivalent terms!
+
 30 April 2026
 
 *A wild idea.*
