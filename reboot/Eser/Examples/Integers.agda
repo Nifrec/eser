@@ -305,24 +305,57 @@ module NoWeights where
         ⊑-refl (S z) = S-mono z z (⊑-refl z)
         ⊑-refl (P z) = P-mono z z (⊑-refl z)
 
+        ⊑-trans : (x y z : ℤ') → x ⊑ y → y ⊑ z → x ⊑ z
+        ⊑-trans O O O x⊑y y⊑z = tt
+        ⊑-trans O O (S z) x⊑y y⊑z = tt
+        ⊑-trans O (S y) (S z) x⊑y y⊑z = tt
+        ⊑-trans (S x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans (P x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans O (P y) (S z) x⊑y y⊑z = tt
+        ⊑-trans (S x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans (P x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans O O (P z) x⊑y y⊑z = tt
+        ⊑-trans O (S y) (P z) x⊑y y⊑z = tt
+        ⊑-trans (S x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans (P x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans O (P y) (P z) x⊑y y⊑z = tt
+        ⊑-trans (S x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+        ⊑-trans (P x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+
         f-Sz-decreasing : (z : ℤ') → f-Sz z ⊑ S z
         f-Sz-decreasing O = tt
         f-Sz-decreasing (S z) = ⊑-refl z
         f-Sz-decreasing (P z) = 
             S-increasing z (P z) $ P-increasing z z $ ⊑-refl z
 
-        f-Pz-decreasing : (z : ℤ') → f-Pz z ⊑ S z
+        f-Pz-decreasing : (z : ℤ') → f-Pz z ⊑ P z
         f-Pz-decreasing O = tt
         f-Pz-decreasing (S z) =
-            S-increasing z (S z) $ S-increasing z z $ ⊑-refl z
+            P-increasing z (S z) $ S-increasing z z $ ⊑-refl z
         f-Pz-decreasing (P z) = ⊑-refl z
 
     open ShorterTermOrder
 
     f-leq : (z : ℤ') → f z ⊑ z
     f-leq O = tt
-    f-leq (S z) = ?
-    f-leq (P z) = ?
+    f-leq (S z) = fSz⊑Sz
+        where
+            fSz⊑Sfz : f (S z) ⊑ S (f z)
+            fSz⊑Sfz = f-Sz-decreasing (f z)
+            Sfz⊑Sz : S (f z) ⊑ S z
+            Sfz⊑Sz = S-mono (f z) z (f-leq z)
+            fSz⊑Sz : f (S z) ⊑ S z
+            fSz⊑Sz = ⊑-trans (f (S z)) (S (f z)) (S z) fSz⊑Sfz Sfz⊑Sz
+    f-leq (P z) = fPz⊑Pz
+        where
+            fPz⊑Pfz : f (P z) ⊑ P (f z)
+            fPz⊑Pfz = f-Pz-decreasing (f z)
+            Pfz⊑Pz : P (f z) ⊑ P z
+            Pfz⊑Pz = P-mono (f z) z (f-leq z)
+            fPz⊑Pz : f (P z) ⊑ P z
+            fPz⊑Pz = ⊑-trans (f (P z)) (P (f z)) (P z) fPz⊑Pfz Pfz⊑Pz
+
+
 
 
 
