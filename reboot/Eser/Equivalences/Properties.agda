@@ -129,7 +129,7 @@ module Elift
     elift-leq
         : (f : A → A)
         → ((a : A) → f a <A a)
-        → (φ Preserves _<A_ ⟶ _<B_)
+        → (_Presv_To_ {A} {B} φ _<A_ _<B_)
         → ((b : B) → (elift f) b <B b)
     elift-leq f H K b = ans
         where
@@ -137,7 +137,7 @@ module Elift
             a = φ⁻¹ b
 
             KHa : φ (f a) <B φ a
-            KHa = K (H a)
+            KHa = K (f a) a (H a)
 
             -- Unfold a in the definition above.
             KHa' : (φ ∘ f ∘ φ⁻¹) b <B φ (φ⁻¹ b)
@@ -149,7 +149,7 @@ module Elift
     elift-fix
         : (f : A → A)
         → ((a : A) → f (f a) ≡ f a)
-        → ((b : B) → (elift f $ elift f $ b) ≡ (elift f $ b))
+        → ((b : B) → (elift f ( elift f b)) ≡ (elift f b))
     elift-fix f H b = 
         ≡begin 
             f^ (f^ b)

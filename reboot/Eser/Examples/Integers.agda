@@ -65,25 +65,25 @@ data ℤ' : Set where
 --
 -- Tools for lifting (properties of) function on A to functions on ℕ.
 --------------------------------------------------------------------------------
-module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
-    open EquivShorthandsForEnumSet A≃ℕ
-    module Props = Eser.Equivalences.Properties.Elift A≃ℕ _«=_ _≤_
+--module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
+--    open EquivShorthandsForEnumSet A≃ℕ
+--    module Props = Eser.Equivalences.Properties.Elift A≃ℕ _«=_ _≤_
 
-    elift : (A → A) → ℕ → ℕ
-    elift f = φ ∘ f ∘ φ⁻¹
+--    elift : (A → A) → ℕ → ℕ
+--    elift f = φ ∘ f ∘ φ⁻¹
 
-    elift-leq
-        : (f : A → A)
-        → ((a : A) → f a «= a)
-        → (φ Preserves _«=_ ⟶ _≤_ )
-        → ((n : ℕ) → (elift f) n ≤ n)
-    elift-leq = Props.elift-leq
+--    elift-leq
+--        : (f : A → A)
+--        → ((a : A) → f a «= a)
+--        → (φ Preserves _«=_ ⟶ _≤_ )
+--        → ((n : ℕ) → (elift f) n ≤ n)
+--    elift-leq = Props.elift-leq
 
-    elift-fix
-        : (f : A → A)
-        → ((a : A) → f (f a) ≡ f a)
-        → ((n : ℕ) → (elift f $ elift f $ n) ≡ (elift f $ n))
-    elift-fix = Props.elift-fix
+--    elift-fix
+--        : (f : A → A)
+--        → ((a : A) → f (f a) ≡ f a)
+--        → ((n : ℕ) → (elift f $ elift f $ n) ≡ (elift f $ n))
+--    elift-fix = Props.elift-fix
 
 
 --------------------------------------------------------------------------------
@@ -353,6 +353,11 @@ module WithWeights where
 
         OT : ℕ → Set
         OT n = Σ[ w ∈ ℕ ] OpenTerms {fin 1} {fin 2} ℤSig w n
+
+    open ForSignature {fin 0} {fin 1} ℤSig
+        hiding (𝕋) -- That's `C` already
+        renaming
+        (𝕋≃ℕ to C≃ℕ)
     ----------------------------------------------------------------------------
     -- Equivalence between Agda-data-type ℤ' and closed terms over ℤSig
     ----------------------------------------------------------------------------
@@ -382,10 +387,6 @@ module WithWeights where
         invʳ {y} {x} refl = ?
     
 
-    open ForSignature {fin 0} {fin 1} ℤSig
-        hiding (𝕋) -- That's `C` already
-        renaming
-        (𝕋≃ℕ to C≃ℕ)
     open EquivShorthandsForEnumSet C≃ℕ
         renaming
         ( φ to ψ
@@ -430,23 +431,49 @@ module WithWeights where
         → (_<C_ : Rel C 0ℓ)
         → (f : A → B)
         → (g : B → C)
-        → f Preserves _<A_ ⟶ _<B_
-        → g Preserves _<B_ ⟶ _<C_
-        → (g ∘ f) Preserves _<A_ ⟶ _<C_
-    presv-compose _<A_ _<B_ _<C_ f g Hf Hg a = Hg (Hf a)
+        → f Presv _<A_ To _<B_
+        → g Presv _<B_ To _<C_
+        → (g ∘ f) Presv _<A_ To _<C_
+    presv-compose _<A_ _<B_ _<C_ f g Hf Hg a a' a<Aa' = Hg (f a) (f a') (Hf a a' a<Aa')
 
-    θ-presv : θ Preserves _⊑_ ⟶ _C«=_
+    θ-presv : _Presv_To_ {ℤ'} {C} θ _⊑_ _C«=_
     θ-presv = ?
-    ψ-presv : ψ Preserves _C«=_ ⟶ _≤_
+    ψ-presv : _Presv_To_ {C} {ℕ} ψ _C«=_ _≤_
     ψ-presv = ?
-    φ-presv : φ Preserves _⊑_ ⟶ _≤_
-    φ-presv = presv-compose {ℤ'} {C} {ℕ} _⊑_ _C«=_ _≤_ {! θ !} {! ψ !} {! θ-presv !} {! ψ-presv!}
+    φ-presv : _Presv_To_ {ℤ'} {ℕ} φ _⊑_ _≤_
+    φ-presv = presv-compose {ℤ'} {C} {ℕ} _⊑_ _C«=_ _≤_ θ ψ θ-presv ψ-presv
+    --θ-presv : θ Presv _⊑_ To _C«=_
+    --θ-presv = ?
+    --ψ-presv : ψ Presv _C«=_ To _≤_
+    --ψ-presv = ?
+    --φ-presv : φ Presv _⊑_ To _≤_
+    --φ-presv = presv-compose {ℤ'} {C} {ℕ} _⊑_ _C«=_ _≤_ {! θ !} {! ψ !} {! θ-presv !} {! ψ-presv!}
+
+    --presv-compose : 
+    --    { A B C : Set}
+    --    → (_<A_ : Rel A 0ℓ)
+    --    → (_<B_ : Rel B 0ℓ)
+    --    → (_<C_ : Rel C 0ℓ)
+    --    → (f : A → B)
+    --    → (g : B → C)
+    --    → f Preserves _<A_ ⟶ _<B_
+    --    → g Preserves _<B_ ⟶ _<C_
+    --    → (g ∘ f) Preserves _<A_ ⟶ _<C_
+    --presv-compose _<A_ _<B_ _<C_ f g Hf Hg a = Hg (Hf a)
+
+    --θ-presv : θ Preserves _⊑_ ⟶ _C«=_
+    --θ-presv = ?
+    --ψ-presv : ψ Preserves _C«=_ ⟶ _≤_
+    --ψ-presv = ?
+    --φ-presv : φ Preserves _⊑_ ⟶ _≤_
+    --φ-presv = presv-compose {ℤ'} {C} {ℕ} _⊑_ _C«=_ _≤_ {! θ !} {! ψ !} {! θ-presv !} {! ψ-presv!}
 
 
     nf-leq : (n : ℕ) → nf n ≤ n 
     nf-leq = ℤ'≃ℕ-lifts.elift-leq f f-leq φ-presv
 
-    nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
+    --nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
+    nf-fix : (n : ℕ) → elift f (elift f n) ≡ elift f n
     nf-fix = {! ℤ'≃ℕ-lifts.elift-fix f f-fix !}
 
 
@@ -468,111 +495,111 @@ module WithWeights where
     -- input term when needed (that's `t'`, see below).
     -- The function can be hard to read, but one can mentally use the following
     -- macros:
-module NoWeights where
+--module NoWeights where
 
-    private
-        C : Set
-        C = ClosedTermsNW {fin 1} {fin 2} ℤSig
+--    private
+--        C : Set
+--        C = ClosedTermsNW {fin 1} {fin 2} ℤSig
 
-        OT : ℕ → Set
-        OT = OpenTermsNW {fin 1} {fin 2} ℤSig
-    𝟎 : C
-    𝟎 = mk-nullary-nw Fin.zero
+--        OT : ℕ → Set
+--        OT = OpenTermsNW {fin 1} {fin 2} ℤSig
+--    𝟎 : C
+--    𝟎 = mk-nullary-nw Fin.zero
 
-    𝐒 : C → C
-    𝐒 = giveArg-nw $ mk-multiary-nw Fin.zero 
+--    𝐒 : C → C
+--    𝐒 = giveArg-nw $ mk-multiary-nw Fin.zero 
 
-    {-# DISPLAY giveArg-nw (mk-multiary-nw Fin.zero) t = 𝐒 t #-}
+--    {-# DISPLAY giveArg-nw (mk-multiary-nw Fin.zero) t = 𝐒 t #-}
 
-    𝐏 : C → C
-    𝐏 = giveArg-nw $ mk-multiary-nw $ Fin.suc Fin.zero
+--    𝐏 : C → C
+--    𝐏 = giveArg-nw $ mk-multiary-nw $ Fin.suc Fin.zero
 
-    w : C → C
-    w' : OT 1 → OT 0 → OT 0
-    -- Case t ≗ 𝟎. Just return 𝟎.
-    w t@(mk-nullary-nw c) = t
-    w (giveArg-nw t' a) = w' t' a
-    -- Case t ≗ 𝐒 𝟎 xor t ≡ 𝐏 𝟎. This is already normal, just return t ≗
-    -- giveArg-nw t' a. (Whether it is 𝐒 or 𝐏 depends on t').
-    w' t' a@(mk-nullary-nw c) = giveArg-nw t' a
-    w' t' a@(giveArg-nw t'' a') = 
-        sublemma (decEquality {fin 1} {fin 2} ℤSig t' t'')
-        module WImpl where
-            sublemma : (q : Relation.Nullary.Dec (t' ≡ t''))
-                → OT 0
-            sublemma (yes refl) = giveArg-nw t' $ w' t'' a'
-            sublemma (no t'≢t'') = w a'
-    ---- Case t' ≡ t''. Then the original input is of the form P P a'
-    ---- xor S S a'. So return P P (nf a') xor S S (nf a') respectively.
-    --... | yes refl = giveArg-nw t' $ w' t'' a'
-    ---- Case t' ≢ t''. Then the original input is of the form S P a'
-    ---- xor P S a'. So apply inversity between S and P, and return: nf a'.
-    --... | no  t'≢t'' = w a'
-    --w' t' a@(giveArg-nw t'' a') with decEquality {fin 1} {fin 2} ℤSig t' t''
-    ---- Case t' ≡ t''. Then the original input is of the form P P a'
-    ---- xor S S a'. So return P P (nf a') xor S S (nf a') respectively.
-    --... | yes refl = giveArg-nw t' $ w' t'' a'
-    ---- Case t' ≢ t''. Then the original input is of the form S P a'
-    ---- xor P S a'. So apply inversity between S and P, and return: nf a'.
-    --... | no  t'≢t'' = w a'
+--    w : C → C
+--    w' : OT 1 → OT 0 → OT 0
+--    -- Case t ≗ 𝟎. Just return 𝟎.
+--    w t@(mk-nullary-nw c) = t
+--    w (giveArg-nw t' a) = w' t' a
+--    -- Case t ≗ 𝐒 𝟎 xor t ≡ 𝐏 𝟎. This is already normal, just return t ≗
+--    -- giveArg-nw t' a. (Whether it is 𝐒 or 𝐏 depends on t').
+--    w' t' a@(mk-nullary-nw c) = giveArg-nw t' a
+--    w' t' a@(giveArg-nw t'' a') = 
+--        sublemma (decEquality {fin 1} {fin 2} ℤSig t' t'')
+--        module WImpl where
+--            sublemma : (q : Relation.Nullary.Dec (t' ≡ t''))
+--                → OT 0
+--            sublemma (yes refl) = giveArg-nw t' $ w' t'' a'
+--            sublemma (no t'≢t'') = w a'
+--    ---- Case t' ≡ t''. Then the original input is of the form P P a'
+--    ---- xor S S a'. So return P P (nf a') xor S S (nf a') respectively.
+--    --... | yes refl = giveArg-nw t' $ w' t'' a'
+--    ---- Case t' ≢ t''. Then the original input is of the form S P a'
+--    ---- xor P S a'. So apply inversity between S and P, and return: nf a'.
+--    --... | no  t'≢t'' = w a'
+--    --w' t' a@(giveArg-nw t'' a') with decEquality {fin 1} {fin 2} ℤSig t' t''
+--    ---- Case t' ≡ t''. Then the original input is of the form P P a'
+--    ---- xor S S a'. So return P P (nf a') xor S S (nf a') respectively.
+--    --... | yes refl = giveArg-nw t' $ w' t'' a'
+--    ---- Case t' ≢ t''. Then the original input is of the form S P a'
+--    ---- xor P S a'. So apply inversity between S and P, and return: nf a'.
+--    --... | no  t'≢t'' = w a'
 
-    open WImpl
+--    open WImpl
 
-    w-fix
-        : (t : C)
-        → w (w t) ≡ w t
-    w'-fix
-        : (t' : OT 1)
-        → (a : OT 0)
-        → w (w' t' a) ≡ w (giveArg-nw t' a)
-    w-fix (mk-nullary-nw c) = refl
-    w-fix (giveArg-nw t' a) = w'-fix t' a
-    w'-fix t' a@(mk-nullary-nw c) = refl
-    --w'-fix t' a@(giveArg-nw t'' a') = sublemma $ decEquality {fin 1} {fin 2} ℤSig t' t''
-    --    where
-    --        sublemma 
-    --            : (q : Relation.Nullary.Dec (t' ≡ t''))
-    --            → decEquality {fin 1} {fin 2} ℤSig t' t'' ≡ q
-    --            → w (w' t' a) ≡ w (giveArg-nw t' a)
-    --        sublemma q refl = 
-    --            ≡begin 
-    --                w (w' t' (giveArg-nw t' a') )
-    --            ≡⟨⟩
-    --                w (giveArg-nw t' $ w' t'' a')
-    --            ≡⟨ ? ⟩
-    --               (w' t' (giveArg-nw t' a') )
-    --            ≡∎
-    --        sublemma (no t'≢t'') refl = ?
-    --... | no t'≢t'' = ?
-    w'-fix t' a@(giveArg-nw t'' a') with (decEquality {fin 1} {fin 2} ℤSig t' t'')
-    -- Case t' ≡ t''. Then the original input is of the form P P a'
-    -- xor S S a'. 
-    ... | yes refl = 
-        let H : sublemma t' t' a' (yes refl) ≡ giveArg-nw t' (w' t'' a')
-            H = refl
-        in 
-        ≡begin 
-            w (sublemma t' t' a' (yes refl))
-        ≡⟨⟩
-            w (giveArg-nw t' ( w' t'' a'))
-        ≡⟨⟩
-            w (giveArg-nw t' ( w (giveArg-nw t'' a')))
-        ≡⟨ cong (λ x → w (giveArg-nw t' x)) $ sym $ w'-fix t'' a' ⟩
-            w (giveArg-nw t' ( w (w' t'' a')))
-        ≡⟨ ? ⟩  -- cong w-fix !
-            w (giveArg-nw t' (w' t'' a'))
-            -- Eh we have a circle now...
-        ≡⟨ ? ⟩
-            sublemma t' t' a' (yes refl)
-        ≡⟨⟩
-            giveArg-nw t' ( w' t'' a')
-        --≡⟨⟩
-        --    w ( giveArg-nw t' a)
-        ≡∎
+--    w-fix
+--        : (t : C)
+--        → w (w t) ≡ w t
+--    w'-fix
+--        : (t' : OT 1)
+--        → (a : OT 0)
+--        → w (w' t' a) ≡ w (giveArg-nw t' a)
+--    w-fix (mk-nullary-nw c) = refl
+--    w-fix (giveArg-nw t' a) = w'-fix t' a
+--    w'-fix t' a@(mk-nullary-nw c) = refl
+--    --w'-fix t' a@(giveArg-nw t'' a') = sublemma $ decEquality {fin 1} {fin 2} ℤSig t' t''
+--    --    where
+--    --        sublemma 
+--    --            : (q : Relation.Nullary.Dec (t' ≡ t''))
+--    --            → decEquality {fin 1} {fin 2} ℤSig t' t'' ≡ q
+--    --            → w (w' t' a) ≡ w (giveArg-nw t' a)
+--    --        sublemma q refl = 
+--    --            ≡begin 
+--    --                w (w' t' (giveArg-nw t' a') )
+--    --            ≡⟨⟩
+--    --                w (giveArg-nw t' $ w' t'' a')
+--    --            ≡⟨ ? ⟩
+--    --               (w' t' (giveArg-nw t' a') )
+--    --            ≡∎
+--    --        sublemma (no t'≢t'') refl = ?
+--    --... | no t'≢t'' = ?
+--    w'-fix t' a@(giveArg-nw t'' a') with (decEquality {fin 1} {fin 2} ℤSig t' t'')
+--    -- Case t' ≡ t''. Then the original input is of the form P P a'
+--    -- xor S S a'. 
+--    ... | yes refl = 
+--        let H : sublemma t' t' a' (yes refl) ≡ giveArg-nw t' (w' t'' a')
+--            H = refl
+--        in 
+--        ≡begin 
+--            w (sublemma t' t' a' (yes refl))
+--        ≡⟨⟩
+--            w (giveArg-nw t' ( w' t'' a'))
+--        ≡⟨⟩
+--            w (giveArg-nw t' ( w (giveArg-nw t'' a')))
+--        ≡⟨ cong (λ x → w (giveArg-nw t' x)) $ sym $ w'-fix t'' a' ⟩
+--            w (giveArg-nw t' ( w (w' t'' a')))
+--        ≡⟨ ? ⟩  -- cong w-fix !
+--            w (giveArg-nw t' (w' t'' a'))
+--            -- Eh we have a circle now...
+--        ≡⟨ ? ⟩
+--            sublemma t' t' a' (yes refl)
+--        ≡⟨⟩
+--            giveArg-nw t' ( w' t'' a')
+--        --≡⟨⟩
+--        --    w ( giveArg-nw t' a)
+--        ≡∎
         
-    -- Case t' ≢ t''. Then the original input is of the form S P a'
-    -- xor P S a'. So apply inversity between S and P, and return: nf a'.
-    ... | no  t'≢t''  = ?
+--    -- Case t' ≢ t''. Then the original input is of the form S P a'
+--    -- xor P S a'. So apply inversity between S and P, and return: nf a'.
+--    ... | no  t'≢t''  = ?
 
           
 --------------------------------------------------------------------------------

@@ -50,6 +50,12 @@ isContr A = Σ[ a ∈ A ]((a' : A) → a ≡ a')
 Between : (a b : ℕ) → ℕ → Set
 Between a b ℓ = (a < ℓ) × (ℓ < b)
  
+
+-- The standard library's `_ Preserves _ ⟶ _` (warning: the unicode
+-- encoding of → and ⟶ are different, but not in my font...)
+-- gave type errors with Agda being unable to fill all constraints.
+_Presv_To_ : {A B : Set} → (A → B) → Rel A 0ℓ → Rel B 0ℓ → Set
+_Presv_To_ {A} {B} f _<A_ _<B_ = (a a' : A) → a <A a' → (f a) <B (f a')
 --------------------------------------------------------------------------------
 -- Substitution of equalities
 --------------------------------------------------------------------------------
