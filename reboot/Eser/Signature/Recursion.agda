@@ -52,25 +52,7 @@ module ForEnumSet
     (A≃ℕ : A ≃ ℕ)
     where
 
-    φ : A → ℕ
-    φ = ≃-to A≃ℕ
-
-    φ⁻¹ : ℕ → A
-    φ⁻¹ = ≃-from A≃ℕ
-
-    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
-    φ∘φ⁻¹≈id = ≃-toFrom A≃ℕ
-
-    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
-    φ⁻¹∘φ≈id = ≃-fromTo A≃ℕ
-
-    -- Smaller-term relation: the ℕ-encoding of t' is ℕ-< smaller than t.
-    _«_ : Rel A 0ℓ
-    t' « t = (φ t') < (φ t)
-    -- Smaller-than-or-equal
-    _«=_ : Rel A 0ℓ
-    t' «= t = (t' « t) ⊎ (t' ≡ t)
-
+    open EquivShorthandsForEnumSet A≃ℕ
 
     -- Well-founded recursion on the «-relation.
     -- It lifts well-founded recursion on (ℕ , <) via the

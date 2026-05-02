@@ -65,79 +65,9 @@ data ℤ' : Set where
 --
 -- Tools for lifting (properties of) function on A to functions on ℕ.
 --------------------------------------------------------------------------------
-module EquivShorthands
-    {A B : Set}
-    (A≃B : A ≃ B)
-    (_<A_ : Rel A 0ℓ)
-    (_<B_ : Rel B 0ℓ)
-    where
-
-    φ : A → B
-    φ = ≃-to A≃B
-
-    φ⁻¹ : B → A
-    φ⁻¹ = ≃-from A≃B
-
-    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
-    φ∘φ⁻¹≈id = ≃-toFrom A≃B
-
-    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
-    φ⁻¹∘φ≈id = ≃-fromTo A≃B
-
-    elift : (A → A) → B → B
-    elift f = φ ∘ f ∘ φ⁻¹
-
-    open import Relation.Binary.Core
-    elift-leq
-        : (f : A → A)
-        → ((a : A) → f a <A a)
-        → (φ Preserves _<A_ ⟶ _<B_)
-        → ((b : B) → (elift f) b <B b)
-    elift-leq f H K b = ans
-        where
-            a : A
-            a = φ⁻¹ b
-
-            KHa : φ (f a) <B φ a
-            KHa = K (H a)
-
-            -- Unfold a in the definition above.
-            KHa' : (φ ∘ f ∘ φ⁻¹) b <B φ (φ⁻¹ b)
-            KHa' = KHa
-
-            -- Apply inversity on KHa'
-            ans = subst (λ x → (φ ∘ f ∘ φ⁻¹) b <B x) (φ∘φ⁻¹≈id b) KHa'
-
-
-
-            
-
-    elift-fix
-        : (f : A → A)
-        → ((a : A) → f (f a) ≡ f a)
-        → ((b : B) → (elift f $ elift f $ b) ≡ (elift f $ b))
-    elift-fix f H b = 
-        ≡begin 
-            f^ (f^ b)
-        ≡⟨⟩
-            ((φ ∘ f ∘ φ⁻¹) ∘ φ ∘ f ∘ φ⁻¹) b
-        ≡⟨⟩ -- Apply assoc of _∘_
-            (φ ∘ f ∘ φ⁻¹ ∘ φ ∘ f ∘ φ⁻¹) b
-        ≡⟨ cong (λ x → φ (f x)) $ φ⁻¹∘φ≈id $ (f $ φ⁻¹ b) ⟩
-            (φ ∘ f ∘ f ∘ φ⁻¹) b
-        ≡⟨ cong φ (H $ φ⁻¹ b) ⟩ -- Apply H a with a ≔ φ⁻¹ b
-            (φ ∘ f ∘ φ⁻¹) b
-        ≡⟨⟩
-            f^ b
-        ≡∎
-        where
-            f^ : B → B
-            f^ = elift f
-
-
-
 module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
-    open ForEnumSet A≃ℕ
+    open EquivShorthandsForEnumSet A≃ℕ
+    module Props = Eser.Equivalences.Properties.Elift A≃ℕ _«=_ _≤_
 
     elift : (A → A) → ℕ → ℕ
     elift f = φ ∘ f ∘ φ⁻¹
@@ -145,15 +75,15 @@ module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
     elift-leq
         : (f : A → A)
         → ((a : A) → f a «= a)
+        → (φ Preserves _«=_ ⟶ _≤_ )
         → ((n : ℕ) → (elift f) n ≤ n)
-    elift-leq = ?
+    elift-leq = Props.elift-leq
 
     elift-fix
         : (f : A → A)
         → ((a : A) → f (f a) ≡ f a)
-        -- → ((n : ℕ) → (elift f $ elift f $ n) ≡ (elift f $ n))
-        → ((n : ℕ) → (elift f ( elift f n)) ≡ (elift f n))
-    elift-fix = ?
+        → ((n : ℕ) → (elift f $ elift f $ n) ≡ (elift f $ n))
+    elift-fix = Props.elift-fix
 
 
 --------------------------------------------------------------------------------
@@ -441,7 +371,7 @@ module WithWeights where
     θ (P t) = 𝐏 (θ t)
 
     θ⁻¹ : C → ℤ'
-    θ⁻¹ = ?
+    θ⁻¹ t = ?
 
     ℤ'≃C : ℤ' ≃ C
     ℤ'≃C = mk≃' θ θ⁻¹ invˡ invʳ
@@ -455,19 +385,31 @@ module WithWeights where
     open ForSignature {fin 0} {fin 1} ℤSig
         hiding (𝕋) -- That's `C` already
         renaming
-        (𝕋≃ℕ to C≃ℕ
-        ; φ to ψ
+        (𝕋≃ℕ to C≃ℕ)
+    open EquivShorthandsForEnumSet C≃ℕ
+        renaming
+        ( φ to ψ
         ; φ⁻¹ to ψ⁻¹
         ; φ∘φ⁻¹≈id to ψ∘ψ⁻¹≈id
         ; φ⁻¹∘φ≈id to ψ⁻¹∘ψ≈id
         ; _«_ to _C«_
         ; _«=_ to _C«=_
         )
+
     ℤ'≃ℕ : ℤ' ≃ ℕ
     ℤ'≃ℕ = ≃-trans ℤ'≃C C≃ℕ
+    open EquivShorthands ℤ'≃ℕ 
+    module ℤ'≃ℕ-lifts = Eser.Equivalences.Properties.Elift ℤ'≃ℕ _⊑_ _≤_
 
-    module ℤ'≃ℕ-lift = EnumLifts {ℤ'} ℤ'≃ℕ
-    open ForEnumSet ℤ'≃ℕ -- Imports _«_ and _«=- for the equiv ℤ' ≃ ℕ.
+    -- Check if ≃-trans indeed gives our composition:
+    check : φ ≡ ψ ∘ θ
+    check = refl
+
+    check⁻¹ : φ⁻¹ ≡ θ⁻¹ ∘ ψ⁻¹
+    check⁻¹ = refl
+
+    --module ℤ'≃ℕ-lift = EnumLifts {ℤ'} ℤ'≃ℕ
+    -- Imports φ ≗ ψ ∘ θ, _«_ and _«=- for the equiv ℤ' ≃ ℕ.
 
     --C≃ℕ : C ≃ ℕ
     --C≃ℕ = infTermAlgEnum {fin 0} {fin 1} ℤSig
@@ -477,17 +419,35 @@ module WithWeights where
     --ψ⁻¹ = ≃-from C≃ℕ
 
     nf : ℕ → ℕ
-    --nf = ψ ∘ θ ∘ f ∘ θ⁻¹ ∘ ψ⁻¹
-    nf = ℤ'≃ℕ-lift.elift f
+    --nf = elift f -- <-that gave weird unification errors... 
+    --                  Dunno why...by the checks above, it should be the same.
+    nf = (ψ ∘ θ) ∘ f ∘ (θ⁻¹ ∘ ψ⁻¹)
 
-    f-«=-leq : (z : ℤ') → f z «= z
-    f-«=-leq = ?
+    presv-compose : 
+        { A B C : Set}
+        → (_<A_ : Rel A 0ℓ)
+        → (_<B_ : Rel B 0ℓ)
+        → (_<C_ : Rel C 0ℓ)
+        → (f : A → B)
+        → (g : B → C)
+        → f Preserves _<A_ ⟶ _<B_
+        → g Preserves _<B_ ⟶ _<C_
+        → (g ∘ f) Preserves _<A_ ⟶ _<C_
+    presv-compose _<A_ _<B_ _<C_ f g Hf Hg a = Hg (Hf a)
+
+    θ-presv : θ Preserves _⊑_ ⟶ _C«=_
+    θ-presv = ?
+    ψ-presv : ψ Preserves _C«=_ ⟶ _≤_
+    ψ-presv = ?
+    φ-presv : φ Preserves _⊑_ ⟶ _≤_
+    φ-presv = presv-compose {ℤ'} {C} {ℕ} _⊑_ _C«=_ _≤_ {! θ !} {! ψ !} {! θ-presv !} {! ψ-presv!}
+
 
     nf-leq : (n : ℕ) → nf n ≤ n 
-    nf-leq = ℤ'≃ℕ-lift.elift-leq f f-«=-leq 
+    nf-leq = ℤ'≃ℕ-lifts.elift-leq f f-leq φ-presv
 
     nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
-    nf-fix = {! ℤ'≃ℕ-lift.elift-fix f f-fix !}
+    nf-fix = {! ℤ'≃ℕ-lifts.elift-fix f f-fix !}
 
 
 

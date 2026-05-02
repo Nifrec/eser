@@ -79,3 +79,46 @@ module ≃-Reasoning where
   open end-syntax {A = Set}   _≃_ ↔-refl public
 open ≃-Reasoning public
 
+module EquivShorthands
+    {A B : Set}
+    (A≃B : A ≃ B)
+    where
+
+    φ : A → B
+    φ = ≃-to A≃B
+
+    φ⁻¹ : B → A
+    φ⁻¹ = ≃-from A≃B
+
+    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
+    φ∘φ⁻¹≈id = ≃-toFrom A≃B
+
+    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
+    φ⁻¹∘φ≈id = ≃-fromTo A≃B
+
+    elift : (A → A) → B → B
+    elift f = φ ∘ f ∘ φ⁻¹
+
+module EquivShorthandsForEnumSet
+    {A : Set}
+    (A≃ℕ : A ≃ ℕ)
+    where
+
+    φ : A → ℕ
+    φ = ≃-to A≃ℕ
+
+    φ⁻¹ : ℕ → A
+    φ⁻¹ = ≃-from A≃ℕ
+
+    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
+    φ∘φ⁻¹≈id = ≃-toFrom A≃ℕ
+
+    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
+    φ⁻¹∘φ≈id = ≃-fromTo A≃ℕ
+
+    -- Smaller-term relation: the ℕ-encoding of t' is ℕ-< smaller than t.
+    _«_ : Rel A 0ℓ
+    t' « t = (φ t') < (φ t)
+    -- Smaller-than-or-equal
+    _«=_ : Rel A 0ℓ
+    t' «= t = (t' « t) ⊎ (t' ≡ t)
