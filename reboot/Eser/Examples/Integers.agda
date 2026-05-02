@@ -87,11 +87,30 @@ module EquivShorthands
     elift : (A → A) → B → B
     elift f = φ ∘ f ∘ φ⁻¹
 
+    open import Relation.Binary.Core
     elift-leq
         : (f : A → A)
         → ((a : A) → f a <A a)
+        → (φ Preserves _<A_ ⟶ _<B_)
         → ((b : B) → (elift f) b <B b)
-    elift-leq = ?
+    elift-leq f H K b = ans
+        where
+            a : A
+            a = φ⁻¹ b
+
+            KHa : φ (f a) <B φ a
+            KHa = K (H a)
+
+            -- Unfold a in the definition above.
+            KHa' : (φ ∘ f ∘ φ⁻¹) b <B φ (φ⁻¹ b)
+            KHa' = KHa
+
+            -- Apply inversity on KHa'
+            ans = subst (λ x → (φ ∘ f ∘ φ⁻¹) b <B x) (φ∘φ⁻¹≈id b) KHa'
+
+
+
+            
 
     elift-fix
         : (f : A → A)
