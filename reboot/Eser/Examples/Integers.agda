@@ -65,6 +65,58 @@ data ℤ' : Set where
 --
 -- Tools for lifting (properties of) function on A to functions on ℕ.
 --------------------------------------------------------------------------------
+module EquivShorthands
+    {A B : Set}
+    (A≃B : A ≃ B)
+    (_<A_ : Rel A 0ℓ)
+    (_<B_ : Rel B 0ℓ)
+    where
+
+    φ : A → B
+    φ = ≃-to A≃B
+
+    φ⁻¹ : B → A
+    φ⁻¹ = ≃-from A≃B
+
+    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
+    φ∘φ⁻¹≈id = ≃-toFrom A≃B
+
+    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
+    φ⁻¹∘φ≈id = ≃-fromTo A≃B
+
+    elift : (A → A) → B → B
+    elift f = φ ∘ f ∘ φ⁻¹
+
+    elift-leq
+        : (f : A → A)
+        → ((a : A) → f a <A a)
+        → ((b : B) → (elift f) b <B b)
+    elift-leq = ?
+
+    elift-fix
+        : (f : A → A)
+        → ((a : A) → f (f a) ≡ f a)
+        → ((b : B) → (elift f $ elift f $ b) ≡ (elift f $ b))
+    elift-fix f H b = 
+        ≡begin 
+            f^ (f^ b)
+        ≡⟨⟩
+            ((φ ∘ f ∘ φ⁻¹) ∘ φ ∘ f ∘ φ⁻¹) b
+        ≡⟨⟩ -- Apply assoc of _∘_
+            (φ ∘ f ∘ φ⁻¹ ∘ φ ∘ f ∘ φ⁻¹) b
+        ≡⟨ cong (λ x → φ (f x)) $ φ⁻¹∘φ≈id $ (f $ φ⁻¹ b) ⟩
+            (φ ∘ f ∘ f ∘ φ⁻¹) b
+        ≡⟨ cong φ (H $ φ⁻¹ b) ⟩ -- Apply H a with a ≔ φ⁻¹ b
+            (φ ∘ f ∘ φ⁻¹) b
+        ≡⟨⟩
+            f^ b
+        ≡∎
+        where
+            f^ : B → B
+            f^ = elift f
+
+
+
 module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
     open ForEnumSet A≃ℕ
 
@@ -84,277 +136,339 @@ module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
         → ((n : ℕ) → (elift f ( elift f n)) ≡ (elift f n))
     elift-fix = ?
 
+
 --------------------------------------------------------------------------------
--- NF without inductive type without weights
+-- Normal-form function
 --------------------------------------------------------------------------------
-module NoWeights where
+-- *Intuitively*, the function should simply be this:
+nf' : ℤ' → ℤ'
+nf' O = O
+nf' (S O) = S O
+nf' (P O) = P O
+nf' (S (P t)) = nf' t
+nf' (P (S t)) = nf' t
+nf' (S (S t)) = S $ nf' $ S t
+nf' (P (P t)) = P $ nf' $ P t
+
+-- THIS IS WRONG!
+counterexample : nf' (S $ S $ P $ P O) ≡ (S $ P O)
+counterexample = refl
+
+-- I implement this function below, but rewrote the `with` clauses
+-- into explicit functions to make it easier to prove things about it:
+f' : ℤ' → ℤ'
+f' O = O
+f' (S z) with f' z
+... | O = S O
+... | S z' = S (S z')
+... | P z' = z'
+f' (P z) with f' z
+... | O = P O
+... | S z' = z'
+... | P z' = P (P z')
+
+-- First 'with' clause of f, when the input is S z.
+f-Sz : ℤ' → ℤ'
+f-Sz O = S O
+f-Sz (S z') = S (S z')
+f-Sz (P z') = z'
+-- Second 'with' clause of f, when the input is P z.
+f-Pz : ℤ' → ℤ'
+f-Pz O = P O
+f-Pz (S z') = z'
+f-Pz (P z') = P (P z')
+-- Actual top-level function.
+f : ℤ' → ℤ'
+f O = O
+f (S z) = f-Sz (f z)
+f (P z) = f-Pz (f z)
+
+module IsCleanPredicates where
+    IsZero : ℤ' → Set
+    IsZero O = ⊤
+    IsZero (S z) = ⊥
+    IsZero (P z) = ⊥
+
+    IsPos : ℤ' → Set
+    IsPos O = ⊥
+    IsPos (S O) = ⊤
+    IsPos (S (S z)) = IsPos (S z)
+    IsPos (S (P z)) = ⊥
+    IsPos (P z) = ⊥
+
+    IsNeg : ℤ' → Set
+    IsNeg O = ⊥
+    IsNeg (S z) = ⊥
+    IsNeg (P O) = ⊤
+    IsNeg (P (P z)) = IsNeg (P z)
+    IsNeg (P (S z)) = ⊥
+
+    IsClean : ℤ' → Set
+    IsClean z = IsZero z ⊎ IsPos z ⊎ IsNeg z
+
+    f-Sz-presv-cleanness
+        : (z : ℤ')
+        → IsClean z
+        → IsClean (f-Sz z)
+    f-Sz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₁ tt
+    f-Sz-presv-cleanness O (inj₂ (inj₁ ()))
+    f-Sz-presv-cleanness O (inj₂ (inj₂ ()))
+    f-Sz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₂ $ inj₁ tt
+    f-Sz-presv-cleanness (S (S z)) (inj₂ (inj₁ x)) = inj₂ $ inj₁ x
+    f-Sz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₁ tt
+    f-Sz-presv-cleanness (P (P z)) (inj₂ (inj₂ y)) = inj₂ $ inj₂ y
+
+    f-Pz-presv-cleanness
+        : (z : ℤ')
+        → IsClean z
+        → IsClean (f-Pz z)
+    f-Pz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₂ tt
+    f-Pz-presv-cleanness O (inj₂ (inj₁ ()))
+    f-Pz-presv-cleanness O (inj₂ (inj₂ ()))
+    f-Pz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₂ $ inj₂ tt
+    f-Pz-presv-cleanness (P (P z)) (inj₂ (inj₂ x)) = inj₂ $ inj₂ x
+    f-Pz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₁ tt
+    f-Pz-presv-cleanness (S (S z)) (inj₂ (inj₁ y)) = inj₂ $ inj₁ y
+
+    is-clean-S-downgrade
+        : {z : ℤ'}
+        → IsClean (S z)
+        → IsClean z
+    is-clean-S-downgrade {O} k@(inj₂ (inj₁ tt)) = inj₁ tt
+    is-clean-S-downgrade {S z} k@(inj₂ (inj₁ x)) = k
+
+    is-clean-P-downgrade
+        : {z : ℤ'}
+        → IsClean (P z)
+        → IsClean z
+    is-clean-P-downgrade {O} k@(inj₂ (inj₂ tt)) = inj₁ tt
+    is-clean-P-downgrade {P z} k@(inj₂ (inj₂ x)) = k
+
+    f-presv-cleanness 
+        : (z : ℤ')
+        → IsClean z
+        → IsClean (f z)
+    f-presv-cleanness O (inj₁ tt) = inj₁ tt
+    f-presv-cleanness O (inj₂ (inj₁ ()))
+    f-presv-cleanness O (inj₂ (inj₂ ()))
+    f-presv-cleanness (S z) k@(inj₂ (inj₁ x)) = 
+        f-Sz-presv-cleanness (f z) IH
+        where
+            IH : IsClean (f z)
+            IH = f-presv-cleanness z (is-clean-S-downgrade k)
+    f-presv-cleanness (P z) k@(inj₂ (inj₂ x)) = 
+        f-Pz-presv-cleanness (f z) IH
+        where
+            IH : IsClean (f z)
+            IH = f-presv-cleanness z (is-clean-P-downgrade k)
+
+    f-cleans : (z : ℤ') → IsClean (f z)
+    f-cleans O = inj₁ tt
+    f-cleans (S z) = f-Sz-presv-cleanness (f z) IH
+        where 
+            IH : IsClean (f z)
+            IH = f-cleans z
+    f-cleans (P z) = f-Pz-presv-cleanness (f z) IH
+        where 
+            IH : IsClean (f z)
+            IH = f-cleans z
+
+open IsCleanPredicates
+
+f-fixes-on-clean-inp : (z : ℤ') → IsClean z → f z ≡ z
+f-fixes-on-clean-inp O k = refl
+f-fixes-on-clean-inp (S O) (inj₂ (inj₁ tt)) = refl
+f-fixes-on-clean-inp (S (S z)) k@(inj₂ (inj₁ x)) = 
+    ≡begin 
+        f (S (S z))
+    ≡⟨⟩
+        f-Sz (f (S z))
+    ≡⟨ cong f-Sz $ f-fixes-on-clean-inp (S z) (is-clean-S-downgrade {S z} k) ⟩
+        f-Sz (S z)
+    ≡⟨⟩
+        S (S z)
+    ≡∎
+f-fixes-on-clean-inp (P O) (inj₂ (inj₂ tt)) = refl
+f-fixes-on-clean-inp (P (P z)) k@(inj₂ (inj₂ x)) =
+    ≡begin 
+        f (P (P z))
+    ≡⟨⟩
+        f-Pz (f (P z))
+    ≡⟨ cong f-Pz $ f-fixes-on-clean-inp (P z) (is-clean-P-downgrade {P z} k) ⟩
+        f-Pz (P z)
+    ≡⟨⟩
+        P (P z)
+    ≡∎
+
+f-fix : (z : ℤ') → f (f z) ≡ f z
+f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
+
+--------------------------------------------------------------------------------
+-- Shorter-term relation ⊑ on ℤ'
+--
+-- The height of a term is the number of connectives.
+--------------------------------------------------------------------------------
+module ShorterTermOrder where
+    _⊑_ : Rel ℤ' 0ℓ 
+    O ⊑ O = ⊤
+    O ⊑ S z = ⊤
+    O ⊑ P z = ⊤
+
+    S z ⊑ O = ⊥
+    S z ⊑ S z' = z ⊑ z'
+    S z ⊑ P z' = z ⊑ z'
+
+    P z ⊑ O = ⊥
+    P z ⊑ S z' = z ⊑ z'
+    P z ⊑ P z' = z ⊑ z'
+
+    S-mono : (z z' : ℤ') → z ⊑ z' → S z ⊑ S z'
+    S-mono z z' z⊑z' = z⊑z'
+    P-mono : (z z' : ℤ') → z ⊑ z' → P z ⊑ P z'
+    P-mono z z' z⊑z' = z⊑z'
+    S-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ S z'
+    P-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ P z'
+
+    S-increasing O z' z⊑z' = tt
+    S-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
+    S-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
+    S-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
+    S-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
+
+    P-increasing O z' z⊑z' = tt
+    P-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
+    P-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
+    P-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
+    P-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
+
+    ⊑-refl : (z : ℤ') → z ⊑ z
+    ⊑-refl O = tt
+    ⊑-refl (S z) = S-mono z z (⊑-refl z)
+    ⊑-refl (P z) = P-mono z z (⊑-refl z)
+
+    ⊑-trans : (x y z : ℤ') → x ⊑ y → y ⊑ z → x ⊑ z
+    ⊑-trans O O O x⊑y y⊑z = tt
+    ⊑-trans O O (S z) x⊑y y⊑z = tt
+    ⊑-trans O (S y) (S z) x⊑y y⊑z = tt
+    ⊑-trans (S x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans (P x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans O (P y) (S z) x⊑y y⊑z = tt
+    ⊑-trans (S x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans (P x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans O O (P z) x⊑y y⊑z = tt
+    ⊑-trans O (S y) (P z) x⊑y y⊑z = tt
+    ⊑-trans (S x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans (P x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans O (P y) (P z) x⊑y y⊑z = tt
+    ⊑-trans (S x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+    ⊑-trans (P x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
+
+    f-Sz-decreasing : (z : ℤ') → f-Sz z ⊑ S z
+    f-Sz-decreasing O = tt
+    f-Sz-decreasing (S z) = ⊑-refl z
+    f-Sz-decreasing (P z) = 
+        S-increasing z (P z) $ P-increasing z z $ ⊑-refl z
+
+    f-Pz-decreasing : (z : ℤ') → f-Pz z ⊑ P z
+    f-Pz-decreasing O = tt
+    f-Pz-decreasing (S z) =
+        P-increasing z (S z) $ S-increasing z z $ ⊑-refl z
+    f-Pz-decreasing (P z) = ⊑-refl z
+
+open ShorterTermOrder
+
+f-leq : (z : ℤ') → f z ⊑ z
+f-leq O = tt
+f-leq (S z) = fSz⊑Sz
+    where
+        fSz⊑Sfz : f (S z) ⊑ S (f z)
+        fSz⊑Sfz = f-Sz-decreasing (f z)
+        Sfz⊑Sz : S (f z) ⊑ S z
+        Sfz⊑Sz = S-mono (f z) z (f-leq z)
+        fSz⊑Sz : f (S z) ⊑ S z
+        fSz⊑Sz = ⊑-trans (f (S z)) (S (f z)) (S z) fSz⊑Sfz Sfz⊑Sz
+f-leq (P z) = fPz⊑Pz
+    where
+        fPz⊑Pfz : f (P z) ⊑ P (f z)
+        fPz⊑Pfz = f-Pz-decreasing (f z)
+        Pfz⊑Pz : P (f z) ⊑ P z
+        Pfz⊑Pz = P-mono (f z) z (f-leq z)
+        fPz⊑Pz : f (P z) ⊑ P z
+        fPz⊑Pz = ⊑-trans (f (P z)) (P (f z)) (P z) fPz⊑Pfz Pfz⊑Pz
+
+module WithWeights where
 
     private
         C : Set
-        C = ClosedTermsNW {fin 1} {fin 2} ℤSig
+        C = AllTerms {fin 1} {fin 2} ℤSig
 
         OT : ℕ → Set
-        OT = OpenTermsNW {fin 1} {fin 2} ℤSig
+        OT n = Σ[ w ∈ ℕ ] OpenTerms {fin 1} {fin 2} ℤSig w n
+    ----------------------------------------------------------------------------
+    -- Equivalence between Agda-data-type ℤ' and closed terms over ℤSig
+    ----------------------------------------------------------------------------
+    𝟎 : C
+    𝟎 = (1 , mk-nullary Fin.zero)
 
-    --------------------------------------------------------------------------------
-    -- Normal-form function
-    --------------------------------------------------------------------------------
-    -- *Intuitively*, the function should simply be this:
-    nf' : ℤ' → ℤ'
-    nf' O = O
-    nf' (S O) = S O
-    nf' (P O) = P O
-    nf' (S (P t)) = nf' t
-    nf' (P (S t)) = nf' t
-    nf' (S (S t)) = S $ nf' $ S t
-    nf' (P (P t)) = P $ nf' $ P t
+    𝐒 : C → C
+    𝐒 (wₐ , a) = (wₐ + 1 , giveArg (mk-multiary Fin.zero) a)
 
-    -- THIS IS WRONG!
-    counterexample : nf' (S $ S $ P $ P O) ≡ (S $ P O)
-    counterexample = refl
+    𝐏 : C → C
+    𝐏 (wₐ , a) = (wₐ + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
 
-    -- I implement this function below, but rewrote the `with` clauses
-    -- into explicit functions to make it easier to prove things about it:
-    f' : ℤ' → ℤ'
-    f' O = O
-    f' (S z) with f' z
-    ... | O = S O
-    ... | S z' = S (S z')
-    ... | P z' = z'
-    f' (P z) with f' z
-    ... | O = P O
-    ... | S z' = z'
-    ... | P z' = P (P z')
+    θ : ℤ' → C
+    θ O = 𝟎
+    θ (S t) = 𝐒 (θ t)
+    θ (P t) = 𝐏 (θ t)
 
-    -- First 'with' clause of f, when the input is S z.
-    f-Sz : ℤ' → ℤ'
-    f-Sz O = S O
-    f-Sz (S z') = S (S z')
-    f-Sz (P z') = z'
-    -- Second 'with' clause of f, when the input is P z.
-    f-Pz : ℤ' → ℤ'
-    f-Pz O = P O
-    f-Pz (S z') = z'
-    f-Pz (P z') = P (P z')
-    -- Actual top-level function.
-    f : ℤ' → ℤ'
-    f O = O
-    f (S z) = f-Sz (f z)
-    f (P z) = f-Pz (f z)
+    θ⁻¹ : C → ℤ'
+    θ⁻¹ = ?
 
-    module IsCleanPredicates where
-        IsZero : ℤ' → Set
-        IsZero O = ⊤
-        IsZero (S z) = ⊥
-        IsZero (P z) = ⊥
-
-        IsPos : ℤ' → Set
-        IsPos O = ⊥
-        IsPos (S O) = ⊤
-        IsPos (S (S z)) = IsPos (S z)
-        IsPos (S (P z)) = ⊥
-        IsPos (P z) = ⊥
-
-        IsNeg : ℤ' → Set
-        IsNeg O = ⊥
-        IsNeg (S z) = ⊥
-        IsNeg (P O) = ⊤
-        IsNeg (P (P z)) = IsNeg (P z)
-        IsNeg (P (S z)) = ⊥
-
-        IsClean : ℤ' → Set
-        IsClean z = IsZero z ⊎ IsPos z ⊎ IsNeg z
-
-        f-Sz-presv-cleanness
-            : (z : ℤ')
-            → IsClean z
-            → IsClean (f-Sz z)
-        f-Sz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₁ tt
-        f-Sz-presv-cleanness O (inj₂ (inj₁ ()))
-        f-Sz-presv-cleanness O (inj₂ (inj₂ ()))
-        f-Sz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₂ $ inj₁ tt
-        f-Sz-presv-cleanness (S (S z)) (inj₂ (inj₁ x)) = inj₂ $ inj₁ x
-        f-Sz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₁ tt
-        f-Sz-presv-cleanness (P (P z)) (inj₂ (inj₂ y)) = inj₂ $ inj₂ y
-
-        f-Pz-presv-cleanness
-            : (z : ℤ')
-            → IsClean z
-            → IsClean (f-Pz z)
-        f-Pz-presv-cleanness O (inj₁ tt) = inj₂ $ inj₂ tt
-        f-Pz-presv-cleanness O (inj₂ (inj₁ ()))
-        f-Pz-presv-cleanness O (inj₂ (inj₂ ()))
-        f-Pz-presv-cleanness (P O) (inj₂ (inj₂ tt)) = inj₂ $ inj₂ tt
-        f-Pz-presv-cleanness (P (P z)) (inj₂ (inj₂ x)) = inj₂ $ inj₂ x
-        f-Pz-presv-cleanness (S O) (inj₂ (inj₁ tt)) = inj₁ tt
-        f-Pz-presv-cleanness (S (S z)) (inj₂ (inj₁ y)) = inj₂ $ inj₁ y
-
-        is-clean-S-downgrade
-            : {z : ℤ'}
-            → IsClean (S z)
-            → IsClean z
-        is-clean-S-downgrade {O} k@(inj₂ (inj₁ tt)) = inj₁ tt
-        is-clean-S-downgrade {S z} k@(inj₂ (inj₁ x)) = k
-
-        is-clean-P-downgrade
-            : {z : ℤ'}
-            → IsClean (P z)
-            → IsClean z
-        is-clean-P-downgrade {O} k@(inj₂ (inj₂ tt)) = inj₁ tt
-        is-clean-P-downgrade {P z} k@(inj₂ (inj₂ x)) = k
-
-        f-presv-cleanness 
-            : (z : ℤ')
-            → IsClean z
-            → IsClean (f z)
-        f-presv-cleanness O (inj₁ tt) = inj₁ tt
-        f-presv-cleanness O (inj₂ (inj₁ ()))
-        f-presv-cleanness O (inj₂ (inj₂ ()))
-        f-presv-cleanness (S z) k@(inj₂ (inj₁ x)) = 
-            f-Sz-presv-cleanness (f z) IH
-            where
-                IH : IsClean (f z)
-                IH = f-presv-cleanness z (is-clean-S-downgrade k)
-        f-presv-cleanness (P z) k@(inj₂ (inj₂ x)) = 
-            f-Pz-presv-cleanness (f z) IH
-            where
-                IH : IsClean (f z)
-                IH = f-presv-cleanness z (is-clean-P-downgrade k)
-
-        f-cleans : (z : ℤ') → IsClean (f z)
-        f-cleans O = inj₁ tt
-        f-cleans (S z) = f-Sz-presv-cleanness (f z) IH
-            where 
-                IH : IsClean (f z)
-                IH = f-cleans z
-        f-cleans (P z) = f-Pz-presv-cleanness (f z) IH
-            where 
-                IH : IsClean (f z)
-                IH = f-cleans z
-
-    open IsCleanPredicates
-
-    f-fixes-on-clean-inp : (z : ℤ') → IsClean z → f z ≡ z
-    f-fixes-on-clean-inp O k = refl
-    f-fixes-on-clean-inp (S O) (inj₂ (inj₁ tt)) = refl
-    f-fixes-on-clean-inp (S (S z)) k@(inj₂ (inj₁ x)) = 
-        ≡begin 
-            f (S (S z))
-        ≡⟨⟩
-            f-Sz (f (S z))
-        ≡⟨ cong f-Sz $ f-fixes-on-clean-inp (S z) (is-clean-S-downgrade {S z} k) ⟩
-            f-Sz (S z)
-        ≡⟨⟩
-            S (S z)
-        ≡∎
-    f-fixes-on-clean-inp (P O) (inj₂ (inj₂ tt)) = refl
-    f-fixes-on-clean-inp (P (P z)) k@(inj₂ (inj₂ x)) =
-        ≡begin 
-            f (P (P z))
-        ≡⟨⟩
-            f-Pz (f (P z))
-        ≡⟨ cong f-Pz $ f-fixes-on-clean-inp (P z) (is-clean-P-downgrade {P z} k) ⟩
-            f-Pz (P z)
-        ≡⟨⟩
-            P (P z)
-        ≡∎
-
-    f-fix : (z : ℤ') → f (f z) ≡ f z
-    f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
-
-    --------------------------------------------------------------------------------
-    -- Shorter-term relation ⊑ on ℤ'
-    --
-    -- The height of a term is the number of connectives.
-    --------------------------------------------------------------------------------
-    module ShorterTermOrder where
-        _⊑_ : Rel ℤ' 0ℓ 
-        O ⊑ O = ⊤
-        O ⊑ S z = ⊤
-        O ⊑ P z = ⊤
-
-        S z ⊑ O = ⊥
-        S z ⊑ S z' = z ⊑ z'
-        S z ⊑ P z' = z ⊑ z'
-
-        P z ⊑ O = ⊥
-        P z ⊑ S z' = z ⊑ z'
-        P z ⊑ P z' = z ⊑ z'
-
-        S-mono : (z z' : ℤ') → z ⊑ z' → S z ⊑ S z'
-        S-mono z z' z⊑z' = z⊑z'
-        P-mono : (z z' : ℤ') → z ⊑ z' → P z ⊑ P z'
-        P-mono z z' z⊑z' = z⊑z'
-        S-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ S z'
-        P-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ P z'
-
-        S-increasing O z' z⊑z' = tt
-        S-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
-        S-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
-        S-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
-        S-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
-
-        P-increasing O z' z⊑z' = tt
-        P-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
-        P-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
-        P-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
-        P-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
-
-        ⊑-refl : (z : ℤ') → z ⊑ z
-        ⊑-refl O = tt
-        ⊑-refl (S z) = S-mono z z (⊑-refl z)
-        ⊑-refl (P z) = P-mono z z (⊑-refl z)
-
-        ⊑-trans : (x y z : ℤ') → x ⊑ y → y ⊑ z → x ⊑ z
-        ⊑-trans O O O x⊑y y⊑z = tt
-        ⊑-trans O O (S z) x⊑y y⊑z = tt
-        ⊑-trans O (S y) (S z) x⊑y y⊑z = tt
-        ⊑-trans (S x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans (P x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans O (P y) (S z) x⊑y y⊑z = tt
-        ⊑-trans (S x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans (P x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans O O (P z) x⊑y y⊑z = tt
-        ⊑-trans O (S y) (P z) x⊑y y⊑z = tt
-        ⊑-trans (S x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans (P x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans O (P y) (P z) x⊑y y⊑z = tt
-        ⊑-trans (S x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-        ⊑-trans (P x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-
-        f-Sz-decreasing : (z : ℤ') → f-Sz z ⊑ S z
-        f-Sz-decreasing O = tt
-        f-Sz-decreasing (S z) = ⊑-refl z
-        f-Sz-decreasing (P z) = 
-            S-increasing z (P z) $ P-increasing z z $ ⊑-refl z
-
-        f-Pz-decreasing : (z : ℤ') → f-Pz z ⊑ P z
-        f-Pz-decreasing O = tt
-        f-Pz-decreasing (S z) =
-            P-increasing z (S z) $ S-increasing z z $ ⊑-refl z
-        f-Pz-decreasing (P z) = ⊑-refl z
-
-    open ShorterTermOrder
-
-    f-leq : (z : ℤ') → f z ⊑ z
-    f-leq O = tt
-    f-leq (S z) = fSz⊑Sz
+    ℤ'≃C : ℤ' ≃ C
+    ℤ'≃C = mk≃' θ θ⁻¹ invˡ invʳ
         where
-            fSz⊑Sfz : f (S z) ⊑ S (f z)
-            fSz⊑Sfz = f-Sz-decreasing (f z)
-            Sfz⊑Sz : S (f z) ⊑ S z
-            Sfz⊑Sz = S-mono (f z) z (f-leq z)
-            fSz⊑Sz : f (S z) ⊑ S z
-            fSz⊑Sz = ⊑-trans (f (S z)) (S (f z)) (S z) fSz⊑Sfz Sfz⊑Sz
-    f-leq (P z) = fPz⊑Pz
-        where
-            fPz⊑Pfz : f (P z) ⊑ P (f z)
-            fPz⊑Pfz = f-Pz-decreasing (f z)
-            Pfz⊑Pz : P (f z) ⊑ P z
-            Pfz⊑Pz = P-mono (f z) z (f-leq z)
-            fPz⊑Pz : f (P z) ⊑ P z
-            fPz⊑Pz = ⊑-trans (f (P z)) (P (f z)) (P z) fPz⊑Pfz Pfz⊑Pz
+        invˡ : Inverseˡ _≡_ _≡_ θ θ⁻¹
+        invˡ {x} {y} refl = ?
+        invʳ : Inverseʳ _≡_ _≡_ θ θ⁻¹
+        invʳ {y} {x} refl = ?
+    
 
+    open ForSignature {fin 0} {fin 1} ℤSig
+        hiding (𝕋) -- That's `C` already
+        renaming
+        (𝕋≃ℕ to C≃ℕ
+        ; φ to ψ
+        ; φ⁻¹ to ψ⁻¹
+        ; φ∘φ⁻¹≈id to ψ∘ψ⁻¹≈id
+        ; φ⁻¹∘φ≈id to ψ⁻¹∘ψ≈id
+        ; _«_ to _C«_
+        ; _«=_ to _C«=_
+        )
+    ℤ'≃ℕ : ℤ' ≃ ℕ
+    ℤ'≃ℕ = ≃-trans ℤ'≃C C≃ℕ
+
+    module ℤ'≃ℕ-lift = EnumLifts {ℤ'} ℤ'≃ℕ
+    open ForEnumSet ℤ'≃ℕ -- Imports _«_ and _«=- for the equiv ℤ' ≃ ℕ.
+
+    --C≃ℕ : C ≃ ℕ
+    --C≃ℕ = infTermAlgEnum {fin 0} {fin 1} ℤSig
+    --ψ   : C → ℕ
+    --ψ   = ≃-to C≃ℕ
+    --ψ⁻¹ : ℕ → C
+    --ψ⁻¹ = ≃-from C≃ℕ
+
+    nf : ℕ → ℕ
+    --nf = ψ ∘ θ ∘ f ∘ θ⁻¹ ∘ ψ⁻¹
+    nf = ℤ'≃ℕ-lift.elift f
+
+    f-«=-leq : (z : ℤ') → f z «= z
+    f-«=-leq = ?
+
+    nf-leq : (n : ℕ) → nf n ≤ n 
+    nf-leq = ℤ'≃ℕ-lift.elift-leq f f-«=-leq 
+
+    nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
+    nf-fix = {! ℤ'≃ℕ-lift.elift-fix f f-fix !}
 
 
 
@@ -375,6 +489,14 @@ module NoWeights where
     -- input term when needed (that's `t'`, see below).
     -- The function can be hard to read, but one can mentally use the following
     -- macros:
+module NoWeights where
+
+    private
+        C : Set
+        C = ClosedTermsNW {fin 1} {fin 2} ℤSig
+
+        OT : ℕ → Set
+        OT = OpenTermsNW {fin 1} {fin 2} ℤSig
     𝟎 : C
     𝟎 = mk-nullary-nw Fin.zero
 
