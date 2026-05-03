@@ -45,9 +45,10 @@ module Eser.Signature.EnumOrderingProperties
     (S : Signature (suc∞ μ') (suc∞ ζ'))
     where
 
+
 import Eser.Signature.Recursion
 -- This `open` defines, among other things, the equivalence φ : AllTerms S ~> ℕ:
-open Eser.Signature.Recursion.ForSignature {μ'} {ζ'} S
+open EquivShorthandsForEnumSet (infTermAlgEnum {μ'} {ζ'} S)
 
 private
 --    C : ℕ → Set
@@ -129,7 +130,7 @@ smallerWeightSmallerIdx {wₐ} {wₓ} a x wₐ<wₓ = ans
         ans = Σfin-inf-inhabited-mono z H₁ (proj₂ $ β $ α (wₐ , a)) 
                                            (proj₂ $ β $ α $ (wₓ , x))
 
-giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x wₐ<wₜ
+giveArgBigger {wₐ} {wₜ} a t = smallerWeightSmallerIdx a x wₐ<wₓ
     where
         wₓ : ℕ
         wₓ = wₐ + wₜ
