@@ -268,6 +268,8 @@ module WithWeights where
         invʳ : Inverseʳ _≡_ _≡_ θ θ⁻¹
         invʳ {y} {x} refl = ?
     
+    θ∘θ⁻¹≈id : (θ ∘ θ⁻¹) ≈ id {_} {C}
+    θ∘θ⁻¹≈id = ≃-toFrom ℤ'≃C
 
     open EquivShorthandsForEnumSet C≃ℕ
         renaming
@@ -306,15 +308,31 @@ module WithWeights where
     _<w_ : Rel C 0ℓ
     _<w_ (w , t) (w' , t') = w < w'
 
+    f-weight-decr
+        : (z : ℤ')
+        → f z ≢ z
+        → θ (f z) <w θ z
+    f-weight-decr z fz≢z = ?
+
     -- Normalisation either returns the input xor returns something of smaller
     -- weight.
     nf'-weight-decr
         : (t : C)
         → nf' t ≢ t
         → nf' t <w t
-    nf'-weight-decr = ?
+    nf'-weight-decr t H = subst (λ y → nf' t <w y) (θ∘θ⁻¹≈id t) H''
+        where
+            z : ℤ'
+            z = θ⁻¹ t
+
+            H' : f z ≢ z
+            H' p = H (subst (λ y → (θ ∘ f) z ≡ y) (θ∘θ⁻¹≈id t) (cong θ p))
+
+            H'' : nf' t <w θ (θ⁻¹ t)
+            H'' = f-weight-decr (θ⁻¹ t) H'
 
     open import Eser.Signature.EnumOrderingProperties {fin 0} {fin 1} ℤSig
+        using (smallerWeightSmallerIdx)
 
     nf-leq : (n : ℕ) → nf n Data.Nat.≤ n 
     nf-leq n = nf-leq-sublemma (nf n Data.Nat.≟ n)
