@@ -308,14 +308,34 @@ module WithWeights where
     _<w_ : Rel C 0ℓ
     _<w_ (w , t) (w' , t') = w < w'
 
+    𝐒-monotone : (t t' : C) → t <w t' → 𝐒 t <w 𝐒 t'
+    𝐒-monotone t t' t<wt' = ? -- use w < w' -> w+1 < w'+1
+
     f-weight-decr
         : (z : ℤ')
         → f z ≢ z
         → θ (f z) <w θ z
-    f-weight-decr z fz≢z = ?
+    f-weight-decr O fz≢z = ⊥-elim $ fz≢z refl
+    f-weight-decr (S z) fSz≢Sz = f-weight-decr-Sz (f z) refl
+        where
+            f-weight-decr-Sz : (z' : ℤ') → (f z ≡ z') → (θ $ f $ S z) <w θ (S z)
+            f-weight-decr-Sz O p = subst (λ y → (θ $ f-Sz $ y) <w θ (S z)) (sym p) 
+                                         $ 𝐒-monotone (θ O) (θ z) IH
+                where
+                    H : f z ≢ z
+                    H q = ?
+                    IH : θ O <w θ z
+                    IH = {! f-weight-decr z H !}
+            f-weight-decr-Sz (S z') p = {! !}
+            f-weight-decr-Sz (P z') p = {! !}
 
-    -- Normalisation either returns the input xor returns something of smaller
-    -- weight.
+            
+    f-weight-decr (P z) fz≢z = {! !}
+
+    -- Normalisation (on the closed-terms-ofℤSig-representation)
+    -- either returns the input xor returns something of smaller weight.
+    -- Smaller weight is a stronger condition 
+    -- than smaller enumeration-number (= smaller ψ-image) !!!
     nf'-weight-decr
         : (t : C)
         → nf' t ≢ t
