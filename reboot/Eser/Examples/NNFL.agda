@@ -1,14 +1,36 @@
--- Module      : Eser.Examples.Integers
--- Description : Example: constructing type of integers via a quotient.
+-- Module      : Eser.Examples.NNFL
+-- Description : New implementation for part of Eser.Examples.Integers
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 -- Stability   : experimental
 --------------------------------------------------------------------------------
--- This example shows how the type 𝐙 of integers can be constructed by
--- quotienting the inductive type z ::= 0 | S z | P z with a successor- and
--- predecessor-constructor, over the relation (P S z) ~ z ~ (S P z).
--- (i.e., the relation 1 - 1 = 0 = -1 + 1).
+-- #TODO: this file is temporary and should be integrated with
+-- Eser.Examples.Integers when done.
+--
+-- Content: "New NF-Leq"-proof showing that the normal-form function for
+-- integers satisfies nf n ℕ≤ n.
+-- We have equivalences
+-- (ℤ') --θ-> (AllTerms ℤSig) --ψ-> (ℕ)
+-- 
+--
+-- This proof does not make use of the _⊑_ order on ℤ',
+-- but instead proves that normalisation of a ℤ'-term either
+-- (1) Outputs the input unchanged.
+-- xor
+-- (2) Outputs a term whose θ-image has a strictly smaller weight than the
+--      input.
+-- This works because normalisation removes `SP` and `PS` substrings,
+-- each of which contributes weight 3 to the term.
+-- So the (θ-image of the) output of `nf n` has a weight equal to the weight of
+-- `n` minus a multiple of 3.
+--
+-- The previous approach with _⊑_ ran into problems, as it required comparing
+-- terms of equal weight, but my implementation makes it rather difficult
+-- to prove anything about how terms *within* `ClosedTerms ℤSig w`
+-- are enumerated (terms with the same weight w ∈ ℕ in mean).
+-- Proving that terms with a smaller weight have a smaller ψ-image is easy
+-- though, and that we are exploiting in the current implementation.
 --------------------------------------------------------------------------------
 
 open import Level
@@ -43,7 +65,7 @@ open import Eser.EqRel
 open import Eser.Quotient.Definitions
 open import Eser.Signature.NoWeight
 
-module Eser.Examples.Integers where
+module Eser.Examples.NNFL where
 
 -- Terms of the grammar z ::= 0 | S z | P z.
 data ℤ' : Set where
@@ -57,34 +79,6 @@ data ℤ' : Set where
 ℤSig : Signature (fin 1) (fin 2)
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
-
-
-
---------------------------------------------------------------------------------
--- TODO: move this to another file
---
--- Tools for lifting (properties of) function on A to functions on ℕ.
---------------------------------------------------------------------------------
---module EnumLifts {A : Set} (A≃ℕ : A ≃ ℕ) where
---    open EquivShorthandsForEnumSet A≃ℕ
---    module Props = Eser.Equivalences.Properties.Elift A≃ℕ _«=_ _≤_
-
---    elift : (A → A) → ℕ → ℕ
---    elift f = φ ∘ f ∘ φ⁻¹
-
---    elift-leq
---        : (f : A → A)
---        → ((a : A) → f a «= a)
---        → (φ Preserves _«=_ ⟶ _≤_ )
---        → ((n : ℕ) → (elift f) n ≤ n)
---    elift-leq = Props.elift-leq
-
---    elift-fix
---        : (f : A → A)
---        → ((a : A) → f (f a) ≡ f a)
---        → ((n : ℕ) → (elift f $ elift f $ n) ≡ (elift f $ n))
---    elift-fix = Props.elift-fix
-
 
 --------------------------------------------------------------------------------
 -- Normal-form function
@@ -252,98 +246,7 @@ f-fixes-on-clean-inp (P (P z)) k@(inj₂ (inj₂ x)) =
 f-fix : (z : ℤ') → f (f z) ≡ f z
 f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
 
---------------------------------------------------------------------------------
--- Shorter-term relation ⊑ on ℤ'
---
--- The height of a term is the number of connectives.
---------------------------------------------------------------------------------
-module ShorterTermOrder where
-    _⊑_ : Rel ℤ' 0ℓ 
-    O ⊑ O = ⊤
-    O ⊑ S z = ⊤
-    O ⊑ P z = ⊤
 
-    S z ⊑ O = ⊥
-    S z ⊑ S z' = z ⊑ z'
-    S z ⊑ P z' = z ⊑ z'
-
-    P z ⊑ O = ⊥
-    P z ⊑ S z' = z ⊑ z'
-    P z ⊑ P z' = z ⊑ z'
-
-    S-mono : (z z' : ℤ') → z ⊑ z' → S z ⊑ S z'
-    S-mono z z' z⊑z' = z⊑z'
-    P-mono : (z z' : ℤ') → z ⊑ z' → P z ⊑ P z'
-    P-mono z z' z⊑z' = z⊑z'
-    S-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ S z'
-    P-increasing : (z z' : ℤ') → z ⊑ z' → z ⊑ P z'
-
-    S-increasing O z' z⊑z' = tt
-    S-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
-    S-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
-    S-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
-    S-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
-
-    P-increasing O z' z⊑z' = tt
-    P-increasing (S z) (S z') z⊑z' = S-increasing z z' z⊑z'
-    P-increasing (S z) (P z') z⊑z' = P-increasing z z' z⊑z'
-    P-increasing (P z) (S z') z⊑z' = S-increasing z z' z⊑z'
-    P-increasing (P z) (P z') z⊑z' = P-increasing z z' z⊑z'
-
-    ⊑-refl : (z : ℤ') → z ⊑ z
-    ⊑-refl O = tt
-    ⊑-refl (S z) = S-mono z z (⊑-refl z)
-    ⊑-refl (P z) = P-mono z z (⊑-refl z)
-
-    ⊑-trans : (x y z : ℤ') → x ⊑ y → y ⊑ z → x ⊑ z
-    ⊑-trans O O O x⊑y y⊑z = tt
-    ⊑-trans O O (S z) x⊑y y⊑z = tt
-    ⊑-trans O (S y) (S z) x⊑y y⊑z = tt
-    ⊑-trans (S x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans (P x) (S y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans O (P y) (S z) x⊑y y⊑z = tt
-    ⊑-trans (S x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans (P x) (P y) (S z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans O O (P z) x⊑y y⊑z = tt
-    ⊑-trans O (S y) (P z) x⊑y y⊑z = tt
-    ⊑-trans (S x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans (P x) (S y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans O (P y) (P z) x⊑y y⊑z = tt
-    ⊑-trans (S x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-    ⊑-trans (P x) (P y) (P z) x⊑y y⊑z = ⊑-trans x y z x⊑y y⊑z
-
-    f-Sz-decreasing : (z : ℤ') → f-Sz z ⊑ S z
-    f-Sz-decreasing O = tt
-    f-Sz-decreasing (S z) = ⊑-refl z
-    f-Sz-decreasing (P z) = 
-        S-increasing z (P z) $ P-increasing z z $ ⊑-refl z
-
-    f-Pz-decreasing : (z : ℤ') → f-Pz z ⊑ P z
-    f-Pz-decreasing O = tt
-    f-Pz-decreasing (S z) =
-        P-increasing z (S z) $ S-increasing z z $ ⊑-refl z
-    f-Pz-decreasing (P z) = ⊑-refl z
-
-open ShorterTermOrder
-
-f-leq : (z : ℤ') → f z ⊑ z
-f-leq O = tt
-f-leq (S z) = fSz⊑Sz
-    where
-        fSz⊑Sfz : f (S z) ⊑ S (f z)
-        fSz⊑Sfz = f-Sz-decreasing (f z)
-        Sfz⊑Sz : S (f z) ⊑ S z
-        Sfz⊑Sz = S-mono (f z) z (f-leq z)
-        fSz⊑Sz : f (S z) ⊑ S z
-        fSz⊑Sz = ⊑-trans (f (S z)) (S (f z)) (S z) fSz⊑Sfz Sfz⊑Sz
-f-leq (P z) = fPz⊑Pz
-    where
-        fPz⊑Pfz : f (P z) ⊑ P (f z)
-        fPz⊑Pfz = f-Pz-decreasing (f z)
-        Pfz⊑Pz : P (f z) ⊑ P z
-        Pfz⊑Pz = P-mono (f z) z (f-leq z)
-        fPz⊑Pz : f (P z) ⊑ P z
-        fPz⊑Pz = ⊑-trans (f (P z)) (P (f z)) (P z) fPz⊑Pfz Pfz⊑Pz
 
 module WithWeights where
 
