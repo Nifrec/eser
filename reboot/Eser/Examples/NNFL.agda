@@ -453,8 +453,30 @@ module WithWeights where
                 where
                     IH : θ O <w θ z
                     IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
-            case-Sz-fz≢z H (S z') p = {! !}
-            case-Sz-fz≢z H (P z') p = {! !}
+            case-Sz-fz≢z H (S z') p = subst (λ y → (θ $ y) <w (θ $ S z)) H₂ H₁
+                where
+                    IH : θ (S z') <w θ z
+                    IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
+
+                    H₁ : (θ $ S $ S z') <w (θ $ S z)
+                    H₁ = 𝐒-monotone (θ $ S z') (θ z) IH
+
+                    H₂ : S (S z') ≡ f (S z)
+                    -- LHS is same as: f-Sz (S z')
+                    -- RHS is same as: f-Sz (f z)
+                    H₂ = cong f-Sz $ sym p
+            case-Sz-fz≢z H (P z') p = ans
+                where
+                    IH : θ (P z') <w θ z
+                    IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
+
+                    K : θ z' <w θ (S z)
+                    K = <w-trans (θ z') (θ $ P z') (θ $ S z)
+                        (𝐏-<w-intro (θ z'))
+                        (<w-trans (θ $ P z') (θ z) (θ $ S z) IH (𝐒-<w-intro (θ z)))
+
+                    ans : (θ $ f $ S z) <w (θ $ S z)
+                    ans = subst (λ y → (θ $ f-Sz y) <w (θ $ S z)) (sym p) K
     f-weight-decr (P z) fz≢z = {! !}
 
     -- Normalisation (on the closed-terms-ofℤSig-representation)
