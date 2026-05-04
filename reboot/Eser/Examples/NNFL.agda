@@ -355,11 +355,11 @@ module WithWeights where
     𝐏-<w-increasing : (t t' : C) → t <w t' → t <w 𝐏 t'
     𝐏-<w-increasing t t' H = <w-trans t (𝐏 t) (𝐏 t') (𝐏-<w-intro t) (𝐏-monotone t t' H)
 
-    P-<w-intro : (z : ℤ') → θ z <w θ (P z)
-    P-<w-intro = ?
+    --P-<w-intro : (z : ℤ') → θ z <w θ (P z)
+    --P-<w-intro = ?
 
-    P-<w-increasing : (z z' : ℤ') → θ z <w θ z' → θ z <w θ (P z')
-    P-<w-increasing = ?
+    --P-<w-increasing : (z z' : ℤ') → θ z <w θ z' → θ z <w θ (P z')
+    --P-<w-increasing = ?
 
     -- If f (S z) ≢ S z   and   f z ≡ z
     -- Then
@@ -375,6 +375,14 @@ module WithWeights where
     z-must-be-Pz' O H _ = ⊥-elim (H refl) -- f O ≡ O always holds.
     z-must-be-Pz' (S z) H K = {! !}
     z-must-be-Pz' (P z) H K = {! !}
+
+    -- Same as above under P<->S exchange.
+    z-must-be-Sz'
+        : (z : ℤ')
+        → (f (P z) ≢ P z)
+        → f z ≡ z
+        → Σ[ z' ∈ ℤ' ](z ≡ S z')
+    z-must-be-Sz' = ?
 
     -- Implementation discussion of f-weight-decr:
     -- This proof makes a lot of nested case distinctions.
@@ -427,7 +435,7 @@ module WithWeights where
                     z≡Pz' = proj₂ $ z-must-be-Pz' z fSz≢Sz fz≡z
 
                     H₁ : θ z' <w θ (P z')
-                    H₁ = P-<w-intro z'
+                    H₁ = 𝐏-<w-intro (θ z')
 
                     H₂ : θ z' <w θ (S (P z') )
                     H₂ = 𝐒-<w-increasing (θ z') (θ (P z')) H₁
@@ -477,7 +485,80 @@ module WithWeights where
 
                     ans : (θ $ f $ S z) <w (θ $ S z)
                     ans = subst (λ y → (θ $ f-Sz y) <w (θ $ S z)) (sym p) K
-    f-weight-decr (P z) fz≢z = {! !}
+    -- Proof for the `P z` case is litterally same as for the `S z` case,
+    -- only with P and S, and 𝐏 and 𝐒, exchanged.
+    f-weight-decr (P z) fPz≢Pz = case-Pz ((f z) ℤ'≟ z)
+        where
+            case-Pz : Dec (f z ≡ z) → (θ $ f $ P z) <w θ (P z)
+            case-Pz-fz≢z 
+                : (f z ≢ z) 
+                → (z' : ℤ') 
+                → (f z ≡ z') 
+                → (θ $ f $ P z) <w θ (P z)
+            case-Pz-fz≡z : f z ≡ z → (θ $ f $ P z) <w θ (P z)
+
+            case-Pz (yes fz≡z) = case-Pz-fz≡z fz≡z
+            case-Pz (no fz≢z) = case-Pz-fz≢z fz≢z (f z) refl
+
+            case-Pz-fz≡z fz≡z = H₄
+                where
+                    z' : ℤ'
+                    z' = proj₁ $ z-must-be-Sz' z fPz≢Pz fz≡z
+                    z≡Sz' : z ≡ S z'
+                    z≡Sz' = proj₂ $ z-must-be-Sz' z fPz≢Pz fz≡z
+
+                    H₁ : θ z' <w θ (S z')
+                    H₁ = 𝐒-<w-intro (θ z')
+
+                    H₂ : θ z' <w θ (P (S z') )
+                    H₂ = 𝐏-<w-increasing (θ z') (θ (S z')) H₁
+
+                    K : z' ≡ f (P z)
+                    K = ≡begin 
+                            z'
+                        ≡⟨⟩
+                            (f-Pz $ S z')
+                        ≡⟨  cong f-Pz $ sym $ trans fz≡z z≡Sz' ⟩
+                            (f-Pz $ f z)
+                        ≡⟨⟩
+                            f (P z)
+                        ≡∎
+
+                    H₃ : θ z' <w θ (P z)
+                    H₃ = subst (λ y → θ z' <w θ (P y)) (sym z≡Sz') H₂
+
+                    H₄ : θ (f (P z)) <w θ (P z)
+                    H₄ = subst (λ y → θ y <w θ (P z)) K H₃
+            case-Pz-fz≢z H O p = subst (λ y → (θ $ f-Pz $ y) <w θ (P z)) (sym p) 
+                                         $ 𝐏-monotone (θ O) (θ z) IH
+                where
+                    IH : θ O <w θ z
+                    IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
+            case-Pz-fz≢z H (P z') p = subst (λ y → (θ $ y) <w (θ $ P z)) H₂ H₁
+                where
+                    IH : θ (P z') <w θ z
+                    IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
+
+                    H₁ : (θ $ P $ P z') <w (θ $ P z)
+                    H₁ = 𝐏-monotone (θ $ P z') (θ z) IH
+
+                    H₂ : P (P z') ≡ f (P z)
+                    -- LHP is same as: f-Pz (P z')
+                    -- RHP is same as: f-Pz (f z)
+                    H₂ = cong f-Pz $ sym p
+            case-Pz-fz≢z H (S z') p = ans
+                where
+                    IH : θ (S z') <w θ z
+                    IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
+
+                    K : θ z' <w θ (P z)
+                    K = <w-trans (θ z') (θ $ S z') (θ $ P z)
+                        (𝐒-<w-intro (θ z'))
+                        (<w-trans (θ $ S z') (θ z) (θ $ P z) IH (𝐏-<w-intro (θ z)))
+
+                    ans : (θ $ f $ P z) <w (θ $ P z)
+                    ans = subst (λ y → (θ $ f-Pz y) <w (θ $ P z)) (sym p) K
+
 
     -- Normalisation (on the closed-terms-ofℤSig-representation)
     -- either returns the input xor returns something of smaller weight.
