@@ -76,6 +76,32 @@ data ℤ' : Set where
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
 --------------------------------------------------------------------------------
+-- Terms of ℤ' have decidable equality.
+--------------------------------------------------------------------------------
+S-injective : (z z' : ℤ') → S z ≡ S z' → z ≡ z'
+S-injective z z' refl = refl
+
+P-injective : (z z' : ℤ') → P z ≡ P z' → z ≡ z'
+P-injective z z' refl = refl
+
+infix 4 _ℤ'≟_
+_ℤ'≟_ : (z z' : ℤ') → Dec (z ≡ z')
+O ℤ'≟ O = yes refl
+O ℤ'≟ S z' = no (λ {()})
+O ℤ'≟ P z' = no (λ {()})
+S z ℤ'≟ O = no (λ {()})
+S z ℤ'≟ S z' with z ℤ'≟ z'
+... | yes p = yes (cong S p)
+... | no p = no (λ Sz≡Sz' → p $ S-injective z z' Sz≡Sz')
+S z ℤ'≟ P z' = no (λ {()})
+P z ℤ'≟ O = no (λ {()})
+P z ℤ'≟ S z' = no (λ {()})
+P z ℤ'≟ P z' with z ℤ'≟ z'
+... | yes p = yes (cong P p)
+... | no p = no (λ Pz≡Pz' → p $ P-injective z z' Pz≡Pz')
+
+
+--------------------------------------------------------------------------------
 -- Normal-form function
 --------------------------------------------------------------------------------
 -- I implement this function below, but rewrote the `with` clauses
@@ -311,25 +337,124 @@ module WithWeights where
     𝐒-monotone : (t t' : C) → t <w t' → 𝐒 t <w 𝐒 t'
     𝐒-monotone t t' t<wt' = ? -- use w < w' -> w+1 < w'+1
 
+    𝐏-monotone : (t t' : C) → t <w t' → 𝐏 t <w 𝐏 t'
+    𝐏-monotone t t' t<wt' = ? -- use w < w' -> w+2 < w'+2
+
+    <w-trans : (t₁ t₂ t₃ : C) → t₁ <w t₂ → t₂ <w t₃ → t₁ <w t₃
+    <w-trans t₁ t₂ t₃ H K = <-trans H K
+
+    𝐒-<w-intro : (t : C) → t <w 𝐒 t
+    𝐒-<w-intro = ?
+
+    𝐒-<w-increasing : (t t' : C) → t <w t' → t <w 𝐒 t'
+    𝐒-<w-increasing t t' H = <w-trans t (𝐒 t) (𝐒 t') (𝐒-<w-intro t) (𝐒-monotone t t' H)
+
+    𝐏-<w-intro : (t : C) → t <w 𝐏 t
+    𝐏-<w-intro = ?
+
+    𝐏-<w-increasing : (t t' : C) → t <w t' → t <w 𝐏 t'
+    𝐏-<w-increasing t t' H = <w-trans t (𝐏 t) (𝐏 t') (𝐏-<w-intro t) (𝐏-monotone t t' H)
+
+    P-<w-intro : (z : ℤ') → θ z <w θ (P z)
+    P-<w-intro = ?
+
+    P-<w-increasing : (z z' : ℤ') → θ z <w θ z' → θ z <w θ (P z')
+    P-<w-increasing = ?
+
+    -- If f (S z) ≢ S z   and   f z ≡ z
+    -- Then
+    -- (1) z must be clean, otherwise it is not a fixpoint of f.
+    -- (2) if z ≡ O, then f (S O) = S O, contradiction.
+    -- (3) if z ≡ S z', then z only has Ss and f (S z) ≡ S z, contradiction.
+    -- (4) so we must have z ≡ P z'.
+    z-must-be-Pz'
+        : (z : ℤ')
+        → (f (S z) ≢ S z)
+        → f z ≡ z
+        → Σ[ z' ∈ ℤ' ](z ≡ P z')
+    z-must-be-Pz' O H _ = ⊥-elim (H refl) -- f O ≡ O always holds.
+    z-must-be-Pz' (S z) H K = {! !}
+    z-must-be-Pz' (P z) H K = {! !}
+
+    -- Implementation discussion of f-weight-decr:
+    -- This proof makes a lot of nested case distinctions.
+    -- First match the input z. z ≗ O gives a contradiction
+    -- with f O ≢ O, so w.l.o.g. assume the input to be `S z`
+    -- (the case `P z` is symmetric).
+    --
+    -- Now, f (S z) ≢ (S z) does NOT imply that f z ≢ z.
+    -- In particular, f (S P O) ≡ O ≢ S P O while f (P O) ≡ P O.
+    -- But equalities in ℤ' are decidable so make a case distinction
+    -- on f z ≟ z.
+    --
+    -- If f z ≡ z, then that combined with f (S z) ≢ S z
+    -- implies that z ≡ P z' for some z' (see z-must-be-Pz' above),
+    -- and then f z ≡ z'. 
+    -- So we conclude 
+    -- θ (f z) ≡ θ z' <w θ (P z') <w θ (S P z') ≡ θ (S z)
+    -- since both 𝐒 and 𝐏 are <w-decreasing (and 𝐏 θ z' ≗ θ P z').
+    --
+    -- If f z ≢ z, then we can make a recursive call (induction hypothesis IH)
+    -- giving us that θ (f z) <w θ z (*).
+    -- Then pattern-match on f z, which simplifies both the LHS of (*)
+    -- as well as the goal (since the output of f (S z) ≗ f-Sz (f z)
+    -- computes when we match f z). 
+    -- Each of the cases f z ∈ {O , S z' , P z'} then follows from the IH,
+    -- 𝐒-<w-monoticity and <w-increasingness of 𝐏 and 𝐒.
     f-weight-decr
         : (z : ℤ')
         → f z ≢ z
         → θ (f z) <w θ z
     f-weight-decr O fz≢z = ⊥-elim $ fz≢z refl
-    f-weight-decr (S z) fSz≢Sz = f-weight-decr-Sz (f z) refl
+    f-weight-decr (S z) fSz≢Sz = case-Sz ((f z) ℤ'≟ z)
         where
-            f-weight-decr-Sz : (z' : ℤ') → (f z ≡ z') → (θ $ f $ S z) <w θ (S z)
-            f-weight-decr-Sz O p = subst (λ y → (θ $ f-Sz $ y) <w θ (S z)) (sym p) 
+            case-Sz : Dec (f z ≡ z) → (θ $ f $ S z) <w θ (S z)
+            case-Sz-fz≢z 
+                : (f z ≢ z) 
+                → (z' : ℤ') 
+                → (f z ≡ z') 
+                → (θ $ f $ S z) <w θ (S z)
+            case-Sz-fz≡z : f z ≡ z → (θ $ f $ S z) <w θ (S z)
+
+            case-Sz (yes fz≡z) = case-Sz-fz≡z fz≡z
+            case-Sz (no fz≢z) = case-Sz-fz≢z fz≢z (f z) refl
+
+            case-Sz-fz≡z fz≡z = H₄
+                where
+                    z' : ℤ'
+                    z' = proj₁ $ z-must-be-Pz' z fSz≢Sz fz≡z
+                    z≡Pz' : z ≡ P z'
+                    z≡Pz' = proj₂ $ z-must-be-Pz' z fSz≢Sz fz≡z
+
+                    H₁ : θ z' <w θ (P z')
+                    H₁ = P-<w-intro z'
+
+                    H₂ : θ z' <w θ (S (P z') )
+                    H₂ = 𝐒-<w-increasing (θ z') (θ (P z')) H₁
+
+                    K : z' ≡ f (S z)
+                    K = ≡begin 
+                            z'
+                        ≡⟨⟩
+                            (f-Sz $ P z')
+                        ≡⟨  cong f-Sz $ sym $ trans fz≡z z≡Pz' ⟩
+                            (f-Sz $ f z)
+                        ≡⟨⟩
+                            f (S z)
+                        ≡∎
+
+                    H₃ : θ z' <w θ (S z)
+                    H₃ = subst (λ y → θ z' <w θ (S y)) (sym z≡Pz') H₂
+
+                    H₄ : θ (f (S z)) <w θ (S z)
+                    H₄ = subst (λ y → θ y <w θ (S z)) K H₃
+            case-Sz-fz≢z H O p = subst (λ y → (θ $ f-Sz $ y) <w θ (S z)) (sym p) 
                                          $ 𝐒-monotone (θ O) (θ z) IH
                 where
-                    H : f z ≢ z
-                    H q = ?
                     IH : θ O <w θ z
-                    IH = {! f-weight-decr z H !}
-            f-weight-decr-Sz (S z') p = {! !}
-            f-weight-decr-Sz (P z') p = {! !}
-
-            
+                    IH = subst (λ y → θ y <w θ z) p $ f-weight-decr z H
+            case-Sz-fz≢z H (S z') p = {! !}
+            case-Sz-fz≢z H (P z') p = {! !}
     f-weight-decr (P z) fz≢z = {! !}
 
     -- Normalisation (on the closed-terms-ofℤSig-representation)
