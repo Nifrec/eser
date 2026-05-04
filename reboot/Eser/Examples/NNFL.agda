@@ -63,6 +63,9 @@ open import Eser.Quotient.Definitions
 module Eser.Examples.NNFL where
 
 -- Terms of the grammar z ::= 0 | S z | P z.
+--
+-- Note: most lemmas we prove about ℤ' come with a dual with S and P exchanged, 
+-- whose statements and proofs are otherwise exactly equal.
 data ℤ' : Set where
     O : ℤ'
     S : ℤ' → ℤ'
@@ -254,6 +257,8 @@ f-fix : (z : ℤ') → f (f z) ≡ f z
 f-fix z = f-fixes-on-clean-inp (f z) (f-cleans z)
 
 module WithWeights where
+    open import Eser.Signature.EnumOrderingProperties {fin 0} {fin 1} ℤSig
+        using (giveArgBigger)
 
     private
         C : Set
@@ -335,31 +340,27 @@ module WithWeights where
     _<w_ (w , t) (w' , t') = w < w'
 
     𝐒-monotone : (t t' : C) → t <w t' → 𝐒 t <w 𝐒 t'
-    𝐒-monotone t t' t<wt' = ? -- use w < w' -> w+1 < w'+1
+    𝐒-monotone t t' t<wt' = +-monoˡ-< 1 t<wt'
 
     𝐏-monotone : (t t' : C) → t <w t' → 𝐏 t <w 𝐏 t'
-    𝐏-monotone t t' t<wt' = ? -- use w < w' -> w+2 < w'+2
+    𝐏-monotone t t' t<wt' = +-monoˡ-< 2 t<wt'
 
     <w-trans : (t₁ t₂ t₃ : C) → t₁ <w t₂ → t₂ <w t₃ → t₁ <w t₃
     <w-trans t₁ t₂ t₃ H K = <-trans H K
 
     𝐒-<w-intro : (t : C) → t <w 𝐒 t
-    𝐒-<w-intro = ?
+    𝐒-<w-intro (wₜ , t) = n<n+1 wₜ
 
     𝐒-<w-increasing : (t t' : C) → t <w t' → t <w 𝐒 t'
-    𝐒-<w-increasing t t' H = <w-trans t (𝐒 t) (𝐒 t') (𝐒-<w-intro t) (𝐒-monotone t t' H)
+    𝐒-<w-increasing t t' H = <w-trans t (𝐒 t) (𝐒 t') (𝐒-<w-intro t) 
+                                                     (𝐒-monotone t t' H)
 
     𝐏-<w-intro : (t : C) → t <w 𝐏 t
-    𝐏-<w-intro = ?
+    𝐏-<w-intro (wₜ , t) = n<n+Sm wₜ 1 -- Note that: 2 ≗ suc 1
 
     𝐏-<w-increasing : (t t' : C) → t <w t' → t <w 𝐏 t'
-    𝐏-<w-increasing t t' H = <w-trans t (𝐏 t) (𝐏 t') (𝐏-<w-intro t) (𝐏-monotone t t' H)
-
-    --P-<w-intro : (z : ℤ') → θ z <w θ (P z)
-    --P-<w-intro = ?
-
-    --P-<w-increasing : (z z' : ℤ') → θ z <w θ z' → θ z <w θ (P z')
-    --P-<w-increasing = ?
+    𝐏-<w-increasing t t' H = <w-trans t (𝐏 t) (𝐏 t') (𝐏-<w-intro t) 
+                                                     (𝐏-monotone t t' H)
 
     -- If f (S z) ≢ S z   and   f z ≡ z
     -- Then

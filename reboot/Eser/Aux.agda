@@ -270,6 +270,11 @@ m<n→Sm>n⊎Sm≡n {m} {n} m<n =
     subst (λ y → y + c < m + n + k) (+-comm a b)
     $ subst (λ y → a + b + c < y + k) (+-comm n m) H
 
+n<n+1 : (n : ℕ) → n < n + 1
+n<n+1 n = subst (λ y → n < y) (+-comm 1 n) (n<1+n n)
+
+n<n+Sm : (n m : ℕ) → n < n + (ℕ.suc m)
+n<n+Sm n m = m<m+n n Data.Nat.z<s
 
 --------------------------------------------------------------------------------
 -- Properties of ≡ᵇ used in Eser.EqRel.Conversions
