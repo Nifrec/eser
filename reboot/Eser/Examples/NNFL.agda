@@ -374,7 +374,10 @@ module WithWeights where
         → f z ≡ z
         → Σ[ z' ∈ ℤ' ](z ≡ P z')
     z-must-be-Pz' O H _ = ⊥-elim (H refl) -- f O ≡ O always holds.
-    z-must-be-Pz' (S z) H K = {! !}
+    z-must-be-Pz' (S z) H fz≡z = 
+        where
+            z-clean : IsClean z
+            z-clean = subst (λ y → IsClean y) (fz≡z) (f-cleans z)
     z-must-be-Pz' (P z) H K = {! !}
 
     -- Same as above under P<->S exchange.
