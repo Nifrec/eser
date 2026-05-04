@@ -362,6 +362,21 @@ module WithWeights where
     𝐏-<w-increasing t t' H = <w-trans t (𝐏 t) (𝐏 t') (𝐏-<w-intro t) 
                                                      (𝐏-monotone t t' H)
 
+    -- #TODO: unused, maybe remove, or move elsewhere.
+    f-pos-fixpoint
+        : (z : ℤ')
+        → f (S z) ≡ S z
+        → IsZero z ⊎ IsPos z
+    f-pos-fixpoint z H = caseDistinction z Sz-is-clean
+        where
+            Sz-is-clean : IsClean (S z)
+            Sz-is-clean = subst (λ y → IsClean y) H (f-cleans $ S z)
+
+            caseDistinction : (z : ℤ') → IsClean (S z) → IsZero z ⊎ IsPos z
+            caseDistinction O (inj₂ (inj₁ x)) = inj₁ tt
+            caseDistinction (S O) (inj₂ (inj₁ x)) = inj₂ tt
+            caseDistinction (S (S z)) (inj₂ (inj₁ x)) = inj₂ x
+
     -- If f (S z) ≢ S z   and   f z ≡ z
     -- Then
     -- (1) z must be clean, otherwise it is not a fixpoint of f.
@@ -374,11 +389,13 @@ module WithWeights where
         → f z ≡ z
         → Σ[ z' ∈ ℤ' ](z ≡ P z')
     z-must-be-Pz' O H _ = ⊥-elim (H refl) -- f O ≡ O always holds.
-    z-must-be-Pz' (S z) H fz≡z = 
+    z-must-be-Pz' (S z) fSSz≢SSz fSz≡Sz = ⊥-elim $ fSSz≢SSz fSSz≡SSz
         where
-            z-clean : IsClean z
-            z-clean = subst (λ y → IsClean y) (fz≡z) (f-cleans z)
-    z-must-be-Pz' (P z) H K = {! !}
+            SSz-clean : IsClean $ S (S z)
+            SSz-clean = subst (λ y → IsClean y) (fSz≡Sz) (f-cleans $ S z)
+            fSSz≡SSz : (f $ S $ S z) ≡ (S $ S z)
+            fSSz≡SSz = f-fixes-on-clean-inp (S (S z)) SSz-clean
+    z-must-be-Pz' (P z) _ _ = (z , refl)
 
     -- Same as above under P<->S exchange.
     z-must-be-Sz'
@@ -386,7 +403,14 @@ module WithWeights where
         → (f (P z) ≢ P z)
         → f z ≡ z
         → Σ[ z' ∈ ℤ' ](z ≡ S z')
-    z-must-be-Sz' = ?
+    z-must-be-Sz' O H _ = ⊥-elim (H refl)
+    z-must-be-Sz' (P z) fPPz≢PPz fPz≡Pz = ⊥-elim $ fPPz≢PPz fPPz≡PPz
+        where
+            PPz-clean : IsClean $ P (P z)
+            PPz-clean = subst (λ y → IsClean y) (fPz≡Pz) (f-cleans $ P z)
+            fPPz≡PPz : (f $ P $ P z) ≡ (P $ P z)
+            fPPz≡PPz = f-fixes-on-clean-inp (P (P z)) PPz-clean
+    z-must-be-Sz' (S z) _ _ = (z , refl)
 
     -- Implementation discussion of f-weight-decr:
     -- This proof makes a lot of nested case distinctions.
