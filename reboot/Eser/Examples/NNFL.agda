@@ -264,8 +264,8 @@ module WithWeights where
         C : Set
         C = AllTerms {fin 1} {fin 2} ℤSig
 
-        OT : ℕ → Set
-        OT n = Σ[ w ∈ ℕ ] OpenTerms {fin 1} {fin 2} ℤSig w n
+        OT : ℕ → ℕ → Set
+        OT w n = OpenTerms {fin 1} {fin 2} ℤSig w n
 
     open ForSignature {fin 0} {fin 1} ℤSig
         hiding (𝕋) -- That's `C` already
@@ -288,8 +288,24 @@ module WithWeights where
     θ (S t) = 𝐒 (θ t)
     θ (P t) = 𝐏 (θ t)
 
+    OT-decompose
+        : (w : ℕ)
+        → (t : OT w 1)
+        → (Σ[ H ∈ 1 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary Fin.zero)) 
+          ⊎ 
+          (Σ[ H ∈ 2 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary $ Fin.suc Fin.zero)) 
+    OT-decompose w t = ?
+
     θ⁻¹ : C → ℤ'
-    θ⁻¹ t = ?
+    θ⁻¹ (w , mk-nullary Fin.zero) = O
+    θ⁻¹ (w , giveArg {wₜ} {wₐ} t a) = (caseDistinction wₜ t) (θ⁻¹ (wₐ , a))
+        where
+            caseDistinction
+                : (w : ℕ)
+                → (t : OT w 1)
+                → ℤ' 
+                → ℤ'
+            caseDistinction w t = ?
 
     ℤ'≃C : ℤ' ≃ C
     ℤ'≃C = mk≃' θ θ⁻¹ invˡ invʳ
