@@ -29,6 +29,7 @@ open import Function
 open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Product.Function.NonDependent.Propositional using (_×-↔_)
+open import Function.Properties.Bijection using (⤖⇒↔)
 
 open import Eser.Aux
 open import Eser.Fin
@@ -39,16 +40,28 @@ open import Eser.Fin using (finMaxOrSmaller)
 
 module Eser.Equivalences.Properties.SigmaFinInfInhabitedProof where
 
+-- #TODO: ≃-from-inj-surj and surjectiveAt are defined here instead
+-- of in Eser.Equivalances.Properties to avoid circular imports.
+≃-from-inj-surj
+    : {A B : Set}
+    → (f : A → B)
+    → (Injective _≡_ _≡_ f)
+    → (Surjective _≡_ _≡_ f)
+    → A ≃ B
+≃-from-inj-surj {A} {B} f injF surjF = ⤖⇒↔ $ mk⤖ (injF , surjF)
+
 -- The stdlib's definition of surjectivity is a bit indirect
 -- because it also allows other relations than _≡_.
--- The stdlib's definition of surjectivity says that:
---      (b : B) → surjectiveAt f b
+-- For the _≡_ relations,
+-- the stdlib's definition of surjectivity simplifies to:
+--      `(b : B) → surjectiveAt f b`
 surjectiveAt
     : {A B : Set}
     → (f : A → B)
     → (b : B)
     → Set
 surjectiveAt {A} {B} f b = Σ[ a ∈ A ] ({a' : A} → a' ≡ a → f a' ≡ b)
+
 
 -- If x is not the maximum element of a finite set,
 -- then 1+x also exists in the same finite set.
@@ -84,7 +97,7 @@ finEndoSuc {n} x x<n = (x'' , p)
     : (g : ℕ → ℕ)
     → Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i) ≃ ℕ
 -- Proof: give a function and show it is injective and surjective.
-Σfin-inf-inhabited-proof g = ⤖⇒↔ $ mk⤖ (injF , surjF)
+Σfin-inf-inhabited-proof g = ≃-from-inj-surj f' injF surjF
     module SigmaFinInfInhabitedProofImpl where
         From = Σ[ i ∈ ℕ ](Fin $ ℕ.suc $ g i)
         open import Function.Properties.Bijection using (⤖⇒↔)

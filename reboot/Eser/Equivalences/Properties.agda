@@ -36,10 +36,11 @@ open import Eser.Dec
 open import Eser.Equivalences.Notation
 open import Eser.Stdlib using (fin-≡-irrelevant)
 open import Eser.Fin using (finMaxOrSmaller)
-open import Eser.Equivalences.Properties.SigmaFinInfInhabitedProof
 
 module Eser.Equivalences.Properties where
 
+open import Eser.Equivalences.Properties.SigmaFinInfInhabitedProof public
+--^ Public because we want to export ≃-from-inj-surj and surjectiveAt.
 --------------------------------------------------------------------------------
 -- Basic equivalence properties and convenient constructor.
 --------------------------------------------------------------------------------

@@ -122,3 +122,5 @@ module EquivShorthandsForEnumSet
     -- Smaller-than-or-equal
     _«=_ : Rel A 0ℓ
     t' «= t = (t' « t) ⊎ (t' ≡ t)
+
+
