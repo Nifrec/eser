@@ -120,18 +120,18 @@ module _ where
 module Elift 
     {A B : Set}
     (A≃B : A ≃ B)
-    (_<A_ : Rel A 0ℓ)
-    (_<B_ : Rel B 0ℓ)
     where
     open EquivShorthands A≃B
     open import Relation.Binary.Core
 
     elift-leq
-        : (f : A → A)
+        : (_<A_ : Rel A 0ℓ)
+        → (_<B_ : Rel B 0ℓ)
+        → (f : A → A)
         → ((a : A) → f a <A a)
         → (_Presv_To_ {A} {B} φ _<A_ _<B_)
         → ((b : B) → (elift f) b <B b)
-    elift-leq f H K b = ans
+    elift-leq _<A_ _<B_ f H K b = ans
         where
             a : A
             a = φ⁻¹ b

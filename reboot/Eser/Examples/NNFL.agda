@@ -339,12 +339,10 @@ module WithWeights where
     check⁻¹ : φ⁻¹ ≡ θ⁻¹ ∘ ψ⁻¹
     check⁻¹ = refl
 
-
-
     -- Lifting f to the ℕ-encoding of ℤ' terms.
     nf : ℕ → ℕ
-    --nf = elift f -- same as:  nf = (ψ ∘ θ) ∘ f ∘ (θ⁻¹ ∘ ψ⁻¹)
-    nf = (ψ ∘ θ) ∘ f ∘ (θ⁻¹ ∘ ψ⁻¹)
+    nf = elift f -- same as:  nf = (ψ ∘ θ) ∘ f ∘ (θ⁻¹ ∘ ψ⁻¹)
+    -- nf = (ψ ∘ θ) ∘ f ∘ (θ⁻¹ ∘ ψ⁻¹)
 
     -- Only lifting f to act on closed terms of ℤSig.
     nf' : C → C
@@ -664,9 +662,10 @@ module WithWeights where
                     ans : nf n < n
                     ans  = subst (λ y → nf n < y) (ψ∘ψ⁻¹≈id n) nf'n<ψψ⁻¹n
 
-    --nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
-    --nf-fix : (n : ℕ) → elift f (elift f n) ≡ elift f n
-    --nf-fix = {! ℤ'≃ℕ-lifts.elift-fix f f-fix !}
+    module ℤ'≃ℕ-lifts = Elift {ℤ'} ℤ'≃ℕ
+    -- nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
+    nf-fix : (n : ℕ) → elift f (elift f n) ≡ elift f n
+    nf-fix = {! ℤ'≃ℕ-lifts.elift-fix f f-fix !}
 
 --------------------------------------------------------------------------------
 -- Proof that ℤ are indeed the integers
