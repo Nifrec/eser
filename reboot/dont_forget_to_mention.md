@@ -18,3 +18,4 @@
     weight). **My implementation makes it hard to compare things of the same
     weight.** This could have been avoided, e.g. by adding more indices (giving
     the top-lvl constructor index, or the height, or so) to terms.
+* "Standard def of ℤ": how to Rocq, Lean and Li define ℤ?
