@@ -291,25 +291,6 @@ module WithWeights where
     module θIsEquiv where
         open import Eser.Signature.PiecewiseFin.Definitions {fin 1} {fin 2} ℤSig hiding (OT)
 
-        --OT-decompose
-        --    : (w : ℕ)
-        --    → (t : OT w 1)
-        --    → (Σ[ H ∈ 1 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary Fin.zero)) 
-        --      ⊎ 
-        --      (Σ[ H ∈ 2 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary $ Fin.suc Fin.zero)) 
-        --OT-decompose w t = ?
-
-        --θ⁻¹ : C → ℤ'
-        --θ⁻¹ (w , mk-nullary Fin.zero) = O
-        --θ⁻¹ (w , giveArg {wₜ} {wₐ} t a) = (caseDistinction wₜ t) (θ⁻¹ (wₐ , a))
-        --    where
-        --        caseDistinction
-        --            : (w : ℕ)
-        --            → (t : OT w 1)
-        --            → ℤ' 
-        --            → ℤ'
-        --        caseDistinction w t = ?
-
         injθ : Injective _≡_ _≡_ θ
         injθ = ?
 
@@ -323,6 +304,8 @@ module WithWeights where
             → IsEmptyMultiary t
         oneHoleThenIsMultiary {w} t = ans
             where
+                open import Eser.Signature.PiecewiseFin.OTNullary {fin 1} {fin 2} ℤSig
+
                 takeFromMiddle : {A B C : Set} → ¬ A → ¬ C → A ⊎ B ⊎ C → B
                 takeFromMiddle ¬A ¬C (inj₁ a) = ⊥-elim $ ¬A a
                 takeFromMiddle ¬A ¬C (inj₂ (inj₁ b)) = b
@@ -358,7 +341,11 @@ module WithWeights where
                 triple-elim-to {A} B {C} ¬A ¬C = refl
 
                 ¬Nul : ¬ (OT-Nul w 1)
-                ¬Nul = ?
+                ¬Nul (t , p) = 0≢1+n 0≡1
+                    where
+                        0≡1 : 0 ≡ 1
+                        0≡1 = sym $ isNullaryNoArgs t p
+
 
                 ¬Arg : ¬ (OT-Arg w 1)
                 ¬Arg = ?
