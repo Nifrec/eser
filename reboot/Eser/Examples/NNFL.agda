@@ -288,32 +288,169 @@ module WithWeights where
     θ (S t) = 𝐒 (θ t)
     θ (P t) = 𝐏 (θ t)
 
-    OT-decompose
-        : (w : ℕ)
-        → (t : OT w 1)
-        → (Σ[ H ∈ 1 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary Fin.zero)) 
-          ⊎ 
-          (Σ[ H ∈ 2 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary $ Fin.suc Fin.zero)) 
-    OT-decompose w t = ?
+    module θIsEquiv where
+        open import Eser.Signature.PiecewiseFin.Definitions {fin 1} {fin 2} ℤSig hiding (OT)
 
-    θ⁻¹ : C → ℤ'
-    θ⁻¹ (w , mk-nullary Fin.zero) = O
-    θ⁻¹ (w , giveArg {wₜ} {wₐ} t a) = (caseDistinction wₜ t) (θ⁻¹ (wₐ , a))
-        where
-            caseDistinction
-                : (w : ℕ)
-                → (t : OT w 1)
-                → ℤ' 
-                → ℤ'
-            caseDistinction w t = ?
+        --OT-decompose
+        --    : (w : ℕ)
+        --    → (t : OT w 1)
+        --    → (Σ[ H ∈ 1 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary Fin.zero)) 
+        --      ⊎ 
+        --      (Σ[ H ∈ 2 ≡ w ] t ≡ subst (λ w → OT w 1) H (mk-multiary $ Fin.suc Fin.zero)) 
+        --OT-decompose w t = ?
+
+        --θ⁻¹ : C → ℤ'
+        --θ⁻¹ (w , mk-nullary Fin.zero) = O
+        --θ⁻¹ (w , giveArg {wₜ} {wₐ} t a) = (caseDistinction wₜ t) (θ⁻¹ (wₐ , a))
+        --    where
+        --        caseDistinction
+        --            : (w : ℕ)
+        --            → (t : OT w 1)
+        --            → ℤ' 
+        --            → ℤ'
+        --        caseDistinction w t = ?
+
+        injθ : Injective _≡_ _≡_ θ
+        injθ = ?
+
+        -- ℤSig only has 0- and 1-ary constructors.
+        -- Consequently, any open term that has taken at least one argument
+        -- must already be closed, so OT w 1 has no giveArg-constructed terms.
+        -- Nullary terms are always closed, so OT w 1 has no nullary terms either.
+        oneHoleThenIsMultiary
+            : {w : ℕ}
+            → (t : OT w 1)
+            → IsEmptyMultiary t
+        oneHoleThenIsMultiary {w} t = ans
+            where
+                takeFromMiddle : {A B C : Set} → ¬ A → ¬ C → A ⊎ B ⊎ C → B
+                takeFromMiddle ¬A ¬C (inj₁ a) = ⊥-elim $ ¬A a
+                takeFromMiddle ¬A ¬C (inj₂ (inj₁ b)) = b
+                takeFromMiddle ¬A ¬C (inj₂ (inj₂ c)) = ⊥-elim $ ¬C c
+
+                triple-elim 
+                    : {A : Set} 
+                    → (B : Set) 
+                    → {C : Set} 
+                    → ¬ A 
+                    → ¬ C 
+                    → (A ⊎ B ⊎ C) ≃ B
+                triple-elim {A} B {C} ¬A ¬C = mk≃' g g⁻¹ invˡ invʳ
+                    where
+                    g : A ⊎ B ⊎ C → B
+                    g = takeFromMiddle ¬A ¬C
+                    g⁻¹ : B → A ⊎ B ⊎ C
+                    g⁻¹ = inj₂ ∘ inj₁
+                    invˡ : Inverseˡ _≡_ _≡_ g g⁻¹
+                    invˡ {x} {y} refl = refl
+                    invʳ : Inverseʳ _≡_ _≡_ g g⁻¹
+                    invʳ {inj₁ a} {x} refl = ⊥-elim $ ¬A a
+                    invʳ {inj₂ (inj₁ b)} {x} refl = refl
+                    invʳ {inj₂ (inj₂ c)} {x} refl = ⊥-elim $ ¬C c
+
+                triple-elim-to 
+                    : {A : Set} 
+                    → (B : Set) 
+                    → {C : Set} 
+                    → (¬A : ¬ A)
+                    → (¬C : ¬ C)
+                    → ≃-to (triple-elim B ¬A ¬C) ≡ takeFromMiddle ¬A ¬C
+                triple-elim-to {A} B {C} ¬A ¬C = refl
+
+                ¬Nul : ¬ (OT-Nul w 1)
+                ¬Nul = ?
+
+                ¬Arg : ¬ (OT-Arg w 1)
+                ¬Arg = ?
+
+                decomp : OT w 1 ≃ (OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1)
+                decomp = ZsubDecompo {fin 1} {fin 2} ℤSig w 1
+                
+                χ : OT w 1 → (OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1)
+                χ = ≃-to decomp
+
+                χ-output 
+                    : (t' : OT w 1) 
+                    → Σ[ p ∈ IsEmptyMultiary t' ](χ t' ≡ (inj₂ ∘ inj₁) (t' , p))
+                χ-output t' = lemma (χ t') refl
+                    where
+                        getF : (OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1) → OT w 1
+                        getF = getFirst {fin 1} {fin 2} ℤSig {w} {1}
+
+                        lemma
+                            : (x : (OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1))
+                            → χ t' ≡ x
+                            → Σ[ p ∈ IsEmptyMultiary t' ](χ t' ≡ (inj₂ ∘ inj₁) (t' , p))
+                        lemma (inj₁ a) _ = ⊥-elim $ ¬Nul a
+                        lemma (inj₂ (inj₁ (t'' , p))) q = (p' , q')
+                            where
+                                irrel 
+                                    : (t : OT w 1) 
+                                    → (Relation.Nullary.Irrelevant 
+                                        (IsEmptyMultiary t))
+                                irrel = isMultiaryIrrelevant {fin 1} {fin 2} ℤSig {w} {1}
+                                t''≡t' : t'' ≡ t'
+                                t''≡t' = subst (λ y → y ≡ t') (cong getF q)
+                                         $ ZsubDecompo-proj₁ {fin 1} {fin 2} ℤSig w 1 t'
+                                p' : IsEmptyMultiary t'
+                                p' = subst IsEmptyMultiary t''≡t' p
+                                H : (t'' , p) ≡ (t' , p')
+                                H = restIsProofIrrel irrel p p' t''≡t'
+                                q' : χ t' ≡ (inj₂ ∘ inj₁) (t' , p')
+                                q' = subst (λ y → χ t' ≡ (inj₂ ∘ inj₁) y) H q
+                        lemma (inj₂ (inj₂ c)) _ = ⊥-elim $ ¬Arg c
+
+                elimEmpty : ((OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1)) ≃ (OT-Mul w 1)
+                elimEmpty = triple-elim (OT-Mul w 1) ¬Nul ¬Arg
+
+                ξ : ((OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1)) → (OT-Mul w 1)
+                ξ = ≃-to elimEmpty
+
+                proj₁IsT :  (proj₁ $ (≃-to $ ≃-trans decomp elimEmpty) t) ≡ t
+                proj₁IsT = 
+                    ≡begin 
+                        (proj₁ $ (≃-to $ ≃-trans decomp elimEmpty) t)
+                    ≡⟨⟩
+                        (proj₁ ∘ ξ ∘ χ) t
+                    ≡⟨⟩
+                        (proj₁ ∘ (takeFromMiddle ¬Nul ¬Arg) ∘ χ) t
+                    ≡⟨ ? ⟩
+                        (proj₁ ∘ (takeFromMiddle ¬Nul ¬Arg) ∘ χ) t
+                    ≡⟨ ? ⟩
+                        
+                        t
+                    ≡∎
+                
+
+
+                ans : IsEmptyMultiary t
+                ans = subst IsEmptyMultiary proj₁IsT 
+                      $ proj₂ $ (≃-to $ ≃-trans decomp elimEmpty) t
+
+
+
+        surjθ : Surjective _≡_ _≡_ θ
+        surjθ (w , mk-nullary Fin.zero) = (O , v)
+            where
+
+                v : {z : ℤ'} → z ≡ O → θ z ≡ (w , mk-nullary Fin.zero)
+                v refl = refl
+        surjθ (w , giveArg t a) = {! !}
+
+    open θIsEquiv
 
     ℤ'≃C : ℤ' ≃ C
-    ℤ'≃C = mk≃' θ θ⁻¹ invˡ invʳ
-        where
-        invˡ : Inverseˡ _≡_ _≡_ θ θ⁻¹
-        invˡ {x} {y} refl = ?
-        invʳ : Inverseʳ _≡_ _≡_ θ θ⁻¹
-        invʳ {y} {x} refl = ?
+    ℤ'≃C = ≃-from-inj-surj θ injθ surjθ
+
+
+    θ⁻¹ : C → ℤ'
+    θ⁻¹ =  ≃-from ℤ'≃C 
+    --ℤ'≃C = mk≃' θ θ⁻¹ invˡ invʳ
+    --    where
+    --    invˡ : Inverseˡ _≡_ _≡_ θ θ⁻¹
+    --    invˡ {x} {y} refl = ?
+    --    invʳ : Inverseʳ _≡_ _≡_ θ θ⁻¹
+    --    invʳ {y} {x} refl = ?
     
     θ∘θ⁻¹≈id : (θ ∘ θ⁻¹) ≈ id {_} {C}
     θ∘θ⁻¹≈id = ≃-toFrom ℤ'≃C

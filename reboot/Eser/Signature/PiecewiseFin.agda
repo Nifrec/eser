@@ -101,22 +101,9 @@ open import Eser.Signature.PiecewiseFin.Definitions using (ZP)
 --
 -- I.e., `OpenTerms w n ≃ Fin (z n w)` for all w ∈ ℕ for some z : ℕ → ℕ → ℕ
 --------------------------------------------------------------------------------
- 
--- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
--- Submodule that also assumes a given weight w and num-remaining-args n
--- plus the ability to perfrom Well-Founded recursion on w.
-module WithArgs
-    {μ ζ : ℕ∞}
-    (S : Signature μ ζ)
-    (w-1 : ℕ)
-    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
-    (n : ℕ) 
-    where
-    open import Eser.Signature.PiecewiseFin.OTNullary {μ} {ζ} S
-    open import Eser.Signature.PiecewiseFin.OTMultiary {μ} {ζ} S
-    open import Eser.Signature.PiecewiseFin.OTGiveArg
-    open Eser.Signature.PiecewiseFin.OTGiveArg.WithSignature.AlsoWithW-1&Rec&N 
-        {μ} {ζ} S w-1 rec n hiding (w)
+
+module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
+
     open Eser.Signature.PiecewiseFin.Definitions {μ} {ζ} S
 
     -- Trivial sublemma: OT w n is an Agda-inductive type, and hence the sum
@@ -148,6 +135,48 @@ module WithArgs
             inv : Inverseᵇ _≡_ _≡_ to from
             inv = (invˡ , invʳ)
 
+    getFirst 
+        : {w n : ℕ}
+        → (OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n) 
+        → OT w n
+    getFirst (inj₁ (t , _)) = t
+    getFirst (inj₂ (inj₁ (t , _))) = t
+    getFirst (inj₂ (inj₂ (t , _))) = t
+
+    ZsubDecompo-proj₁ 
+        : (w : ℕ) 
+        → (n : ℕ) 
+        → (t : OT w n)
+        → (getFirst ∘ (≃-to $ ZsubDecompo w n)) t ≡ t
+    ZsubDecompo-proj₁ w n (mk-nullary c) = refl
+    ZsubDecompo-proj₁ w n (mk-multiary c) = refl
+    ZsubDecompo-proj₁ w n (giveArg {wₜ} {wₐ} t a) = refl
+
+    isMultiaryIrrelevant
+        : {w n : ℕ}
+        → (t : OT w n)
+        → Relation.Nullary.Irrelevant (IsEmptyMultiary t)
+    isMultiaryIrrelevant {w} {n} (mk-nullary c) = λ { p₁ p₂ → ⊥-elim p₁ }
+    isMultiaryIrrelevant {w} {n} (mk-multiary c) = λ { tt tt → refl }
+    isMultiaryIrrelevant {w} {n} (giveArg t a) = λ { p₁ p₂ → ⊥-elim p₁ }
+ 
+-- Implementation of the proof for the ZTheorem for the case where w ≥ 1.
+-- Submodule that also assumes a given weight w and num-remaining-args n
+-- plus the ability to perfrom Well-Founded recursion on w.
+module WithArgs
+    {μ ζ : ℕ∞}
+    (S : Signature μ ζ)
+    (w-1 : ℕ)
+    (rec : {w' : ℕ} → (w' < ℕ.suc w-1) → ZP {μ} {ζ} S w')
+    (n : ℕ) 
+    where
+    open import Eser.Signature.PiecewiseFin.OTNullary {μ} {ζ} S
+    open import Eser.Signature.PiecewiseFin.OTMultiary {μ} {ζ} S
+    open import Eser.Signature.PiecewiseFin.OTGiveArg
+    open Eser.Signature.PiecewiseFin.OTGiveArg.WithSignature.AlsoWithW-1&Rec&N 
+        {μ} {ζ} S w-1 rec n hiding (w)
+    open Eser.Signature.PiecewiseFin.Definitions {μ} {ζ} S
+
     w = ℕ.suc w-1
     Z-Nul : ℕ
     Z-Nul = proj₁ $ Eq-Nul' w n
@@ -171,7 +200,7 @@ module WithArgs
     zEquiv =
         begin 
             OT w n
-        ≃⟨ ZsubDecompo w n ⟩
+        ≃⟨ ZsubDecompo S w n ⟩
             ((OT-Nul w n) ⊎ (OT-Mul w n) ⊎ (OT-Arg w n))
         ≃⟨ rewr-≃-under-⊎-3 Eq-Nul Eq-Mul Eq-Arg ⟩
             (Fin Z-Nul ⊎ Fin Z-Mul ⊎ Fin Z-Arg)
