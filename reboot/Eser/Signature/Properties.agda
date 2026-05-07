@@ -94,16 +94,18 @@ module _
     holesBoundedByArity
         : {w : ℕ}
         → (n : ℕ)
-        → (x : OpenTerms {μ} {ζ} S w (ℕ.suc n)) -- Existence of term with 1+n holes.
-        → Σ[ c ∈ cardToSet ζ ] (n ≤ arity {μ} {ζ} {S} c)
+        → (x : OpenTerms {μ} {ζ} S w (ℕ.suc n)) 
+            --^ Existence of term with 1+n holes.
+        → Σ[ c ∈ cardToSet ζ ] (ℕ.suc n ≤ arity {μ} {ζ} {S} c)
     holesBoundedByArity {w} n x = <-rec P holesBoundedByArityRec w n x
         where
             P : ℕ → Set
             P w = (n : ℕ) 
                   → (x : OpenTerms {μ} {ζ} S w (ℕ.suc n))
-                  → Σ[ c ∈ cardToSet ζ ] (n ≤ arity {μ} {ζ} {S} c)
+                  → Σ[ c ∈ cardToSet ζ ] (ℕ.suc n ≤ arity {μ} {ζ} {S} c)
             holesBoundedByArityRec : (w : ℕ) → ({v : ℕ} → v < w → P v) → P w
-            holesBoundedByArityRec w rec n (mk-multiary c) = (c , n≤1+n ( S c))
+            holesBoundedByArityRec w rec n (mk-multiary c) = 
+                (c ,  Data.Nat.Properties.≤-refl )
             holesBoundedByArityRec w rec n (giveArg {wₜ} {wₐ} t a) = (c , ans)
                 where
                     wₜ<w : wₜ < w
@@ -112,8 +114,8 @@ module _
                            $ allTermsNonzeroWeight S a
                     c : cardToSet ζ
                     c = proj₁ $ rec {wₜ} wₜ<w (ℕ.suc n) t
-                    p : ℕ.suc n ≤ arity {μ} {ζ} {S} c
+                    p : ℕ.suc (ℕ.suc n) ≤ arity {μ} {ζ} {S} c
                     p = proj₂ $ rec {wₜ} wₜ<w (ℕ.suc n) t
-                    ans : n ≤ arity {μ} {ζ} {S} c
-                    ans = Data.Nat.Properties.≤-trans (n≤1+n n) p
+                    ans : ℕ.suc n ≤ arity {μ} {ζ} {S} c
+                    ans = Data.Nat.Properties.≤-trans (n≤1+n $ ℕ.suc n) p
             
