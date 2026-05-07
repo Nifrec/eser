@@ -304,7 +304,6 @@ module WithWeights where
             → IsEmptyMultiary t
         oneHoleThenIsMultiary {w} t = ans
             where
-                open import Eser.Signature.PiecewiseFin.OTNullary {fin 1} {fin 2} ℤSig
 
                 takeFromMiddle : {A B C : Set} → ¬ A → ¬ C → A ⊎ B ⊎ C → B
                 takeFromMiddle ¬A ¬C (inj₁ a) = ⊥-elim $ ¬A a
@@ -343,12 +342,44 @@ module WithWeights where
                 ¬Nul : ¬ (OT-Nul w 1)
                 ¬Nul (t , p) = 0≢1+n 0≡1
                     where
+                        open import Eser.Signature.PiecewiseFin.OTNullary 
+                            {fin 1} {fin 2} ℤSig
                         0≡1 : 0 ≡ 1
                         0≡1 = sym $ isNullaryNoArgs t p
 
 
+                -- If there is a term of OT-Arg w 1,
+                -- then it must be of the form `giveArg t' a`
+                -- where `t' : OT wₜ' 2` has 2 open argument-holes.
+                -- But ℤSig can only construct open terms with 0 or 1 holes!
+                -- Contradiction!
                 ¬Arg : ¬ (OT-Arg w 1)
-                ¬Arg = ?
+                ¬Arg x = contra
+                    where
+                        open import Eser.Signature.PiecewiseFin.OTGiveArg
+                        open WithSignature {fin 1} {fin 2} ℤSig
+                        unfolded : OT-Arg-Unfolded w 1
+                        unfolded = (≃-to $ Eq-Arg-FirstStep w 1) x
+                        wₜ' : ℕ
+                        wₜ' = ℕ.suc $ proj₁ $ proj₂ $ proj₁ $ unfolded
+                        t' : OT wₜ' 2
+                        t' = proj₁ $ proj₂ $ unfolded
+
+                        ar : Fin 2 → ℕ
+                        ar = arity {fin 1} {fin 2} {ℤSig}
+
+                        holesBound : Σ[ c ∈ Fin 2 ] (2 ≤ ar c)
+                        holesBound = holesBoundedByArity ℤSig {wₜ'} 1 t'
+
+                        neverTwoHoles : (c : Fin 2) → (2 ≤ ar c) → ⊥
+                        neverTwoHoles Fin.zero (s≤s ())
+                        neverTwoHoles (Fin.suc Fin.zero) (s≤s ())
+
+                        contra : ⊥
+                        contra = neverTwoHoles (proj₁ holesBound) 
+                                               (proj₂ holesBound)
+
+
 
                 decomp : OT w 1 ≃ (OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1)
                 decomp = ZsubDecompo {fin 1} {fin 2} ℤSig w 1
@@ -393,18 +424,34 @@ module WithWeights where
                 ξ : ((OT-Nul w 1) ⊎ (OT-Mul w 1) ⊎ (OT-Arg w 1)) → (OT-Mul w 1)
                 ξ = ≃-to elimEmpty
 
+                
+
+                χ-outp-isMul : IsEmptyMultiary t
+                χ-outp-isMul = proj₁ $ χ-output t
+                χ-outp-whole : χ t ≡ (inj₂ ∘ inj₁) (t , χ-outp-isMul) 
+                χ-outp-whole = proj₂ $ χ-output t 
                 proj₁IsT :  (proj₁ $ (≃-to $ ≃-trans decomp elimEmpty) t) ≡ t
                 proj₁IsT = 
                     ≡begin 
                         (proj₁ $ (≃-to $ ≃-trans decomp elimEmpty) t)
                     ≡⟨⟩
                         (proj₁ ∘ ξ ∘ χ) t
+                    -- Unfold χ. This requires a propositional equality.
+                    -- The result is constructed via inj₂ ∘ inj₁,
+                    -- on which ξ does compute.
+                    ≡⟨ cong (proj₁ ∘ ξ) χ-outp-whole ⟩
+                        (proj₁ ∘ ξ) ((inj₂ ∘ inj₁) (t , χ-outp-isMul))
+                    -- Unfold ξ.
+                    ≡⟨⟩ 
+                        (proj₁ ∘ (takeFromMiddle {B = OT-Mul w 1} ¬Nul ¬Arg)) 
+                            ((inj₂ ∘ inj₁) (t , χ-outp-isMul))
                     ≡⟨⟩
-                        (proj₁ ∘ (takeFromMiddle ¬Nul ¬Arg) ∘ χ) t
-                    ≡⟨ ? ⟩
-                        (proj₁ ∘ (takeFromMiddle ¬Nul ¬Arg) ∘ χ) t
-                    ≡⟨ ? ⟩
-                        
+                    -- Agda needs some help inferring the type of the 
+                    -- tuple (t, χ-outp-isMul). Probably because IsEmptyMultiary
+                    -- evaluates to ⊥ or ⊤, which could also be the output
+                    -- of other predicates.
+                        proj₁ {B = IsEmptyMultiary} (t , χ-outp-isMul)
+                    ≡⟨⟩
                         t
                     ≡∎
                 
