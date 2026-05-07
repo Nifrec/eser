@@ -78,6 +78,8 @@ data ℤ' : Set where
 ℤSig (Fin.zero) = 0                 -- The arity - 1 of S is 0.
 ℤSig (Fin.suc Fin.zero) = 0         -- The arity - 1 of P is 0.
 
+ar : Fin 2 → ℕ
+ar = arity {fin 1} {fin 2} {ℤSig}
 --------------------------------------------------------------------------------
 -- Terms of ℤ' have decidable equality.
 --------------------------------------------------------------------------------
@@ -365,9 +367,6 @@ module WithWeights where
                         t' : OT wₜ' 2
                         t' = proj₁ $ proj₂ $ unfolded
 
-                        ar : Fin 2 → ℕ
-                        ar = arity {fin 1} {fin 2} {ℤSig}
-
                         holesBound : Σ[ c ∈ Fin 2 ] (2 ≤ ar c)
                         holesBound = holesBoundedByArity ℤSig {wₜ'} 1 t'
 
@@ -454,13 +453,57 @@ module WithWeights where
                     ≡⟨⟩
                         t
                     ≡∎
-                
-
 
                 ans : IsEmptyMultiary t
                 ans = subst IsEmptyMultiary proj₁IsT 
                       $ proj₂ $ (≃-to $ ≃-trans decomp elimEmpty) t
 
+        -- Map a constructor of ℤSig (in cardToSet (fin 2) ≗ Fin 2).
+        --sigConstrToSP : (c : Fin 2) → Σ[ X ∈ (ℤ' → ℤ') ](
+        --    -- #TODO: need to subst a lemma that `arity c ≡ 1` to make this
+        --    -- typecheck. But it is already overcomplicated...
+        --    (z : ℤ') → θ (X z) ≡ (proj₁ (θ z) + (ℕ.suc $ cardToℕ c) , giveArg {! mk-multiary c !} (proj₂ $ θ z)))
+        --sigConstrToSP (Fin.zero)         = {! (S , p) !}
+        --    where
+        --        --p : (z : ℤ') → θ (S z) ≡ giveArg (mk-multiary Fin.zero) (θ z)
+        --        --p z = refl
+        --sigConstrToSP (Fin.suc Fin.zero) = ?
+
+        -- Map a 1-ary constructor of ℤSig (in cardToSet (fin 2) ≗ Fin 2)
+        -- to the corresponding 1-ary constructor of ℤ'
+        getSP : Fin 2 → ℤ' → ℤ'
+        getSP Fin.zero           = S
+        getSP (Fin.suc Fin.zero) = P
+
+        get𝐒𝐏 : Fin 2 → C → C
+        get𝐒𝐏 Fin.zero           = 𝐒
+        get𝐒𝐏 (Fin.suc Fin.zero) = 𝐏
+
+        get𝐒𝐏-lemma
+            : (wₐ : ℕ)
+            → (a : OT wₐ 0)
+            → (c : Fin 2)
+            --→ get𝐒𝐏 c (wₐ , a) ≡ (wₐ + (ℕ.suc $ cardToℕ c) , giveArg (mk-multiary c) a)
+            → (proj₁ $ get𝐒𝐏 c (wₐ , a)) ≡ wₐ + (ℕ.suc $ cardToℕ c)
+        get𝐒𝐏-lemma wₐ a (Fin.zero) = refl
+        get𝐒𝐏-lemma wₐ a (Fin.suc Fin.zero) = refl
+
+        getSP-correctness
+            : (c : Fin 2)
+            → (z : ℤ')
+            → θ (getSP c z) ≡ get𝐒𝐏 c (θ z)
+        getSP-correctness Fin.zero z = refl
+        getSP-correctness (Fin.suc Fin.zero) z = refl
+        
+        meh
+            : {w : ℕ}
+            → (t : OT w 1)
+            → IsEmptyMultiary t
+            → Σ[ X ∈ (ℤ' → ℤ') ] ((z : ℤ') → (θ $ X z) ≡ ((proj₁ $ θ z) + w , giveArg t (proj₂ $ θ z)))
+        meh {w} t p = ?
+
+
+        open import Eser.Signature.PiecewiseFin.OTMultiary {fin 1} {fin 2} ℤSig
 
 
         surjθ : Surjective _≡_ _≡_ θ
@@ -469,7 +512,93 @@ module WithWeights where
 
                 v : {z : ℤ'} → z ≡ O → θ z ≡ (w , mk-nullary Fin.zero)
                 v refl = refl
-        surjθ (w , giveArg t a) = {! !}
+        surjθ inp@(w , giveArg {wₜ} {wₐ} t a) = ans
+            where
+
+                isMulT : IsEmptyMultiary t
+                isMulT = oneHoleThenIsMultiary t
+
+                c : Fin 2
+                c = proj₁ $ getMultiaryConstr t isMulT
+
+
+                H : ℕ.suc (cardToℕ c) ≡ wₜ
+                H = sym $ proj₁ $ proj₂ $ getMultiaryConstr t isMulT
+
+                K : ar c ≡ 1
+                K = sym $ proj₂ $ proj₂ $ getMultiaryConstr t isMulT
+
+                rec = surjθ (wₐ , a)
+                
+                a' : ℤ'
+                a' = proj₁ rec
+
+                θa'≡a : θ a' ≡ (wₐ , a)
+                θa'≡a = proj₂ rec refl
+
+                    
+                --open import Eser.Equivalences.Properties.SigmaFinInfInhabitedProof
+                --    using (SurjectiveAt)
+                sublemma : (c' : Fin 2) → (c' ≡ c) 
+                    → Eser.Equivalences.Properties.surjectiveAt θ inp
+
+                ans = sublemma c refl
+
+                sublemma c'@(Fin.zero) p = (z , θz≡inp)
+                    where
+                        H' : ℕ.suc (cardToℕ c') ≡ wₜ
+                        H' = subst (λ y → ℕ.suc (cardToℕ y) ≡ wₜ) (sym p) H
+
+                        K' : ar c' ≡ 1
+                        K' = {! subst (λ y → ar y ≡ 1) (sym p) K !}
+
+                        z : ℤ'
+                        z = S a'
+                        θz≡inp : {z' : ℤ'} → (z' ≡ z) → θ z' ≡ inp
+                        θz≡inp refl =
+                            ≡begin 
+                                θ z
+                            ≡⟨⟩
+                                θ (S a')
+                            ≡⟨⟩
+                                𝐒 (θ a')
+                            ≡⟨ cong 𝐒 θa'≡a ⟩
+                                𝐒 (wₐ , a)
+                            ≡⟨⟩
+                                (wₐ + (ℕ.suc $ cardToℕ {fin 2} Fin.zero) 
+                                 , 
+                                 giveArg (mk-multiary Fin.zero) a)
+                            --≡⟨ cong (λ y → (wₐ + y , giveArg (mk-multiary Fin.zero ) a)) H' ⟩
+                            --    (wₐ + wₜ , giveArg t a)
+                            --≡⟨ cong (λ y → (wₐ + (ℕ.suc $ cardToℕ {fin 2} y) 
+                            --                , giveArg (mk-multiary y) a)) 
+                            --        p ⟩
+                            --    (wₐ + (ℕ.suc $ cardToℕ {fin 2} c) 
+                            --     , 
+                            --     giveArg (mk-multiary c) a)
+                            ≡⟨ ? ⟩
+                                (wₐ + wₜ , giveArg t a)
+                            ≡∎
+                sublemma (Fin.suc Fin.zero) p = {! !}
+
+                --θz≡inp : {z' : ℤ'} → (z' ≡ z) → θ z' ≡ inp
+                --θz≡inp refl =
+                --    ≡begin 
+                --        θ z
+                --    ≡⟨⟩
+                --        θ (getSP c a')
+                --    ≡⟨ getSP-correctness c a' ⟩
+                --        get𝐒𝐏 c (θ a')
+                --    ≡⟨ cong (get𝐒𝐏 c) θa'≡a ⟩
+                --        get𝐒𝐏 c (wₐ , a)
+                --    ≡⟨ cong (λ y → (y , giveArg (mk-multiary c) a)) (get𝐒𝐏-lemma wₐ a c) ⟩
+                --        (wₐ + ℕ.suc (cardToℕ c) , {! giveArg (mk-multiary c) a !} )
+                --    ≡⟨ ? ⟩
+                --        (wₐ + wₜ , giveArg t a)
+                --    ≡∎
+                    
+                        
+
 
     open θIsEquiv
 
