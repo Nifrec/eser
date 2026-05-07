@@ -55,6 +55,39 @@ module WithSignature
         → IsGiveArg (subst (λ x → OT x n) p (giveArg t a))
     giveArgUnderSubst refl t a = tt
 
+    OT-Arg-Unfolded : ℕ → ℕ → Set
+    OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
+                       (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)))
+
+    -- This needs to be defines for all (w , n)
+    -- otherwise we cannot pattern match the input to f
+    -- to something of the form `giveArg t a`, since w would be
+    -- fixed and Agda can't assume arbitrary wₜ and wₐ if there
+    -- is a constraint wₜ + wₐ ≗ w for non-variable w. 
+    Eq-Arg-FirstStep : (w n : ℕ) → OT-Arg w n ≃ OT-Arg-Unfolded w n
+    Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
+        where
+        f : (OT-Arg w n) → OT-Arg-Unfolded w n
+        f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
+        f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
+        f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
+        f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
+        f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
+            let t = subst (λ x → OT x n) p (giveArg t' a)
+            in (t , giveArgUnderSubst p t' a)
+        invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+        invˡ {(wₐ , wₜ , refl) , t , a} {ta , isGiveArg} refl = refl
+        invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+        invʳ {giveArg {ℕ.zero} {wₐ} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
+        invʳ {giveArg {wₜ} {ℕ.zero} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S 0 a
+        invʳ {giveArg {ℕ.suc wₜ} {ℕ.suc wₐ} t a , tt} {(wₐ , wₜ , refl) , t , a} refl = 
+            let H = proj₂ $ f⁻¹ ((wₐ , wₜ , refl) , t , a) in
+            ≡begin 
+                f⁻¹ ((wₐ , wₜ , refl) , t , a) 
+            ≡⟨⟩
+                ((giveArg t a) , tt)
+            ≡∎
+
     -- Submodule that also assumes a given weight w and num-remaining-args n
     -- plus the ability to perfrom Well-Founded recursion on w.
     module AlsoWithW-1&Rec&N
@@ -92,38 +125,6 @@ module WithSignature
                 ((Fin $ Zₜ s n ) × (Fin $ Zₐ s ))
         Eq-split n s = ≃-× (Hₜ s n) (Hₐ s) 
 
-        OT-Arg-Unfolded : ℕ → ℕ → Set
-        OT-Arg-Unfolded w n = (Σ[ (wₐ , wₜ , p) ∈ (Splits w) ]( 
-                           (OT (ℕ.suc wₜ) (ℕ.suc n)) × (OT (ℕ.suc wₐ) 0)))
-
-        -- This needs to be defines for all (w , n)
-        -- otherwise we cannot pattern match the input to f
-        -- to something of the form `giveArg t a`, since w would be
-        -- fixed and Agda can't assume arbitrary wₜ and wₐ if there
-        -- is a constraint wₜ + wₐ ≗ w for non-variable w. 
-        Eq-Arg-FirstStep : (w n : ℕ) → OT-Arg w n ≃ OT-Arg-Unfolded w n
-        Eq-Arg-FirstStep w n = mk≃' f f⁻¹ invˡ invʳ
-            where
-            f : (OT-Arg w n) → OT-Arg-Unfolded w n
-            f (giveArg {suc wₜ} {suc wₐ} t a , tt) = ((wₐ , wₜ , refl) , t , a)
-            f (giveArg {ℕ.zero} {wₐ} t a , tt) = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
-            f (giveArg {wₜ} {ℕ.zero} t a , tt) = ⊥-elim $ noWeightlessTerms S 0 a
-            f⁻¹ : OT-Arg-Unfolded w n → (OT-Arg w n)
-            f⁻¹ ((wₐ , wₜ , p) , t' , a) = 
-                let t = subst (λ x → OT x n) p (giveArg t' a)
-                in (t , giveArgUnderSubst p t' a)
-            invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-            invˡ {(wₐ , wₜ , refl) , t , a} {ta , isGiveArg} refl = refl
-            invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-            invʳ {giveArg {ℕ.zero} {wₐ} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S (ℕ.suc n) t
-            invʳ {giveArg {wₜ} {ℕ.zero} t a , tt} {x} p = ⊥-elim $ noWeightlessTerms S 0 a
-            invʳ {giveArg {ℕ.suc wₜ} {ℕ.suc wₐ} t a , tt} {(wₐ , wₜ , refl) , t , a} refl = 
-                let H = proj₂ $ f⁻¹ ((wₐ , wₜ , refl) , t , a) in
-                ≡begin 
-                    f⁻¹ ((wₐ , wₜ , refl) , t , a) 
-                ≡⟨⟩
-                    ((giveArg t a) , tt)
-                ≡∎
 
         -- It's easier to compute Z-Arg and prove the equivalence
         -- in one go, than to define Z-Arg beforehand.
