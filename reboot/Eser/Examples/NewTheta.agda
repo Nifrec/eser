@@ -109,12 +109,9 @@ module WithWeights where
 
 
 
-    --open ForSignature {fin 0} {fin 1} ℤSig
-    --    hiding (𝕋) -- That's `C` already
-    --    renaming
-    --    (𝕋≃ℕ to C≃ℕ)
-    ----------------------------------------------------------------------------
-    -- Equivalence between Agda-data-type ℤ' and closed terms over ℤSig --------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+  -- Equivalence between Agda-data-type ℤ' and closed terms over ℤSig 
+--------------------------------------------------------------------------------
     𝟎 : CNW
     𝟎 = mk-nullary-nw Fin.zero
 
@@ -186,6 +183,7 @@ module WithWeights where
                     → (z : ℤ')
                     → γ (γ⁻¹lemma {n} t p z) ≡ giveArg-nw (subst OTNW p t) (γ z)
                 γγ⁻¹-lemma {n} (mk-multiary-nw Fin.zero) refl z = 
+                    -- Note: every step is a judgemental equality (i.e., refl).
                     ≡begin 
                         γ (γ⁻¹lemma (mk-multiary-nw Fin.zero) refl z)
                     ≡⟨⟩
@@ -201,11 +199,21 @@ module WithWeights where
                 -- Same as above but with Fin.suc Fin.zero instead of Fin.zero. 
                 γγ⁻¹-lemma {n} (mk-multiary-nw (Fin.suc Fin.zero)) refl z = refl
                 γγ⁻¹-lemma {n} (giveArg-nw t a) p z = ⊥-elim $ OTNW-2-empty p t
-            
+
         invʳ : Inverseʳ _≡_ _≡_ γ γ⁻¹
         invʳ {O} {x} refl = refl
-        invʳ {S y} {x} refl = {! !}
-        invʳ {P y} {x} refl = {! !}
+        invʳ {S y} {x} refl = 
+            ≡begin 
+               (γ⁻¹ $ γ $ S y)
+            ≡⟨⟩
+               (γ⁻¹ $ 𝐒 $ γ y)
+            ≡⟨⟩
+               (S $ γ⁻¹ $ γ y)
+            ≡⟨ cong S (invʳ refl) ⟩
+                S y 
+            ≡∎
+        -- Same as above, but with P i.o. S. 
+        invʳ {P y} {x} refl = cong P (invʳ refl)
     
     open ForSignature {fin 0} {fin 1} ℤSig
         hiding (𝕋) -- That's `C` already
@@ -217,6 +225,4 @@ module WithWeights where
 
     ℤ'≃ℕ : ℤ' ≃ ℕ
     ℤ'≃ℕ = ≃-trans ℤ'≃CNW (≃-trans CNW≃C C≃ℕ)
-    --γ∘γ⁻¹≈id : (γ ∘ γ⁻¹) ≈ id {_} {CNW}
-    --γ∘γ⁻¹≈id = ≃-toFrom ℤ'≃CNW
 
