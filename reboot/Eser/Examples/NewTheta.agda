@@ -138,39 +138,70 @@ module WithWeights where
     aritiesAtMost1 {Fin.zero} (s≤s ())
     aritiesAtMost1 {Fin.suc Fin.zero} (s≤s ())
 
-    OTNW-2-empty : (n : ℕ) → (2 ≤ n) → OTNW n → ⊥
-    OTNW-2-empty 0 p (mk-nullary-nw c) = 1+n≰n (≤-trans p (z≤n {1}))
-    OTNW-2-empty n p (mk-multiary-nw c) = aritiesAtMost1 p
-    OTNW-2-empty n p (giveArg-nw t a) =
+    OTNW-n≥2-empty : (n : ℕ) → (2 ≤ n) → OTNW n → ⊥
+    OTNW-n≥2-empty 0 p (mk-nullary-nw c) = 1+n≰n (≤-trans p (z≤n {1}))
+    OTNW-n≥2-empty n p (mk-multiary-nw c) = aritiesAtMost1 p
+    OTNW-n≥2-empty n p (giveArg-nw t a) =
         -- t has 1+n hols and 2 ≤ n implies also 2 ≤ 1+n; so recurse on t.
-        OTNW-2-empty (ℕ.suc n) (≤-trans p (n≤1+n n)) t
+        OTNW-n≥2-empty (ℕ.suc n) (≤-trans p (n≤1+n n)) t
+
+    OTNW-2-empty : {n : ℕ} → n ≡ 1 → OTNW (ℕ.suc n) → ⊥
+    OTNW-2-empty p t = OTNW-n≥2-empty 2 (≤-refl) 
+                                    $ subst (λ y → OTNW (ℕ.suc y)) p t
+
+    γ⁻¹lemma : {n : ℕ} → OTNW n → n ≡ 1 → ℤ' → ℤ'
+    γ⁻¹lemma (mk-multiary-nw Fin.zero) p = S
+    γ⁻¹lemma (mk-multiary-nw (Fin.suc Fin.zero)) p = P
+    γ⁻¹lemma (giveArg-nw t' a') p = ⊥-elim contra
+        where
+            contra : ⊥
+            contra = OTNW-2-empty p t'
 
     γ⁻¹ : CNW → ℤ'
     γ⁻¹ (mk-nullary-nw Fin.zero) = O
-    γ⁻¹ (giveArg-nw t a) = sublemma {1} t refl (γ⁻¹ a)
-        where
-            sublemma : {n : ℕ} → OTNW n → n ≡ 1 → ℤ' → ℤ'
-            sublemma (mk-multiary-nw Fin.zero) p = S
-            sublemma (mk-multiary-nw (Fin.suc Fin.zero)) p = P
-            sublemma t@(giveArg-nw t' a') p = ⊥-elim contra
-                where
-                    contra : ⊥
-                    contra = OTNW-2-empty 2 (Data.Nat.Properties.≤-refl) 
-                                          $ subst (λ y → OTNW (ℕ.suc y)) p t' 
-    surjγ : Surjective _≡_ _≡_ γ
-    surjγ = ?
-    injγ : Injective _≡_ _≡_ γ
-    injγ = ?
+    γ⁻¹ (giveArg-nw t a) = γ⁻¹lemma {1} t refl (γ⁻¹ a)
 
-    --ℤ'≃CNW : ℤ' ≃ CNW
-    --ℤ'≃CNW = ≃-from-inj-surj γ injγ surjγ
-
-    --γ⁻¹ : CNW → ℤ'
-    --γ⁻¹ =  ≃-from ℤ'≃CNW 
     ℤ'≃CNW = mk≃' γ γ⁻¹ invˡ invʳ
         where
         invˡ : Inverseˡ _≡_ _≡_ γ γ⁻¹
-        invˡ {x} {y} refl = ?
+        invˡ {mk-nullary-nw Fin.zero} {y} refl = refl
+        invˡ {giveArg-nw t a} {y} refl = 
+            ≡begin 
+                (γ $ γ⁻¹ $ giveArg-nw t a)
+            ≡⟨⟩ -- Unfold definition of γ⁻¹ one step.
+                γ (γ⁻¹lemma {1} t refl (γ⁻¹ a))
+            ≡⟨  γγ⁻¹-lemma {1} t refl (γ⁻¹ a) ⟩
+                giveArg-nw (subst OTNW refl t) (γ $ γ⁻¹ a)
+            ≡⟨⟩ -- subst normalises on input refl.
+                giveArg-nw t (γ $ γ⁻¹ a)
+                -- Apply IH to rewrite γ (γ⁻¹ a) ≡ a
+            ≡⟨ cong (giveArg-nw t) $ invˡ refl ⟩ 
+                giveArg-nw t a
+            ≡∎
+            where
+                γγ⁻¹-lemma
+                    : {n : ℕ} 
+                    → (t : OTNW n)
+                    → (p : n ≡ 1)
+                    → (z : ℤ')
+                    → γ (γ⁻¹lemma {n} t p z) ≡ giveArg-nw (subst OTNW p t) (γ z)
+                γγ⁻¹-lemma {n} (mk-multiary-nw Fin.zero) refl z = 
+                    ≡begin 
+                        γ (γ⁻¹lemma (mk-multiary-nw Fin.zero) refl z)
+                    ≡⟨⟩
+                        γ (S z)
+                    ≡⟨⟩
+                        𝐒 (γ z)
+                    ≡⟨⟩
+                        giveArg-nw (mk-multiary-nw Fin.zero) (γ z)
+                    ≡⟨⟩
+                        giveArg-nw (subst OTNW refl (mk-multiary-nw Fin.zero)) 
+                                   (γ z)
+                    ≡∎
+                -- Same as above but with Fin.suc Fin.zero instead of Fin.zero. 
+                γγ⁻¹-lemma {n} (mk-multiary-nw (Fin.suc Fin.zero)) refl z = refl
+                γγ⁻¹-lemma {n} (giveArg-nw t a) p z = ⊥-elim $ OTNW-2-empty p t
+            
         invʳ : Inverseʳ _≡_ _≡_ γ γ⁻¹
         invʳ {O} {x} refl = refl
         invʳ {S y} {x} refl = {! !}
