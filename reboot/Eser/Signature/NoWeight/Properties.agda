@@ -258,13 +258,14 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         -- Agda fails to infer the underlying types when only writing 'proj₂'.
         RHS-proj₂ = proj₂ {A = ℕ} {B = λ n → Σ[ w ∈ ℕ ] OT w n}
 
-
         -- #TODO: fix termination by WF recursion on weights or so.
         -- wₐ < w and wₜ < w are easy to prove.
         invˡ : Inverseˡ _≡_ _≡_ α ϕ
         invˡ {n , w , mk-nullary c} {y} refl = refl
         invˡ {n , w , mk-multiary c} {y} refl = refl
         invˡ {n , w , giveArg {wₜ} {wₐ} t a} {y} refl = 
+            -- The 'let ... in' is needed because we need to explicitly give the
+            -- base type of the equality. Otherwise Agda infers the wrong type.
             let H : _≡_ {A = RHS} (α (ϕ (n , wₐ + wₜ , giveArg t a))) 
                                   (n , wₐ + wₜ , giveArg t a)
                 H = 
@@ -286,54 +287,6 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                        (n , wₐ + wₜ , giveArg t a) 
                     ≡∎
             in H
-                
-            --   (n , giveArg*** n 
-            --        ((ℕ.suc n , wₜ' , t') , refl {x = ℕ.suc n})
-            --        ((0       , wₐ' , a') , refl {x = 0})
-            --        )
-            --        --(proj₂ {B = λ n → Σ[ w ∈ ℕ ] OT w n} (ℕ.suc n , wₜ' , t')) 
-            --        --(proj₂ {B = λ n → Σ[ w ∈ ℕ ] OT w n} (0 , wₐ' , a')))
-            ----≡⟨ cong₂ (λ x y → (n , giveArg*** n x y))
-            ----            {! check-t-tuple!} ?
-            ----              --({!cong (λ x → (x , refl)) $ sym t-rec!}) 
-            ----              --({!cong (λ y → (y , refl)) $ sym a-rec!}) 
-            ----    ⟩
-            --≡⟨ subst (λ x → (n , giveArg*** n 
-            --                        ((ℕ.suc n , wₜ' , t') , refl {x = ℕ.suc n}) 
-            --                        ((0       , wₐ' , a') , refl {x = 0}))
-            --                ≡ 
-            --                (n , giveArg*** n x ((0       , wₐ' , a') , refl {x = 0})))
-            --            {! check-t-tuple !}
-            --            refl
-            --              --({!cong (λ x → (x , refl)) $ sym t-rec!}) 
-            --              --({!cong (λ y → (y , refl)) $ sym a-rec!}) 
-            --    ⟩
-            ----≡⟨ doubleSubst 
-            ----    (λ x y → (n , giveArg** n (ℕ.suc n , wₜ' , t') (0 , wₐ' , a') refl refl) 
-            ----             ≡ 
-            ----             (n , giveArg** n x y refl refl)
-            ----    )
-            ----              (sym t-rec) 
-            ----              (sym a-rec) 
-            ----              refl
-            ----    ⟩
-            --   (n , giveArg*** n 
-            --        ((ℕ.suc n , wₜ , t) , refl)
-            --        ((0       , wₐ' , a') , refl)
-            --        )
-            --   ≡⟨ ? ⟩
-                   
-            --   (n , giveArg*** n 
-            --        ((ℕ.suc n , wₜ , t) , refl)
-            --        ((0       , wₐ , a) , refl)
-            --        )
-            --   --(n , giveArg** n 
-            --   --     (ℕ.suc n , wₜ , t)
-            --   --     (0       , wₐ , a)
-            --   --     refl
-            --   --     refl
-            --   --     )
-            
             where
                 wₜ' : ℕ
                 wₜ' = (proj₁ $ addWeight $ forgetWeight' (wₜ , t)) 
@@ -346,23 +299,6 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
 
                 t-rec : α (ϕ (ℕ.suc n , wₜ , t)) ≡ (ℕ.suc n , wₜ , t)
                 t-rec = invˡ {(ℕ.suc n , wₜ , t)} {ϕ (ℕ.suc n , wₜ , t)} refl
-
-                check-wₜ : (proj₁ $ proj₂ $ α $ ϕ (ℕ.suc n , wₜ , t)) ≡ wₜ'
-                check-wₜ = refl
-
-                check-t :  (proj₂ $ proj₂ $ α $ ϕ (ℕ.suc n , wₜ , t)) ≡ t'
-                check-t =  refl
-
-                ---- When not giving the base type, it type checks.
-                ---- But then it probably takes the wrong base type,
-                ---- I guess the weaker: Σ[ x ∈ RHS ] (ℕ.suc n ≡ ℕ.suc n)
-                --check-t-tuple : _≡_ {A = Σ[ x ∈ RHS ] (proj₁ x ≡ ℕ.suc n)}
-                --                ((ℕ.suc n , wₜ' , t') , refl {x = ℕ.suc n}) 
-                --                ((ℕ.suc n , wₜ , t) , refl {x = ℕ.suc n})
-                --check-t-tuple = {! cong (λ x → (x , refl {x = ℕ.suc n})) t-rec !}
-
-                check-t-tuple : _≡_ {A = RHS} (ℕ.suc n , wₜ' , t') (ℕ.suc n , wₜ , t)
-                check-t-tuple = t-rec
 
                 t-rec' : _≡_ {A = Σ[ n ∈ ℕ ] Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n)}
                    (n , wₜ' , t') (n , wₜ , t) 
@@ -395,48 +331,8 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                         t'-tuple : Σ[ n ∈ ℕ ] Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n)
                         t'-tuple = projcast-t n (ℕ.suc n , wₜ' , t') refl
 
-                    --projcast i x refl = proj₂ x
-                    --    open SigmaCasts {I = ℕ} {A = λ n → Σ[ w ∈ ℕ ] OT w n} 
-                    --    t-tuple : Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n)
-                    --    t-tuple = projcast (ℕ.suc n) (ℕ.suc n , wₜ , t) refl
-                    ---- cong (λ x → (n ,  proj₂ x)) check-t-tuple
-
                 a-rec : α (ϕ (0 , wₐ , a)) ≡ (0 , wₐ , a)
                 a-rec = invˡ {(0 , wₐ , a)} {ϕ (0 , wₐ , a)} refl
-
-                check-wₐ : (proj₁ $ proj₂ $ α $ ϕ (0 , wₐ , a)) ≡ wₐ'
-                check-wₐ = refl
-
-                check-a :  (proj₂ $ proj₂ $ α $ ϕ (0 , wₐ , a)) ≡ a'
-                check-a =  refl
-
-                wₜ-equiv : wₜ' ≡ wₜ
-                wₜ-equiv = cong (proj₁ ∘ proj₂) t-rec
-                wₐ-equiv : wₐ' ≡ wₐ
-                wₐ-equiv = cong (proj₁ ∘ proj₂) a-rec
-
-                giveArg*
-                    : (n : ℕ)
-                    → Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n)
-                    → Σ[ wₐ ∈ ℕ ] OT wₐ 0
-                    → Σ[ w ∈ ℕ ] OT w n
-                giveArg* n (wₜ , t) (wₐ , a) = (wₐ + wₜ , giveArg t a)
-
-                giveArg**
-                    : (n : ℕ)
-                    → (nwt : RHS)
-                    → (nwa : RHS)
-                    → proj₁ nwt ≡ ℕ.suc n
-                    → proj₁ nwa ≡ 0
-                    → Σ[ w ∈ ℕ ] OT w n
-                giveArg** n (ℕ.suc n , wₜ , t) (0 , wₐ , a) refl refl = (wₐ + wₜ , giveArg t a)
-
-                giveArg***
-                    : (n : ℕ)
-                    → (nwtp : Σ[ x ∈ RHS ] (proj₁ x ≡ ℕ.suc n))
-                    → (nwap : Σ[ y ∈ RHS ] (proj₁ y ≡ 0))
-                    → Σ[ w ∈ ℕ ] OT w n
-                giveArg*** n ((ℕ.suc n , wₜ , t), refl) ((0 , wₐ , a), refl) = (wₐ + wₜ , giveArg t a)
 
                 giveArg$
                     : (nwt : Σ[ n ∈ ℕ ] Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n))
@@ -456,99 +352,8 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 a-rec' : _≡_ {A = Σ[ w ∈ ℕ ] OT w 0} (wₐ' , a') (wₐ , a)
                 a-rec' = projcast-≡ 0 (0 , wₐ' , a') (0 , wₐ , a) refl refl a-rec
 
-                -- doubleSubst (λ x y → giveArg* n x y) (cong proj₂ t-rec) (cong proj₂ a-rec) refl
-
-                    
-                --t-equiv : (wₜ' , t') ≡ (wₜ , t)
-                --t-equiv = cong proj₂ t-rec
-
-            --≡begin 
-            --    addWeight (forgetWeight' (wₐ + wₜ , giveArg t a))
-            --≡⟨⟩
-            --    addWeight (giveArg-nw (forgetWeight' (wₜ , t)) 
-            --                          (forgetWeight' (wₐ , a))
-            --              )
-            --≡⟨⟩
-            --    ((proj₁ $ addWeight aNW) + (proj₁ $ addWeight tNW) , giveArg t' a')
-            --≡⟨ ? ⟩
-            --    -- #TODO: use H above. Also make a Hₐ.
-            --    -- Second projections should use substitutions...
-            --    -- Maybe prove strict inversity.
-            --    -- **Or prove injectivity & surjectivity.**
-            --    (wₐ' + wₜ' , giveArg t' a' )
-            --≡⟨ ? ⟩
-            --    (wₐ + wₜ , giveArg t a) 
-            --≡∎
-        --    where
-        --        tNW : OTNW (ℕ.suc n)
-        --        tNW = forgetWeight' (wₜ , t) 
-        --        aNW : OTNW 0
-        --        aNW = forgetWeight' (wₐ , a) 
-                --t-rec : (wₜ , t) ≡ (wₜ' , t')
-                --t-rec = invˡ refl
-                --H : wₜ' ≡ wₜ
-                --H = trans (proj₁AddWeight $ forgetWeight' (wₜ , t)) (weightRecover t)
         invʳ : Inverseʳ _≡_ _≡_ α ϕ
         invʳ {x} {y} refl = ?
-        --invʳ {mk-nullary-nw c} {x} refl = refl
-        --invʳ {mk-multiary-nw c} {x} refl = refl
-        --invʳ {giveArg-nw t a} {x} refl = {! !}
-
-    --OTequiv {n} = mk≃' addWeight forgetWeight' invˡ invʳ
-    --    where
-    --    invˡ : Inverseˡ _≡_ _≡_ addWeight forgetWeight'
-    --    invˡ {w , mk-nullary c} {y} refl = refl
-    --    invˡ {w , mk-multiary c} {y} refl = refl
-    --    invˡ {w , giveArg {wₜ} {wₐ} t a} {y} refl = 
-    --        let t-rec = invˡ {(wₜ , t)} {forgetWeight' (wₜ , t)} refl
-    --        in
-    --        ≡begin 
-    --            addWeight (forgetWeight' (wₐ + wₜ , giveArg t a))
-    --        ≡⟨⟩
-    --            addWeight (giveArg-nw (forgetWeight' (wₜ , t)) 
-    --                                  (forgetWeight' (wₐ , a))
-    --                      )
-    --        ≡⟨⟩
-    --            ((proj₁ $ addWeight aNW) + (proj₁ $ addWeight tNW) , giveArg t' a')
-    --        ≡⟨ ? ⟩
-    --            -- #TODO: use H above. Also make a Hₐ.
-    --            -- Second projections should use substitutions...
-    --            -- Maybe prove strict inversity.
-    --            -- **Or prove injectivity & surjectivity.**
-    --            (wₐ' + wₜ' , giveArg t' a' )
-    --        ≡⟨ ? ⟩
-    --            (wₐ + wₜ , giveArg t a) 
-    --        ≡∎
-    --        where
-    --            tNW : OTNW (ℕ.suc n)
-    --            tNW = forgetWeight' (wₜ , t) 
-    --            aNW : OTNW 0
-    --            aNW = forgetWeight' (wₐ , a) 
-    --            wₜ' : ℕ
-    --            wₜ' = (proj₁ $ addWeight $ forgetWeight' (wₜ , t)) 
-    --            t' : OT wₜ' (ℕ.suc n)
-    --            t' = (proj₂ $ addWeight $ forgetWeight' (wₜ , t)) 
-    --            wₐ' : ℕ
-    --            wₐ' = (proj₁ $ addWeight $ forgetWeight' (wₐ , a)) 
-    --            a' : OT wₐ' 0
-    --            a' = (proj₂ $ addWeight $ forgetWeight' (wₐ , a)) 
-
-    --            --t-rec : (wₜ , t) ≡ (wₜ' , t')
-    --            --t-rec = invˡ refl
-    --            H : wₜ' ≡ wₜ
-    --            H = trans (proj₁AddWeight $ forgetWeight' (wₜ , t)) (weightRecover t)
-    --        --where
-    --        --    t' = forgetWeight' (wₜ , t)
-    --        --    (wₜ'' , t'') = addWeight t'
-                
-    --            --P₁AWₜ = proj₁ $ addWeight t
-    --            --t' = proj₂ $ addWeight t
-    --            --P₁AWₐ = proj₁ $ addWeight {0} a
-    --            --a' = proj₂ $ addWeight {0} a
-    --    invʳ : Inverseʳ _≡_ _≡_ addWeight forgetWeight'
-    --    invʳ {mk-nullary-nw c} {x} refl = refl
-    --    invʳ {mk-multiary-nw c} {x} refl = refl
-    --    invʳ {giveArg-nw t a} {x} refl = {! !}
 
     OTequiv = ≃-curry {ℕ} {OTNW} {λ n → Σ[ w ∈ ℕ ] OT w n} OTequiv-uncurried H
         where
