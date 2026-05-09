@@ -172,12 +172,6 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
             weight (giveArg-nw t a)
         ≡∎
 
-    weightRecover
-        : {w n : ℕ}
-        → (t : OT w n)
-        → weight (forgetWeight' {n} (w , t)) ≡ w
-    weightRecover {w} {n} t = ?
-
     -- #TODO: move to properties-of-equivalences:
     ≃-curry
         : {I : Set}
@@ -266,6 +260,11 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         -- anymore, so the termination checker complains when calling
         -- invˡ directly on those tuples. Luckily wₜ < wₐ + wₜ 
         -- and wₐ < wₐ + wₜ, so (ℕ , <)-recursion comes to the rescue.
+        --
+        -- #TODO: maybe (ℕ , <)-recursion is overkill, and currying
+        -- the implicit arguments (like done for invʳ below)
+        -- will be enough to satisfy the termination-checker.
+        -- This is currently a low-priority implementation-optimisation task.
         open import Data.Nat.Induction using (<-rec)
         Goal : ℕ → Set
         Goal w = (n : ℕ) → (t : OT w n) → (α ∘ ϕ) (n , w , t) ≡ (n , w , t)
@@ -374,9 +373,16 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 a-rec' = projcast-≡ 0 (0 , wₐ' , a') (0 , wₐ , a) refl refl a-rec
 
         invʳ : Inverseʳ _≡_ _≡_ α ϕ
-        invʳ {n , mk-nullary-nw c} {y} refl = refl
-        invʳ {n , mk-multiary-nw c} {y} refl = refl
-        invʳ {n , giveArg-nw t a} {y} refl = 
+
+        Goalʳ : Set
+        Goalʳ = (n : ℕ) → (t : OTNW n) → (ϕ ∘ α) (n , t) ≡ (n , t)
+
+        invʳ-rec : (n : ℕ) → (t : OTNW n) → (ϕ ∘ α) (n , t) ≡ (n , t)
+        invʳ {n , t} {y} refl = invʳ-rec n t
+
+        invʳ-rec n (mk-nullary-nw c) = refl
+        invʳ-rec n (mk-multiary-nw c) = refl
+        invʳ-rec n (giveArg-nw t a) = 
             let H : _≡_ {A = LHS} (ϕ (α (n , giveArg-nw t a)))
                                     (n , giveArg-nw t a)   
                 H = ≡begin 
@@ -420,13 +426,13 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 open SigmaCasts {ℕ} {λ n → OTNW n}
 
                 t-rec : (ℕ.suc n , t'') ≡ (ℕ.suc n , t)
-                t-rec = invʳ {ℕ.suc n , t} refl
+                t-rec = invʳ-rec (ℕ.suc n) t
 
                 t''≡t : t'' ≡ t
                 t''≡t = projcast-≡ (ℕ.suc n) (ℕ.suc n , t'') (ℕ.suc n , t) refl refl t-rec
 
                 a-rec : (0 , a'') ≡ (0 , a)
-                a-rec = invʳ {0 , a} refl
+                a-rec = invʳ-rec 0 a
 
                 a''≡a : a'' ≡ a
                 a''≡a = projcast-≡ 0 (0 , a'') (0 , a) refl refl a-rec
