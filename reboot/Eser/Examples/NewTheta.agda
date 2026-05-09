@@ -8,8 +8,7 @@
 -- #TODO: this file is temporary and should be integrated with
 -- Eser.Examples.NNFL when done.
 --
--- New implementation for θ ℤ' ≃ AllTerms ℤSig
---
+-- New implementation for the equivalence θ ℤ' ≃ AllTerms ℤSig.
 --------------------------------------------------------------------------------
 
 open import Level
@@ -221,7 +220,7 @@ module WithWeights where
         (𝕋≃ℕ to C≃ℕ)
 
     CNW≃C : CNW ≃ C
-    CNW≃C = OTequiv {fin 1} {fin 2} ℤSig
+    CNW≃C = OTequiv {fin 1} {fin 2} ℤSig 0
 
     ℤ'≃ℕ : ℤ' ≃ ℕ
     ℤ'≃ℕ = ≃-trans ℤ'≃CNW (≃-trans CNW≃C C≃ℕ)
