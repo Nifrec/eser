@@ -157,55 +157,186 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         → weight (forgetWeight' {n} (w , t)) ≡ w
     weightRecover {w} {n} t = ?
 
+    -- Theorem: the open terms with and without weights are the same.
+    -- Implementation note: this is hard to prove directly,
+    -- because the inversity proof 
+    -- in the the giveArg t a case we would like to make recursive call on
+    -- t. But if `giveArg t a` has n holes, then t has `ℕ.suc n` holes,
+    -- while inv̂ˡ would have n hardcoded, and a top-level recursive call
+    -- to OTequiv fails because ℕ.suc n is not smaller than n.
+    -- The solution is to prove that 
+    -- (1) (Σ[n∈ℕ] OTWN n) ≃ (Σ[n∈ℕ]Σ[w∈ℕ] OT w n).
+    -- (2) that this bijection acts as the idenity on the first projections.
     OTequiv
-        : {n : ℕ} 
+        : (n : ℕ) 
         → (OTNW n) ≃ (Σ[ w ∈ ℕ ] (OT w n))
 
-    OTequiv {n} = mk≃' addWeight forgetWeight' invˡ invʳ
+    OTequiv-curried :
+        Σ[ n ∈ ℕ ](OTNW n) ≃ Σ[ n ∈ ℕ ](Σ[ w ∈ ℕ ] OT w n)
+
+    -- #TODO: move to properties-of-equivalences:
+    ≃-curry
+        : {I : Set}
+        → {A B : I → Set}
+        → (H : (Σ[ i ∈ I ] A i) ≃ (Σ[ i ∈ I ] B i))
+        → ((proj₁ ∘ (≃-to H)) ≈ proj₁) -- ^ The equivalence preserves the i.
+        → (i : I) → A i ≃ B i
+    ≃-curry {I} {A} {B} H p i = ans
         where
-        invˡ : Inverseˡ _≡_ _≡_ addWeight forgetWeight'
-        invˡ {w , mk-nullary c} {y} refl = refl
-        invˡ {w , mk-multiary c} {y} refl = refl
-        invˡ {w , giveArg {wₜ} {wₐ} t a} {y} refl = 
-            let tNW = forgetWeight' (wₜ , t) in
-            let aNW = forgetWeight' (wₐ , a) in
-            let t' = (proj₂ $ addWeight $ forgetWeight' (wₜ , t)) in
-            let wₜ' = (proj₁ $ addWeight $ forgetWeight' (wₜ , t)) in
-            let a' = (proj₂ $ addWeight $ forgetWeight' (wₐ , a)) in
-            let wₐ' = (proj₁ $ addWeight $ forgetWeight' (wₐ , a)) in
-            let H : wₜ' ≡ wₜ
-                H = trans (proj₁AddWeight $ forgetWeight' (wₜ , t)) (weightRecover t)
-            in
-            ≡begin 
-                addWeight (forgetWeight' (wₐ + wₜ , giveArg t a))
-            ≡⟨⟩
-                addWeight (giveArg-nw (forgetWeight' (wₜ , t)) 
-                                      (forgetWeight' (wₐ , a))
-                          )
-            ≡⟨⟩
-                ((proj₁ $ addWeight aNW) + (proj₁ $ addWeight tNW) , giveArg t' a')
-            ≡⟨ ? ⟩
-                -- #TODO: use H above. Also make a Hₐ.
-                -- Second projections should use substitutions...
-                -- Maybe prove strict inversity.
-                -- **Or prove injectivity & surjectivity.**
-                (wₜ + wₐ , {! giveArg t' a'!} )
-            ≡⟨ ? ⟩
-                (wₐ + wₜ , giveArg t a) 
-            ≡∎
-            --where
-            --    t' = forgetWeight' (wₜ , t)
-            --    (wₜ'' , t'') = addWeight t'
-                
-                --P₁AWₜ = proj₁ $ addWeight t
-                --t' = proj₂ $ addWeight t
-                --P₁AWₐ = proj₁ $ addWeight {0} a
-                --a' = proj₂ $ addWeight {0} a
+            ans : A i ≃ B i
+            ans = mk≃' f f⁻¹ invˡ invʳ
+                where
+                α = ≃-to H
+                α⁻¹ = ≃-from H
+                -- Because of inversity, the inverse must also preserve indices.
+                p⁻¹ : ((proj₁ ∘ α⁻¹) ≈ proj₁)
+                p⁻¹ (i , b) = 
+                    ≡begin 
+                        (proj₁ ∘ α⁻¹) (i , b)
+                    ≡⟨ sym $ p (α⁻¹ (i , b)) ⟩
+                        (proj₁ ∘ α ∘ α⁻¹) (i , b)
+                    ≡⟨ cong proj₁ $ ≃-toFrom H (i , b) ⟩
+                        i
+                    ≡∎
+
+
+                f : A i → B i
+                f a = subst (λ j → B j) (p (i , a)) (proj₂ (α (i , a)))
+                f⁻¹ : B i → A i
+                f⁻¹ b = subst (λ j → A j) (p⁻¹ (i , b)) (proj₂ (α⁻¹  (i , b)))
+                --invˡ : {a : A i} → {b : B i} → (f⁻¹ a ≡ b) 
+                --    → (p : proj₁ (α (i , a)) ≡ i) 
+                --    → (p⁻¹ : proj₁ (α⁻¹ (i , b) ≡ i) 
+                --    → f a ≡ b 
+                --meh : (a : A i) → (p : proj₁ (α (i , a)) ≡ i) 
+                --    → f⁻¹ (subst (λ j → B j) p (proj₂ (α (i , a)))) ≡ (f⁻¹ (proj₂ (α (i , a))))
+                --meh a refl = ?
+
+                invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+                invˡ {a} {b} refl = 
+                    ≡begin 
+                        f (f⁻¹ a)
+                    ≡⟨⟩
+                        f (subst (λ j → A j) (p⁻¹ (i , a)) (proj₂ (α⁻¹ (i , a))))
+                    ≡⟨ ? ⟩
+                        a
+                    ≡∎
+                    
+                invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+                invʳ {y} {x} refl = ?
             
-        invʳ : Inverseʳ _≡_ _≡_ addWeight forgetWeight'
-        invʳ {mk-nullary-nw c} {x} refl = refl
-        invʳ {mk-multiary-nw c} {x} refl = refl
-        invʳ {giveArg-nw t a} {x} refl = {! !}
+
+    OTequiv = ≃-curry {ℕ} {OTNW} {λ n → Σ[ w ∈ ℕ ] OT w n} OTequiv-curried ?
+
+    OTequiv-curried = mk≃' α ϕ invˡ invʳ where
+        -- Uncurried versions of addWeight and forgetWeight
+        α : Σ[ n ∈ ℕ ](OTNW n) → Σ[ n ∈ ℕ ](Σ[ w ∈ ℕ ] OT w n)
+        α (n , t) = (n , addWeight {n} t)
+        ϕ : Σ[ n ∈ ℕ ](Σ[ w ∈ ℕ ] OT w n) → Σ[ n ∈ ℕ ](OTNW n) 
+        ϕ (n , w , t) = (n , forgetWeight {w} {n} t)
+
+        invˡ : Inverseˡ _≡_ _≡_ α ϕ
+        invˡ {x} {y} refl = ?
+        --invˡ {w , mk-nullary c} {y} refl = refl
+        --invˡ {w , mk-multiary c} {y} refl = refl
+        --invˡ {w , giveArg {wₜ} {wₐ} t a} {y} refl = 
+        --    let t-rec = invˡ {(wₜ , t)} {forgetWeight' (wₜ , t)} refl
+        --    in
+        --    ≡begin 
+        --        addWeight (forgetWeight' (wₐ + wₜ , giveArg t a))
+        --    ≡⟨⟩
+        --        addWeight (giveArg-nw (forgetWeight' (wₜ , t)) 
+        --                              (forgetWeight' (wₐ , a))
+        --                  )
+        --    ≡⟨⟩
+        --        ((proj₁ $ addWeight aNW) + (proj₁ $ addWeight tNW) , giveArg t' a')
+        --    ≡⟨ ? ⟩
+        --        -- #TODO: use H above. Also make a Hₐ.
+        --        -- Second projections should use substitutions...
+        --        -- Maybe prove strict inversity.
+        --        -- **Or prove injectivity & surjectivity.**
+        --        (wₐ' + wₜ' , giveArg t' a' )
+        --    ≡⟨ ? ⟩
+        --        (wₐ + wₜ , giveArg t a) 
+        --    ≡∎
+        --    where
+        --        tNW : OTNW (ℕ.suc n)
+        --        tNW = forgetWeight' (wₜ , t) 
+        --        aNW : OTNW 0
+        --        aNW = forgetWeight' (wₐ , a) 
+        --        wₜ' : ℕ
+        --        wₜ' = (proj₁ $ addWeight $ forgetWeight' (wₜ , t)) 
+        --        t' : OT wₜ' (ℕ.suc n)
+        --        t' = (proj₂ $ addWeight $ forgetWeight' (wₜ , t)) 
+        --        wₐ' : ℕ
+        --        wₐ' = (proj₁ $ addWeight $ forgetWeight' (wₐ , a)) 
+        --        a' : OT wₐ' 0
+        --        a' = (proj₂ $ addWeight $ forgetWeight' (wₐ , a)) 
+                --t-rec : (wₜ , t) ≡ (wₜ' , t')
+                --t-rec = invˡ refl
+                --H : wₜ' ≡ wₜ
+                --H = trans (proj₁AddWeight $ forgetWeight' (wₜ , t)) (weightRecover t)
+        invʳ : Inverseʳ _≡_ _≡_ α ϕ
+        invʳ {x} {y} refl = ?
+        --invʳ {mk-nullary-nw c} {x} refl = refl
+        --invʳ {mk-multiary-nw c} {x} refl = refl
+        --invʳ {giveArg-nw t a} {x} refl = {! !}
+
+    --OTequiv {n} = mk≃' addWeight forgetWeight' invˡ invʳ
+    --    where
+    --    invˡ : Inverseˡ _≡_ _≡_ addWeight forgetWeight'
+    --    invˡ {w , mk-nullary c} {y} refl = refl
+    --    invˡ {w , mk-multiary c} {y} refl = refl
+    --    invˡ {w , giveArg {wₜ} {wₐ} t a} {y} refl = 
+    --        let t-rec = invˡ {(wₜ , t)} {forgetWeight' (wₜ , t)} refl
+    --        in
+    --        ≡begin 
+    --            addWeight (forgetWeight' (wₐ + wₜ , giveArg t a))
+    --        ≡⟨⟩
+    --            addWeight (giveArg-nw (forgetWeight' (wₜ , t)) 
+    --                                  (forgetWeight' (wₐ , a))
+    --                      )
+    --        ≡⟨⟩
+    --            ((proj₁ $ addWeight aNW) + (proj₁ $ addWeight tNW) , giveArg t' a')
+    --        ≡⟨ ? ⟩
+    --            -- #TODO: use H above. Also make a Hₐ.
+    --            -- Second projections should use substitutions...
+    --            -- Maybe prove strict inversity.
+    --            -- **Or prove injectivity & surjectivity.**
+    --            (wₐ' + wₜ' , giveArg t' a' )
+    --        ≡⟨ ? ⟩
+    --            (wₐ + wₜ , giveArg t a) 
+    --        ≡∎
+    --        where
+    --            tNW : OTNW (ℕ.suc n)
+    --            tNW = forgetWeight' (wₜ , t) 
+    --            aNW : OTNW 0
+    --            aNW = forgetWeight' (wₐ , a) 
+    --            wₜ' : ℕ
+    --            wₜ' = (proj₁ $ addWeight $ forgetWeight' (wₜ , t)) 
+    --            t' : OT wₜ' (ℕ.suc n)
+    --            t' = (proj₂ $ addWeight $ forgetWeight' (wₜ , t)) 
+    --            wₐ' : ℕ
+    --            wₐ' = (proj₁ $ addWeight $ forgetWeight' (wₐ , a)) 
+    --            a' : OT wₐ' 0
+    --            a' = (proj₂ $ addWeight $ forgetWeight' (wₐ , a)) 
+
+    --            --t-rec : (wₜ , t) ≡ (wₜ' , t')
+    --            --t-rec = invˡ refl
+    --            H : wₜ' ≡ wₜ
+    --            H = trans (proj₁AddWeight $ forgetWeight' (wₜ , t)) (weightRecover t)
+    --        --where
+    --        --    t' = forgetWeight' (wₜ , t)
+    --        --    (wₜ'' , t'') = addWeight t'
+                
+    --            --P₁AWₜ = proj₁ $ addWeight t
+    --            --t' = proj₂ $ addWeight t
+    --            --P₁AWₐ = proj₁ $ addWeight {0} a
+    --            --a' = proj₂ $ addWeight {0} a
+    --    invʳ : Inverseʳ _≡_ _≡_ addWeight forgetWeight'
+    --    invʳ {mk-nullary-nw c} {x} refl = refl
+    --    invʳ {mk-multiary-nw c} {x} refl = refl
+    --    invʳ {giveArg-nw t a} {x} refl = {! !}
 
 -- Corollary: the no-weight closed terms of a signature can be enumerated,
 -- because the weight-annotated closed terms can.
@@ -218,7 +349,7 @@ infTermAlgEnumNW {μ} {ζ} S = ≃-trans CTNW≃AT AT≃ℕ
         μ' = suc∞ μ
         ζ' = suc∞ ζ
         CTNW≃AT : ClosedTermsNW {μ'} {ζ'} S ≃ AllTerms {μ'} {ζ'} S
-        CTNW≃AT = OTequiv {μ'} {ζ'} S {0}
+        CTNW≃AT = OTequiv {μ'} {ζ'} S 0
 
         AT≃ℕ : AllTerms {μ'} {ζ'} S ≃ ℕ
         AT≃ℕ = infTermAlgEnum {μ} {ζ} S
