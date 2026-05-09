@@ -81,10 +81,15 @@ noWeightlessTerms
     → ⊥ 
 noWeightlessTerms {μ} {ζ} S n t = n≮0 $ allTermsNonzeroWeight S t
 
+
 module _ 
     {μ ζ : ℕ∞} 
     (S : Signature μ ζ) 
     where
+
+    private
+        OT = OpenTerms {μ} {ζ} S
+
     -- The number of open argument-holes in a term is bounded by the 
     -- arities of the constructors.
     -- No term has more holes than any constructor.
@@ -119,3 +124,20 @@ module _
                     ans : ℕ.suc n ≤ arity {μ} {ζ} {S} c
                     ans = Data.Nat.Properties.≤-trans (n≤1+n $ ℕ.suc n) p
             
+    -- The next two lemmas state that given a term `giveArg t a`
+    -- then both t' and a have a smaller weight than the `giveArg t a` term has.
+    giveArgSmallerWeight-left
+        : {n wₐ wₜ : ℕ}
+        → (t : OT wₜ (ℕ.suc n))
+        → (a : OT wₐ 0)
+        → wₜ < wₐ + wₜ
+    giveArgSmallerWeight-left {n} {wₐ} {wₜ} t a = 
+            m<n+m wₜ $ allTermsNonzeroWeight S a
+        
+    giveArgSmallerWeight-right
+        : {n wₐ wₜ : ℕ}
+        → (t : OT wₜ (ℕ.suc n))
+        → (a : OT wₐ 0)
+        → wₐ < wₐ + wₜ
+    giveArgSmallerWeight-right {n} {wₐ} {wₜ} t a = 
+            m<m+n wₐ $ allTermsNonzeroWeight S t

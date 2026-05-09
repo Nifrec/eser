@@ -36,6 +36,7 @@ open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
 open import Eser.Card
 open import Eser.Signature.Definitions
+open import Eser.Signature.Properties
 open import Eser.Signature.MainTheorem
 open import Eser.Signature.NoWeight.Definitions
 open import Eser.Equivalences
@@ -258,12 +259,26 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         -- Agda fails to infer the underlying types when only writing 'proj₂'.
         RHS-proj₂ = proj₂ {A = ℕ} {B = λ n → Σ[ w ∈ ℕ ] OT w n}
 
-        -- #TODO: fix termination by WF recursion on weights or so.
-        -- wₐ < w and wₜ < w are easy to prove.
+        -- invˡ requires (ℕ , <)-well-founded recursion on weights of terms,
+        -- because the `t` and `a` meta-subterms of a (n , wₐ + wₜ , giveArg t a)
+        -- input must be tupled to `(ℕ.suc n , wₜ , t)` 
+        -- and `(0 , wₐ , a)` before they are terms of RHS.
+        -- But those tuples are not meta-subterms of (n , wₐ + wₜ , giveArg t a)
+        -- anymore, so the termination checker complains when calling
+        -- invˡ directly on those tuples. Luckily wₜ < wₐ + wₜ 
+        -- and wₐ < wₐ + wₜ, so (ℕ , <)-recursion comes to the rescue.
+        open import Data.Nat.Induction using (<-rec)
+        Goal : ℕ → Set
+        Goal w = (n : ℕ) → (t : OT w n) → (α ∘ ϕ) (n , w , t) ≡ (n , w , t)
+
         invˡ : Inverseˡ _≡_ _≡_ α ϕ
-        invˡ {n , w , mk-nullary c} {y} refl = refl
-        invˡ {n , w , mk-multiary c} {y} refl = refl
-        invˡ {n , w , giveArg {wₜ} {wₐ} t a} {y} refl = 
+        invˡ-rec : (w : ℕ) → ({w' : ℕ} → w' < w → Goal w') → Goal w
+
+        invˡ {n , w , t} {y} refl = <-rec Goal invˡ-rec w n t
+
+        invˡ-rec w rec n (mk-nullary c) = refl
+        invˡ-rec w rec n (mk-multiary c) = refl
+        invˡ-rec w rec n (giveArg {wₜ} {wₐ} t a) =
             -- The 'let ... in' is needed because we need to explicitly give the
             -- base type of the equality. Otherwise Agda infers the wrong type.
             let H : _≡_ {A = RHS} (α (ϕ (n , wₐ + wₜ , giveArg t a))) 
@@ -272,7 +287,8 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                     ≡begin 
                         α (ϕ (n , wₐ + wₜ , giveArg t a))
                     ≡⟨⟩ -- Unfold ϕ
-                        α (n , giveArg-nw (forgetWeight' (wₜ , t)) (forgetWeight' (wₐ , a)))
+                        α (n , giveArg-nw (forgetWeight' (wₜ , t)) 
+                                          (forgetWeight' (wₐ , a)))
                     ≡⟨⟩ -- Unfold α
                         (n , (wₐ' + wₜ' , giveArg t' a'))
                     ≡⟨⟩
@@ -298,7 +314,10 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 a' = (proj₂ $ addWeight $ forgetWeight' (wₐ , a)) 
 
                 t-rec : α (ϕ (ℕ.suc n , wₜ , t)) ≡ (ℕ.suc n , wₜ , t)
-                t-rec = invˡ {(ℕ.suc n , wₜ , t)} {ϕ (ℕ.suc n , wₜ , t)} refl
+                t-rec = rec {wₜ} wₜ<w (ℕ.suc n) t
+                    where
+                        wₜ<w : wₜ < wₐ + wₜ
+                        wₜ<w = giveArgSmallerWeight-left S t a
 
                 t-rec' : _≡_ {A = Σ[ n ∈ ℕ ] Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n)}
                    (n , wₜ' , t') (n , wₜ , t) 
@@ -332,7 +351,10 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                         t'-tuple = projcast-t n (ℕ.suc n , wₜ' , t') refl
 
                 a-rec : α (ϕ (0 , wₐ , a)) ≡ (0 , wₐ , a)
-                a-rec = invˡ {(0 , wₐ , a)} {ϕ (0 , wₐ , a)} refl
+                a-rec = rec {wₐ} wₐ<w 0 a
+                    where
+                        wₐ<w : wₐ < wₐ + wₜ
+                        wₐ<w = giveArgSmallerWeight-right S t a
 
                 giveArg$
                     : (nwt : Σ[ n ∈ ℕ ] Σ[ wₜ ∈ ℕ ] OT wₜ (ℕ.suc n))
