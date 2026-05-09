@@ -244,8 +244,7 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         : (n : ℕ) 
         → (OTNW n) ≃ (Σ[ w ∈ ℕ ] (OT w n))
 
-    OTequiv-uncurried :
-        Σ[ n ∈ ℕ ](OTNW n) ≃ Σ[ n ∈ ℕ ](Σ[ w ∈ ℕ ] OT w n)
+    OTequiv-uncurried : Σ[ n ∈ ℕ ](OTNW n) ≃ Σ[ n ∈ ℕ ](Σ[ w ∈ ℕ ] OT w n)
 
     -- Uncurried versions of addWeight and forgetWeight
     α : Σ[ n ∈ ℕ ](OTNW n) → Σ[ n ∈ ℕ ](Σ[ w ∈ ℕ ] OT w n)
@@ -375,7 +374,63 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 a-rec' = projcast-≡ 0 (0 , wₐ' , a') (0 , wₐ , a) refl refl a-rec
 
         invʳ : Inverseʳ _≡_ _≡_ α ϕ
-        invʳ {x} {y} refl = ?
+        invʳ {n , mk-nullary-nw c} {y} refl = refl
+        invʳ {n , mk-multiary-nw c} {y} refl = refl
+        invʳ {n , giveArg-nw t a} {y} refl = 
+            let H : _≡_ {A = LHS} (ϕ (α (n , giveArg-nw t a)))
+                                    (n , giveArg-nw t a)   
+                H = ≡begin 
+                        ϕ (α (n , giveArg-nw t a))
+                    ≡⟨⟩
+                        ϕ (n , wₐ + wₜ , giveArg t' a')
+                    ≡⟨⟩
+                        (n , giveArg-nw t'' a'')   
+                    ≡⟨⟩
+                        giveArg-nw* n t'' a''
+                    ≡⟨ cong₂ (λ x y → giveArg-nw* n x y) t''≡t a''≡a ⟩
+                        giveArg-nw* n t a
+                    ≡⟨⟩
+                        (n , giveArg-nw t a)   
+                    ≡∎
+                in H
+            where
+                LHS : Set
+                LHS = Σ[ n ∈ ℕ ](OTNW n)
+                giveArg-nw*
+                    : (n : ℕ)
+                    → (t : OTNW (ℕ.suc n))
+                    → (a : OTNW 0)
+                    → LHS
+                giveArg-nw* n t a = (n , giveArg-nw t a)
+                
+
+                wₜ : ℕ
+                wₜ = (proj₁ $ addWeight t) 
+                t' : OT wₜ (ℕ.suc n)
+                t' = (proj₂ $ addWeight t)
+                t'' : OTNW (ℕ.suc n)
+                t'' = forgetWeight t'
+                wₐ : ℕ
+                wₐ = (proj₁ $ addWeight a)
+                a' : OT wₐ 0
+                a' = (proj₂ $ addWeight a)
+                a'' : OTNW 0
+                a'' = forgetWeight a'
+
+                open SigmaCasts {ℕ} {λ n → OTNW n}
+
+                t-rec : (ℕ.suc n , t'') ≡ (ℕ.suc n , t)
+                t-rec = invʳ {ℕ.suc n , t} refl
+
+                t''≡t : t'' ≡ t
+                t''≡t = projcast-≡ (ℕ.suc n) (ℕ.suc n , t'') (ℕ.suc n , t) refl refl t-rec
+
+                a-rec : (0 , a'') ≡ (0 , a)
+                a-rec = invʳ {0 , a} refl
+
+                a''≡a : a'' ≡ a
+                a''≡a = projcast-≡ 0 (0 , a'') (0 , a) refl refl a-rec
+            
 
     OTequiv = ≃-curry {ℕ} {OTNW} {λ n → Σ[ w ∈ ℕ ] OT w n} OTequiv-uncurried H
         where
