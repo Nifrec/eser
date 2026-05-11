@@ -8,6 +8,9 @@
 -- Proof that the normal form function satisfies, for all n : ℕ:
 -- nf-fix : nf (nf n) ≡ nf n
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --lossy-unification #-}
+
 open import Data.Nat
 open import Relation.Binary.PropositionalEquality
 
@@ -16,8 +19,16 @@ open import Eser.Equivalences.Properties
 
 module Eser.Examples.Integers.NFFix where
 
-open import Eser.Examples.Integers.Definitions
+open import Eser.Examples.Integers.Definitions hiding (elift)
 open import Eser.Examples.Integers.DirectEncProperties
-module ℤ'≃ℕ-lifts = Elift {ℤ'} ℤ'≃ℕ
+
+opaque
+    test : ℤ'  ≃ ℕ
+    test = ℤ'≃ℕ
+
+--module ℤ'≃ℕ-lifts = Elift {ℤ'} ℤ'≃ℕ
+--module ℤ'≃ℕ-lifts = Elift {ℤ'} {ℕ} test
+--open Elift {ℤ'} {ℕ} ℤ'≃ℕ
+open Elift {ℤ'} {ℕ} test
 nf-fix : (n : ℕ) → elift f (elift f n) ≡ elift f n
-nf-fix = ℤ'≃ℕ-lifts.elift-fix f f-fix
+nf-fix = elift-fix f f-fix

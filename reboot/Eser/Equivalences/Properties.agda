@@ -122,52 +122,55 @@ module Elift
     {A B : Set}
     (A≃B : A ≃ B)
     where
-    open EquivShorthands A≃B
+    open EquivShorthands A≃B public
     open import Relation.Binary.Core
 
-    elift-leq
-        : (_<A_ : Rel A 0ℓ)
-        → (_<B_ : Rel B 0ℓ)
-        → (f : A → A)
-        → ((a : A) → f a <A a)
-        → (_Presv_To_ {A} {B} φ _<A_ _<B_)
-        → ((b : B) → (elift f) b <B b)
-    elift-leq _<A_ _<B_ f H K b = ans
-        where
-            a : A
-            a = φ⁻¹ b
+    opaque
 
-            KHa : φ (f a) <B φ a
-            KHa = K (f a) a (H a)
+        elift-leq
+            : (_<A_ : Rel A 0ℓ)
+            → (_<B_ : Rel B 0ℓ)
+            → (f : A → A)
+            → ((a : A) → f a <A a)
+            → (_Presv_To_ {A} {B} φ _<A_ _<B_)
+            → ((b : B) → (elift f) b <B b)
+        elift-leq _<A_ _<B_ f H K b = ans
+            where
+                a : A
+                a = φ⁻¹ b
 
-            -- Unfold a in the definition above.
-            KHa' : (φ ∘ f ∘ φ⁻¹) b <B φ (φ⁻¹ b)
-            KHa' = KHa
+                KHa : φ (f a) <B φ a
+                KHa = K (f a) a (H a)
 
-            -- Apply inversity on KHa'
-            ans = subst (λ x → (φ ∘ f ∘ φ⁻¹) b <B x) (φ∘φ⁻¹≈id b) KHa'
+                -- Unfold a in the definition above.
+                KHa' : (φ ∘ f ∘ φ⁻¹) b <B φ (φ⁻¹ b)
+                KHa' = KHa
 
-    elift-fix
-        : (f : A → A)
-        → ((a : A) → f (f a) ≡ f a)
-        → ((b : B) → (elift f ( elift f b)) ≡ (elift f b))
-    elift-fix f H b = 
-        ≡begin 
-            f^ (f^ b)
-        ≡⟨⟩
-            ((φ ∘ f ∘ φ⁻¹) ∘ φ ∘ f ∘ φ⁻¹) b
-        ≡⟨⟩ -- Apply assoc of _∘_
-            (φ ∘ f ∘ φ⁻¹ ∘ φ ∘ f ∘ φ⁻¹) b
-        ≡⟨ cong (λ x → φ (f x)) $ φ⁻¹∘φ≈id $ (f $ φ⁻¹ b) ⟩
-            (φ ∘ f ∘ f ∘ φ⁻¹) b
-        ≡⟨ cong φ (H $ φ⁻¹ b) ⟩ -- Apply H a with a ≔ φ⁻¹ b
-            (φ ∘ f ∘ φ⁻¹) b
-        ≡⟨⟩
-            f^ b
-        ≡∎
-        where
-            f^ : B → B
-            f^ = elift f
+                -- Apply inversity on KHa'
+                ans : (elift f) b <B b
+                ans = subst (λ x → (φ ∘ f ∘ φ⁻¹) b <B x) (φ∘φ⁻¹≈id b) KHa'
+
+        elift-fix
+            : (f : A → A)
+            → ((a : A) → f (f a) ≡ f a)
+            → ((b : B) → (elift f ( elift f b)) ≡ (elift f b))
+        elift-fix f H b = 
+            ≡begin 
+                f^ (f^ b)
+            ≡⟨⟩
+                ((φ ∘ f ∘ φ⁻¹) ∘ φ ∘ f ∘ φ⁻¹) b
+            ≡⟨⟩ -- Apply assoc of _∘_
+                (φ ∘ f ∘ φ⁻¹ ∘ φ ∘ f ∘ φ⁻¹) b
+            ≡⟨ cong (λ x → φ (f x)) $ φ⁻¹∘φ≈id $ (f $ φ⁻¹ b) ⟩
+                (φ ∘ f ∘ f ∘ φ⁻¹) b
+            ≡⟨ cong φ (H $ φ⁻¹ b) ⟩ -- Apply H a with a ≔ φ⁻¹ b
+                (φ ∘ f ∘ φ⁻¹) b
+            ≡⟨⟩
+                f^ b
+            ≡∎
+            where
+                f^ : B → B
+                f^ = elift f
 --------------------------------------------------------------------------------
 -- Rewriting dependent sums Σ
 --------------------------------------------------------------------------------
