@@ -125,6 +125,9 @@ module Elift
     open EquivShorthands A≃B public
     open import Relation.Binary.Core
 
+    elift : (A → A) → B → B
+    elift f = φ ∘ f ∘ φ⁻¹
+
     opaque
 
         elift-leq

@@ -147,89 +147,6 @@ OTNW n = OpenTermsNW {fin 1} {fin 2} ℤSig n
 --------------------------------------------------------------------------------
 -- Equivalences
 --------------------------------------------------------------------------------
-
-open ForSignature {fin 0} {fin 1} ℤSig using (𝕋≃ℕ) 
-C≃ℕ : C ≃ ℕ
-C≃ℕ = 𝕋≃ℕ 
-φ : C → ℕ
-φ = ≃-to C≃ℕ
-φ⁻¹ : ℕ → C
-φ⁻¹ = ≃-from C≃ℕ
-φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
-φ∘φ⁻¹≈id = ≃-toFrom C≃ℕ
-φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
-φ⁻¹∘φ≈id = ≃-fromTo C≃ℕ
-
-CNW≃C : CNW ≃ C
-CNW≃C = OTequiv {fin 1} {fin 2} ℤSig 0
-
-ℤ'≃CNW : ℤ' ≃ CNW -- See proof below.
-
-ℤ'≃C : ℤ' ≃ C
-ℤ'≃C = (≃-trans ℤ'≃CNW CNW≃C)
-ψ : ℤ' → C
-ψ = ≃-to ℤ'≃C
-ψ⁻¹ : C → ℤ'
-ψ⁻¹ = ≃-from ℤ'≃C
-ψ∘ψ⁻¹≈id : (ψ ∘ ψ⁻¹) ≈ id
-ψ∘ψ⁻¹≈id = ≃-toFrom ℤ'≃C
-ψ⁻¹∘ψ≈id : (ψ⁻¹ ∘ ψ) ≈ id
-ψ⁻¹∘ψ≈id = ≃-fromTo ℤ'≃C
-
-ℤ'≃ℕ : ℤ' ≃ ℕ
-ℤ'≃ℕ = ≃-trans ℤ'≃C C≃ℕ
-        
-open EquivShorthands ℤ'≃ℕ public using (elift)
-    renaming
-    (φ to θ
-    ;φ⁻¹ to θ⁻¹
-    ;φ∘φ⁻¹≈id to θ∘θ⁻¹≈id
-    ;φ⁻¹∘φ≈id to θ⁻¹∘θ≈id
-    )
-
- 
---------------------------------------------------------------------------------
--- Normal form function on ℤ' to ℕ.
---------------------------------------------------------------------------------
-
--- Lifting f to the ℕ-encoding of ℤ' terms.
-nf : ℕ → ℕ
-nf = elift f
-
--- Only lifting f to act on closed terms of ℤSig.
-nf' : C → C
-nf' = ψ ∘ f ∘ ψ⁻¹
-
--- Definitions based on the `OpenTerms ℤSig` representation of terms over ℤSig,
--- i.e., the indexed inductive type, indexed both by (1) the weight
--- of a term and (2) the number of open argument-holes of a term.
--- (Other parts of the Integers example use also the variant without weight
--- indices).
---
--- For properties of definitions in this module, see Eser.Examples.Integers.NF.
-module WithWeights where
-    -- Smaller-weight-relation.
-    infix 4 _<w_
-    _<w_ : Rel C 0ℓ
-    _<w_ (w , t) (w' , t') = w < w'
-
-    𝟎 : C
-    𝟎 = (1 , mk-nullary Fin.zero)
-
-    𝐒 : C → C
-    𝐒 (wₐ , a) = (wₐ + 1 , giveArg (mk-multiary Fin.zero) a)
-
-    𝐏 : C → C
-    𝐏 (wₐ , a) = (wₐ + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
-
-    getSP : Fin 2 → ℤ' → ℤ'
-    getSP Fin.zero           = S
-    getSP (Fin.suc Fin.zero) = P
-
-    get𝐒𝐏 : Fin 2 → C → C
-    get𝐒𝐏 Fin.zero           = 𝐒
-    get𝐒𝐏 (Fin.suc Fin.zero) = 𝐏
-
 -- This module gives definitions based on the 'NoWeights' representation
 -- of open terms over ℤSig.
 module WithoutWeights where
@@ -343,9 +260,65 @@ module WithoutWeights where
         ≡∎
     -- Same as above, but with P i.o. S. 
     invʳ {P y} {x} refl = cong P (invʳ refl)
-    
-ℤ'≃CNW = mk≃' γ γ⁻¹ invˡ invʳ
-    where 
-        open WithoutWeights
+
+opaque
+
+    open ForSignature {fin 0} {fin 1} ℤSig using (𝕋≃ℕ) 
+    C≃ℕ : C ≃ ℕ
+    C≃ℕ = 𝕋≃ℕ 
+    φ : C → ℕ
+    φ = ≃-to C≃ℕ
+    φ⁻¹ : ℕ → C
+    φ⁻¹ = ≃-from C≃ℕ
+    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
+    φ∘φ⁻¹≈id = ≃-toFrom C≃ℕ
+    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
+    φ⁻¹∘φ≈id = ≃-fromTo C≃ℕ
+
+    CNW≃C : CNW ≃ C
+    CNW≃C = OTequiv {fin 1} {fin 2} ℤSig 0
+
+    ℤ'≃CNW : ℤ' ≃ CNW 
+    ℤ'≃CNW = mk≃' γ γ⁻¹ invˡ invʳ
+        where 
+            open WithoutWeights
+
+    ℤ'≃C : ℤ' ≃ C
+    ℤ'≃C = (≃-trans ℤ'≃CNW CNW≃C)
+    ψ : ℤ' → C
+    ψ = ≃-to ℤ'≃C
+    ψ⁻¹ : C → ℤ'
+    ψ⁻¹ = ≃-from ℤ'≃C
+    ψ∘ψ⁻¹≈id : (ψ ∘ ψ⁻¹) ≈ id
+    ψ∘ψ⁻¹≈id = ≃-toFrom ℤ'≃C
+    ψ⁻¹∘ψ≈id : (ψ⁻¹ ∘ ψ) ≈ id
+    ψ⁻¹∘ψ≈id = ≃-fromTo ℤ'≃C
+
+    ℤ'≃ℕ : ℤ' ≃ ℕ
+    ℤ'≃ℕ = ≃-trans ℤ'≃C C≃ℕ
+
+    open Elift {ℤ'} {ℕ} ℤ'≃ℕ public 
+        using (elift ; elift-fix)
+        renaming
+        (φ to θ
+        ;φ⁻¹ to θ⁻¹
+        ;φ∘φ⁻¹≈id to θ∘θ⁻¹≈id
+        ;φ⁻¹∘φ≈id to θ⁻¹∘θ≈id
+        )
+     
+--------------------------------------------------------------------------------
+-- Normal form function on ℤ' to ℕ.
+--------------------------------------------------------------------------------
+
+-- Lifting f to the ℕ-encoding of ℤ' terms.
+nf : ℕ → ℕ
+nf = elift f
+
+nf-def : nf ≡ elift f
+nf-def = refl
+
+-- Only lifting f to act on closed terms of ℤSig.
+nf' : C → C
+nf' = ψ ∘ f ∘ ψ⁻¹
 
 

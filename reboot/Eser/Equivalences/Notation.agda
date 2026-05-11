@@ -96,9 +96,6 @@ module EquivShorthands
     φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
     φ⁻¹∘φ≈id = ≃-fromTo A≃B
 
-    elift : (A → A) → B → B
-    elift f = φ ∘ f ∘ φ⁻¹
-
 module EquivShorthandsForEnumSet
     {A : Set}
     (A≃ℕ : A ≃ ℕ)

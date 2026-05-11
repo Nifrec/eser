@@ -45,16 +45,16 @@ open import Eser.Quotient.Definitions
 module Eser.Examples.Integers where
 
 open import Eser.Examples.Integers.Definitions public
---open import Eser.Examples.Integers.DirectEncProperties public
---open import Eser.Examples.Integers.NFLeq public
+open import Eser.Examples.Integers.DirectEncProperties public
+open import Eser.Examples.Integers.NFLeq public
 -- This file runs out of memory:
--- open import Eser.Examples.Integers.NFFix public
--- But it exports just this: 
-nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
-nf-fix = ?
+open import Eser.Examples.Integers.NFFix public
+---- But it exports just this: 
+--nf-fix : (n : ℕ) → nf (nf n) ≡ nf n
+--nf-fix = ?
 
-nf-leq : (n : ℕ) → (nf n) ≤ n
-nf-leq = ?
+--nf-leq : (n : ℕ) → (nf n) ≤ n
+--nf-leq = ?
 
 --------------------------------------------------------------------------------
 -- Proof that ℤ are indeed the integers

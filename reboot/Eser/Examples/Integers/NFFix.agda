@@ -19,16 +19,8 @@ open import Eser.Equivalences.Properties
 
 module Eser.Examples.Integers.NFFix where
 
-open import Eser.Examples.Integers.Definitions hiding (elift)
+open import Eser.Examples.Integers.Definitions
 open import Eser.Examples.Integers.DirectEncProperties
 
-opaque
-    test : ℤ'  ≃ ℕ
-    test = ℤ'≃ℕ
-
---module ℤ'≃ℕ-lifts = Elift {ℤ'} ℤ'≃ℕ
---module ℤ'≃ℕ-lifts = Elift {ℤ'} {ℕ} test
---open Elift {ℤ'} {ℕ} ℤ'≃ℕ
-open Elift {ℤ'} {ℕ} test
 nf-fix : (n : ℕ) → elift f (elift f n) ≡ elift f n
 nf-fix = elift-fix f f-fix
