@@ -167,3 +167,82 @@ module NoWeights where
             sublemmaₚ t a refl (inj₁ refl) = case3 refl
             sublemmaₚ t a refl (inj₂ (inj₁ (a' , refl))) = case6 (a' , refl)
             sublemmaₚ t a refl (inj₂ (inj₂ (a' , refl))) = case7 (a' , refl)
+
+module OldImplementationOfWithWeights where
+    open import Eser.Signature.EnumOrderingProperties {fin 0} {fin 1} ℤSig
+        using (giveArgBigger)
+
+    private
+        C : Set
+        C = AllTerms {fin 1} {fin 2} ℤSig
+
+        OT : ℕ → ℕ → Set
+        OT w n = OpenTerms {fin 1} {fin 2} ℤSig w n
+
+    open ForSignature {fin 0} {fin 1} ℤSig
+        hiding (𝕋) -- That's `C` already
+        renaming
+        (𝕋≃ℕ to C≃ℕ)
+    ----------------------------------------------------------------------------
+    -- Equivalence between Agda-data-type ℤ' and closed terms over ℤSig
+    ----------------------------------------------------------------------------
+    𝟎 : C
+    𝟎 = (1 , mk-nullary Fin.zero)
+
+    𝐒 : C → C
+    𝐒 (wₐ , a) = (wₐ + 1 , giveArg (mk-multiary Fin.zero) a)
+
+    𝐏 : C → C
+    𝐏 (wₐ , a) = (wₐ + 2 , giveArg (mk-multiary $ Fin.suc Fin.zero) a)
+
+    getSP : Fin 2 → ℤ' → ℤ'
+    getSP Fin.zero           = S
+    getSP (Fin.suc Fin.zero) = P
+
+    get𝐒𝐏 : Fin 2 → C → C
+    get𝐒𝐏 Fin.zero           = 𝐒
+    get𝐒𝐏 (Fin.suc Fin.zero) = 𝐏
+
+    get𝐒𝐏-lemma
+        : (wₐ : ℕ)
+        → (a : OT wₐ 0)
+        → (c : Fin 2)
+        --→ get𝐒𝐏 c (wₐ , a) ≡ (wₐ + (ℕ.suc $ cardToℕ c) , giveArg (mk-multiary c) a)
+        → (proj₁ $ get𝐒𝐏 c (wₐ , a)) ≡ wₐ + (ℕ.suc $ cardToℕ c)
+    get𝐒𝐏-lemma wₐ a (Fin.zero) = refl
+    get𝐒𝐏-lemma wₐ a (Fin.suc Fin.zero) = refl
+
+    getSP-correctness
+        : (c : Fin 2)
+        → (z : ℤ')
+        → θ (getSP c z) ≡ get𝐒𝐏 c (θ z)
+    getSP-correctness Fin.zero z = refl
+    getSP-correctness (Fin.suc Fin.zero) z = refl
+        
+    -- Smaller-weight-relation.
+    infix 4 _<w_
+    _<w_ : Rel C 0ℓ
+    _<w_ (w , t) (w' , t') = w < w'
+
+    𝐒-monotone : (t t' : C) → t <w t' → 𝐒 t <w 𝐒 t'
+    𝐒-monotone t t' t<wt' = +-monoˡ-< 1 t<wt'
+
+    𝐏-monotone : (t t' : C) → t <w t' → 𝐏 t <w 𝐏 t'
+    𝐏-monotone t t' t<wt' = +-monoˡ-< 2 t<wt'
+
+    <w-trans : (t₁ t₂ t₃ : C) → t₁ <w t₂ → t₂ <w t₃ → t₁ <w t₃
+    <w-trans t₁ t₂ t₃ H K = <-trans H K
+
+    𝐒-<w-intro : (t : C) → t <w 𝐒 t
+    𝐒-<w-intro (wₜ , t) = n<n+1 wₜ
+
+    𝐒-<w-increasing : (t t' : C) → t <w t' → t <w 𝐒 t'
+    𝐒-<w-increasing t t' H = <w-trans t (𝐒 t) (𝐒 t') (𝐒-<w-intro t) 
+                                                     (𝐒-monotone t t' H)
+
+    𝐏-<w-intro : (t : C) → t <w 𝐏 t
+    𝐏-<w-intro (wₜ , t) = n<n+Sm wₜ 1 -- Note that: 2 ≗ suc 1
+
+    𝐏-<w-increasing : (t t' : C) → t <w t' → t <w 𝐏 t'
+    𝐏-<w-increasing t t' H = <w-trans t (𝐏 t) (𝐏 t') (𝐏-<w-intro t) 
+                                                     (𝐏-monotone t t' H)
