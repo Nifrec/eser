@@ -9,8 +9,6 @@
 -- nf-fix : nf (nf n) ≡ nf n
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --lossy-unification #-}
-
 open import Data.Nat
 open import Relation.Binary.PropositionalEquality
 
