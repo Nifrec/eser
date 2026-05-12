@@ -28,6 +28,9 @@ module Eser.Aux where
 indices : {A : Set} → List A → Set
 indices {A} L = Fin (Data.List.length L)
 
+IsFixpoint : {A : Set} → (A → A) → A → Set
+IsFixpoint f a = f a ≡ a
+
 -- Biimplication: existance of functions both ways, 
 -- they do not need to be inverses of each other.
 _↔_ : (A B : Set) → Set

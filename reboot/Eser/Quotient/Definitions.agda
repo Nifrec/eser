@@ -56,7 +56,7 @@ module Eser.Quotient.Definitions where
 -- iff its ℕ-encoding φ(a) is a normal form
 -- iff φ(a) is a fixpoint of the normal-form function.
 _/_ : {A : Set} → (A ≃ ℕ) → NFFun → Set
-_/_ {A} A≃ℕ (nf , nfleq , nffix) = Σ[ a ∈ A ]( nf (φ a) ≡ φ a)
+_/_ {A} A≃ℕ (nf , nfleq , nffix) = Σ[ a ∈ A ](IsFixpoint nf (φ a))
     where
         φ : A → ℕ
         φ = ≃-to A≃ℕ
