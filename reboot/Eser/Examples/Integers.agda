@@ -64,9 +64,6 @@ nf-fun = (nf , nf-leq , nf-fix)
 ℤ : Set
 ℤ = ℤ'≃ℕ / nf-fun
 
---opaque
---    unfolding ℤ'≃ℕ
-
 IsNormal : ℤ' → Set
 IsNormal z = IsFixpoint nf (θ z)
 
@@ -181,6 +178,15 @@ isNormalIrrel z = Data.Nat.Properties.≡-irrelevant
 isCleanIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsClean z)
 isCleanIrrel z = ?
 
+is-clean-S-downgrade-nonneg
+    : (z : ℤ')
+    → (p : IsClean (S z))
+    → IsZero z ⊎ IsPos z
+is-clean-S-downgrade-nonneg O (inj₂ (inj₁ tt)) = inj₁ tt
+is-clean-S-downgrade-nonneg (S z) (inj₂ (inj₁ p)) = inj₂ p
+is-clean-S-downgrade-nonneg (P z) (inj₂ (inj₁ ()))
+is-clean-S-downgrade-nonneg (P z) (inj₂ (inj₂ ()))
+
 abs-S-stack
     : (n : ℕ) 
     → (p : IsClean (S-stack n))
@@ -201,7 +207,34 @@ abs-S-stack (ℕ.suc n) p@(inj₂ (inj₁ isPos)) =
     where
         p' : IsClean (S-stack n)
         p' = is-clean-S-downgrade {S-stack n} p
-    
+S-stack-abs
+    : (z : ℤ')
+    → (p : IsClean z )
+    → (H : IsZero z ⊎ IsPos z)
+    → S-stack (abs z p) ≡ z
+S-stack-abs O     p@(inj₁ isZero)       _ = refl 
+S-stack-abs O     p@(inj₂ (inj₁ ()))
+S-stack-abs O     p@(inj₂ (inj₂ ()))
+S-stack-abs (S z) p@(inj₂ (inj₁ isPos)) _ =  
+    ≡begin 
+        S-stack (abs (S z) p)
+    ≡⟨⟩
+        S-stack (ℕ.suc (abs z p'))
+    ≡⟨⟩
+        S (S-stack (abs z p'))
+    ≡⟨ cong S $ S-stack-abs z p' p'' ⟩
+        S z 
+    ≡∎
+    where
+        p' : IsClean z
+        p' = is-clean-S-downgrade {z} p
+        p'' : IsZero z ⊎ IsPos z
+        p'' = is-clean-S-downgrade-nonneg z p
+
+S-stack-abs (P z) p@(inj₂ (inj₂ isNeg)) (inj₁ ())
+S-stack-abs (P z) p@(inj₂ (inj₂ isNeg)) (inj₂ ())
+
+
 clean-tuple-eq
     : (z z' : ℤ')
     → (p : IsClean z)
@@ -292,9 +325,56 @@ clean-tuple-eq z z' p H = (p' , prf)
                 p'' : IsClean (S-stack n)
                 p'' = proj₁ $ clean-tuple-eq z' (S-stack n) p' K
 
-        invˡ { -[1+ n ]} {y} refl = {! !}
+        invˡ { -[1+ n ]} {y} refl = {! !} -- Symmetric to case above!
         invʳ : Inverseʳ _≡_ _≡_ χ β
-        invʳ {y} {x} refl = ?
+        invʳ {z , isNorm} {x} refl = 
+            sym $ restIsProofIrrel {A = ℤ'} 
+                {B = IsNormal} 
+                isNormalIrrel 
+                {z} 
+                {z'}
+                isNorm 
+                isNorm' 
+                (sym $ χcases-invʳ z p)
+            where
+                open χDef z isNorm
+                p : IsClean z
+                p = cleanIfNormal z isNorm
+                z' : ℤ'
+                z' =  β₀ (χcases z p)
+                isNorm' : IsNormal z'
+                isNorm' = β₁ $ χcases z p
+                -- Make case distinction; this will make things compute,
+                -- since χ is defined as the
+                -- case distinction `χcases`.
+                --    → β (χcases z p) ≡ (z , isNorm)
+                χcases-invʳ 
+                    : (z : ℤ') 
+                    → (p : IsClean z) 
+                    → β₀ (χcases z p) ≡ z
+                χcases-invʳ O (inj₁ tt) = refl
+                χcases-invʳ O (inj₂ (inj₁ ()))
+                χcases-invʳ O (inj₂ (inj₂ ()))
+                χcases-invʳ (S z) p@(inj₂ (inj₁ isPos)) = 
+                    ≡begin 
+                        β₀ (χcases (S z) (inj₂ (inj₁ isPos))) 
+                    ≡⟨⟩
+                        β₀ +[1+ abs z p' ]
+                    ≡⟨⟩
+                        S-stack (ℕ.suc (abs z p'))
+                    ≡⟨⟩
+                        S (S-stack (abs z p'))
+                    ≡⟨ cong S $ S-stack-abs z p' p'' ⟩
+                        S z
+                    ≡∎
+                    where
+                        p' : IsClean z
+                        p' = is-clean-S-downgrade {z} p
+                        p'' : IsZero z ⊎ IsPos z
+                        p'' = is-clean-S-downgrade-nonneg z p
+                    
+                χcases-invʳ (P z) (inj₂ (inj₂ isNeg)) = {! !} -- Symmetric to previoous
+
 
 
 _ℤ+_ : ℤ → ℤ → ℤ
