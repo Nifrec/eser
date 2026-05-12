@@ -28,7 +28,7 @@ open import Relation.Binary.Reasoning.Syntax
 
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 
-open import Eser.Aux using (IsFixpoint)
+open import Eser.Aux using (IsFixpoint ; restIsProofIrrel)
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.EqRel
@@ -85,20 +85,23 @@ abs : (z : ℤ') → IsClean z → ℕ
 abs O     p@(inj₁ isZero)       = 0
 abs O     p@(inj₂ (inj₁ ()))
 abs O     p@(inj₂ (inj₂ ()))
-abs (S z) p@(inj₂ (inj₁ isPos)) = ℕ.suc (abs z ?)
-abs (P z) p@(inj₂ (inj₂ isNeg)) = ℕ.suc (abs z ?)
+abs (S z) p@(inj₂ (inj₁ isPos)) = ℕ.suc (abs z $ is-clean-S-downgrade {z} p)
+abs (P z) p@(inj₂ (inj₂ isNeg)) = ℕ.suc (abs z $ is-clean-P-downgrade {z} p)
 
 χ : ℤ → ℤ#
-χ (z , p) = caseDistinction z $ cleanIfNormal z p
-    where
+χ (z , p) = χcases z $ cleanIfNormal z p
+    module χDef where
         k : IsNormal z
         k = p
-        caseDistinction : (z : ℤ') → IsClean z → ℤ#
-        caseDistinction O     p@(inj₁ isZero) = + (abs O p) 
-        caseDistinction O     p@(inj₂ (inj₁ ()))
-        caseDistinction O     p@(inj₂ (inj₂ ()))
-        caseDistinction (S z) p@(inj₂ (inj₁ isPos)) = +[1+ abs (S z) p ]
-        caseDistinction (P z) p@(inj₂ (inj₂ isNeg)) = -[1+ abs z p' ]
+        χcases : (z : ℤ') → IsClean z → ℤ#
+        χcases O     p@(inj₁ isZero) = + (abs O p) 
+        χcases O     p@(inj₂ (inj₁ ()))
+        χcases O     p@(inj₂ (inj₂ ()))
+        χcases (S z) p@(inj₂ (inj₁ isPos)) = +[1+ abs z p' ]
+            where
+                p' : IsClean z
+                p' = is-clean-S-downgrade {z} p
+        χcases (P z) p@(inj₂ (inj₂ isNeg)) = -[1+ abs z p' ]
             where
                 p' : IsClean z
                 p' = is-clean-P-downgrade {z} p
@@ -115,6 +118,48 @@ S-stack-isPos = ?
 P-stack-isNeg : (n : ℕ) → IsNeg (P-stack $ ℕ.suc n)
 P-stack-isNeg = ?
 
+-- If z is positive then there exist a clean z' s.t. z ≡ S z'.
+-- (z' might not be positive, it can also be O).
+isPos-to-predec
+    : (z : ℤ')
+    → IsPos z
+    → Σ[ z' ∈ ℤ' ] (z ≡ S z') × IsClean z'
+isPos-to-predec (S O) tt = (O , refl , inj₁ tt)
+isPos-to-predec (S (S z)) p = 
+    (S z 
+    , refl 
+    , is-clean-S-downgrade {S z} (inj₂ $ inj₁ p)
+    )
+isPos-to-predec'
+    : (z : ℤ')
+    → (p : IsPos z)
+    → Σ[ z' ∈ ℤ' ] (IsClean z') × (
+        Σ[ k ∈ z ≡ S z' ] (
+            _≡_ {A = Σ[ z ∈ ℤ' ] IsClean z}
+                (z , inj₂ (inj₁ p)) 
+                (S z' , (inj₂  (inj₁ $ subst (λ x → IsPos x) k p)))
+        )
+    )
+isPos-to-predec' (S O) tt = (O , inj₁ tt , refl , refl)
+isPos-to-predec' (S (S z)) p = 
+    (S z 
+    , is-clean-S-downgrade {S z} (inj₂ $ inj₁ p)
+    , refl
+    , refl
+    )
+-- If z is negative then there exist a clean z' s.t. z ≡ P z'.
+-- (z' might not be negative, it can also be O).
+isNeg-to-predec
+    : (z : ℤ')
+    → IsNeg z
+    → Σ[ z' ∈ ℤ' ] (z ≡ P z') × IsClean z'
+isNeg-to-predec (P O) tt = (O , refl , inj₁ tt)
+isNeg-to-predec (P (P z)) p = 
+    (P z 
+    , refl 
+    , is-clean-P-downgrade {P z} (inj₂ $ inj₂ p)
+    )
+
 
 β : ℤ# → ℤ
 β +0 = (O , normalIfClean O (inj₁ tt))
@@ -126,18 +171,129 @@ P-stack-isNeg = ?
     where
         z : ℤ'
         z = P-stack (ℕ.suc n)
+β₀ : ℤ# → ℤ'
+β₀ = proj₁ ∘ β
+β₁ : (z : ℤ#) → IsNormal (β₀ z)
+β₁ = proj₂ ∘ β
+
+isNormalIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsNormal z)
+isNormalIrrel z = Data.Nat.Properties.≡-irrelevant
+isCleanIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsClean z)
+isCleanIrrel z = ?
+
+abs-S-stack
+    : (n : ℕ) 
+    → (p : IsClean (S-stack n))
+    → abs (S-stack n) p ≡ n
+abs-S-stack ℕ.zero (inj₁ tt) = refl
+abs-S-stack ℕ.zero (inj₂ (inj₁ ()))
+abs-S-stack ℕ.zero (inj₂ (inj₂ ()))
+abs-S-stack (ℕ.suc n) p@(inj₂ (inj₁ isPos)) = 
+    ≡begin 
+        abs (S-stack (ℕ.suc n)) p
+    ≡⟨⟩
+        abs (S (S-stack n)) p
+    ≡⟨⟩
+        ℕ.suc (abs (S-stack n) p')
+    ≡⟨ cong ℕ.suc $ abs-S-stack n p' ⟩
+        ℕ.suc n
+    ≡∎
+    where
+        p' : IsClean (S-stack n)
+        p' = is-clean-S-downgrade {S-stack n} p
+    
+clean-tuple-eq
+    : (z z' : ℤ')
+    → (p : IsClean z)
+    → z ≡ z'
+    → Σ[ p' ∈ IsClean z' ] ((z , p) ≡ (z' , p'))
+clean-tuple-eq z z' p H = (p' , prf)
+    where
+        p' : IsClean z'
+        p' = subst IsClean H p
+        prf : (z , p) ≡ (z' , p')
+        prf = restIsProofIrrel {A = ℤ'} {B = IsClean} isCleanIrrel {z} {z'} p p' H
 
 ℤcorrectness : ℤ ≃ ℤ#
-ℤcorrectness = mk≃' g g⁻¹ invˡ invʳ
+ℤcorrectness = mk≃' χ β invˡ invʳ
     where
-    g : ℤ → ℤ#
-    g = χ
-    g⁻¹ : ℤ# → ℤ
-    g⁻¹ = β
     opaque
-        invˡ : Inverseˡ _≡_ _≡_ g g⁻¹
-        invˡ {x} {y} refl = ?
-        invʳ : Inverseʳ _≡_ _≡_ g g⁻¹
+        invˡ : Inverseˡ _≡_ _≡_ χ β
+        -- Hardest part of proof: the proof of cleanness that χ computes
+        -- and passes to χcases is not judgementally equal to (inj₁ tt)
+        -- (where tt : IsZero O). But cleanness proofs are irrelevant
+        -- and hence we can contract it to this anyway.
+        invˡ { +0      } {y} refl = 
+            ≡begin 
+                χ (β +0)
+            ≡⟨⟩
+                χ (O , p)
+            ≡⟨⟩
+                χcases O (cleanIfNormal O p)
+            ≡⟨ cong (χcases O) $ isCleanIrrel O (cleanIfNormal O p) (inj₁ tt) ⟩
+                χcases O (inj₁ tt)
+            ≡⟨⟩
+                +0
+            ≡∎
+            where
+                z : ℤ'
+                z = β₀ +0
+                p : IsNormal O
+                p = β₁ +0
+                open χDef O p
+            
+        invˡ { +[1+ n ]} {y} refl =
+            ≡begin 
+                χ (β +[1+ n ])
+            ≡⟨⟩
+                χ (z , isNorm)
+            ≡⟨⟩
+                χcases z (cleanIfNormal z isNorm)
+            ≡⟨ cong (χcases z) $ isCleanIrrel z (cleanIfNormal z isNorm) (inj₂ $ inj₁  q) ⟩
+                χcases z (inj₂ $ inj₁ q)
+            ≡⟨⟩
+                uncurry χcases (z , (inj₂ $ inj₁ q))
+            ≡⟨ cong (uncurry χcases) $ proj₂ $ proj₂ $ proj₂ $ isPos-to-predec' z q  ⟩
+                uncurry χcases (S z' , (inj₂ $ inj₁ q'))
+            ≡⟨⟩
+                χcases (S z') (inj₂ $ inj₁ q')
+            ≡⟨⟩
+                +[1+ abs z' p' ] 
+            ≡⟨⟩
+                +[1+_] (uncurry abs (z' , p'))
+            ≡⟨ cong (λ x → +[1+_] (uncurry abs x)) 
+                $ proj₂ $ clean-tuple-eq z' (S-stack n) p' K  ⟩
+                +[1+_] (uncurry abs (S-stack n , p''))
+            ≡⟨⟩
+                +[1+_] (abs (S-stack n ) p'')
+            ≡⟨ cong +[1+_] $ abs-S-stack n p'' ⟩
+                +[1+ n ]
+            ≡∎
+            where
+                z : ℤ'
+                z = S-stack (ℕ.suc n)
+                isNorm : IsNormal z
+                isNorm = normalIfClean z $ inj₂ $ inj₁ $ S-stack-isPos n
+                open χDef z isNorm
+                q : IsPos z
+                q = S-stack-isPos n
+                p : IsClean z
+                p = inj₂ $ inj₁ $ q
+                z' : ℤ'
+                z' = proj₁ $ isPos-to-predec' z q
+                z≡Sz' : z ≡ S z'
+                z≡Sz' = proj₁ $ proj₂ $ proj₂ $ isPos-to-predec' z q
+                q' : IsPos (S z')
+                q' = subst (λ x → IsPos x) z≡Sz' q
+                p' : IsClean z'
+                p' = is-clean-S-downgrade {z'} (inj₂ $ inj₁ $ q')
+                K : z' ≡ S-stack n
+                K = S-injective z' (S-stack n) (sym z≡Sz')
+                p'' : IsClean (S-stack n)
+                p'' = proj₁ $ clean-tuple-eq z' (S-stack n) p' K
+
+        invˡ { -[1+ n ]} {y} refl = {! !}
+        invʳ : Inverseʳ _≡_ _≡_ χ β
         invʳ {y} {x} refl = ?
 
 
