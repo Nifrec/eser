@@ -168,17 +168,23 @@ isPos-to-predec' (S (S z)) p =
     )
 -- If z is negative then there exist a clean z' s.t. z ≡ P z'.
 -- (z' might not be negative, it can also be O).
-isNeg-to-predec
+isNeg-to-predec'
     : (z : ℤ')
-    → IsNeg z
-    → Σ[ z' ∈ ℤ' ] (z ≡ P z') × IsClean z'
-isNeg-to-predec (P O) tt = (O , refl , inj₁ tt)
-isNeg-to-predec (P (P z)) p = 
-    (P z 
-    , refl 
-    , is-clean-P-downgrade {P z} (inj₂ $ inj₂ p)
+    → (p : IsNeg z)
+    → Σ[ z' ∈ ℤ' ] (IsClean z') × (
+        Σ[ k ∈ z ≡ P z' ] (
+            _≡_ {A = Σ[ z ∈ ℤ' ] IsClean z}
+                (z , inj₂ (inj₂ p)) 
+                (P z' , (inj₂  (inj₂ $ subst (λ x → IsNeg x) k p)))
+        )
     )
-
+isNeg-to-predec' (P O) tt = (O , inj₁ tt , refl , refl)
+isNeg-to-predec' (P (P z)) p = 
+    (P z 
+    , is-clean-P-downgrade {P z} (inj₂ $ inj₂ p)
+    , refl
+    , refl
+    )
 
 β : ℤ# → ℤ
 β +0 = (O , normalIfClean O (inj₁ tt))
@@ -230,6 +236,15 @@ is-clean-S-downgrade-nonneg (S z) (inj₂ (inj₁ p)) = inj₂ p
 is-clean-S-downgrade-nonneg (P z) (inj₂ (inj₁ ()))
 is-clean-S-downgrade-nonneg (P z) (inj₂ (inj₂ ()))
 
+is-clean-P-downgrade-nonpos
+    : (z : ℤ')
+    → (p : IsClean (P z))
+    → IsZero z ⊎ IsNeg z
+is-clean-P-downgrade-nonpos O (inj₂ (inj₂ tt)) = inj₁ tt
+is-clean-P-downgrade-nonpos (S z) (inj₂ (inj₁ ()))
+is-clean-P-downgrade-nonpos (S z) (inj₂ (inj₂ ()))
+is-clean-P-downgrade-nonpos (P z) (inj₂ (inj₂ p)) = inj₂ p
+
 abs-S-stack
     : (n : ℕ) 
     → (p : IsClean (S-stack n))
@@ -273,10 +288,54 @@ S-stack-abs (S z) p@(inj₂ (inj₁ isPos)) _ =
         p' = is-clean-S-downgrade {z} p
         p'' : IsZero z ⊎ IsPos z
         p'' = is-clean-S-downgrade-nonneg z p
-
 S-stack-abs (P z) p@(inj₂ (inj₂ isNeg)) (inj₁ ())
 S-stack-abs (P z) p@(inj₂ (inj₂ isNeg)) (inj₂ ())
 
+abs-P-stack
+    : (n : ℕ) 
+    → (p : IsClean (P-stack n))
+    → abs (P-stack n) p ≡ n
+abs-P-stack ℕ.zero (inj₁ tt) = refl
+abs-P-stack ℕ.zero (inj₂ (inj₁ ()))
+abs-P-stack ℕ.zero (inj₂ (inj₂ ()))
+abs-P-stack (ℕ.suc n) p@(inj₂ (inj₂ isNeg)) = 
+    ≡begin 
+        abs (P-stack (ℕ.suc n)) p
+    ≡⟨⟩
+        abs (P (P-stack n)) p
+    ≡⟨⟩
+        ℕ.suc (abs (P-stack n) p')
+    ≡⟨ cong ℕ.suc $ abs-P-stack n p' ⟩
+        ℕ.suc n
+    ≡∎
+    where
+        p' : IsClean (P-stack n)
+        p' = is-clean-P-downgrade {P-stack n} p
+P-stack-abs
+    : (z : ℤ')
+    → (p : IsClean z )
+    → (H : IsZero z ⊎ IsNeg z)
+    → P-stack (abs z p) ≡ z
+P-stack-abs O     p@(inj₁ isZero)       _ = refl 
+P-stack-abs O     p@(inj₂ (inj₁ ()))
+P-stack-abs O     p@(inj₂ (inj₂ ()))
+P-stack-abs (P z) p@(inj₂ (inj₂ isNeg)) _ =  
+    ≡begin 
+        P-stack (abs (P z) p)
+    ≡⟨⟩
+        P-stack (ℕ.suc (abs z p'))
+    ≡⟨⟩
+        P (P-stack (abs z p'))
+    ≡⟨ cong P $ P-stack-abs z p' p'' ⟩
+        P z 
+    ≡∎
+    where
+        p' : IsClean z
+        p' = is-clean-P-downgrade {z} p
+        p'' : IsZero z ⊎ IsNeg z
+        p'' = is-clean-P-downgrade-nonpos z p
+P-stack-abs (S z) p@(inj₂ (inj₂ isNeg)) (inj₁ ())
+P-stack-abs (S z) p@(inj₂ (inj₂ isNeg)) (inj₂ ())
 
 clean-tuple-eq
     : (z z' : ℤ')
@@ -368,7 +427,64 @@ clean-tuple-eq z z' p H = (p' , prf)
                 p'' : IsClean (S-stack n)
                 p'' = proj₁ $ clean-tuple-eq z' (S-stack n) p' K
 
-        invˡ { -[1+ n ]} {y} refl = {! !} -- Symmetric to case above!
+        -- This case is symmetric to the case above, only with exchanged:
+        -- S ↔ P
+        -- Pos ↔ Neg
+        -- and some (inj₂ ∘ inj₁) replaced by (inj₂ ∘ inj₂) (in proofs of
+        -- IsClean, since IsNeg is the third injection and IsPos the second).
+        -- Otherwise it is just a copy-paste. 
+        -- I didn't see a way to avoid the duplication.
+        invˡ { -[1+ n ]} {y} refl = 
+            ≡begin 
+                χ (β -[1+ n ])
+            ≡⟨⟩
+                χ (z , isNorm)
+            ≡⟨⟩
+                χcases z (cleanIfNormal z isNorm)
+            ≡⟨ cong (χcases z) $ isCleanIrrel z (cleanIfNormal z isNorm) (inj₂ $ inj₂  q) ⟩
+                χcases z (inj₂ $ inj₂ q)
+            ≡⟨⟩
+                uncurry χcases (z , (inj₂ $ inj₂ q))
+            ≡⟨ cong (uncurry χcases) $ proj₂ $ proj₂ $ proj₂ $ isNeg-to-predec' z q  ⟩
+                uncurry χcases (P z' , (inj₂ $ inj₂ q'))
+            ≡⟨⟩
+                χcases (P z') (inj₂ $ inj₂ q')
+            ≡⟨⟩
+                -[1+ abs z' p' ] 
+            ≡⟨⟩
+                -[1+_] (uncurry abs (z' , p'))
+            ≡⟨ cong (λ x → -[1+_] (uncurry abs x)) 
+                $ proj₂ $ clean-tuple-eq z' (P-stack n) p' K  ⟩
+                -[1+_] (uncurry abs (P-stack n , p''))
+            ≡⟨⟩
+                -[1+_] (abs (P-stack n ) p'')
+            ≡⟨ cong -[1+_] $ abs-P-stack n p'' ⟩
+                -[1+ n ]
+            ≡∎
+            where
+                z : ℤ'
+                z = P-stack (ℕ.suc n)
+                isNorm : IsNormal z
+                isNorm = normalIfClean z $ inj₂ $ inj₂ $ P-stack-isNeg n
+                open χDef z isNorm
+                q : IsNeg z
+                q = P-stack-isNeg n
+                p : IsClean z
+                p = inj₂ $ inj₂ $ q
+                z' : ℤ'
+                z' = proj₁ $ isNeg-to-predec' z q
+                z≡Pz' : z ≡ P z'
+                z≡Pz' = proj₁ $ proj₂ $ proj₂ $ isNeg-to-predec' z q
+                q' : IsNeg (P z')
+                q' = subst (λ x → IsNeg x) z≡Pz' q
+                p' : IsClean z'
+                p' = is-clean-P-downgrade {z'} (inj₂ $ inj₂ $ q')
+                K : z' ≡ P-stack n
+                K = P-injective z' (P-stack n) (sym z≡Pz')
+                p'' : IsClean (P-stack n)
+                p'' = proj₁ $ clean-tuple-eq z' (P-stack n) p' K
+
+
         invʳ : Inverseʳ _≡_ _≡_ χ β
         invʳ {z , isNorm} {x} refl = 
             sym $ restIsProofIrrel {A = ℤ'} 

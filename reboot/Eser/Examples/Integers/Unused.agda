@@ -69,6 +69,18 @@ isPos-to-predec (S (S z)) p =
     , is-clean-S-downgrade {S z} (inj₂ $ inj₁ p)
     )
 
+isNeg-to-predec
+    : (z : ℤ')
+    → IsNeg z
+    → Σ[ z' ∈ ℤ' ] (z ≡ P z') × IsClean z'
+isNeg-to-predec (P O) tt = (O , refl , inj₁ tt)
+isNeg-to-predec (P (P z)) p = 
+    (P z 
+    , refl 
+    , is-clean-P-downgrade {P z} (inj₂ $ inj₂ p)
+    )
+
+
 module NoWeights where
 
     private
