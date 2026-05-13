@@ -340,6 +340,10 @@ cleanIfNormal z p = z-is-clean
                         p'' : IsZero z ⊎ IsNeg z
                         p'' = is-clean-P-downgrade-nonpos z p
 
-
+infixl 6 _ℤ+_ -- Same infixl priority as _+_ on ℕ.
 _ℤ+_ : ℤ → ℤ → ℤ
-_ℤ+_ = ?
+(z , isNorm) ℤ+ (z' , isNorm') = (f (z ℤ'+ z') , p)
+    where
+        p : IsNormal (f (z ℤ'+ z'))
+        p = normalIfClean (f (z ℤ'+ z')) $ f-cleans (z ℤ'+ z')
+        
