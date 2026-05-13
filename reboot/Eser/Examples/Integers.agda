@@ -532,8 +532,25 @@ clean-tuple-eq z z' p H = (p' , prf)
                         p'' : IsZero z ⊎ IsPos z
                         p'' = is-clean-S-downgrade-nonneg z p
                     
-                χcases-invʳ (P z) (inj₂ (inj₂ isNeg)) = {! !} -- Symmetric to previoous
-
+                -- Symmetric to previous case, litterally copy-pasted,
+                -- as in the invˡ proof.
+                χcases-invʳ (P z) p@(inj₂ (inj₂ isNeg)) = 
+                    ≡begin 
+                        β₀ (χcases (P z) (inj₂ (inj₂ isNeg))) 
+                    ≡⟨⟩
+                        β₀ -[1+ abs z p' ]
+                    ≡⟨⟩
+                        P-stack (ℕ.suc (abs z p'))
+                    ≡⟨⟩
+                        P (P-stack (abs z p'))
+                    ≡⟨ cong P $ P-stack-abs z p' p'' ⟩
+                        P z
+                    ≡∎
+                    where
+                        p' : IsClean z
+                        p' = is-clean-P-downgrade {z} p
+                        p'' : IsZero z ⊎ IsNeg z
+                        p'' = is-clean-P-downgrade-nonpos z p
 
 
 _ℤ+_ : ℤ → ℤ → ℤ
