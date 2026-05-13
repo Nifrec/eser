@@ -139,11 +139,6 @@ P-stack : ℕ → ℤ'
 P-stack 0 = O
 P-stack (suc n) = P (P-stack n)
 
--- # TODO : Unused lemma
-isPos-upgrade : (z : ℤ') → IsPos z → IsPos (S z)
-isPos-upgrade (S O) p = tt
-isPos-upgrade (S (S z)) p = p
-
 S-stack-isPos : (n : ℕ) → IsPos (S-stack $ ℕ.suc n)
 S-stack-isPos ℕ.zero = tt
 S-stack-isPos (ℕ.suc n) = S-stack-isPos n
@@ -151,18 +146,6 @@ S-stack-isPos (ℕ.suc n) = S-stack-isPos n
 P-stack-isNeg : (n : ℕ) → IsNeg (P-stack $ ℕ.suc n)
 P-stack-isNeg ℕ.zero = tt
 P-stack-isNeg (ℕ.suc n) = P-stack-isNeg n
-
--- #TODO: unused lemma
-isPos-to-predec
-    : (z : ℤ')
-    → IsPos z
-    → Σ[ z' ∈ ℤ' ] (z ≡ S z') × IsClean z'
-isPos-to-predec (S O) tt = (O , refl , inj₁ tt)
-isPos-to-predec (S (S z)) p = 
-    (S z 
-    , refl 
-    , is-clean-S-downgrade {S z} (inj₂ $ inj₁ p)
-    )
 
 -- If z is positive then there exist a clean z' s.t. z ≡ S z'.
 -- (z' might not be positive, it can also be O).

@@ -1,5 +1,5 @@
 -- Module      : Eser.Integers.Unused
--- Description : Unused lemmas and definitions for the Integers example
+-- Description : Unused lemmas and definitions for the Integers example.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -9,6 +9,10 @@
 -- Here are some working artefacts of those struggles
 -- that *might* still be of use in the future.
 -- Most likely they won't.
+--
+-- The lemmas have been ripped out of their context and this file may not
+-- compile before putting them back into the appropriate context.
+-- (Mostly: depending on things not imported into this file).
 --------------------------------------------------------------------------------
 
 open import Level
@@ -43,7 +47,27 @@ open import Eser.EqRel
 open import Eser.Quotient.Definitions
 open import Eser.Signature.NoWeight
 
-module Eser.Examples.Integers where
+open import Eser.Examples.Integers.Definitions
+open import Eser.Examples.Integers
+
+module Eser.Examples.Integers.Unused where
+
+-- # TODO : Unused lemma
+isPos-upgrade : (z : ℤ') → IsPos z → IsPos (S z)
+isPos-upgrade (S O) p = tt
+isPos-upgrade (S (S z)) p = p
+
+-- #TODO: unused lemma
+isPos-to-predec
+    : (z : ℤ')
+    → IsPos z
+    → Σ[ z' ∈ ℤ' ] (z ≡ S z') × IsClean z'
+isPos-to-predec (S O) tt = (O , refl , inj₁ tt)
+isPos-to-predec (S (S z)) p = 
+    (S z 
+    , refl 
+    , is-clean-S-downgrade {S z} (inj₂ $ inj₁ p)
+    )
 
 module NoWeights where
 
