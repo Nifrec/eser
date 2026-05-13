@@ -70,13 +70,41 @@ IsNormal z = IsFixpoint nf (θ z)
 -- It holds : (IsClean z) ↔ (nf (ϵ z) ≡ ϵ z)
 -- Reason:
 -- (1) IsClean z ↔ f z ≡ z
--- (2) nf ≗ elift f
+-- (2) nf ≗ elift f ≗ θ ∘ f ∘ θ⁻¹
 -- and 
 -- (3) elift preserves and reflects fixpoints.
 normalIfClean : (z : ℤ') → IsClean z → IsNormal z
-normalIfClean z p = ?
-cleanIfNormal : (z : ℤ') → (nf (θ z) ≡ θ z) → IsClean z
-cleanIfNormal z p = ?
+normalIfClean z p = 
+    ≡begin 
+        (θ ∘ f ∘ θ⁻¹ ∘ θ) z
+    ≡⟨ cong (θ ∘ f) $ θ⁻¹∘θ≈id z ⟩
+        (θ ∘ f) z
+    ≡⟨ cong θ $ f-fixes-on-clean-inp z p ⟩
+        θ z
+    ≡∎
+
+    
+cleanIfNormal : (z : ℤ') → IsNormal z → IsClean z
+cleanIfNormal z p = z-is-clean
+    where
+        z-is-fixpoint : f z ≡ z
+        z-is-fixpoint = 
+                ≡begin 
+                    f z
+                ≡⟨ cong f $ sym $ θ⁻¹∘θ≈id z ⟩
+                    (f ∘ θ⁻¹ ∘ θ ) z
+                ≡⟨ sym $ θ⁻¹∘θ≈id $ (f ∘ θ⁻¹ ∘ θ ) z ⟩
+                    (θ⁻¹ ∘ θ ∘ f ∘ θ⁻¹ ∘ θ ) z
+                ≡⟨ cong θ⁻¹ p ⟩
+                    (θ⁻¹ ∘ θ) z
+                ≡⟨ θ⁻¹∘θ≈id z ⟩
+                    z
+                ≡∎
+        fz-is-clean : IsClean (f z)
+        fz-is-clean = f-cleans z
+        z-is-clean : IsClean z
+        z-is-clean = subst IsClean z-is-fixpoint fz-is-clean
+    
 
 abs : (z : ℤ') → IsClean z → ℕ
 abs O     p@(inj₁ isZero)       = 0
