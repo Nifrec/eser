@@ -104,6 +104,60 @@ restIsProofIrrel
 restIsProofIrrel H {a} {a} b b' refl =
     cong (λ b → (a , b)) (H a b b')
 
+-- If two pairs in dependent sums are equal,
+-- then so are their second projections.
+-- Up to a `subst` to match up the dependency in their types.
+cong-proj₂ 
+    : {A : Set}
+    → {B : A → Set}
+    → (x y : Σ[ a ∈ A ] B a)
+    → (H : x ≡ y)
+    → subst B (cong proj₁ H) (proj₂ x) ≡ proj₂ y
+cong-proj₂ {A} {B} x y refl = refl
+
+-- Uniqueness-of-Identity-Proofs : all types `a ≡ a'` for `A : Set`
+-- are propositions, i.e., all their terms are equal.
+uip : {A : Set} → {a a' : A} → (p q : a ≡ a') → p ≡ q
+uip {A} {a} {a'} refl refl = refl
+
+-- Given an index-preserving function α : Σ[ i ∈ I ] A i → Σ[ i ∈ I ] B i
+-- (so proj₁ ∘ α (i , a) ≡ i), then for any i : I 
+-- and input x ≗ (x₁, x₂) Σ[ i ∈ I ] A i
+-- for which we know q : proj₁ x ≡ i,
+-- there are two ways to get element of B i via applying α on x:
+-- (1) use a substitution to retype x₂ : A x₁ to x₂' : A i,
+--     then apply α to (i , x₂') to get (j , y₂) and apply index preservation 
+--     to show j ≡ i, and substitute that in y₂ to obtain a y₂' : B i.
+-- (2) Just apply α on x, this gives (y₁ , y₂).
+--     Now compose index preservation with q to get y₁ ≗ proj₁ ∘ α x ≡ x₁ ≡ i,
+--     and substitute that in y₂ to get y₂' : B i.
+-- The next theorem asserts that both yield propositionnally equal results.
+dep-sum-idx-presv-subst
+    : {I : Set}
+    → {A B : I → Set}
+    → (α : Σ[ i ∈ I ] A i → Σ[ i ∈ I ] B i)
+    → (p : (proj₁ ∘ α) ≈ proj₁)
+    → (i : I)
+    → (x : Σ[ i ∈ I ] A i)
+    → (q : proj₁ x ≡ i)
+    → _≡_ {A = B i}
+        (subst B (p (i , subst A q (proj₂ x))) 
+                 ((proj₂ ∘ α) (i , subst A q (proj₂ x))))
+        (subst B (trans (p x) q) ((proj₂ ∘ α) x))
+dep-sum-idx-presv-subst {I} {A} {B} α p i x@(i , x₂) refl = 
+    begin 
+        subst B (p (i , subst A refl (proj₂ x))) 
+                ((proj₂ ∘ α) (i , subst A refl (proj₂ x)))
+    ≡⟨⟩
+        subst B (p (i , x₂)) ((proj₂ ∘ α) (i , x₂))
+    ≡⟨⟩
+        subst B (p x) ((proj₂ ∘ α) x)
+    -- use (p x) ≡ (trans (p x) refl); both are proofs of the same equality.
+    ≡⟨ cong (λ y → subst B y ((proj₂ ∘ α ) x)) (uip (p x) (trans (p x) refl)) ⟩
+        subst B (trans (p x) refl) ((proj₂ ∘ α) x)
+    ∎
+    
+
 --------------------------------------------------------------------------------
 -- Natural number arithmetic
 --------------------------------------------------------------------------------
