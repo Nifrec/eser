@@ -211,14 +211,40 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 --meh a refl = ?
 
                 invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-                invˡ {a} {b} refl = 
+                invˡ {b} {_} refl = 
                     ≡begin 
-                        f (f⁻¹ a)
+                        f (f⁻¹ b)
+                    ≡⟨⟩ -- Unfold f⁻¹
+                        f (subst (λ j → A j) (p⁻¹ (i , b)) (proj₂ (α⁻¹ (i , b))))
+                    -- Rewrite into the format of `dep-sum-idx-presv-subst`.
+                    ≡⟨⟩ 
+                        f (subst A q (proj₂ x))
+                    ≡⟨⟩ -- Unfold f
+                        subst B (p (i , (subst A q (proj₂ x))))
+                                ((proj₂ ∘ α) (i , (subst A q (proj₂ x))))
+                    ≡⟨ dep-sum-idx-presv-subst {I} {A} {B} α p i x q ⟩
+                        subst B (trans (p x) q) ((proj₂ ∘ α) x)
+                    ≡⟨ ? ⟩ -- UIP?
+                        subst B (cong proj₁ K) ((proj₂ ∘ α) x)
+                    ≡⟨ cong-proj₂ (α x) (i , b) K ⟩
+                        proj₂ (i , b)
                     ≡⟨⟩
-                        f (subst (λ j → A j) (p⁻¹ (i , a)) (proj₂ (α⁻¹ (i , a))))
-                    ≡⟨ ? ⟩
-                        a
+                        b
                     ≡∎
+                    where
+                        x : Σ[ i ∈ I ] A i
+                        x = α⁻¹ (i , b)
+                        q : proj₁ x ≡ i
+                        q = p⁻¹ (i , b)
+                        K : (α x) ≡ (i , b)
+                        K = ≡begin 
+                                α x
+                            ≡⟨⟩
+                                (α ∘ α⁻¹) (i , b)
+                            ≡⟨ ≃-toFrom H (i , b) ⟩
+                                (i , b)
+                            ≡∎
+                            
                     
                 invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
                 invʳ {y} {x} refl = ?
