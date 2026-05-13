@@ -321,4 +321,8 @@ nf-def = refl
 nf' : C → C
 nf' = ψ ∘ f ∘ ψ⁻¹
 
+IsNormal : ℤ' → Set
+IsNormal z = IsFixpoint nf (θ z)
 
+isNormalIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsNormal z)
+isNormalIrrel z = Data.Nat.Properties.≡-irrelevant
