@@ -197,8 +197,29 @@ isNeg-to-predec (P (P z)) p =
 
 isNormalIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsNormal z)
 isNormalIrrel z = Data.Nat.Properties.≡-irrelevant
+
+isPosIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsPos z)
+isPosIrrel (S O) tt tt = refl
+isPosIrrel (S (S z)) p q = isPosIrrel (S z) p q
+
+isNegIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsNeg z)
+isNegIrrel (P O) tt tt = refl
+isNegIrrel (P (P z)) p q = isNegIrrel (P z) p q
+
 isCleanIrrel : (z : ℤ') → Relation.Nullary.Irrelevant (IsClean z)
-isCleanIrrel z = ?
+isCleanIrrel O (inj₁ tt) (inj₁ tt) = refl
+isCleanIrrel O (inj₁ p') (inj₂ (inj₁ ()))
+isCleanIrrel O (inj₁ p') (inj₂ (inj₂ ()))
+isCleanIrrel O (inj₂ (inj₁ ())) 
+isCleanIrrel O (inj₂ (inj₂ ()))
+isCleanIrrel (S z) (inj₂ (inj₁ p')) (inj₂ (inj₁ q')) = cong (inj₂ ∘ inj₁) p'≡q'
+    where
+        p'≡q' : p' ≡ q'
+        p'≡q' = isPosIrrel (S z) p' q'
+isCleanIrrel (P z) (inj₂ (inj₂ p')) (inj₂ (inj₂ q')) = cong (inj₂ ∘ inj₂) p'≡q'
+    where
+        p'≡q' : p' ≡ q'
+        p'≡q' = isNegIrrel (P z) p' q'
 
 is-clean-S-downgrade-nonneg
     : (z : ℤ')
