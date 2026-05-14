@@ -197,25 +197,18 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                         i
                     ≡∎
 
-
                 f : A i → B i
-                f a = subst (λ j → B j) (p (i , a)) (proj₂ (α (i , a)))
+                f a = subst B (p (i , a)) (proj₂ (α (i , a)))
+
                 f⁻¹ : B i → A i
-                f⁻¹ b = subst (λ j → A j) (p⁻¹ (i , b)) (proj₂ (α⁻¹  (i , b)))
-                --invˡ : {a : A i} → {b : B i} → (f⁻¹ a ≡ b) 
-                --    → (p : proj₁ (α (i , a)) ≡ i) 
-                --    → (p⁻¹ : proj₁ (α⁻¹ (i , b) ≡ i) 
-                --    → f a ≡ b 
-                --meh : (a : A i) → (p : proj₁ (α (i , a)) ≡ i) 
-                --    → f⁻¹ (subst (λ j → B j) p (proj₂ (α (i , a)))) ≡ (f⁻¹ (proj₂ (α (i , a))))
-                --meh a refl = ?
+                f⁻¹ b = subst A (p⁻¹ (i , b)) (proj₂ (α⁻¹  (i , b)))
 
                 invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
                 invˡ {b} {_} refl = 
                     ≡begin 
                         f (f⁻¹ b)
                     ≡⟨⟩ -- Unfold f⁻¹
-                        f (subst (λ j → A j) (p⁻¹ (i , b)) (proj₂ (α⁻¹ (i , b))))
+                        f (subst A (p⁻¹ (i , b))(proj₂ (α⁻¹ (i , b))))
                     -- Rewrite into the format of `dep-sum-idx-presv-subst`.
                     ≡⟨⟩ 
                         f (subst A q (proj₂ x))
@@ -226,7 +219,8 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                     ≡⟨ dep-sum-idx-presv-subst {I} {A} {B} α p i x q ⟩
                         subst B (trans (p x) q) ((proj₂ ∘ α) x)
                     -- Change the equality by which we substitute.
-                    ≡⟨ cong (λ y → subst B y ((proj₂ ∘ α) x)) (uip (trans (p x) q) (cong proj₁ K)) ⟩
+                    ≡⟨ cong (λ y → subst B y ((proj₂ ∘ α) x)) 
+                            (uip (trans (p x) q) (cong proj₁ K)) ⟩
                         subst B (cong proj₁ K) ((proj₂ ∘ α) x)
                     ≡⟨ cong-proj₂ (α x) (i , b) K ⟩
                         proj₂ {A = I} {B = B} (i , b)
@@ -249,7 +243,13 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                             
                     
                 invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-                invʳ {y} {x} refl = ?
+                invʳ {a} {b} refl = 
+                    ≡begin 
+                        f⁻¹ (f a)
+                    ≡⟨ ? ⟩
+                        a
+                    ≡∎
+                    
             
 
     -- Theorem: the open terms with and without weights are the same.
