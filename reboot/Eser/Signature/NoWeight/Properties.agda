@@ -222,12 +222,14 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                     ≡⟨⟩ -- Unfold f
                         subst B (p (i , (subst A q (proj₂ x))))
                                 ((proj₂ ∘ α) (i , (subst A q (proj₂ x))))
+                    -- Use J-rule to pull the buried `subst` out to top-level.
                     ≡⟨ dep-sum-idx-presv-subst {I} {A} {B} α p i x q ⟩
                         subst B (trans (p x) q) ((proj₂ ∘ α) x)
-                    ≡⟨ ? ⟩ -- UIP?
+                    -- Change the equality by which we substitute.
+                    ≡⟨ cong (λ y → subst B y ((proj₂ ∘ α) x)) (uip (trans (p x) q) (cong proj₁ K)) ⟩
                         subst B (cong proj₁ K) ((proj₂ ∘ α) x)
                     ≡⟨ cong-proj₂ (α x) (i , b) K ⟩
-                        proj₂ (i , b)
+                        proj₂ {A = I} {B = B} (i , b)
                     ≡⟨⟩
                         b
                     ≡∎
