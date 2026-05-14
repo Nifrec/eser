@@ -131,7 +131,7 @@ uip {A} {a} {a'} refl refl = refl
 -- (2) Just apply α on x, this gives (y₁ , y₂).
 --     Now compose index preservation with q to get y₁ ≗ proj₁ ∘ α x ≡ x₁ ≡ i,
 --     and substitute that in y₂ to get y₂' : B i.
--- The next theorem asserts that both yield propositionnally equal results.
+-- The next theorem asserts that both yield propositionnally equal results .
 dep-sum-idx-presv-subst
     : {I : Set}
     → {A B : I → Set}
