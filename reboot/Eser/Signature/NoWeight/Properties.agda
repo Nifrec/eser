@@ -246,9 +246,39 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 invʳ {a} {b} refl = 
                     ≡begin 
                         f⁻¹ (f a)
-                    ≡⟨ ? ⟩
+                    ≡⟨⟩ -- Unfold f.
+                        f⁻¹ (subst B (p (i , a)) (proj₂ (α (i , a))))
+                    ≡⟨⟩ -- Fold abbreviations.
+                        f⁻¹ (subst B q (proj₂ x))
+                    ≡⟨⟩ -- Unfold f⁻¹.
+                        subst A (p⁻¹ (i , (subst B q (proj₂ x)))) 
+                                (proj₂ (α⁻¹ (i , subst B q (proj₂ x))))
+                    ≡⟨ dep-sum-idx-presv-subst {I} {B} {A} α⁻¹ p⁻¹ i x q ⟩
+                        subst A (trans (p⁻¹ x) q) (proj₂ (α⁻¹ x))
+                    ≡⟨ cong (λ y → subst A y (proj₂ (α⁻¹ x)))
+                        (uip (trans (p⁻¹ x) q) (cong proj₁ K))
+                    ⟩
+                        subst A (cong proj₁ K) (proj₂ (α⁻¹ x))
+                    ≡⟨ cong-proj₂ (α⁻¹ x) (i , a) K ⟩
+                        proj₂ {A = I} {B = A} (i , a)
+                    ≡⟨⟩
                         a
                     ≡∎
+                    where
+                        x : Σ[ i ∈ I ] B i
+                        x = α (i , a)
+                        q : proj₁ x ≡ i
+                        q = p (i , a)
+                        K : α⁻¹ x ≡ (i , a)
+                        K = ≡begin 
+                                α⁻¹ x
+                            ≡⟨⟩
+                                (α⁻¹ ∘ α) (i , a)
+                            ≡⟨ ≃-fromTo H (i , a) ⟩
+                                (i , a)  
+                            ≡∎
+                        
+
                     
             
 
