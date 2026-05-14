@@ -157,6 +157,25 @@ dep-sum-idx-presv-subst {I} {A} {B} α p i x@(i , x₂) refl =
         subst B (trans (p x) refl) ((proj₂ ∘ α) x)
     ∎
     
+module SigmaCasts {I : Set} {A : I → Set} where
+
+    projcast
+        : (i : I)
+        → (x : Σ[ i ∈ I ] A i)
+        → (proj₁ x ≡ i)
+        → A i
+    projcast i x refl = proj₂ x
+
+    -- projcast preserves propositional equalities.
+    projcast-≡
+        : (i : I)
+        → (x y : Σ[ i ∈ I ] A i)
+        → (Hx : proj₁ x ≡ i)
+        → (Hy : proj₁ y ≡ i)
+        → x ≡ y
+        → _≡_ {A = A i} (projcast i x Hx) (projcast i y Hy)
+    projcast-≡ i x y refl refl refl = refl
+
 
 --------------------------------------------------------------------------------
 -- Natural number arithmetic

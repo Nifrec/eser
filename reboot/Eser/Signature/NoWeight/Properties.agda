@@ -42,26 +42,6 @@ open import Eser.Aux
 
 module Eser.Signature.NoWeight.Properties where
 
--- #TODO: move to other file when done.
-module SigmaCasts {I : Set} {A : I → Set} where
-
-    projcast
-        : (i : I)
-        → (x : Σ[ i ∈ I ] A i)
-        → (proj₁ x ≡ i)
-        → A i
-    projcast i x refl = proj₂ x
-
-    -- projcast preserves propositional equalities.
-    projcast-≡
-        : (i : I)
-        → (x y : Σ[ i ∈ I ] A i)
-        → (Hx : proj₁ x ≡ i)
-        → (Hy : proj₁ y ≡ i)
-        → x ≡ y
-        → _≡_ {A = A i} (projcast i x Hx) (projcast i y Hy)
-    projcast-≡ i x y refl refl refl = refl
-
 module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
     private
         CNW : Set
@@ -75,7 +55,8 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
 
     -- Equality between open terms is decidable.
     decEquality : {n : ℕ} → (t t' : OTNW n) → Relation.Nullary.Dec (t ≡ t')
-    decEquality {n} (mk-nullary-nw c) (mk-nullary-nw c') with cardToDecidableEq μ c c'
+    decEquality {n} (mk-nullary-nw c) (mk-nullary-nw c') 
+        with cardToDecidableEq μ c c'
     ... | yes refl = yes refl
     ... | no c≢c' = no λ { refl → c≢c' refl}
     decEquality {n} (mk-nullary-nw c) (giveArg-nw t' t'') = no λ { () }
@@ -199,10 +180,12 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         RHS-proj₂ = proj₂ {A = ℕ} {B = λ n → Σ[ w ∈ ℕ ] OT w n}
 
         -- invˡ requires (ℕ , <)-well-founded recursion on weights of terms,
-        -- because the `t` and `a` meta-subterms of a (n , wₐ + wₜ , giveArg t a)
-        -- input must be tupled to `(ℕ.suc n , wₜ , t)` 
+        -- because the `t` and `a` meta-subterms 
+        -- of a (n , wₐ + wₜ , giveArg t a) input must be 
+        -- tupled to `(ℕ.suc n , wₜ , t)` 
         -- and `(0 , wₐ , a)` before they are terms of RHS.
-        -- But those tuples are not meta-subterms of (n , wₐ + wₜ , giveArg t a)
+        -- But those tuples are not meta-subterms 
+        -- of (n , wₐ + wₜ , giveArg t a)
         -- anymore, so the termination checker complains when calling
         -- invˡ directly on those tuples. Luckily wₜ < wₐ + wₜ 
         -- and wₐ < wₐ + wₜ, so (ℕ , <)-recursion comes to the rescue.
@@ -312,11 +295,13 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                     → (mwa : Σ[ m ∈ ℕ ](Σ[ wₐ ∈ ℕ ] OT wₐ m ))
                     → proj₁ mwa ≡ 0
                     → RHS
-                giveArg# n (wₜ , t) (0 , wₐ , a) refl = (n , wₐ + wₜ , giveArg t a)
+                giveArg# n (wₜ , t) (0 , wₐ , a) refl = 
+                    (n , wₐ + wₜ , giveArg t a)
 
                 open SigmaCasts {I = ℕ} {A = λ n → Σ[ w ∈ ℕ ] OT w n} 
                 a-rec' : _≡_ {A = Σ[ w ∈ ℕ ] OT w 0} (wₐ' , a') (wₐ , a)
-                a-rec' = projcast-≡ 0 (0 , wₐ' , a') (0 , wₐ , a) refl refl a-rec
+                a-rec' = 
+                    projcast-≡ 0 (0 , wₐ' , a') (0 , wₐ , a) refl refl a-rec
 
         invʳ : Inverseʳ _≡_ _≡_ α ϕ
 
@@ -375,7 +360,8 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
                 t-rec = invʳ-rec (ℕ.suc n) t
 
                 t''≡t : t'' ≡ t
-                t''≡t = projcast-≡ (ℕ.suc n) (ℕ.suc n , t'') (ℕ.suc n , t) refl refl t-rec
+                t''≡t = projcast-≡ (ℕ.suc n) 
+                    (ℕ.suc n , t'') (ℕ.suc n , t) refl refl t-rec
 
                 a-rec : (0 , a'') ≡ (0 , a)
                 a-rec = invʳ-rec 0 a
