@@ -98,6 +98,14 @@ module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
     _∼_ : Rel A _
     a ∼ a' = (nf $ φ a) ≡ (nf $ φ a')
 
+
+    IsNormal : A → Set
+    IsNormal a = IsFixpoint nf (φ a)
+
+    isNormalIrrel : (a : A) → Relation.Nullary.Irrelevant (IsNormal a)
+    isNormalIrrel a = Data.Nat.Properties.≡-irrelevant
+
+    -- QUotient map
     [_] : A → A' / R
     [_] a = (φ⁻¹ (nf (φ a)) , isNF)
         where
@@ -176,4 +184,29 @@ module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
         → ({a a' : A} → (a ∼ a') → (g a ≡ g a')) 
         → A' / R → B
     quotLift g H = g ∘ emb
+
+    qind
+        : {B : (A' / R) → Set}
+        → ((a : A) → B [ a ])
+        → (q : (A' / R))
+        → B q
+    qind {B} g q@(a , isNormal) = subst B [a]≡q outp
+        where
+            -- This is the right output, but we need to substitute the index
+            -- [ a ] by q.
+            outp : B [ a ]
+            outp = g a
+            H : proj₁ [ a ] ≡ a
+            H = ≡begin 
+                    (φ⁻¹ ∘ nf ∘ φ) a
+                ≡⟨  cong φ⁻¹ isNormal ⟩
+                    (φ⁻¹ ∘ φ) a
+                ≡⟨ φ⁻¹∘φ≈id a ⟩
+                    a
+                ≡∎
+            [a]≡q : [ a ] ≡ q
+            [a]≡q = restIsProofIrrel {A} {IsNormal} 
+                isNormalIrrel {proj₁ [ a ]} {a} (proj₂ [ a ]) isNormal H
+
+                
 
