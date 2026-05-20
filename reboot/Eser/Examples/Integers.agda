@@ -19,7 +19,7 @@ open import Data.Unit
 open import Data.Empty
 open import Relation.Binary
 open import Relation.Binary.Definitions
-open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Nullary
 open import Data.Product
 open import Relation.Binary.Structures
@@ -342,8 +342,6 @@ cleanIfNormal z p = z-is-clean
 
 infixl 6 _ℤ+_ -- Same infixl priority as _+_ on ℕ.
 _ℤ+_ : ℤ → ℤ → ℤ
-(z , isNorm) ℤ+ (z' , isNorm') = (f (z ℤ'+ z') , p)
-    where
-        p : IsNormal (f (z ℤ'+ z'))
-        p = normalIfClean (f (z ℤ'+ z')) $ f-cleans (z ℤ'+ z')
+(z , isNorm) ℤ+ (z' , isNorm') = [ z ℤ'+ z' ] 
+    where open Eser.Quotient.Definitions.Morphisms ℤ' ℤ'≃ℕ nf-fun
         
