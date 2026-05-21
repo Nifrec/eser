@@ -219,4 +219,14 @@ module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
                 isNormalIrrel {proj₁ [ a ]} {a} (proj₂ [ a ]) isNormal H
 
                 
+    
+    deceq : DecidableEquality (A' / R)
+    deceq (a , p) (a' , q) = caseDistinction $ deceqA a a'
+        where
+            deceqA : DecidableEquality A
+            deceqA = enumDecEquality {A} A' 
+            caseDistinction : Dec (a ≡ a') → Dec ((a , p) ≡ (a' , q))
+            caseDistinction (yes H) = yes $ restIsProofIrrel {A} {IsNormal} 
+                                                            isNormalIrrel p q H
+            caseDistinction (no H) = no $ λ ap≡a'q → H (cong proj₁ ap≡a'q)
 
