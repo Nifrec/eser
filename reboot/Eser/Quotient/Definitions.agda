@@ -230,3 +230,12 @@ module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
                                                             isNormalIrrel p q H
             caseDistinction (no H) = no $ λ ap≡a'q → H (cong proj₁ ap≡a'q)
 
+    -- The quotient A'/R has proof-irrelevant equalities, AKA is an hSet.
+    -- This follows from dedicable equality using Hedberg's theorem
+    -- (the latter is in the stdlib).
+    ≡-irrel : Relation.Binary.Definitions.Irrelevant {A = A' / R} _≡_ 
+    ≡-irrel = ≡-irrelevant
+        where
+            import Axiom.UniquenessOfIdentityProofs
+            open Axiom.UniquenessOfIdentityProofs.Decidable⇒UIP deceq
+                using (≡-irrelevant)
