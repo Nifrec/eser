@@ -105,7 +105,7 @@ module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
     isNormalIrrel : (a : A) → Relation.Nullary.Irrelevant (IsNormal a)
     isNormalIrrel a = Data.Nat.Properties.≡-irrelevant
 
-    -- QUotient map
+    -- Quotient map
     [_] : A → A' / R
     [_] a = (φ⁻¹ (nf (φ a)) , isNF)
         where
@@ -130,6 +130,16 @@ module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
                 ≡⟨⟩
                     φ [a]
                 ≡∎
+
+    sound : (a a' : A) → a ∼ a' → [ a ] ≡ [ a' ]
+    sound a a' a∼a' = restIsProofIrrel {A} {B} isNormalIrrel b b' H
+        where
+            H : (proj₁ [ a ]) ≡ (proj₁ [ a' ])
+            H = cong φ⁻¹ a∼a'
+            B : A → Set
+            B = IsNormal
+            b = proj₂ [ a ]
+            b' = proj₂ [ a' ]
 
     -- Embed the quotient back into A, by picking out the element corresponding
     -- to the normal form of the class.
