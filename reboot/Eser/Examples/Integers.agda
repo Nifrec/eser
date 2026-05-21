@@ -343,5 +343,5 @@ cleanIfNormal z p = z-is-clean
 infixl 6 _ℤ+_ -- Same infixl priority as _+_ on ℕ.
 _ℤ+_ : ℤ → ℤ → ℤ
 (z , isNorm) ℤ+ (z' , isNorm') = [ z ℤ'+ z' ] 
-    where open Eser.Quotients.Morphisms ℤ' ℤ'≃ℕ nf-fun
+    where open Eser.Quotients.Properties ℤ' ℤ'≃ℕ nf-fun
         

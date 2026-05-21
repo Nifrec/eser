@@ -70,7 +70,7 @@ _/_ {A} A≃ℕ (nf , nfleq , nffix) = Σ[ a ∈ A ](IsFixpoint nf (φ a))
 -- in terms of a normal-from function.
 --------------------------------------------------------------------------------
 
-module Morphisms (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
+module Properties (A : Set) (A' : A ≃ ℕ) (R : NFFun) where
 
     φ : A → ℕ
     φ = ≃-to A'
