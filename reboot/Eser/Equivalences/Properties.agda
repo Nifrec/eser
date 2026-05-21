@@ -860,4 +860,28 @@ fin-Σ-fun (suc a) f =
     in
     (z , H)
 
+--------------------------------------------------------------------------------
+-- Enumerable types
+--------------------------------------------------------------------------------
+module _ {A : Set} (A≃ℕ : A ≃ ℕ) where
+    open EquivShorthands A≃ℕ
+
+    enumDecEquality : DecidableEquality A
+    enumDecEquality a a' with (φ a Data.Nat.≟ φ a')
+    ... | yes p = yes p'
+        where
+            p' : a ≡ a'
+            p' = ≡begin 
+                    a
+                ≡⟨  sym $ φ⁻¹∘φ≈id a ⟩
+                    (φ⁻¹ ∘ φ) a
+                ≡⟨ cong φ⁻¹ p ⟩
+                    (φ⁻¹ ∘ φ) a'
+                ≡⟨  φ⁻¹∘φ≈id a' ⟩
+                   a' 
+                ≡∎
+    ... | no p = no (λ a≡a' → p $ cong φ a≡a')
+            
+                
+            
 
