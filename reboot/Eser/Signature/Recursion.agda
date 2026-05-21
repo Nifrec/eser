@@ -43,7 +43,7 @@ open import Eser.Aux
 open import Eser.Signature.Definitions
 open import Eser.Signature.MainTheorem
 open import Eser.EqRel
-open import Eser.Quotient.Definitions
+open import Eser.Quotients
 
 module Eser.Signature.Recursion where
 

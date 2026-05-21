@@ -58,7 +58,7 @@ open import Eser.Equivalences.Properties
 open import Eser.Aux
 open import Eser.Signature
 open import Eser.EqRel
-open import Eser.Quotient.Definitions
+open import Eser.Quotients
 
 module Eser.Examples.NNFL where
 

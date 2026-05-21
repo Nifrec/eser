@@ -1,4 +1,4 @@
--- Module      : Eser.Quotient.Definitions
+-- Module      : Eser.Quotients
 -- Description : Defining a quotient type of an enumerable type.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
@@ -46,7 +46,7 @@ open import Eser.Aux
 open import Eser.Equivalences
 open import Eser.EqRel
 
-module Eser.Quotient.Definitions where
+module Eser.Quotients where
 
 -- Quotient type of an enumerated type A by a relation (the latter being
 -- represented by a normal-form function).

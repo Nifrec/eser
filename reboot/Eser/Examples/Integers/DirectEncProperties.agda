@@ -31,7 +31,7 @@ open import Eser.Equivalences.Properties
 open import Eser.Aux
 open import Eser.Signature
 open import Eser.EqRel
-open import Eser.Quotient.Definitions
+open import Eser.Quotients
 open import Eser.Examples.Integers.Definitions
 
 module Eser.Examples.Integers.DirectEncProperties where

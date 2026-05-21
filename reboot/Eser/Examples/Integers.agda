@@ -32,7 +32,7 @@ open import Eser.Aux using (IsFixpoint ; restIsProofIrrel)
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.EqRel
-open import Eser.Quotient.Definitions
+open import Eser.Quotients
 
 module Eser.Examples.Integers where
 
@@ -343,5 +343,5 @@ cleanIfNormal z p = z-is-clean
 infixl 6 _ℤ+_ -- Same infixl priority as _+_ on ℕ.
 _ℤ+_ : ℤ → ℤ → ℤ
 (z , isNorm) ℤ+ (z' , isNorm') = [ z ℤ'+ z' ] 
-    where open Eser.Quotient.Definitions.Morphisms ℤ' ℤ'≃ℕ nf-fun
+    where open Eser.Quotients.Morphisms ℤ' ℤ'≃ℕ nf-fun
         
