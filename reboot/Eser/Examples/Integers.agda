@@ -17,6 +17,7 @@ open import Data.Nat.Properties
 open import Data.Sum
 open import Data.Unit
 open import Data.Empty
+open import Data.List hiding ([_])
 open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality hiding ([_])
@@ -345,3 +346,31 @@ _ℤ+_ : ℤ → ℤ → ℤ
 (z , isNorm) ℤ+ (z' , isNorm') = [ z ℤ'+ z' ] 
     where open Eser.Quotients.Properties ℤ' ℤ'≃ℕ nf-fun
         
+
+--------------------------------------------------------------------------------
+-- Explicitly compute the first 11 terms in the enumeration of ℤ',
+-- to showcase the output of the enumeration algorithm.
+--------------------------------------------------------------------------------
+opaque
+    unfolding  ℤ'≃ℕ
+
+    firstElevenTerms : List ℤ'
+    firstElevenTerms = 
+        Data.List.map θ⁻¹ (0 ∷ 1 ∷ 2 ∷ 3 ∷ 4 ∷ 5 ∷ 6 ∷ 7 ∷ 8 ∷ 9 ∷ 10 ∷ [])
+
+    firstElevenTermsCheck :
+        firstElevenTerms ≡ 
+        (  O 
+        ∷ (S O) 
+        ∷ (S $ S O)
+        ∷ (P O)
+        ∷ (S $ S $ S O)
+        ∷ (S $ P O)
+        ∷ (P $ S O)
+        ∷ (S $ S $ S $ S O)
+        ∷ (S $ S $ P O)
+        ∷ (S $ P $ S O)
+        ∷ (P $ S $ S O)
+        ∷ []
+        )
+    firstElevenTermsCheck = refl
