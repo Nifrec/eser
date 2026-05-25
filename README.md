@@ -1,11 +1,13 @@
-# StreamGrids project
-"StreamGrids" is the working title of Lulof's 2025-2026 academic year
-project about piecewise constructing quotients, part of his PhD-student work.
+# Constructing quotients for enumerable types
+Agda source code library "*Eser*" (Enumerable Set Equivalence Relations).
 
-## What-is-where
-* `./latex`: typesetted documents related to StreamGrids.
-* `./prereboot`: huge collection of Agda code written in the Autumn 2025-2026
-    semester. Abandoned after discussions with Tarmo and Niccolò,
-    who indicated a need for a better presentation 
-    and a more clear statement/story.
-* `./reboot`: Agda code for the paper.
+The best starting point for reading this library is [Eser/README.agda],
+which follows the outline of the paper.
+
+**TODO: ref to paper**
+
+
+## Requirements
+Tested with:
+- [Agda](https://github.com/agda/agda) version 2.8
+- [Agda standard library](https://github.com/agda/agda-stdlib) version 2.3
