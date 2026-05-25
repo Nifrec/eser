@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- Number of ways to split a number into two positive numbers
 -- that sum to the original number.

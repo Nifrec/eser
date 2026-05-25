@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- Note: what the Agda standard library calls a 'suffix' L' of a list L
 -- is a sublist whose LEFT endpoint is aligned with that of L

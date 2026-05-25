@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- "Enumerable" means "equivalent to ⊥, to Fin z (for some z ∈ ℕ) xor to ℕ"
 

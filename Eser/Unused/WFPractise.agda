@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- The stdlib gives a lot of tools for getting Well-Founded recursion principles
 -- out of a Well-Founded relation, but those tools are poorly documented and

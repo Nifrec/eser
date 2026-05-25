@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)

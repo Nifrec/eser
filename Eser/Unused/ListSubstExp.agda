@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- Question: given a list of elements x : Σ[ n ∈ ℕ ](B n)
 -- together with proofs hₓ : proj₁ x ≡ mₓ.

@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- Lemmas about how the φ : AllTerms → ℕ equivalence
 -- behaves w.r.t. the orders < and ≤ on ℕ and the corresponding

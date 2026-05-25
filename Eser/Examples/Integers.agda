@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- This example shows how the type 𝐙 of integers can be constructed by
 -- quotienting the inductive type z ::= 0 | S z | P z with a successor- and

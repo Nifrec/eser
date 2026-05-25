@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- The type Σ[ x ∈ ℕ ] Fin (f x) is equivalent to ℕ if infinitely
 -- many `Fin (f x)`s are inhabited.

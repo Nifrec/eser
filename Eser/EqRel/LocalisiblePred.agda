@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- Predicates on relations, defined via a predicate on all finite
 -- restrictions of a relation to a prefix of the underlying enumerated set.

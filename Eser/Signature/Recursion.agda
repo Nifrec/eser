@@ -3,7 +3,6 @@
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
--- Stability   : experimental
 --------------------------------------------------------------------------------
 -- One can define functions out of the terms of a signature by recursion
 -- on 'smaller' terms. A term t' is smaller than t when, in the enumeration
