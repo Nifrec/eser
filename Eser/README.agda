@@ -296,11 +296,12 @@ lemma-4 : ℤ' ≃ C
 lemma-4 = ℤ'≃C
 
 -- First 11 terms of ℤ' in the enumeration ℤ'≃ℕ:
-firstElevenTerms : List ℤ'
-firstElevenTerms = 
-    Data.List.map θ⁻¹ (0 ∷ 1 ∷ 2 ∷ 3 ∷ 4 ∷ 5 ∷ 6 ∷ 7 ∷ 8 ∷ 9 ∷ 10 ∷ [])
-
-
+--
+-- The equivalence ℤ'≃ℕ is defined in an `opaque` block to reduce memory usage
+-- where it is not needed to unfold the proofs.
+-- In particular, on my machine, Examples.Integers.NFFix ran out of both RAM and
+-- swap memory when not using the opaque blocks.
+-- So to compute θ we need to unfold the opaque definition.
 opaque
     unfolding  ℤ'≃ℕ
 
