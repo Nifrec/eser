@@ -105,7 +105,7 @@ open Eser.Quotients.Properties
              )
 
 --------------------------------------------------------------------------------
--- §4 Singatures
+-- §4 Signatures
 --------------------------------------------------------------------------------
 -- These definitions are defined in Eser.Signature.Definitions.
 -- Note that the paper uses _$_ for `giveArg`,
@@ -117,33 +117,6 @@ open import Eser.Signature.Definitions
     ; arity
     ; OpenTerms
     ) 
---Signature : ℕ∞ → ℕ∞ → Set
---Signature μ ζ = cardToSet ζ → ℕ
-
----- Lookup the arity of a constructor in a signature.
---arity : {μ ζ : ℕ∞} → {S : Signature μ ζ} → (c : cardToSet ζ) → ℕ
---arity {S = S} c = ℕ.suc (S c)
-
----- OpenTerms S w n are the terms over signature S
----- * whose total weight (so far) is w
----- * that still need n more arguments to become a closed term
-----      (i.e., to become a constructor with exactly as many inductive
-----      arguments as its own arity).
---data OpenTerms {μ ζ : ℕ∞} (S : Signature μ ζ) : ℕ → ℕ → Set where
---    mk-nullary 
---        : (c : cardToSet μ) 
---        → OpenTerms S (ℕ.suc $ cardToℕ c) 0
---    mk-multiary 
---        : (c : cardToSet ζ) 
---        → OpenTerms S (ℕ.suc $ cardToℕ c) (arity {μ} {ζ} {S = S} c)
---    -- Give a closed term as next argument to a strictly open term.
---    giveArg 
---        : {wₜ : ℕ} 
---        → {wₐ : ℕ} 
---        → {m : ℕ} 
---        → (t : OpenTerms {μ} {ζ} S wₜ (ℕ.suc m))
---        → (a : OpenTerms {μ} {ζ} S wₐ 0)
---        → OpenTerms {μ} {ζ} S (wₐ + wₜ) m
     
 -- Closed terms: open terms needing no more arguments.
 ClosedTerms : {μ ζ : ℕ∞} (S : Signature μ ζ) → ℕ → Set
