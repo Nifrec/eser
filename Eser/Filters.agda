@@ -14,8 +14,9 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
-open import Eser.EqRel.Definitions using (NFFun)
-open import Eser.Aux using (_↔_)
+open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Conversions using (RelToFun)
+open import Eser.Aux using (_↔_ ; _≈_)
 module Eser.Filters where
 
 --------------------------------------------------------------------------------
@@ -77,6 +78,9 @@ module Eser.Filters where
 -- up to extensionality: for every predicate implementable as a filter
 -- there exists a reco that also implements it, and vice versa.
 --------------------------------------------------------------------------------
+
+Predicate : Set₁
+Predicate = DecEquiv → Set
 
 --------------------------------------------------------------------------------
 -- Representation of restrictions of normalisation functions
@@ -231,8 +235,14 @@ syntax recoToFilter P = ↓ P
 Filter-sats : Filter → NFFun → Set
 Filter-sats = ?
 
+Filter-to-pred : Filter → Predicate
+Filter-to-pred F R = Filter-sats F (RelToFun R)
+
 Reco-sats : Reco → NFFun → Set
 Reco-sats = ?
+
+Reco-to-pred : Reco → Predicate
+Reco-to-pred P R = Reco-sats P (RelToFun R)
 
 theo-filter-reco-correspondence
     : (F : Filter)
@@ -297,7 +307,60 @@ _♥_ F G =
     → Σ[ c ∈ Choices r ] (F ⋀ G) r c ≡ true
 
 --------------------------------------------------------------------------------
+-- Extracting a normalisation function out of a satisfiable filter
+--------------------------------------------------------------------------------
+-- If F ♥ F, then there exists at least one normalisation function
+-- satisfying F. There may be multiple. 
+-- Two obvious such functions are as follows:
+-- * Always choose the smallest allowed choice.
+--      (This minimises the number of equivalence classes).
+-- * Always choose the largest allowed choice.
+--      (This maximises the number of equivalence classes).
+-- For many actual filters I consider to implement, the first one becomes
+-- trivial: it always can choose 0, and does so accordingly;
+-- resulting in one boring equivalence class.
+-- However, choosing the largest often gives the desired relation.
+
+extract-maxchoice-nf
+    : {F : Filter}
+    → F ♥ F
+    → Σ[ f ∈ NFFun ] (Filter-sats F f)
+extract-maxchoice-nf {F} F♥F = ?
+
+--------------------------------------------------------------------------------
+-- Inverse of `restrict`
+--------------------------------------------------------------------------------
+-- `restrict f` gives a coherent family of NFRestrs.
+-- 'Coherent' in the sense that they are pointwise extensions of each other.
+-- But we can also combine such a family into a NFFun,
+-- which is (up to function extensionality) the inverse of `restrict`.
+
+NFRestrFam : Set
+NFRestrFam = (n : ℕ) → NFRestr n
+CohNFRestrFam : Set
+CohNFRestrFam = Σ[ h ∈ NFRestrFam ]((n : ℕ) → h n ⋖ h (ℕ.suc n))
+
+restrict+ : NFFun → CohNFRestrFam
+restrict+ f = (restrict f , ?)
+
+combine : CohNFRestrFam → NFFun
+combine = ?
+
+theo-restrict-combine
+    : (f : NFFun)
+    →  (proj₁ ∘ combine ∘ restrict+) f ≈ proj₁ f
+theo-restrict-combine f = ?
+
+theo-combine-restrict
+    : (H : CohNFRestrFam)
+    → (proj₁ ∘ restrict+ ∘ combine) H ≈ proj₁ H
+theo-combine-restrict H = ?
+
+
+--------------------------------------------------------------------------------
 -- TODOs
 --------------------------------------------------------------------------------
--- * Sheets `⋄`: PointwiseChooser and aux lemmas.
+-- * Sheets '◊': PointwiseChooser and aux lemmas.
+-- * add lemma that extract-maxchoice-nf is pointwise actually the maximum
+-- choice.
 
