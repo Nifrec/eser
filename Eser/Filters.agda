@@ -14,6 +14,8 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
+open import Eser.EqRel.Definitions using (NFFun)
+open import Eser.Aux using (_↔_)
 module Eser.Filters where
 
 --------------------------------------------------------------------------------
@@ -157,7 +159,6 @@ addChoice r (earlier-new c) = oldNF r c
 -- a normal form in `Choices r ≗ NFS (newNF r)`.
 
 -- Restrict a normalisation function into a NFRestr
-open import Eser.EqRel.Definitions using (NFFun)
 restrict : NFFun → (n : ℕ) → NFRestr n
 restrict (f , f-leq , f-fix) n = ?
 
@@ -211,6 +212,89 @@ record Reco : Set where
             → predicate r ≡ true
         empty-is-ok
             : predicate empty ≡ true
+
+--------------------------------------------------------------------------------
+-- Correspondence Filters and Recos
+--------------------------------------------------------------------------------
+filterToReco : Filter → Reco
+filterToReco = ?
+
+infixl 4 filterToReco
+syntax filterToReco F = ↑ F
+
+recoToFilter : Reco → Filter
+recoToFilter = ?
+
+infixl 4 recoToFilter
+syntax recoToFilter P = ↓ P
+
+Filter-sats : Filter → NFFun → Set
+Filter-sats = ?
+
+Reco-sats : Reco → NFFun → Set
+Reco-sats = ?
+
+theo-filter-reco-correspondence
+    : (F : Filter)
+    → (f : NFFun)
+    → Filter-sats F f ↔ Filter-sats (↓ ↑ F) f
+theo-filter-reco-correspondence F f = ?
+    
+theo-reco-filter-correspondence
+    : (P : Reco)
+    → (f : NFFun)
+    → Reco-sats P f ↔ Reco-sats (↑ ↓ P) f
+theo-reco-filter-correspondence P f = ?
+
+--------------------------------------------------------------------------------
+-- Filter compatibility relation
+--------------------------------------------------------------------------------
+-- F ♥ G if there exists a sequence of normalisation function extensions
+-- whose choices both F and G allow, i.e., F ♥ G iff there exisits
+-- a normalisation function that satisfies both.
+--
+-- ## Remark 1
+-- _♥_ is symmetric, but not reflexive and not transitive.
+-- F ♥ F is a nontrivial statement that there exists a normalisation
+-- function satisfying F.
+--
+-- ## Remark 2
+-- The following definition is wrong:
+--      (F ♥ G) r = Σ[ c ∈ Choices r ] F r c ∧ G r c
+-- This condition is too strong, because it requires F and G
+-- to agree on some extension of any NFRestr r, even
+-- NFRestr r containing earlier choices which neither F nor G accepts.
+-- That is not needed to encode the intended 'there exists a normalisation
+-- function F and G both accept'.
+
+infixl 4 _⋀_ -- `And` in Cornelis. `and` (for `∧`) is on Bool.
+_⋀_ : Filter → Filter → Filter
+(F ⋀ G) {n} r c = F r c ∧ G r c
+
+-- All sub-restrictions of a restriction satisfy a filer.
+data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
+    allsat-empty : AllRestr-sat F empty
+    allsat-newNF 
+        : {n : ℕ} 
+        → (r : NFRestr n) 
+        → AllRestr-sat F r
+        → (F r here ≡ true)
+        → AllRestr-sat F (newNF r)
+    allsat-oldNF 
+        : {n : ℕ} 
+        → (r : NFRestr n) 
+        → (c : NFS r)
+        → AllRestr-sat F r
+        → (F r (earlier-new c) ≡ true)
+        → AllRestr-sat F (oldNF r c)
+
+infixl 4 _♥_
+_♥_ : (F G : Filter) → Set
+_♥_ F G = 
+    {n : ℕ}
+    → (r : NFRestr n)
+    → (AllRestr-sat (F ⋀ G) r)
+    → Σ[ c ∈ Choices r ] (F ⋀ G) r c ≡ true
 
 --------------------------------------------------------------------------------
 -- TODOs
