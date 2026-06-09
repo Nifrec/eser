@@ -130,17 +130,90 @@ data NFRestr where
 data NFS where
     here 
         : {n : ℕ} 
-        → (r : NFRestr n) 
+        → {r : NFRestr n} 
         → NFS (newNF r)
     earlier-new
         : {n : ℕ} 
-        → (r : NFRestr n) 
+        → {r : NFRestr n} 
         → NFS r
         → NFS (newNF r)
     earlier-old
         : {n : ℕ} 
-        → (r : NFRestr n) 
-        → (c : NFS r)       --^ Normal form of last element of r.
+        → {r : NFRestr n} 
+        → {c : NFS r}       --^ Normal form of last element of r.
         → NFS r             --^ Normal form that we are now describing.
         → NFS (oldNF r c)
+
+-- When extending a `r : NFRestr n` with the next element n, 
+-- one can choose the normal form of the new element to be n itself.
+-- This normal form does not yet exist in r, but it does in `newNF r`.
+Choices : {n : ℕ} → NFRestr n → Set
+Choices r = NFS (newNF r)
+
+addChoice : {n : ℕ} → (r : NFRestr n) → Choices r → NFRestr (ℕ.suc n)
+addChoice r here = newNF r
+addChoice r (earlier-new c) = oldNF r c
+-- Note: the case `earlier-old c` is impossible because it is not
+-- a normal form in `Choices r ≗ NFS (newNF r)`.
+
+-- Restrict a normalisation function into a NFRestr
+open import Eser.EqRel.Definitions using (NFFun)
+restrict : NFFun → (n : ℕ) → NFRestr n
+restrict (f , f-leq , f-fix) n = ?
+
+-- Important is to show that for every NFRestr there actually is a normalisation
+-- function whose restriction is represents.
+theo-all-nFRestr-reachable
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → Σ[ f ∈  NFFun ](r ≡ restrict f n)
+theo-all-nFRestr-reachable {n} r = ?
+
+--------------------------------------------------------------------------------
+-- Filters
+--------------------------------------------------------------------------------
+Filter : Set
+Filter = {n : ℕ} → (r : NFRestr n) → Choices r → Bool
+
+--------------------------------------------------------------------------------
+-- Restriction Coherent families of predicates (recos)
+--------------------------------------------------------------------------------
+-- Encoded as a record.
+-- Fields:
+-- * pred: the actual family of predicates.
+-- * coherence: if an extension of an r : NFRestr n satisfies the predicates,
+--  then so must r be itself.
+-- * empty-is-ok: the empty NFRestr must always be satisfied.
+--  This is a technical detail to make the correspondence with Filters work,
+--  since a Filter cannot encode any judgement about the empty relation
+--  (because, you know, there was no choice made in order to construct it,
+--  so also no set of choices to constrain).
+
+-- Relation r ⋖ s expressing that s extends r with exactly one more choice.
+infixl 4 _⋖_ -- `lessdot` is the Cornelis shortcut for `⋖`.
+data _⋖_ : {n : ℕ} → (r : NFRestr n) → (s : NFRestr (ℕ.suc n)) → Set where
+    ⋖-newNF : {n : ℕ} → (r : NFRestr n) → r ⋖ (newNF r)
+    ⋖-oldNF : {n : ℕ} → (r : NFRestr n) → (c : NFS r) →  r ⋖ (oldNF r c)
+
+record Reco : Set where
+    constructor reco
+    field
+        predicate
+            : {n : ℕ}
+            → NFRestr n
+            → Bool
+        coherence
+            : {n : ℕ}
+            → (r : NFRestr n)
+            → (s : NFRestr (ℕ.suc n))
+            → r ⋖ s
+            → predicate s ≡ true
+            → predicate r ≡ true
+        empty-is-ok
+            : predicate empty ≡ true
+
+--------------------------------------------------------------------------------
+-- TODOs
+--------------------------------------------------------------------------------
+-- * Sheets `⋄`: PointwiseChooser and aux lemmas.
 
