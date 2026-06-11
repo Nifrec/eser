@@ -168,11 +168,11 @@ restrict (f , f-leq , f-fix) n = ?
 
 -- Important is to show that for every NFRestr there actually is a normalisation
 -- function whose restriction is represents.
-theo-all-nFRestr-reachable
+theo-all-NFRestr-reachable
     : {n : ℕ}
     → (r : NFRestr n)
     → Σ[ f ∈  NFFun ](r ≡ restrict f n)
-theo-all-nFRestr-reachable {n} r = ?
+theo-all-NFRestr-reachable {n} r = ?
 
 --------------------------------------------------------------------------------
 -- Filters
