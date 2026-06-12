@@ -1,5 +1,5 @@
--- Module      : Eser.Filters
--- Description : Sketch of the 'filter'-version of localisible predicates.
+-- Module      : Eser.Filters.Base
+-- Description : Base definitions of filters and normalisation function restr.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -17,7 +17,8 @@ open import Function using (_∘_ ; _$_)
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
-module Eser.Filters where
+
+module Eser.Filters.Base where
 
 --------------------------------------------------------------------------------
 -- # Big-picture summary
@@ -162,18 +163,6 @@ addChoice r (earlier-new c) = oldNF r c
 -- Note: the case `earlier-old c` is impossible because it is not
 -- a normal form in `Choices r ≗ NFS (newNF r)`.
 
--- Restrict a normalisation function into a NFRestr
-restrict : NFFun → (n : ℕ) → NFRestr n
-restrict (f , f-leq , f-fix) n = ?
-
--- Important is to show that for every NFRestr there actually is a normalisation
--- function whose restriction is represents.
-theo-all-NFRestr-reachable
-    : {n : ℕ}
-    → (r : NFRestr n)
-    → Σ[ f ∈  NFFun ](r ≡ restrict f n)
-theo-all-NFRestr-reachable {n} r = ?
-
 --------------------------------------------------------------------------------
 -- Filters
 --------------------------------------------------------------------------------
@@ -218,241 +207,23 @@ record Reco : Set where
             : predicate empty ≡ true
 
 --------------------------------------------------------------------------------
--- Correspondence Filters and Recos
+-- Extension sequences
 --------------------------------------------------------------------------------
--- Remark: (recoToFilter ∘ filterToReco) F outputs a filter
--- that might be strictly stronger than F,
--- because the resulting filter disallows all of Choices r
--- if r contains an earlier choice that F disallows
--- (in implementation: 
--- see the `∧ (h r)` in the definition of h in filterToReco below).
--- This is necessary because the output of filterToReco must be coherent.
+-- Normalisation functions are roughly the same as a 
+-- a sequence of NFRestrs that extend each other with an additional
+-- choice.
+-- Exence - short for "EXtensions sequENCE" - is easier for the tongue
+-- and mind than "CoherentNFRestrFam".
 --
--- Note that this artefact is not problematic,
--- since it does not influence which normalisation
--- functions are accepted by the predicate that the filter encodes.
--- It just means that we cannot define the bijective correspondence directly as
--- a homotopy between input and output, but instead define it in acceptance
--- of normalisation functions.
-
-filterToReco : Filter → Reco
-filterToReco F = reco h H refl
-    where
-        h : {n : ℕ} → (r : NFRestr n) → Bool
-        h {0} empty = true
-        h {suc n} (newNF r) = (F r here) ∧ (h r)
-        h {suc n} (oldNF r c) = (F r (earlier-new c)) ∧ (h r)
-        H   : {n : ℕ}
-            → (r : NFRestr n)
-            → (s : NFRestr (ℕ.suc n))
-            → r ⋖ s
-            → h s ≡ true
-            → h r ≡ true
-        H {zero} empty s r⋖s hs = refl
-        H {suc n} r s (⋖-newNF r) hs = {! !}
-        H {suc n} r (oldNF r c) (⋖-oldNF r c) hs = {! !}
-
-infixl 4 filterToReco
-syntax filterToReco F = ↑ F
-
-recoToFilter : Reco → Filter
-recoToFilter = ?
-
-infixl 4 recoToFilter
-syntax recoToFilter P = ↓ P
-
-Filter-sats : Filter → NFFun → Set
-Filter-sats = ?
-
-Filter-to-pred : Filter → Predicate
-Filter-to-pred F R = Filter-sats F (RelToFun R)
-
-Reco-sats : Reco → NFFun → Set
-Reco-sats = ?
-
-Reco-to-pred : Reco → Predicate
-Reco-to-pred P R = Reco-sats P (RelToFun R)
-
-theo-filter-reco-correspondence
-    : (F : Filter)
-    → (f : NFFun)
-    → Filter-sats F f ↔ Filter-sats (↓ ↑ F) f
-theo-filter-reco-correspondence F f = ?
-    
-theo-reco-filter-correspondence
-    : (P : Reco)
-    → (f : NFFun)
-    → Reco-sats P f ↔ Reco-sats (↑ ↓ P) f
-theo-reco-filter-correspondence P f = ?
-
---------------------------------------------------------------------------------
--- Auxiliary concepts used by proof of theo-filter-reco-correspondence
---------------------------------------------------------------------------------
-
--- G is stronger than F if G disallows any choice that F disallows.
--- G might disallow also choices that F allows.
-stronger : Filter → Filter → Set
-stronger F G = 
-    {n : ℕ} 
-    → (r : NFRestr n) 
-    → (c : Choices r) 
-    → F r c ≡ false 
-    → G r c ≡ false
-
-lemma-↓↑-stronger : (F : Filter) → stronger (↓ ↑ F) F
-lemma-↓↑-stronger = ?
-
---------------------------------------------------------------------------------
--- Inverse of `restrict`
---------------------------------------------------------------------------------
--- `restrict f` gives a coherent family of NFRestrs.
--- 'Coherent' in the sense that they are pointwise extensions of each other.
--- But we can also combine such a family into a NFFun,
+-- We can combine such a sequence into an NFFun,
+-- and restrict a Exence into 
 -- which is (up to function extensionality) the inverse of `restrict`.
+-- See Eser.Filters.Conversions.NFFunToExence for the conversions.
 
 NFRestrFam : Set
 NFRestrFam = (n : ℕ) → NFRestr n
-CohNFRestrFam : Set
-CohNFRestrFam = Σ[ h ∈ NFRestrFam ]((n : ℕ) → h n ⋖ h (ℕ.suc n))
-
-restrict+ : NFFun → CohNFRestrFam
-restrict+ f = (restrict f , ?)
-
-combine : CohNFRestrFam → NFFun
-combine = ?
-
-theo-restrict-combine
-    : (f : NFFun)
-    →  (proj₁ ∘ combine ∘ restrict+) f ≈ proj₁ f
-theo-restrict-combine f = ?
-
-theo-combine-restrict
-    : (H : CohNFRestrFam)
-    → (proj₁ ∘ restrict+ ∘ combine) H ≈ proj₁ H
-theo-combine-restrict H = ?
-
---------------------------------------------------------------------------------
--- Filter compatibility relation
---------------------------------------------------------------------------------
--- F ♥ G if there exists a sequence of normalisation function extensions
--- whose choices both F and G allow, i.e., F ♥ G iff there exisits
--- a normalisation function that satisfies both.
---
--- ## Remark 1
--- _♥_ is symmetric, but not reflexive and not transitive.
--- F ♥ F is a nontrivial statement that there exists a normalisation
--- function satisfying F.
---
--- ## Remark 2
--- The following definition is wrong:
---      (F ♥ G) r = Σ[ c ∈ Choices r ] F r c ∧ G r c
--- This condition is too strong, because it requires F and G
--- to agree on some extension of any NFRestr r, even
--- NFRestr r containing earlier choices which neither F nor G accepts.
--- That is not needed to encode the intended 'there exists a normalisation
--- function F and G both accept'.
-
-infixl 4 _⋀_ -- `And` in Cornelis. `and` (for `∧`) is on Bool.
-_⋀_ : Filter → Filter → Filter
-(F ⋀ G) {n} r c = F r c ∧ G r c
-
--- All sub-restrictions of a restriction satisfy a filer.
-data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
-    allsat-empty : AllRestr-sat F empty
-    allsat-newNF 
-        : {n : ℕ} 
-        → (r : NFRestr n) 
-        → AllRestr-sat F r
-        → (F r here ≡ true)
-        → AllRestr-sat F (newNF r)
-    allsat-oldNF 
-        : {n : ℕ} 
-        → (r : NFRestr n) 
-        → (c : NFS r)
-        → AllRestr-sat F r
-        → (F r (earlier-new c) ≡ true)
-        → AllRestr-sat F (oldNF r c)
-
--- A filter is passable if there exists a sequence of choices
--- that the filter accepts at every point.
-Passable : Filter → Set
-Passable F = 
-    {n : ℕ}
-    → (r : NFRestr n)
-    → (AllRestr-sat F r)
-    → Σ[ c ∈ Choices r ] F r c ≡ true
-
-infixl 4 _♥_
-_♥_ : (F G : Filter) → Set
-_♥_ F G = Passable (F ⋀ G)
-
--- #TODO: use idempotence of ⋀
-self-compat-to-passable
-    : {F : Filter}
-    → F ♥ F
-    → Passable F
-self-compat-to-passable = ?
-
---------------------------------------------------------------------------------
--- Extracting a normalisation function out of a satisfiable filter
---------------------------------------------------------------------------------
--- If F ♥ F, then there exists at least one normalisation function
--- satisfying F. There may be multiple. 
--- Two obvious such functions are as follows:
--- * Always choose the smallest allowed choice.
---      (This minimises the number of equivalence classes).
--- * Always choose the largest allowed choice.
---      (This maximises the number of equivalence classes).
--- For many actual filters I consider to implement, the first one becomes
--- trivial: it always can choose 0, and does so accordingly;
--- resulting in one boring equivalence class.
--- However, choosing the largest often gives the desired relation.
-
---#TODO: remove and update documentation above.
-extract-maxchoice-nf
-    : {F : Filter}
-    → F ♥ F
-    → Σ[ f ∈ NFFun ] (Filter-sats F f)
-extract-maxchoice-nf {F} F♥F = ?
-
--- An NFFun maximises the number of equivalence classes if it introduces
--- a new normal form whenever allowed by F.
--- This property is probably only useful if `Filter-sats F f`,
--- but can be defined without assuming that.
-MaximisesClasses : Filter → NFFun → Set
-MaximisesClasses F f = {!
-    (n : ℕ)
-    → (F (restrict f n) here ≡ true)
-    → getChoice f n ≡ here !}
-
--- Extract a normalisation function from a passable
-extract-maxclass-nf
-    : {F : Filter}
-    → Passable F
-    → Σ[ f ∈ NFFun ] (Filter-sats F f ) × (MaximisesClasses F f)
-extract-maxclass-nf {F} pass = (f' , f-stats-F , f-max-classes)
-    where
-        f : ℕ → ℕ
-        f = ?
-
-        f-leq : (n : ℕ) → f n ≤ n
-        f-leq n = ?
-
-        f-fix : (n : ℕ) → f (f n) ≡ f n
-        f-fix n = ?
-
-        f' : NFFun
-        f' = (f , f-leq , f-fix)
-
-        f-stats-F : (Filter-sats F f' )
-        f-stats-F = ?
-
-        f-max-classes : (MaximisesClasses F f')
-        f-max-classes = ?
-
-
-
-
+Exence : Set
+Exence = Σ[ h ∈ NFRestrFam ]((n : ℕ) → h n ⋖ h (ℕ.suc n))
 --------------------------------------------------------------------------------
 -- TODOs
 --------------------------------------------------------------------------------

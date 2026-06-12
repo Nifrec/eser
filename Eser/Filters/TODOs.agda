@@ -1,0 +1,6 @@
+--------------------------------------------------------------------------------
+-- TODOs
+--------------------------------------------------------------------------------
+-- * Sheets '◊': PointwiseChooser and aux lemmas.
+-- * add lemma that extract-maxchoice-nf is pointwise actually the maximum
+-- choice.
