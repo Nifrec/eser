@@ -52,12 +52,6 @@ getChoice r (oldNF r c) (⋖-oldNF r c) = earlier-new c
 getChoiceFromExence : (hH : Exence) → (n : ℕ) → Choices ((proj₁ hH) n)
 getChoiceFromExence (h , H) n = getChoice (h n) (h $ ℕ.suc n) (H n)
 
---lemma-getChoiceFixpoint
---    : {n : ℕ}
---    → {r : NFRestr n}
---    → (c : Choices r)
---    → getChoice r (addChoice r c) (choiceToℕ 
-
 NFSToℕ 
     : {n : ℕ}
     → {r : NFRestr n}
@@ -93,12 +87,6 @@ NFSToℕ-≤ {suc n} {oldNF r c} (earlier-old x) = s≤s (≤-trans (n≤1+n (NF
         y : NFSToℕ x < n
         y = NFSToℕ-≤ {n} {r} x
 
---NFSToℕ-<
---    : {n : ℕ}
---    → {r : NFRestr (ℕ.suc n)}
---    → (x : NFS r)
---    → NFSToℕ x ≤ n
---NFSToℕ-< = s≤s⁻¹ ∘ NFSToℕ-≤
 lemma-getChoice-subst
     : {n : ℕ}
     → (r r' : NFRestr n)
@@ -205,24 +193,8 @@ combine (h , H) = (f , f-leq , f-fix)
         -- "→ h (ℕ.suc m) ≡ newNF (h m)"
         -- Change to lemma-2.
         lemma h H n here p m refl = lemma-2 {n} h H (lemma' (H n) p)
-            --begin 
-            --    h (ℕ.suc (NFSToℕ {ℕ.suc n} {newNF (h n)} here))
-            --≡⟨  lemma' (H n) p ⟩
-            --    newNF (h (NFSToℕ {ℕ.suc n} {newNF (h n)} here))
-            --∎
         lemma h H (suc n) (earlier-new x) p m refl = 
             lemma-1 {ℕ.suc n} h H (h (ℕ.suc n)) refl x (choiceToℕ (earlier-new x)) refl
-            --begin 
-            --    h (suc (NFSToℕ (earlier-new x))) 
-            --≡⟨⟩
-            --    h (suc (NFSToℕ x)) 
-            --≡⟨ lemma h H n {! x !} ? (NFSToℕ x) refl ⟩
-            --    newNF (h (NFSToℕ x))
-            --≡⟨⟩
-            --    newNF (h (NFSToℕ (earlier-new x)))
-                
-            --∎
-            
 
         f-fix : (n : ℕ) → f (f n) ≡ f n
         f-fix n = 
@@ -231,12 +203,6 @@ combine (h , H) = (f , f-leq , f-fix)
             ≡⟨⟩
                 choiceToℕ (getChoice (h m) (h (ℕ.suc m)) (H m))
             ≡⟨ lemma h H n x refl (NFSToℕ (earlier-new x)) refl ⟩
-            --    aux (h (ℕ.suc m) , H m)
-            --≡⟨ cong aux h1+m-unfold ⟩
-            --    aux (newNF (h m) , Hm')
-            --≡⟨⟩
-            --    choiceToℕ (getChoice (h m) (newNF $ h m) (Hm'))
-            --≡⟨⟩
                 m
             ≡⟨⟩
                 f n
@@ -246,16 +212,6 @@ combine (h , H) = (f , f-leq , f-fix)
                 m = f n
                 x : Choices (h n)
                 x = getChoice (h n) (h (ℕ.suc n)) (H n)
-                A : Set
-                A = Σ[ s ∈ NFRestr (ℕ.suc m) ](h m ⋖ s)
-                aux : A → ℕ
-                aux (s , q) = choiceToℕ (getChoice (h m) s q)
-                Hm' : h m ⋖ newNF (h m)
-                Hm' = ⋖-newNF (h m)
-                --h1+m-unfold' : _≡_ {A = NFRestr (ℕ.suc m)} (h (ℕ.suc m)) (newNF (h m))
-                --h1+m-unfold' = lemma h H n (getChoiceFromExence (h , H) n) refl m refl 
-                --h1+m-unfold : _≡_ {A = A} (h (ℕ.suc m) , H m) (newNF (h m) , Hm')
-                --h1+m-unfold = restIsProofIrrel (⋖-irrel (h m)) (H m) Hm' h1+m-unfold'
 
         
 
