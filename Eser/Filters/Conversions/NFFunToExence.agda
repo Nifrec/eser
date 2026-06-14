@@ -22,6 +22,7 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
+open import Eser.Logic
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
@@ -43,7 +44,6 @@ combine : Exence → NFFun
 
 -- Restrict a normalisation function into a NFRestr
 restrict : NFFun → (n : ℕ) → NFRestr n
-restrict = proj₁ ∘ restrict+
 
 --------------------------------------------------------------------------------
 -- Main theorems
@@ -71,7 +71,28 @@ theo-combine-restrict
 --------------------------------------------------------------------------------
 -- Implementation of `restrict+`
 --------------------------------------------------------------------------------
-restrict+ f = (? , ?)
+restrict+ f = ?
+
+-- Extend a family B of dependent types from indices in {0, ..., n-1} 
+-- to {0, ..., n} by providing B n.
+dep-extend
+    : (n : ℕ)
+    → (B : ℕ → Set)
+    → ((m : ℕ) → m < n → B m)
+    → B n
+    → ((m : ℕ) → m < ℕ.suc n → B m)
+dep-extend n B Fam Bn m m<1+n with m Data.Nat.≟ n
+... | (yes m≡n) = subst B (sym m≡n) Bn
+... | (no m≢n) = Fam m m<n
+    where
+        open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
+        m<n : m < n
+        m<n = elimCaseRight (m<1+n⇒m<n∨m≡n m<1+n) m≢n
+
+{-# WARNING_ON_USAGE dep-extend "Move dep-extend to correct file" #-}
+
+restrict f zero = empty
+restrict f (suc n) = {! !}
 
 --------------------------------------------------------------------------------
 -- Implementation of `combine`
