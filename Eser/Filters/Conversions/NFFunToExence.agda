@@ -31,6 +31,7 @@ module Eser.Filters.Conversions.NFFunToExence where
 --------------------------------------------------------------------------------
 -- Main functions
 --------------------------------------------------------------------------------
+-- Implementations and proofs of the theorems can be found further below.
 
 -- Restrict a normalisation function into an Exence --
 -- a sequence of NFRestrs that extend each other.
@@ -43,6 +44,29 @@ combine : Exence → NFFun
 -- Restrict a normalisation function into a NFRestr
 restrict : NFFun → (n : ℕ) → NFRestr n
 restrict = proj₁ ∘ restrict+
+
+--------------------------------------------------------------------------------
+-- Main theorems
+--------------------------------------------------------------------------------
+-- 1. Every NFRestr is actually 'reachable', i.e., actually a restriction
+--  of some NFFun.
+-- 2. combine & restrict+ form a pair of inverses
+--  (up to function extensionality and first projections).
+
+-- Important is to show that for every NFRestr there actually is a normalisation
+-- function whose restriction is represents.
+theo-all-NFRestr-reachable
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → Σ[ f ∈  NFFun ](r ≡ restrict f n)
+
+theo-restrict-combine
+    : (f : NFFun)
+    →  (proj₁ ∘ combine ∘ restrict+) f ≈ proj₁ f
+
+theo-combine-restrict
+    : (H : Exence)
+    → (proj₁ ∘ restrict+ ∘ combine) H ≈ proj₁ H
 
 --------------------------------------------------------------------------------
 -- Implementation of `restrict+`
@@ -243,27 +267,10 @@ combine (h , H) = (f , f-leq , f-fix)
 
 
 --------------------------------------------------------------------------------
--- Properties of the conversions
+-- Proofs of the theorems
 --------------------------------------------------------------------------------
--- 1. Every NFRestr is actually 'reachable', i.e., actually a restriction
---  of some NFFun.
--- 2. combine & restrict+ form a pair of inverses
---  (up to function extensionality and first projections).
-
--- Important is to show that for every NFRestr there actually is a normalisation
--- function whose restriction is represents.
-theo-all-NFRestr-reachable
-    : {n : ℕ}
-    → (r : NFRestr n)
-    → Σ[ f ∈  NFFun ](r ≡ restrict f n)
 theo-all-NFRestr-reachable {n} r = ?
 
-theo-restrict-combine
-    : (f : NFFun)
-    →  (proj₁ ∘ combine ∘ restrict+) f ≈ proj₁ f
 theo-restrict-combine f = ?
 
-theo-combine-restrict
-    : (H : Exence)
-    → (proj₁ ∘ restrict+ ∘ combine) H ≈ proj₁ H
 theo-combine-restrict H = ?
