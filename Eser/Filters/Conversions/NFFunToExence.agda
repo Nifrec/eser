@@ -69,32 +69,6 @@ theo-combine-restrict
     → (proj₁ ∘ restrict+ ∘ combine) H ≈ proj₁ H
 
 --------------------------------------------------------------------------------
--- Implementation of `restrict+`
---------------------------------------------------------------------------------
-restrict+ f = ?
-
--- Extend a family B of dependent types from indices in {0, ..., n-1} 
--- to {0, ..., n} by providing B n.
-dep-extend
-    : (n : ℕ)
-    → (B : ℕ → Set)
-    → ((m : ℕ) → m < n → B m)
-    → B n
-    → ((m : ℕ) → m < ℕ.suc n → B m)
-dep-extend n B Fam Bn m m<1+n with m Data.Nat.≟ n
-... | (yes m≡n) = subst B (sym m≡n) Bn
-... | (no m≢n) = Fam m m<n
-    where
-        open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
-        m<n : m < n
-        m<n = elimCaseRight (m<1+n⇒m<n∨m≡n m<1+n) m≢n
-
-{-# WARNING_ON_USAGE dep-extend "Move dep-extend to correct file" #-}
-
-restrict f zero = empty
-restrict f (suc n) = {! !}
-
---------------------------------------------------------------------------------
 -- Implementation of `combine`
 --------------------------------------------------------------------------------
 -- This requires quite a few auxiliary functions and lemmas.
@@ -283,6 +257,108 @@ module CombineData
 
 combine (h , H) = (f , f-leq , f-fix)
     where open CombineData h H
+
+--------------------------------------------------------------------------------
+-- Implementation of `restrict+`
+--------------------------------------------------------------------------------
+
+module RestrictImplementation (f' : NFFun) where
+    open import Data.Nat.Properties using (≤-refl ; <⇒≤ ; m<n⇒m≤1+n)
+
+    f : ℕ → ℕ
+    f = proj₁ f'
+    f-leq : (n : ℕ) → f n ≤ n
+    f-leq = proj₁ $ proj₂ f'
+
+    -- Implementation notes:
+    -- (1) h', H' and K' are computed in 𝐦𝐮𝐭𝐮𝐚𝐥 𝐢𝐧𝐝𝐮𝐜𝐭𝐢𝐨𝐧;
+    --  h' encodes the actual NFRestrFam, H' the proof of being
+    --  an Exence, and K' the proof that it encodes f.
+    --
+    -- (2) In H' and K', the argument p could have been computed from q, 
+    -- (ℕ-inequalities are proof irrelevant anyway);
+    -- but giving p is more convenient, 
+    -- otherwise one probably needs to substitute
+    -- the actually used p anyway...
+
+    h' : (n : ℕ) → (m : ℕ) → m ≤ n → NFRestr m
+    H' : (n : ℕ) 
+        → (m : ℕ) 
+        → (p : m ≤ n)       
+        → (q : ℕ.suc m ≤ n) 
+        → h' n m p ⋖ h' n (ℕ.suc m) q
+    K' : (n : ℕ) 
+        → (m : ℕ) 
+        → (p : m ≤ n) 
+        → (q : ℕ.suc m ≤ n) 
+        → choiceToℕ (getChoice (h' n m p) (h' n (ℕ.suc m) q) (H' n m p q))
+            ≡ f m
+    
+    -- h' can output a `NFRestr m` for different values of n.
+    -- But these should all be the same!
+    -- (For H' and K' there is no need to prove this, since their
+    -- final types are proof-irrelevant anyway).
+    h'-coh 
+        : (n : ℕ) 
+        → (m : ℕ) 
+        → (p : m ≤ n) 
+        → (q : m ≤ ℕ.suc n) 
+        → h' n m p ≡ h' (ℕ.suc n) m q 
+
+    -- Extracting actual functions h, H and K without the 'm ≤ n' indirection.
+    -- The idea is straightforward: just pointwise pick the output
+    -- using m ≔ n and reflexivity of ≤. 
+    -- Only a lot of verbose substitutions are needed 
+    -- to make the types work out...
+        
+    h : (n : ℕ) → NFRestr n
+    h n = h' n n (≤-refl {n})
+
+    H : (n : ℕ) → h n ⋖ h (ℕ.suc n)
+    H n = subst (λ x → x ⋖ h' (suc n) (suc n) ≤-refl) 
+                (sym $ h'-coh n n (≤-refl) (n≤1+n n))
+                (H' (suc n) n (n≤1+n n) (≤-refl {suc n}))
+
+    K   : (n : ℕ)
+        → (choiceToℕ (getChoice (h n) (h (ℕ.suc n)) (H n))) ≡ f n
+    K n = subst (λ (x , y) → choiceToℕ (getChoice x (h (suc n)) y) ≡ f n )
+            (restIsProofIrrel (λ x → ⋖-irrel x (h (ℕ.suc n))) H₁ H₂ pre-eq)
+            raw
+        where
+            pre-eq : h' (ℕ.suc n) n (n≤1+n n) ≡ h n
+            pre-eq = sym $ h'-coh n n (≤-refl) (n≤1+n n)
+            H₁ : (h' (suc n) n (n≤1+n n)) ⋖ (h (suc n))
+            H₁ = H' (suc n) n (n≤1+n n) ≤-refl
+            H₂ :  (h n) ⋖ (h (suc n))
+            H₂ = H n
+            raw : choiceToℕ(getChoice (h' (suc n) n (n≤1+n n)) (h (suc n))
+                (H' (suc n) n (n≤1+n n) ≤-refl))
+                ≡ f n 
+            raw = K' (ℕ.suc n) n (n≤1+n n) (≤-refl {ℕ.suc n})
+        
+
+restrict+ f' = (h , H)
+    where open RestrictImplementation f'
+
+-- Extend a family B of dependent types from indices in {0, ..., n-1} 
+-- to {0, ..., n} by providing B n.
+dep-extend
+    : (n : ℕ)
+    → (B : ℕ → Set)
+    → ((m : ℕ) → m < n → B m)
+    → B n
+    → ((m : ℕ) → m < ℕ.suc n → B m)
+dep-extend n B Fam Bn m m<1+n with m Data.Nat.≟ n
+... | (yes m≡n) = subst B (sym m≡n) Bn
+... | (no m≢n) = Fam m m<n
+    where
+        open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
+        m<n : m < n
+        m<n = elimCaseRight (m<1+n⇒m<n∨m≡n m<1+n) m≢n
+
+{-# WARNING_ON_USAGE dep-extend "Move dep-extend to correct file" #-}
+
+restrict = proj₁ ∘ restrict+
 
         
 
