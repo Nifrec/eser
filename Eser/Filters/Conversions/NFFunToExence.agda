@@ -28,14 +28,32 @@ open import Eser.Filters.Properties
 
 module Eser.Filters.Conversions.NFFunToExence where
 
+--------------------------------------------------------------------------------
+-- Main functions
+--------------------------------------------------------------------------------
+
 -- Restrict a normalisation function into an Exence --
 -- a sequence of NFRestrs that extend each other.
 restrict+ : NFFun → Exence
-restrict+ f = (? , ?)
+
+-- Combine an extension sequence into a NFFun.
+combine : Exence → NFFun
+
 
 -- Restrict a normalisation function into a NFRestr
 restrict : NFFun → (n : ℕ) → NFRestr n
 restrict = proj₁ ∘ restrict+
+
+--------------------------------------------------------------------------------
+-- Implementation of `restrict+`
+--------------------------------------------------------------------------------
+restrict+ f = (? , ?)
+
+--------------------------------------------------------------------------------
+-- Implementation of `combine`
+--------------------------------------------------------------------------------
+-- This requires quite a few auxiliary functions and lemmas.
+
 
 -- Given r ⋖ s, extract the choice that extends r into s.
 getChoice 
@@ -99,13 +117,18 @@ lemma-getChoice-subst
 lemma-getChoice-subst r r s s p p' refl refl = 
     cong (λ p → choiceToℕ (getChoice r s p)) (⋖-irrel r s p p')
 
-combine : Exence → NFFun
-combine (h , H) = (f , f-leq , f-fix)
+-- `combine : Exence → NFFun` maps an exence not only to a function f
+-- but also to the proofs f-leq and f-fix that f is a NFFun,
+-- and those proofs had better be in a opaque block to reduce RAM usage.
+-- This module just makes this easier to organise.
+module CombineData 
+    (h : (n : ℕ) → NFRestr n)
+    (H : (n : ℕ) → h n ⋖ h (ℕ.suc n))
     where
-        
-        f : ℕ → ℕ
-        f = choiceToℕ ∘ (getChoiceFromExence (h , H))
+    f : ℕ → ℕ
+    f = choiceToℕ ∘ (getChoiceFromExence (h , H))
 
+    opaque
         f-leq : (n : ℕ) → f n ≤ n
         f-leq n = s≤s⁻¹ $ NFSToℕ-≤ (getChoiceFromExence (h , H) n)
 
@@ -178,7 +201,6 @@ combine (h , H) = (f , f-leq , f-fix)
             ≡⟨⟩
                 n
             ∎
-            
 
         lemma
             : (h : NFRestrFam)
@@ -194,7 +216,8 @@ combine (h , H) = (f , f-leq , f-fix)
         -- Change to lemma-2.
         lemma h H n here p m refl = lemma-2 {n} h H (lemma' (H n) p)
         lemma h H (suc n) (earlier-new x) p m refl = 
-            lemma-1 {ℕ.suc n} h H (h (ℕ.suc n)) refl x (choiceToℕ (earlier-new x)) refl
+            lemma-1 {ℕ.suc n} h H (h (ℕ.suc n)) refl x 
+                    (choiceToℕ (earlier-new x)) refl
 
         f-fix : (n : ℕ) → f (f n) ≡ f n
         f-fix n = 
@@ -212,6 +235,9 @@ combine (h , H) = (f , f-leq , f-fix)
                 m = f n
                 x : Choices (h n)
                 x = getChoice (h n) (h (ℕ.suc n)) (H n)
+
+combine (h , H) = (f , f-leq , f-fix)
+    where open CombineData h H
 
         
 
