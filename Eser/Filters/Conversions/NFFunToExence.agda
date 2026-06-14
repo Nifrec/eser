@@ -10,6 +10,7 @@
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
+open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Relation.Nullary
@@ -263,7 +264,7 @@ combine (h , H) = (f , f-leq , f-fix)
 --------------------------------------------------------------------------------
 
 module RestrictImplementation (f' : NFFun) where
-    open import Data.Nat.Properties using (≤-refl ; <⇒≤ ; m<n⇒m≤1+n)
+    open import Data.Nat.Properties using (≤-refl ; <⇒≤ ; m<n⇒m≤1+n ; ≤⇒≯ ; m≤n⇒m<n∨m≡n)
 
     f : ℕ → ℕ
     f = proj₁ f'
@@ -304,6 +305,24 @@ module RestrictImplementation (f' : NFFun) where
         → (p : m ≤ n) 
         → (q : m ≤ ℕ.suc n) 
         → h' n m p ≡ h' (ℕ.suc n) m q 
+
+    h' 0 0 z≤z = empty
+    h' n@(ℕ.suc n') m m≤1+n with m≤n⇒m<n∨m≡n m≤1+n
+    ... | inj₁ m<1+n = h' n' m (s≤s⁻¹ m<1+n)
+    ... | inj₂ m≡1+n with (<-cmp (f n') n')
+    ... | tri< fn<n  _   _   = ?
+    --... | tri≈ _    fn≡n _   = subst NFRestr (sym m≡1+n) $ newNF (h' n n' (n≤1+n n'))
+    ... | tri≈ _    fn≡n _   = {!  !}
+        --^ #TODO: use the commented out substitution on pre-2.
+        -- #TODO: in the naming, sometimes I use n and n', sometimes I use 1+n and n.
+        -- This is confusing.
+        where
+            pre : NFRestr (suc n')
+            pre = newNF (h' n' n' (≤-refl))
+            pre-2 : pre ≡ newNF (h' n n' (n≤1+n n'))
+            pre-2 = cong newNF (h'-coh n' n' (≤-refl {n'}) (n≤1+n n'))
+
+    ... | tri> _    _   n'<fn' = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
 
     -- Extracting actual functions h, H and K without the 'm ≤ n' indirection.
     -- The idea is straightforward: just pointwise pick the output
