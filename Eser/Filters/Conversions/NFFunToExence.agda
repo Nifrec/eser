@@ -231,9 +231,6 @@ module CombineData
             → (m : ℕ)
             → NFSToℕ x ≡ m
             → choiceToℕ (getChoice (h m) (h (ℕ.suc m)) (H m)) ≡ m
-        -- #TODO: this still proves the old goal
-        -- "→ h (ℕ.suc m) ≡ newNF (h m)"
-        -- Change to lemma-2.
         lemma h H n here p m refl = lemma-2 {n} h H (lemma' (H n) p)
         lemma h H (suc n) (earlier-new x) p m refl = 
             lemma-1 {ℕ.suc n} h H (h (ℕ.suc n)) refl x 
@@ -307,21 +304,35 @@ module RestrictImplementation (f' : NFFun) where
         → h' n m p ≡ h' (ℕ.suc n) m q 
 
     h' 0 0 z≤z = empty
-    h' n@(ℕ.suc n') m m≤1+n with m≤n⇒m<n∨m≡n m≤1+n
-    ... | inj₁ m<1+n = h' n' m (s≤s⁻¹ m<1+n)
-    ... | inj₂ m≡1+n with (<-cmp (f n') n')
-    ... | tri< fn<n  _   _   = ?
-    --... | tri≈ _    fn≡n _   = subst NFRestr (sym m≡1+n) $ newNF (h' n n' (n≤1+n n'))
-    ... | tri≈ _    fn≡n _   = {!  !}
-        --^ #TODO: use the commented out substitution on pre-2.
-        -- #TODO: in the naming, sometimes I use n and n', sometimes I use 1+n and n.
-        -- This is confusing.
+    h' n@(ℕ.suc n') m m≤n with m≤n⇒m<n∨m≡n m≤n
+    -- Case 1.1: m < n. Use a recursive call.
+    ... | inj₁ m<n = h' n' m (s≤s⁻¹ m<n)
+    -- Case 2: m ≡ n ≡ 1+n', 
+    -- so no possible recursive call will give a NFRestr (1+n');
+    -- we need to build a new one.
+    -- An NFRestr of length (1+n') is obtained by taking a NFRestr n'
+    -- and adding a choice for the normal form for n'.
+    -- Make a case distinction: either n' is a fixpoint of f (a new normal form)
+    -- or not (then f assigns n' an earlier normal form).
+    ... | inj₂ m≡n with (<-cmp (f n') n')
+    -- Case 2.1: the normal form of n' is a smaller number.
+    ... | tri< fn'<n'  _   _   = ans
         where
-            pre : NFRestr (suc n')
-            pre = newNF (h' n' n' (≤-refl))
-            pre-2 : pre ≡ newNF (h' n n' (n≤1+n n'))
-            pre-2 = cong newNF (h'-coh n' n' (≤-refl {n'}) (n≤1+n n'))
-
+            rec : NFRestr n'
+            rec = h' n' n' (≤-refl)
+            c : Choices rec
+            c = {! getChoice (h' !}
+            ans : NFRestr m
+            ans = {! oldNF rec c!}
+    -- Case 2.2: n' should be a new normal form. 
+    ... | tri≈ _    fn'≡n' _   = subst NFRestr (sym m≡n) (newNF rec)
+        where
+            -- Recursion uses n' instead of n as upper bound for m,
+            -- applying `newNF` gives a term of index 1+n',
+            -- which we can substitute to m.
+            rec : NFRestr n'
+            rec = h' n' n' (≤-refl)
+    -- Case 2.3: f n' > n'. This contradicts `f-leq : f x ≤ x for all x`.
     ... | tri> _    _   n'<fn' = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
 
     -- Extracting actual functions h, H and K without the 'm ≤ n' indirection.
