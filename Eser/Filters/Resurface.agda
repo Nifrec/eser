@@ -36,16 +36,19 @@ resurface-nf
     → (r' : NFRestr n)
     → (r : NFRestr m)
     → (newNF r') ⋖+= r
-    → Σ[ c ∈ Choices r ] (choiceToℕ {m} {r} c) ≡ (suc n)
+    → Σ[ c ∈ Choices r ] (choiceToℕ {m} {r} c) ≡ n
 
 resurface-nf-⋖+-case
     : {n m : ℕ}
     → (r' : NFRestr n)
     → (r : NFRestr m)
     → (newNF r') ⋖+ r
-    → Σ[ x ∈ NFS r ] (NFSToℕ {m} {r} x) ≡ (suc n)
+    → Σ[ x ∈ NFS r ] (NFSToℕ {m} {r} x) ≡ n
 
-resurface-nf {n} {suc n} r' (newNF r') (inj₁ (refl , refl)) = (here , refl)
+resurface-nf {n} {suc n} r' (newNF r') (inj₁ (refl , refl)) 
+    = (earlier-new here , refl)
+    --^ Note that this works because Choices (newNF r') ≗ NFS (newNF (newNF r'))
+    -- so `earlier-new here` points to the deepest newNF.
 resurface-nf {n} {suc n} r' (oldNF r c) (inj₁ (refl , ()))
 resurface-nf {n} {m} r' r (inj₂ newNFr'⋖+r) = 
     let (c , p) = resurface-nf-⋖+-case {n} {m} r' r newNFr'⋖+r
@@ -54,15 +57,14 @@ resurface-nf {n} {m} r' r (inj₂ newNFr'⋖+r) =
 resurface-nf-⋖+-case {n} {suc (suc n)} r' r (⋖+-onestep (⋖-newNF (newNF r'))) = 
     (earlier-new {suc n} {newNF r'} (here {n} {r'}) , p)
         where
-            p : NFSToℕ (earlier-new {suc n} {newNF r'} (here {n} {r'})) ≡ suc n
+            p : NFSToℕ (earlier-new {suc n} {newNF r'} (here {n} {r'})) ≡ n
             p = begin 
                     NFSToℕ (earlier-new {suc n} {newNF r'} (here {n} {r'}))
                 ≡⟨⟩
                     NFSToℕ (here {n} {r'})
-                ≡⟨ ? ⟩
-                    suc n
+                ≡⟨⟩
+                    n
                 ∎
-            
 resurface-nf-⋖+-case {n} {m} r' r (⋖+-onestep (⋖-oldNF (newNF r') c)) = {! !}
 resurface-nf-⋖+-case {n} {m} r' r (⋖+-multistep-newNF H) = {! !}
 resurface-nf-⋖+-case {n} {m} r' r (⋖+-multistep-oldNF c H) = {! !}
