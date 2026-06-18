@@ -165,6 +165,46 @@ addChoice r (earlier-new c) = oldNF r c
 -- Note: the case `earlier-old c` is impossible because it is not
 -- a normal form in `Choices r ≗ NFS (newNF r)`.
 
+
+-- Relation r ⋖ s expressing that s extends r with exactly one more choice.
+infixl 4 _⋖_ -- `lessdot` is the Cornelis shortcut for `⋖`.
+data _⋖_ : {n : ℕ} → (r : NFRestr n) → (s : NFRestr (ℕ.suc n)) → Set where
+    ⋖-newNF : {n : ℕ} → (r : NFRestr n) → r ⋖ (newNF r)
+    ⋖-oldNF : {n : ℕ} → (r : NFRestr n) → (c : NFS r) →  r ⋖ (oldNF r c)
+
+-- Transitive closure of above relation.
+-- Note: the implementation could have used
+-- `⋖+-multistep : r ⋖+ s → s ⋖ t → r ⋖+ t` instead
+-- of the 2 multistep constructors we have now,
+-- but in practise one would pattern match on `s ⋖ t` and obtain the same two
+-- cases anyway.
+data _⋖+_ : {n m : ℕ} → (r : NFRestr n) → (s : NFRestr m) → Set where
+    ⋖+-onestep 
+        : {n : ℕ} 
+        → {r : NFRestr n} 
+        → {s : NFRestr (ℕ.suc n)} 
+        → r ⋖ s
+        → r ⋖+ s
+    
+    ⋖+-multistep-newNF
+        : {n m : ℕ} 
+        → {r : NFRestr n} 
+        → {s : NFRestr m}
+        → r ⋖+ s
+        → r ⋖+ (newNF s)
+
+    ⋖+-multistep-oldNF
+        : {n m : ℕ} 
+        → {r : NFRestr n} 
+        → {s : NFRestr m}
+        → (c : NFS s)
+        → r ⋖+ s
+        → r ⋖+ (oldNF s c)
+
+-- Transitive & reflexive closure
+_⋖+=_ : {n m : ℕ} → (r : NFRestr n) → (s : NFRestr m) → Set
+_⋖+=_ {n} {m} r s = (Σ[ p ∈ m ≡ n ] (r ≡ subst NFRestr p s)) ⊎ (r ⋖+ s)
+
 --------------------------------------------------------------------------------
 -- Filters
 --------------------------------------------------------------------------------
@@ -184,12 +224,6 @@ Filter = {n : ℕ} → (r : NFRestr n) → Choices r → Bool
 --  since a Filter cannot encode any judgement about the empty relation
 --  (because, you know, there was no choice made in order to construct it,
 --  so also no set of choices to constrain).
-
--- Relation r ⋖ s expressing that s extends r with exactly one more choice.
-infixl 4 _⋖_ -- `lessdot` is the Cornelis shortcut for `⋖`.
-data _⋖_ : {n : ℕ} → (r : NFRestr n) → (s : NFRestr (ℕ.suc n)) → Set where
-    ⋖-newNF : {n : ℕ} → (r : NFRestr n) → r ⋖ (newNF r)
-    ⋖-oldNF : {n : ℕ} → (r : NFRestr n) → (c : NFS r) →  r ⋖ (oldNF r c)
 
 record Reco : Set where
     constructor reco
