@@ -5,8 +5,6 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -17,12 +15,6 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
---open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
-
---open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
---open import Eser.EqRel.Conversions using (RelToFun)
---open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
---open import Eser.Logic
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
@@ -57,6 +49,7 @@ resurface-nf {n} {m} r' r (inj₂ newNFr'⋖+r) =
 resurface-nf-⋖+-case {n} {suc (suc n)} r' r (⋖+-onestep (⋖-newNF (newNF r'))) = 
     (earlier-new {suc n} {newNF r'} (here {n} {r'}) , p)
         where
+            -- p is just `refl`, but this documents why:
             p : NFSToℕ (earlier-new {suc n} {newNF r'} (here {n} {r'})) ≡ n
             p = begin 
                     NFSToℕ (earlier-new {suc n} {newNF r'} (here {n} {r'}))
@@ -65,6 +58,26 @@ resurface-nf-⋖+-case {n} {suc (suc n)} r' r (⋖+-onestep (⋖-newNF (newNF r'
                 ≡⟨⟩
                     n
                 ∎
-resurface-nf-⋖+-case {n} {m} r' r (⋖+-onestep (⋖-oldNF (newNF r') c)) = {! !}
-resurface-nf-⋖+-case {n} {m} r' r (⋖+-multistep-newNF H) = {! !}
-resurface-nf-⋖+-case {n} {m} r' r (⋖+-multistep-oldNF c H) = {! !}
+resurface-nf-⋖+-case {n} {m} r' r (⋖+-onestep (⋖-oldNF (newNF r') c)) = 
+    (earlier-old {suc n} {newNF r'} {c} here , refl)
+    -- ^ See previous case why refl works here.
+
+resurface-nf-⋖+-case {n} {suc m} r' (newNF s) 
+    (⋖+-multistep-newNF {suc n} {m} {newNF r'} {s} nr'⋖+s) = (x' , p)
+        where
+            rec : Σ[ x ∈ NFS s ] (NFSToℕ x) ≡ n
+            rec = resurface-nf-⋖+-case {n} {m} r' s nr'⋖+s
+            x' : NFS (newNF s)
+            x' = earlier-new (proj₁ rec)
+            p : NFSToℕ x' ≡ n
+            p = proj₂ rec
+-- Analogous to previous case:
+resurface-nf-⋖+-case {n} {suc m} r' (oldNF s c) 
+    (⋖+-multistep-oldNF {suc n} {m} {newNF r'} {s} c nr'⋖+s) = (x' , p)
+        where
+            rec : Σ[ x ∈ NFS s ] (NFSToℕ x) ≡ n
+            rec = resurface-nf-⋖+-case {n} {m} r' s nr'⋖+s
+            x' : NFS (oldNF s c)
+            x' = earlier-old {c = c} (proj₁ rec)
+            p : NFSToℕ x' ≡ n
+            p = proj₂ rec
