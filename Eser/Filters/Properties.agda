@@ -78,3 +78,20 @@ module Eser.Filters.Properties where
     → r ≡ r'
 ⋖-left-corollary-oldNF {n} {r} {r'} {s} {s'} r⋖s refl c refl = 
     ⋖-left-unique r⋖s (⋖-oldNF r' c)
+
+--------------------------------------------------------------------------------
+-- Properties of getChoice
+--------------------------------------------------------------------------------
+
+
+lemma-getChoice-subst
+    : {n : ℕ}
+    → (r r' : NFRestr n)
+    → (s s' : NFRestr (ℕ.suc n))
+    → (p : r ⋖ s)
+    → (p' : r' ⋖ s')
+    → r ≡ r'
+    → s ≡ s'
+    → choiceToℕ (getChoice r s p) ≡ choiceToℕ (getChoice r' s' p')
+lemma-getChoice-subst r r s s p p' refl refl = 
+    cong (λ p → choiceToℕ (getChoice r s p)) (⋖-irrel r s p p')

@@ -14,6 +14,8 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
+open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
+
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
@@ -231,3 +233,57 @@ Exence = Σ[ h ∈ NFRestrFam ]((n : ℕ) → h n ⋖ h (ℕ.suc n))
 -- * add lemma that extract-maxchoice-nf is pointwise actually the maximum
 -- choice.
 
+
+--------------------------------------------------------------------------------
+-- Functions on NFRestrs.
+--------------------------------------------------------------------------------
+
+-- Given r ⋖ s, extract the choice that extends r into s.
+getChoice 
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → (s : NFRestr (ℕ.suc n))
+    → r ⋖ s
+    → Choices r
+getChoice r (newNF r) (⋖-newNF r) = here
+getChoice r (oldNF r c) (⋖-oldNF r c) = earlier-new c
+
+-- Given a sequence of extensions, extract the choice that
+-- extends h n to h (1+n).
+getChoiceFromExence : (hH : Exence) → (n : ℕ) → Choices ((proj₁ hH) n)
+getChoiceFromExence (h , H) n = getChoice (h n) (h $ ℕ.suc n) (H n)
+
+NFSToℕ 
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → NFS r
+    → ℕ
+-- Case 1: the input NFRestr chose the normal form of n to be itself.
+NFSToℕ {suc n} {newNF r} here = n 
+-- Case 2 & 3: the input normal form is a normal form of a sub-restriction
+-- of r. So recurse on this sub-restriction.
+NFSToℕ {suc n} {newNF r} (earlier-new x) = NFSToℕ {n} {r} x
+NFSToℕ {suc n} {oldNF r c} (earlier-old x) = NFSToℕ {n} {r} x
+
+choiceToℕ 
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → Choices r
+    → ℕ
+-- A choice of r is a NF of newNF r, by definition of `Choices`.
+choiceToℕ {n} {r} c = NFSToℕ {ℕ.suc n} {newNF r} c 
+
+NFSToℕ-≤ 
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → (x : NFS r)
+    → NFSToℕ x < n
+NFSToℕ-≤ {suc n} {newNF r} here = s≤s ≤-refl
+NFSToℕ-≤ {suc n} {newNF r} (earlier-new x) = s≤s (≤-trans (n≤1+n (NFSToℕ x)) y)
+    where 
+        y : NFSToℕ x < n
+        y = NFSToℕ-≤ {n} {r} x
+NFSToℕ-≤ {suc n} {oldNF r c} (earlier-old x) = s≤s (≤-trans (n≤1+n (NFSToℕ x)) y)
+    where 
+        y : NFSToℕ x < n
+        y = NFSToℕ-≤ {n} {r} x
