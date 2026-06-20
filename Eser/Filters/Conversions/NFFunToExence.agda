@@ -22,11 +22,12 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
     ; ≤-irrelevant
     ; m<1+n⇒m<n∨m≡n
     ; <-≤-trans
+    ; m≢1+n+m
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n)
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n ; 1+n≮n )
 open import Eser.Logic
 
 open import Eser.Filters.Base
@@ -395,13 +396,13 @@ module RestrictImplementation (f' : NFFun) where
 
     -- Case 2.2: n' should be a new normal form. 
     h'-cases n' m (inj₂ m≡n) (tri≈ _  fn'≡n' _) = subst NFRestr (sym m≡n) (newNF rec)
-    --h'-m≡n-case (tri≈ _  fn'≡n' _) = subst NFRestr (sym m≡n) (newNF rec)
         where
             -- Recursion uses n' instead of n as upper bound for m,
             -- applying `newNF` gives a term of index 1+n',
             -- which we can substitute to m.
             rec : NFRestr n'
             rec = h' n' n' (≤-refl)
+
     -- Case 2.3: f n' > n'. This contradicts `f-leq : f x ≤ x for all x`.
     h'-cases n' m (inj₂ m≡n) (tri> _  _ n'<fn') = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
 
@@ -410,7 +411,63 @@ module RestrictImplementation (f' : NFFun) where
     H' n@(suc n') m p q = H'-cases n' m p q (m≤n⇒m<n∨m≡n p) refl 
                                             (m≤n⇒m<n∨m≡n q) refl 
                                             (<-cmp (f n') n') refl
-    H'-cases n' m p q p₀ p₁ q₀ q₁ t₀ t₁ = ?
+    H'-cases n' m p q (inj₁ m<n) p₁ (inj₁ 1+m<n) q₁ t₀ t₁ = {! !}
+    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ (tri< fn'<n a b) t₁ = ans
+        where
+            LHS : h' (suc n') n' p ≡ h' n' n' ≤-refl
+            LHS =
+                begin 
+                    h' (suc n') n' p
+                ≡⟨⟩
+                    h'-cases n' n' (m≤n⇒m<n∨m≡n p) (<-cmp (f n') n')
+                ≡⟨ cong (λ x → h'-cases n' n' x (<-cmp (f n') n')) (sym p₁) ⟩
+                    h'-cases n' n' (inj₁ m<n) (<-cmp (f n') n')
+                ≡⟨ cong (λ x → h'-cases n' n' (inj₁ m<n) x) (sym t₁) ⟩
+                    h'-cases n' n' (inj₁ m<n) (tri< fn'<n a b)
+                ≡⟨⟩
+                    h' n' n' (s≤s⁻¹ m<n)
+                ≡⟨ cong (h' n' n') (≤-irrelevant (s≤s⁻¹ m<n) ≤-refl) ⟩
+                    h' n' n' ≤-refl
+                ∎
+
+            c : Choices (h' n' n' ≤-refl)
+            -- #TODO: refactor def of h' to use a fun "getC"
+            -- Then the second next hole below should hold by refl :)
+            c = ? 
+
+            RHS : h' (suc n') (suc n') q ≡ addChoice (h' n' n' ≤-refl) c
+            RHS = 
+                begin 
+                    h' (suc n') (suc n') q 
+                ≡⟨⟩
+                    h'-cases n' (suc n') (m≤n⇒m<n∨m≡n q) (<-cmp (f n') n')
+                    -- #TODO: subst q₁ and t₁
+                ≡⟨ cong (λ x → h'-cases n' (suc n') x (<-cmp (f n') n')) (sym q₁) ⟩
+                    h'-cases n' (suc n') (inj₂ refl) (<-cmp (f n') n')
+                ≡⟨ cong (λ x → h'-cases n' (suc n') (inj₂ refl) x) (sym t₁) ⟩
+                    h'-cases n' (suc n') (inj₂ refl) (tri< fn'<n a b)
+                ≡⟨ ? ⟩
+                    -- We matched m≡n to refl, so the subst dissapears :)
+                    subst NFRestr refl (addChoice (h' n' n' ≤-refl) c)
+                ≡⟨⟩
+                    addChoice (h' n' n' ≤-refl) c
+                ∎
+                
+                
+            ans : h' (suc n') n' p ⋖ h' (suc n') (suc n') q
+            ans = ?
+    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ (tri≈ _ fn'≡n' _) t₁ = {! !}
+    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ (tri> _ _ n'<fn') t₁ = 
+        ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
+    H'-cases n' m p q (inj₂ m≡n) p₁ (inj₁ 1+m<n) q₁ t₀ t₁ = 
+        ⊥-elim $ 1+n≮n n 1+n<n
+        where
+            n : ℕ
+            n = suc n'
+            1+n<n : suc n < n
+            1+n<n = subst (λ x  → suc x < n) m≡n 1+m<n
+    H'-cases n' m p q (inj₂ m≡n) p₁ (inj₂ 1+m≡n) q₁ t₀ t₁ =
+        ⊥-elim $ m≢1+n+m m {n = 0} (trans m≡n (sym 1+m≡n))
 
     --K' 0 0 z≤z q = ?
     --K' n@(suc n') m m≤n q with m≤n⇒m<n∨m≡n m≤n

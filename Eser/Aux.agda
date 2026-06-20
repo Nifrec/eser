@@ -4,7 +4,7 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
-open import Level
+open import Level hiding (suc)
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum
@@ -179,6 +179,9 @@ module SigmaCasts {I : Set} {A : I → Set} where
 --------------------------------------------------------------------------------
 -- Natural number arithmetic
 --------------------------------------------------------------------------------
+
+1+n≮n : (n : ℕ) → ¬ (ℕ.suc n < n)
+1+n≮n n 1+n<n = (n≮n (suc n) $ m<n⇒m<1+n 1+n<n)
 
 m∸Sn≤m∸n
     : (n m : ℕ)
