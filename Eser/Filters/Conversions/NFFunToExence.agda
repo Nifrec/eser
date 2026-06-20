@@ -18,7 +18,8 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
-open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
+open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
+    ; ≤-irrelevant)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
@@ -27,6 +28,7 @@ open import Eser.Logic
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
+open import Eser.Filters.Resurface
 
 module Eser.Filters.Conversions.NFFunToExence where
 
@@ -196,6 +198,54 @@ combine (h , H) = (f , f-leq , f-fix)
 -- Implementation of `restrict+`
 --------------------------------------------------------------------------------
 
+extension-must-be-newNF
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → {s : NFRestr (suc n)}
+    → (H : r ⋖ s)
+    → (c : Choices r)
+    → c ≡ getChoice r s H
+    → n ≡ choiceToℕ (getChoice r s H)
+    → getChoice r s H ≡ here × s ≡ newNF r
+extension-must-be-newNF {n} {r} {newNF r} (⋖-newNF r) c refl refl = (refl , refl)
+extension-must-be-newNF {n} {r} {s} (⋖-oldNF r c) (earlier-new c) refl p = ans
+    where
+        n<n : n < n
+        n<n = subst (λ x → x < n) (sym p) (NFSToℕ-≤ {n} {r} c)
+        ans = ⊥-elim (1+n≰n n<n)
+
+-- Given a finite sequence of pointwise extensions,
+-- earlier NFRestrs in the sequence are ⋖+ related to later NFRestrs.
+connect-⋖-to-⋖+
+    : {n : ℕ}
+    → (h : (m : ℕ) → m ≤ n → NFRestr m)
+    → (H : (m : ℕ) → (p : m ≤ n) → (q : suc m ≤ n) → h m p ⋖ h (suc m) q)
+    → (m l : ℕ) → m < l → (p : m ≤ n) → (q : l ≤ n) → h m p ⋖+ h l q
+connect-⋖-to-⋖+ {n} h H = ?
+
+subst-idx-in-NFRestr
+    : {a b n' : ℕ}
+    → (f : (m : ℕ) → m ≤ n' → NFRestr m)
+    → (s : NFRestr a)
+    → (z : a ≡ b)
+    → (p : a ≤ n')
+    → (q : b ≤ n')
+    → s ≡ f a p
+    → s ≡ subst NFRestr (sym z) (f b q)
+subst-idx-in-NFRestr {a} {b} {n'} f s refl p q s≡fap =
+    begin 
+        s
+    ≡⟨ s≡fap ⟩
+        f a p
+    ≡⟨⟩ -- By J rule we assume a ≗ b
+        f b p
+    ≡⟨ cong (f b) $ ≤-irrelevant p q ⟩ -- proof irrelevance
+        f b q
+    ≡⟨⟩
+        subst NFRestr refl (f b q)
+    ∎
+    
+
 module RestrictImplementation (f' : NFFun) where
     open import Data.Nat.Properties using (≤-refl ; <⇒≤ ; m<n⇒m≤1+n ; ≤⇒≯ ; m≤n⇒m<n∨m≡n)
 
@@ -203,6 +253,8 @@ module RestrictImplementation (f' : NFFun) where
     f = proj₁ f'
     f-leq : (n : ℕ) → f n ≤ n
     f-leq = proj₁ $ proj₂ f'
+    f-fix : (n : ℕ) → f (f n) ≡ f n
+    f-fix = proj₂ $ proj₂ f'
 
     -- Implementation notes:
     -- (1) h', H' and K' are computed in 𝐦𝐮𝐭𝐮𝐚𝐥 𝐢𝐧𝐝𝐮𝐜𝐭𝐢𝐨𝐧;
@@ -254,12 +306,58 @@ module RestrictImplementation (f' : NFFun) where
     -- Case 2.1: the normal form of n' is a smaller number.
     ... | tri< fn'<n'  _   _   = ans
         where
+            -- 0. Let d ≔ f n', be a fixpoint of f smaller than n'.
+            -- 1. Show `h' n' 1+d fn'<n'` is (newNF h' n' 1+d fn'<n'),
+            --  i.e., show that d was chosen to be a new equiv class.
+            -- 2. Now resurface the choice of «making d a new class»
+            --  from (h' n' d) to (h' n' n').
+            -- 3. Return (h' n' n') extended with that choice.
+            d : ℕ
+            d = f n'
+
+            fd≡d : f d ≡ d
+            fd≡d = f-fix n'
+
+            p : d ≤ n'
+            p = <⇒≤ fn'<n'
+
+            q : (ℕ.suc d) ≤ n'
+            q = fn'<n'
+
+            r' : NFRestr d
+            r' = h' n' d p
+
+            c : Choices r'
+            c = getChoice r' (h' n' (ℕ.suc d) q) (H' n' d p q)
+
+            H₀ : choiceToℕ c ≡ d
+            H₀ = trans (K' n' d p q) fd≡d
+
+            H₁ : h' n' (ℕ.suc d) fn'<n' ≡ newNF r'
+            H₁ = proj₂ (extension-must-be-newNF (H' n' d p q) c refl (sym H₀))
+
             rec : NFRestr n'
             rec = h' n' n' (≤-refl)
-            c : Choices rec
-            c = {! getChoice (h' !}
+
+            newNFr'⋖+=rec : newNF r' ⋖+= rec
+            newNFr'⋖+=rec with (<-cmp (suc d) n')
+            ... | tri< 1+d<n' _ _ = 
+                inj₂ $ subst (λ x → x ⋖+ rec) H₁ 
+                     $ connect-⋖-to-⋖+ {n'} (h' n') (H' n') (suc d) n' 
+                                       1+d<n' q ≤-refl
+            ... | tri≈ _ 1+d≡n' _ = inj₁ (sym 1+d≡n' , 
+                subst-idx-in-NFRestr {suc d} {n'} {n'}
+                (h' n') (newNF r') 1+d≡n'
+                q (≤-refl) (sym H₁)
+                )
+            ... | tri> _ _ n'<1+d = ⊥-elim $ ≤⇒≯ fn'<n' n'<1+d
+
+            c-surface : Choices rec
+            c-surface = proj₁ $ resurface-nf {d} {n'} r' rec newNFr'⋖+=rec
+
             ans : NFRestr m
-            ans = {! oldNF rec c!}
+            ans = subst NFRestr (sym m≡n) (addChoice rec c-surface)
+
     -- Case 2.2: n' should be a new normal form. 
     ... | tri≈ _    fn'≡n' _   = subst NFRestr (sym m≡n) (newNF rec)
         where
