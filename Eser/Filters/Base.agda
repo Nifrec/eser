@@ -201,6 +201,20 @@ data _⋖+_ : {n m : ℕ} → (r : NFRestr n) → (s : NFRestr m) → Set where
         → r ⋖+ s
         → r ⋖+ (oldNF s c)
 
+-- Derived constructor (works for both ways of proving s' ⋖ s):
+⋖+-multistep-anychoice
+    : {n m : ℕ} 
+    → {r : NFRestr n} 
+    → {s' : NFRestr m}
+    → {s : NFRestr (suc m)}
+    → r ⋖+ s'
+    → s' ⋖ s
+    → r ⋖+ s
+⋖+-multistep-anychoice {n} {m} {r} {s'} {s} r⋖+s' (⋖-newNF s') = 
+    ⋖+-multistep-newNF r⋖+s'
+⋖+-multistep-anychoice {n} {m} {r} {s'} {s} r⋖+s' (⋖-oldNF s' c) =
+    ⋖+-multistep-oldNF c r⋖+s'
+
 -- Transitive & reflexive closure
 _⋖+=_ : {n m : ℕ} → (r : NFRestr n) → (s : NFRestr m) → Set
 _⋖+=_ {n} {m} r s = (Σ[ p ∈ m ≡ n ] (r ≡ subst NFRestr p s)) ⊎ (r ⋖+ s)

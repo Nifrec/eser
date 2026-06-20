@@ -19,11 +19,14 @@ open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
-    ; ≤-irrelevant)
+    ; ≤-irrelevant
+    ; m<1+n⇒m<n∨m≡n
+    ; <-≤-trans
+    )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n)
 open import Eser.Logic
 
 open import Eser.Filters.Base
@@ -221,7 +224,15 @@ connect-⋖-to-⋖+
     → (h : (m : ℕ) → m ≤ n → NFRestr m)
     → (H : (m : ℕ) → (p : m ≤ n) → (q : suc m ≤ n) → h m p ⋖ h (suc m) q)
     → (m l : ℕ) → m < l → (p : m ≤ n) → (q : l ≤ n) → h m p ⋖+ h l q
-connect-⋖-to-⋖+ {n} h H = ?
+connect-⋖-to-⋖+ {n} h H m (suc l) m<1+l p q with m<1+n⇒m<n∨m≡n m<1+l
+... | inj₁ m<l = ⋖+-multistep-anychoice rec (H l q' q)
+    where
+        q' : l ≤ n
+        q' = Sm≤n→m≤n q
+        rec : h m p ⋖+ h l q'
+        rec = connect-⋖-to-⋖+ {n} h H m l m<l p q'
+
+... | inj₂ refl = ⋖+-onestep (H m p q)
 
 subst-idx-in-NFRestr
     : {a b n' : ℕ}
