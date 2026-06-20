@@ -303,15 +303,25 @@ module RestrictImplementation (f' : NFFun) where
         → h' n m p ≡ h' (ℕ.suc n) m q 
 
     -- The proofs of h', H', K' and h'-coh follow the same case distinctions.
-    --h'-m≤n-cases : (n : ℕ) → (m : ℕ) → (m < n ⊎ m ≡ n) → NFRestr m
-    --h'-m≡n-case : (n : ℕ) → (m : ℕ) → m ≡ n → Trichotomous _≡_ _<_ m n → NFRestr m
-
     h'-cases 
         : (n' : ℕ) 
         → (m : ℕ) 
         → (m < suc n' ⊎ m ≡ suc n') 
         → Tri (f n' < n') (f n' ≡ n') (n' < f n')
         → NFRestr m
+
+    H'-cases 
+        : (n' : ℕ) 
+        → (m : ℕ) 
+        → (p : m ≤ suc n')
+        → (q : suc m ≤ suc n')
+        → (p₀ : m < suc n' ⊎ m ≡ suc n') 
+        → (p₁ : p₀ ≡ m≤n⇒m<n∨m≡n p)
+        → (q₀ : suc m < suc n' ⊎ suc m ≡ suc n')
+        → (q₁ : q₀ ≡ m≤n⇒m<n∨m≡n q)
+        → (t₀ : Tri (f n' < n') (f n' ≡ n') (n' < f n'))
+        → (t₁ : t₀ ≡ <-cmp (f n') n')
+        → h' (suc n') m p ⋖ h' (suc n') (ℕ.suc m) q
 
 
     h' 0 0 z≤z = empty
@@ -395,29 +405,12 @@ module RestrictImplementation (f' : NFFun) where
     -- Case 2.3: f n' > n'. This contradicts `f-leq : f x ≤ x for all x`.
     h'-cases n' m (inj₂ m≡n) (tri> _  _ n'<fn') = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
 
+    -- The implementation of H mimicks all the cases.
     H' 0 0 z≤z ()
-    H' n@(suc n') m m≤n q with m≤n⇒m<n∨m≡n q
-    ... | inj₁ 1+m<n = ?
-        where
-            q' : suc m ≤ n'
-            q' = s≤s⁻¹ 1+m<n
-            p' : m ≤ n'
-            p' = ≤-trans (n≤1+n m) q'
-
-            rec : h' n' m p' ⋖ h' n' (suc m) q'
-            rec = H' n' m p' q'
-
-            check : h' n' (suc m) q' ≡ h' n (suc m) q
-            check = {! refl !}
-
-            --Hₚ : p' ≡ s≤sp
-            --Hₚ = ≤-irrelevant p' p
-            --Hq : q' ≡ q
-            --Hq = ≤-irrelevant q' q
-    ... | inj₂ m≡n with (<-cmp (f n') n')
-    ... | tri< fn'<n'  _   _   = ?
-    ... | tri≈ _    fn'≡n' _   = ?
-    ... | tri> _    _   n'<fn' = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
+    H' n@(suc n') m p q = H'-cases n' m p q (m≤n⇒m<n∨m≡n p) refl 
+                                            (m≤n⇒m<n∨m≡n q) refl 
+                                            (<-cmp (f n') n') refl
+    H'-cases n' m p q p₀ p₁ q₀ q₁ t₀ t₁ = ?
 
     --K' 0 0 z≤z q = ?
     --K' n@(suc n') m m≤n q with m≤n⇒m<n∨m≡n m≤n
