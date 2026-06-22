@@ -27,7 +27,9 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n ; 1+n≮n )
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n ; 1+n≮n 
+                           ; doubleSubst 
+                           )
 open import Eser.Logic
 
 open import Eser.Filters.Base
@@ -402,7 +404,8 @@ module RestrictImplementation (f' : NFFun) where
             c-surface = proj₁ $ resurface-nf {d} {n'} r' rec newNFr'⋖+=rec
 
     -- Case 2.2: n' should be a new normal form. 
-    h'-m≡n-case-get-choice n' m refl (tri≈ _  fn'≡n' _) = here {n'} {h' n' n' ≤-refl}
+    h'-m≡n-case-get-choice n' m refl (tri≈ _  fn'≡n' _) 
+        = here {n'} {h' n' n' ≤-refl}
 
     -- Case 2.3: f n' > n'. This contradicts `f-leq : f x ≤ x for all x`.
     h'-m≡n-case-get-choice n' m refl (tri> _  _ n'<fn') 
@@ -414,7 +417,7 @@ module RestrictImplementation (f' : NFFun) where
                                             (m≤n⇒m<n∨m≡n q) refl 
                                             (<-cmp (f n') n') refl
     H'-cases n' m p q (inj₁ m<n) p₁ (inj₁ 1+m<n) q₁ t₀ t₁ = {! !}
-    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ (tri< fn'<n a b) t₁ = ans
+    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ tri t₁ = ans
         where
             LHS : h' (suc n') n' p ≡ h' n' n' ≤-refl
             LHS =
@@ -425,7 +428,7 @@ module RestrictImplementation (f' : NFFun) where
                 ≡⟨ cong (λ x → h'-cases n' n' x (<-cmp (f n') n')) (sym p₁) ⟩
                     h'-cases n' n' (inj₁ m<n) (<-cmp (f n') n')
                 ≡⟨ cong (λ x → h'-cases n' n' (inj₁ m<n) x) (sym t₁) ⟩
-                    h'-cases n' n' (inj₁ m<n) (tri< fn'<n a b)
+                    h'-cases n' n' (inj₁ m<n) tri
                 ≡⟨⟩
                     h' n' n' (s≤s⁻¹ m<n)
                 ≡⟨ cong (h' n' n') (≤-irrelevant (s≤s⁻¹ m<n) ≤-refl) ⟩
@@ -433,9 +436,8 @@ module RestrictImplementation (f' : NFFun) where
                 ∎
 
             c : Choices (h' n' n' ≤-refl)
-            -- #TODO: refactor def of h' to use a fun "getC"
-            -- Then the second next hole below should hold by refl :)
-            c = ? 
+            c = h'-m≡n-case-get-choice n' (suc n') refl tri
+ 
 
             RHS : h' (suc n') (suc n') q ≡ addChoice (h' n' n' ≤-refl) c
             RHS = 
@@ -443,24 +445,24 @@ module RestrictImplementation (f' : NFFun) where
                     h' (suc n') (suc n') q 
                 ≡⟨⟩
                     h'-cases n' (suc n') (m≤n⇒m<n∨m≡n q) (<-cmp (f n') n')
-                    -- #TODO: subst q₁ and t₁
-                ≡⟨ cong (λ x → h'-cases n' (suc n') x (<-cmp (f n') n')) (sym q₁) ⟩
+                ≡⟨ cong (λ x → h'-cases n' (suc n') x (<-cmp (f n') n')) 
+                        (sym q₁) ⟩
                     h'-cases n' (suc n') (inj₂ refl) (<-cmp (f n') n')
                 ≡⟨ cong (λ x → h'-cases n' (suc n') (inj₂ refl) x) (sym t₁) ⟩
-                    h'-cases n' (suc n') (inj₂ refl) (tri< fn'<n a b)
-                ≡⟨ ? ⟩
+                    h'-cases n' (suc n') (inj₂ refl) tri
+                ≡⟨⟩
                     -- We matched m≡n to refl, so the subst dissapears :)
                     subst NFRestr refl (addChoice (h' n' n' ≤-refl) c)
                 ≡⟨⟩
                     addChoice (h' n' n' ≤-refl) c
                 ∎
                 
+            pre-ans : h' n' n' ≤-refl ⋖ addChoice (h' n' n' ≤-refl) c
+            pre-ans = ⋖-addChoice {n'} {h' n' n' ≤-refl} c
                 
             ans : h' (suc n') n' p ⋖ h' (suc n') (suc n') q
-            ans = ?
-    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ (tri≈ _ fn'≡n' _) t₁ = {! !}
-    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ (tri> _ _ n'<fn') t₁ = 
-        ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
+            ans = doubleSubst (λ x y → x ⋖ y) (sym LHS) (sym RHS) pre-ans
+
     H'-cases n' m p q (inj₂ m≡n) p₁ (inj₁ 1+m<n) q₁ t₀ t₁ = 
         ⊥-elim $ 1+n≮n n 1+n<n
         where

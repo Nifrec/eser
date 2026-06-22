@@ -172,6 +172,11 @@ data _⋖_ : {n : ℕ} → (r : NFRestr n) → (s : NFRestr (ℕ.suc n)) → Set
     ⋖-newNF : {n : ℕ} → (r : NFRestr n) → r ⋖ (newNF r)
     ⋖-oldNF : {n : ℕ} → (r : NFRestr n) → (c : NFS r) →  r ⋖ (oldNF r c)
 
+-- Derived constructor that works for both kinds of choices.
+⋖-addChoice : {n : ℕ} → {r : NFRestr n} → (c : Choices r) → r ⋖ addChoice r c
+⋖-addChoice {n} {r} here = ⋖-newNF r
+⋖-addChoice {n} {r} (earlier-new c) = ⋖-oldNF r c
+
 -- Transitive closure of above relation.
 -- Note: the implementation could have used
 -- `⋖+-multistep : r ⋖+ s → s ⋖ t → r ⋖+ t` instead
