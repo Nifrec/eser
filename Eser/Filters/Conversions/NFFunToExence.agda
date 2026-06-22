@@ -23,6 +23,8 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
     ; m<1+n⇒m<n∨m≡n
     ; <-≤-trans
     ; m≢1+n+m
+    ; <-trans
+    ; n<1+n
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -319,6 +321,7 @@ module RestrictImplementation (f' : NFFun) where
         → Tri (f n' < n') (f n' ≡ n') (n' < f n')
         → Choices (h' n' n' ≤-refl)
 
+
     H'-cases 
         : (n' : ℕ) 
         → (m : ℕ) 
@@ -334,7 +337,7 @@ module RestrictImplementation (f' : NFFun) where
 
 
     h' 0 0 z≤z = empty
-    h' n@(ℕ.suc n') m m≤n = h'-cases n' m (m≤n⇒m<n∨m≡n m≤n) (<-cmp (f n') n')
+    h' (suc n') m m≤n = h'-cases n' m (m≤n⇒m<n∨m≡n m≤n) (<-cmp (f n') n')
 
     -- Case 1.1: m < n. Use a recursive call.
     h'-cases n' m  (inj₁ m<n) _ = h' n' m (s≤s⁻¹ m<n)
@@ -411,32 +414,61 @@ module RestrictImplementation (f' : NFFun) where
     h'-m≡n-case-get-choice n' m refl (tri> _  _ n'<fn') 
         = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
 
+    -- The arguments t₀ and t₁ seem overkill,
+    -- but using just `<-cmp (f n') n'` instead of t₀ makes the computation get
+    -- stuck.
+    lemma-h'-does-recurse
+        : {n' m : ℕ}
+        → (p : m ≤ suc n')
+        → (p' : m ≤ n')
+        → (p₀ : m < suc n')
+        → (p₁ : m≤n⇒m<n∨m≡n p ≡ inj₁ p₀)
+        → (t₀ : Tri (f n' < n') (f n' ≡ n') (n' < f n'))
+        → (t₁ : t₀ ≡ <-cmp (f n') n')
+        → h' (suc n') m p ≡ h' n' m p'
+    lemma-h'-does-recurse {n'} {m} p p' p₀ p₁ t₀ t₁ = 
+        begin 
+            h' (suc n') m p
+        ≡⟨⟩
+            h'-cases n' m (m≤n⇒m<n∨m≡n p) (<-cmp (f n') n')
+        ≡⟨ cong (λ x → h'-cases n' m x (<-cmp (f n') n')) p₁ ⟩
+            h'-cases n' m (inj₁ p₀) (<-cmp (f n') n')
+        ≡⟨ cong (λ x → h'-cases n' m (inj₁ p₀) x) (sym t₁) ⟩
+            h'-cases n' m (inj₁ p₀) t₀
+        ≡⟨⟩
+            h' n' m (s≤s⁻¹ p₀)
+        ≡⟨ cong (h' n' m) (≤-irrelevant (s≤s⁻¹ p₀) p') ⟩
+            h' n' m p'
+        ∎
+
+
     -- The implementation of H mimicks all the cases.
     H' 0 0 z≤z ()
     H' n@(suc n') m p q = H'-cases n' m p q (m≤n⇒m<n∨m≡n p) refl 
                                             (m≤n⇒m<n∨m≡n q) refl 
                                             (<-cmp (f n') n') refl
-    H'-cases n' m p q (inj₁ m<n) p₁ (inj₁ 1+m<n) q₁ t₀ t₁ = {! !}
-    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ tri t₁ = ans
+    H'-cases n' m p q (inj₁ m<n) p₁ (inj₁ 1+m<n) q₁ t₀ t₁ = ans
+        where
+            q' : (suc m) ≤ n'
+            q' = s≤s⁻¹ 1+m<n
+            p' : m ≤ n'
+            p' = ≤-trans (n≤1+n m) q'
+            IH : h' n' m p' ⋖ h' n' (suc m) q'
+            IH = H' n' m p' q'
+            LHS : h' n' m p' ≡ h' (suc n') m p
+            LHS = sym $ lemma-h'-does-recurse p p' m<n (sym p₁) t₀ t₁
+            RHS : h' n' (suc m) q' ≡ h' (suc n') (suc m) q
+            RHS = sym $ lemma-h'-does-recurse q q' 1+m<n (sym q₁) t₀ t₁
+            ans : h' (suc n') m p ⋖ h' (suc n') (suc m) q
+            ans = doubleSubst (λ x y → x ⋖ y) LHS RHS IH
+
+    H'-cases n' n' p q (inj₁ m<n) p₁ (inj₂ refl) q₁ t₀ t₁ = ans
         where
             LHS : h' (suc n') n' p ≡ h' n' n' ≤-refl
-            LHS =
-                begin 
-                    h' (suc n') n' p
-                ≡⟨⟩
-                    h'-cases n' n' (m≤n⇒m<n∨m≡n p) (<-cmp (f n') n')
-                ≡⟨ cong (λ x → h'-cases n' n' x (<-cmp (f n') n')) (sym p₁) ⟩
-                    h'-cases n' n' (inj₁ m<n) (<-cmp (f n') n')
-                ≡⟨ cong (λ x → h'-cases n' n' (inj₁ m<n) x) (sym t₁) ⟩
-                    h'-cases n' n' (inj₁ m<n) tri
-                ≡⟨⟩
-                    h' n' n' (s≤s⁻¹ m<n)
-                ≡⟨ cong (h' n' n') (≤-irrelevant (s≤s⁻¹ m<n) ≤-refl) ⟩
-                    h' n' n' ≤-refl
-                ∎
+            LHS = lemma-h'-does-recurse p ≤-refl m<n (sym p₁) t₀ t₁
 
             c : Choices (h' n' n' ≤-refl)
-            c = h'-m≡n-case-get-choice n' (suc n') refl tri
+            c = h'-m≡n-case-get-choice n' (suc n') refl t₀
  
 
             RHS : h' (suc n') (suc n') q ≡ addChoice (h' n' n' ≤-refl) c
@@ -449,7 +481,7 @@ module RestrictImplementation (f' : NFFun) where
                         (sym q₁) ⟩
                     h'-cases n' (suc n') (inj₂ refl) (<-cmp (f n') n')
                 ≡⟨ cong (λ x → h'-cases n' (suc n') (inj₂ refl) x) (sym t₁) ⟩
-                    h'-cases n' (suc n') (inj₂ refl) tri
+                    h'-cases n' (suc n') (inj₂ refl) t₀
                 ≡⟨⟩
                     -- We matched m≡n to refl, so the subst dissapears :)
                     subst NFRestr refl (addChoice (h' n' n' ≤-refl) c)
