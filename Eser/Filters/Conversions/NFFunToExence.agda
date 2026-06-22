@@ -311,6 +311,12 @@ module RestrictImplementation (f' : NFFun) where
         → Tri (f n' < n') (f n' ≡ n') (n' < f n')
         → NFRestr m
 
+    h'-m≡n-case-get-choice
+        : (n' m : ℕ)
+        → m ≡ suc n'
+        → Tri (f n' < n') (f n' ≡ n') (n' < f n')
+        → Choices (h' n' n' ≤-refl)
+
     H'-cases 
         : (n' : ℕ) 
         → (m : ℕ) 
@@ -340,7 +346,11 @@ module RestrictImplementation (f' : NFFun) where
     -- or not (then f assigns n' an earlier normal form).
     
     -- Case 2.1: the normal form of n' is a smaller number.
-    h'-cases n' m (inj₂ m≡n) (tri< fn'<n'  _   _) = ans
+    h'-cases n' m (inj₂ m≡n) tri
+        = subst NFRestr (sym m≡n) $ 
+            addChoice (h' n' n' (≤-refl)) (h'-m≡n-case-get-choice n' m m≡n tri)
+            
+    h'-m≡n-case-get-choice n' m refl (tri< fn'<n'  _   _) = c-surface
         where
             -- 0. Let d ≔ f n', be a fixpoint of f smaller than n'.
             -- 1. Show `h' n' 1+d fn'<n'` is (newNF h' n' 1+d fn'<n'),
@@ -391,20 +401,12 @@ module RestrictImplementation (f' : NFFun) where
             c-surface : Choices rec
             c-surface = proj₁ $ resurface-nf {d} {n'} r' rec newNFr'⋖+=rec
 
-            ans : NFRestr m
-            ans = subst NFRestr (sym m≡n) (addChoice rec c-surface)
-
     -- Case 2.2: n' should be a new normal form. 
-    h'-cases n' m (inj₂ m≡n) (tri≈ _  fn'≡n' _) = subst NFRestr (sym m≡n) (newNF rec)
-        where
-            -- Recursion uses n' instead of n as upper bound for m,
-            -- applying `newNF` gives a term of index 1+n',
-            -- which we can substitute to m.
-            rec : NFRestr n'
-            rec = h' n' n' (≤-refl)
+    h'-m≡n-case-get-choice n' m refl (tri≈ _  fn'≡n' _) = here {n'} {h' n' n' ≤-refl}
 
     -- Case 2.3: f n' > n'. This contradicts `f-leq : f x ≤ x for all x`.
-    h'-cases n' m (inj₂ m≡n) (tri> _  _ n'<fn') = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
+    h'-m≡n-case-get-choice n' m refl (tri> _  _ n'<fn') 
+        = ⊥-elim $ ≤⇒≯ (f-leq n') n'<fn'
 
     -- The implementation of H mimicks all the cases.
     H' 0 0 z≤z ()
