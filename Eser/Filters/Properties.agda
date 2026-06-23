@@ -1,5 +1,5 @@
 -- Module      : Eser.Filters.Properties
--- Description : Properties of basic definitions
+-- Description : Properties of and functions on definitions in Filter.Base.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -24,6 +24,124 @@ open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
 open import Eser.Filters.Base
 
 module Eser.Filters.Properties where
+
+--------------------------------------------------------------------------------
+-- A NFRestr can be trimmed to a sub-NFRestr.
+--------------------------------------------------------------------------------
+-- See also below for correctness proof.
+ 
+-- Trim a NFRestr n to a NFRestr m by simply forgetting the last few choices,
+-- given that m < n.
+trim-NFRestr
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → m < n
+    → NFRestr m
+
+trim-NFRestr-cases
+    : {n' : ℕ}
+    → (r : NFRestr (suc n'))
+    → {m : ℕ}
+    → (m < n') ⊎ (m ≡ n')
+    → NFRestr m
+
+trim-NFRestr {suc n'} r {m} m<n = 
+    trim-NFRestr-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
+
+trim-NFRestr-cases {n'} (newNF r') {m} (inj₁ m<n') = 
+    trim-NFRestr {n'} r' {m} m<n'
+trim-NFRestr-cases {n'} (oldNF r' c) {m} (inj₁ m<n') =
+    trim-NFRestr {n'} r' {m} m<n'
+trim-NFRestr-cases {n'} (newNF r') {n'} (inj₂ refl) = r'
+trim-NFRestr-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = r'
+
+-- Correctness: the trimmed version is actually a sub-NFRestr of the input.
+-- That it has the right length already holds at type level.
+trim-NFRestr-correctness
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → (m<n : m < n)
+    → (trim-NFRestr r m<n) ⋖+ r
+trim-NFRestr-correctness {suc n'} r {m} m<n = 
+    cases {n'} r {m} m<n (m<1+n⇒m<n∨m≡n m<n) refl
+    module TrimNFRestrCorrectness where
+        cases
+            : {n' : ℕ}
+            → (r : NFRestr (suc n'))
+            → {m : ℕ}
+            → (p : m < suc n')
+            → (p₀ : (m < n') ⊎ (m ≡ n'))
+            → (p₁ : m<1+n⇒m<n∨m≡n p ≡ p₀)
+            → (trim-NFRestr r p) ⋖+ r
+        cases {n'} (newNF r') {m} m<n (inj₁ m<n') p₁ = 
+            subst (_⋖+ newNF r') (sym H) (⋖+-multistep-newNF IH)
+            where
+                IH : trim-NFRestr r' m<n' ⋖+ r'
+                IH = trim-NFRestr-correctness r' m<n'
+                H : trim-NFRestr (newNF r') m<n ≡ trim-NFRestr r' m<n'
+                H =
+                    begin 
+                        trim-NFRestr {suc n'} (newNF r') m<n   
+                    ≡⟨⟩
+                        trim-NFRestr-cases (newNF r') (m<1+n⇒m<n∨m≡n m<n)
+                    ≡⟨ cong (λ x → trim-NFRestr-cases (newNF r') x) p₁ ⟩
+                        trim-NFRestr-cases (newNF r') (inj₁ m<n')
+                    ≡⟨⟩
+                        trim-NFRestr r' m<n'
+                    ∎
+        cases {n'} (oldNF r' c) {m} m<n (inj₁ m<n') p₁ =
+            subst (_⋖+ oldNF r' c) (sym H) (⋖+-multistep-oldNF c IH)
+            where
+                IH : trim-NFRestr r' m<n' ⋖+ r'
+                IH = trim-NFRestr-correctness r' m<n'
+                H : trim-NFRestr (oldNF r' c) m<n ≡ trim-NFRestr r' m<n'
+                H =
+                    begin 
+                        trim-NFRestr {suc n'} (oldNF r' c) m<n   
+                    ≡⟨⟩
+                        trim-NFRestr-cases (oldNF r' c) (m<1+n⇒m<n∨m≡n m<n)
+                    ≡⟨ cong (λ x → trim-NFRestr-cases (oldNF r' c) x) p₁ ⟩
+                        trim-NFRestr-cases (oldNF r' c) (inj₁ m<n')
+                    ≡⟨⟩
+                        trim-NFRestr r' m<n'
+                    ∎
+        -- Next two cases use the same proof,
+        -- except for changing `newNF r'` by `oldNF r c`.
+        cases {n'} (newNF r') {n'} m<n (inj₂ refl) p₁ = 
+            subst ( _⋖+ newNF r') (sym H) (⋖+-onestep (⋖-newNF r'))
+            where
+                H : trim-NFRestr (newNF r') m<n ≡ r'
+                H =
+                    begin 
+                        trim-NFRestr {suc n'} (newNF r') {n'} m<n   
+                    ≡⟨⟩
+                        trim-NFRestr-cases {n'} (newNF r') {n'} 
+                                           (m<1+n⇒m<n∨m≡n m<n)
+                    ≡⟨ cong (λ x → trim-NFRestr-cases {n'} (newNF r') x) 
+                             p₁ ⟩
+                        trim-NFRestr-cases {n'} (newNF r') {n'} (inj₂ refl)
+                    ≡⟨⟩
+                        r'
+                    ∎
+        cases {n'} (oldNF r' c) {n'} m<n (inj₂ refl) p₁ =
+            subst ( _⋖+ oldNF r' c) (sym H) (⋖+-onestep (⋖-oldNF r' c))
+            where
+                H : trim-NFRestr (oldNF r' c) m<n ≡ r'
+                H =
+                    begin 
+                        trim-NFRestr {suc n'} (oldNF r' c) {n'} m<n   
+                    ≡⟨⟩
+                        trim-NFRestr-cases {n'} (oldNF r' c) {n'} 
+                                           (m<1+n⇒m<n∨m≡n m<n)
+                    ≡⟨ cong (λ x → trim-NFRestr-cases {n'} (oldNF r' c) x) 
+                             p₁ ⟩
+                        trim-NFRestr-cases {n'} (oldNF r' c) {n'} (inj₂ refl)
+                    ≡⟨⟩
+                        r'
+                    ∎
+
 
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
