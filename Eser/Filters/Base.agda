@@ -13,6 +13,7 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
+open import Data.Maybe
 
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
 
@@ -340,3 +341,12 @@ NFSToℕ-≤ {suc n} {oldNF r c} (earlier-old x) = s≤s (≤-trans (n≤1+n (NF
     where 
         y : NFSToℕ x < n
         y = NFSToℕ-≤ {n} {r} x
+
+-- Get the normal form of the last chosen element as a number in ℕ.
+-- Note that the last choice in a NFRestr n chose a normal form for n-1;
+-- so in particular, a NFRestr 0 does not record any choice,
+-- so no output can be defined (hence the `Maybe`).
+NFRestrToℕ : {n : ℕ} → NFRestr n → Maybe ℕ
+NFRestrToℕ {n} empty = nothing
+NFRestrToℕ {suc n'} (newNF r') = just n'
+NFRestrToℕ {suc n'} (oldNF r' c) = just $ NFSToℕ {n'} {r'} c

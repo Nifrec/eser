@@ -15,6 +15,7 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
+open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
@@ -53,6 +54,16 @@ resurface {suc n'} r {m} m<n = resurface-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m
         resurface-cases {n'} (newNF r') {n'} (inj₂ refl) = here
         -- Second one: the previous choice was 'c' : r' |-> oldNF r' c.
         resurface-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = earlier-old c
+
+-- Proof that resurface actually gives the same normal form.
+lemma-resurface-coherence
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → (p : m < n)
+    → just (NFSToℕ (resurface r p)) ≡ NFRestrToℕ {m} (trim r p)
+lemma-resurface-coherence {n} r {m} p = ?
+    
         
 -- Given that a sub-NFRestr of r of the form `newNF r'`,
 -- construct the choice of r that points to this normal form.
