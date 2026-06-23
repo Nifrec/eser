@@ -1,9 +1,11 @@
 -- Module      : Eser.Filters.Resurface
--- Description : Lift a sub-NFRestr of r of the form `newNF r'` to a NFS of r.
+-- Description : Dig up an earlier used normal-form-choice and reuse it.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
@@ -21,6 +23,30 @@ open import Eser.Filters.Properties
 
 module Eser.Filters.Resurface where
 
+-- Dig up an earlier assigned normal form and reuse it as the normal form
+-- of n.
+-- Idea: if m is assigned normal form m* in r, then m* ≤ m and m* is a NF of r.
+-- So we can also assign n the normal form of m*, and extend r with it.
+-- This does not require any prior knowledge of sub-NFRestrs of r
+-- (unlike the other 'resurface' varieties in this file).
+resurface 
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → m < n
+    → Choices r
+resurface {suc n'} r {m} m<n = resurface-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
+    module ResurfaceImpl where
+        open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
+        resurface-cases
+            : {n' : ℕ}
+            → (r : NFRestr (suc n'))
+            → {m : ℕ}
+            → (m < n') ⊎ (m ≡ n')
+            → Choices r
+        resurface-cases {n'} r {m} (inj₁ m<n') = ?
+        resurface-cases {n'} r {n'} (inj₂ refl) = ?
+        
 -- Given that a sub-NFRestr of r of the form `newNF r'`,
 -- construct the choice of r that points to this normal form.
 resurface-nf
