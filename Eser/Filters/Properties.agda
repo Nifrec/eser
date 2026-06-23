@@ -16,10 +16,11 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
+open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; n<1+n ; <-irrefl)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma )
 
 open import Eser.Filters.Base
 
@@ -28,43 +29,43 @@ module Eser.Filters.Properties where
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
 --------------------------------------------------------------------------------
--- See also below for correctness proof.
+-- See also below for correctness proof and for `getLastChoice`.
  
 -- Trim a NFRestr n to a NFRestr m by simply forgetting the last few choices,
 -- given that m < n.
-trim-NFRestr
+trim
     : {n : ℕ}
     → (r : NFRestr n)
     → {m : ℕ}
     → m < n
     → NFRestr m
 
-trim-NFRestr-cases
+trim-cases
     : {n' : ℕ}
     → (r : NFRestr (suc n'))
     → {m : ℕ}
     → (m < n') ⊎ (m ≡ n')
     → NFRestr m
 
-trim-NFRestr {suc n'} r {m} m<n = 
-    trim-NFRestr-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
+trim {suc n'} r {m} m<n = 
+    trim-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
 
-trim-NFRestr-cases {n'} (newNF r') {m} (inj₁ m<n') = 
-    trim-NFRestr {n'} r' {m} m<n'
-trim-NFRestr-cases {n'} (oldNF r' c) {m} (inj₁ m<n') =
-    trim-NFRestr {n'} r' {m} m<n'
-trim-NFRestr-cases {n'} (newNF r') {n'} (inj₂ refl) = r'
-trim-NFRestr-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = r'
+trim-cases {n'} (newNF r') {m} (inj₁ m<n') = 
+    trim {n'} r' {m} m<n'
+trim-cases {n'} (oldNF r' c) {m} (inj₁ m<n') =
+    trim {n'} r' {m} m<n'
+trim-cases {n'} (newNF r') {n'} (inj₂ refl) = r'
+trim-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = r'
 
 -- Correctness: the trimmed version is actually a sub-NFRestr of the input.
 -- That it has the right length already holds at type level.
-trim-NFRestr-correctness
+trim-correctness
     : {n : ℕ}
     → (r : NFRestr n)
     → {m : ℕ}
     → (m<n : m < n)
-    → (trim-NFRestr r m<n) ⋖+ r
-trim-NFRestr-correctness {suc n'} r {m} m<n = 
+    → (trim r m<n) ⋖+ r
+trim-correctness {suc n'} r {m} m<n = 
     cases {n'} r {m} m<n (m<1+n⇒m<n∨m≡n m<n) refl
     module TrimNFRestrCorrectness where
         cases
@@ -74,74 +75,130 @@ trim-NFRestr-correctness {suc n'} r {m} m<n =
             → (p : m < suc n')
             → (p₀ : (m < n') ⊎ (m ≡ n'))
             → (p₁ : m<1+n⇒m<n∨m≡n p ≡ p₀)
-            → (trim-NFRestr r p) ⋖+ r
+            → (trim r p) ⋖+ r
         cases {n'} (newNF r') {m} m<n (inj₁ m<n') p₁ = 
             subst (_⋖+ newNF r') (sym H) (⋖+-multistep-newNF IH)
             where
-                IH : trim-NFRestr r' m<n' ⋖+ r'
-                IH = trim-NFRestr-correctness r' m<n'
-                H : trim-NFRestr (newNF r') m<n ≡ trim-NFRestr r' m<n'
+                IH : trim r' m<n' ⋖+ r'
+                IH = trim-correctness r' m<n'
+                H : trim (newNF r') m<n ≡ trim r' m<n'
                 H =
                     begin 
-                        trim-NFRestr {suc n'} (newNF r') m<n   
+                        trim {suc n'} (newNF r') m<n   
                     ≡⟨⟩
-                        trim-NFRestr-cases (newNF r') (m<1+n⇒m<n∨m≡n m<n)
-                    ≡⟨ cong (λ x → trim-NFRestr-cases (newNF r') x) p₁ ⟩
-                        trim-NFRestr-cases (newNF r') (inj₁ m<n')
+                        trim-cases (newNF r') (m<1+n⇒m<n∨m≡n m<n)
+                    ≡⟨ cong (λ x → trim-cases (newNF r') x) p₁ ⟩
+                        trim-cases (newNF r') (inj₁ m<n')
                     ≡⟨⟩
-                        trim-NFRestr r' m<n'
+                        trim r' m<n'
                     ∎
         cases {n'} (oldNF r' c) {m} m<n (inj₁ m<n') p₁ =
             subst (_⋖+ oldNF r' c) (sym H) (⋖+-multistep-oldNF c IH)
             where
-                IH : trim-NFRestr r' m<n' ⋖+ r'
-                IH = trim-NFRestr-correctness r' m<n'
-                H : trim-NFRestr (oldNF r' c) m<n ≡ trim-NFRestr r' m<n'
+                IH : trim r' m<n' ⋖+ r'
+                IH = trim-correctness r' m<n'
+                H : trim (oldNF r' c) m<n ≡ trim r' m<n'
                 H =
                     begin 
-                        trim-NFRestr {suc n'} (oldNF r' c) m<n   
+                        trim {suc n'} (oldNF r' c) m<n   
                     ≡⟨⟩
-                        trim-NFRestr-cases (oldNF r' c) (m<1+n⇒m<n∨m≡n m<n)
-                    ≡⟨ cong (λ x → trim-NFRestr-cases (oldNF r' c) x) p₁ ⟩
-                        trim-NFRestr-cases (oldNF r' c) (inj₁ m<n')
+                        trim-cases (oldNF r' c) (m<1+n⇒m<n∨m≡n m<n)
+                    ≡⟨ cong (λ x → trim-cases (oldNF r' c) x) p₁ ⟩
+                        trim-cases (oldNF r' c) (inj₁ m<n')
                     ≡⟨⟩
-                        trim-NFRestr r' m<n'
+                        trim r' m<n'
                     ∎
         -- Next two cases use the same proof,
         -- except for changing `newNF r'` by `oldNF r c`.
         cases {n'} (newNF r') {n'} m<n (inj₂ refl) p₁ = 
             subst ( _⋖+ newNF r') (sym H) (⋖+-onestep (⋖-newNF r'))
             where
-                H : trim-NFRestr (newNF r') m<n ≡ r'
+                H : trim (newNF r') m<n ≡ r'
                 H =
                     begin 
-                        trim-NFRestr {suc n'} (newNF r') {n'} m<n   
+                        trim {suc n'} (newNF r') {n'} m<n   
                     ≡⟨⟩
-                        trim-NFRestr-cases {n'} (newNF r') {n'} 
+                        trim-cases {n'} (newNF r') {n'} 
                                            (m<1+n⇒m<n∨m≡n m<n)
-                    ≡⟨ cong (λ x → trim-NFRestr-cases {n'} (newNF r') x) 
+                    ≡⟨ cong (λ x → trim-cases {n'} (newNF r') x) 
                              p₁ ⟩
-                        trim-NFRestr-cases {n'} (newNF r') {n'} (inj₂ refl)
+                        trim-cases {n'} (newNF r') {n'} (inj₂ refl)
                     ≡⟨⟩
                         r'
                     ∎
         cases {n'} (oldNF r' c) {n'} m<n (inj₂ refl) p₁ =
             subst ( _⋖+ oldNF r' c) (sym H) (⋖+-onestep (⋖-oldNF r' c))
             where
-                H : trim-NFRestr (oldNF r' c) m<n ≡ r'
+                H : trim (oldNF r' c) m<n ≡ r'
                 H =
                     begin 
-                        trim-NFRestr {suc n'} (oldNF r' c) {n'} m<n   
+                        trim {suc n'} (oldNF r' c) {n'} m<n   
                     ≡⟨⟩
-                        trim-NFRestr-cases {n'} (oldNF r' c) {n'} 
+                        trim-cases {n'} (oldNF r' c) {n'} 
                                            (m<1+n⇒m<n∨m≡n m<n)
-                    ≡⟨ cong (λ x → trim-NFRestr-cases {n'} (oldNF r' c) x) 
+                    ≡⟨ cong (λ x → trim-cases {n'} (oldNF r' c) x) 
                              p₁ ⟩
-                        trim-NFRestr-cases {n'} (oldNF r' c) {n'} (inj₂ refl)
+                        trim-cases {n'} (oldNF r' c) {n'} (inj₂ refl)
                     ≡⟨⟩
                         r'
                     ∎
 
+getLastChoice
+    : {n' : ℕ}
+    → (r : NFRestr (suc n'))
+    → Σ[ c ∈ Choices (trim r (n<1+n n')) ] r ≡ addChoice (trim r (n<1+n n')) c
+getLastChoice {n'} (newNF r') = ans
+    where
+        H : trim {suc n'} (newNF r') {n'} (n<1+n n') ≡ r'
+        H =
+            begin 
+                trim (newNF r') (n<1+n n')
+            ≡⟨⟩
+                trim-cases (newNF r') (m<1+n⇒m<n∨m≡n (n<1+n n'))
+            ≡⟨ cong (trim-cases {n'} (newNF r') {n'}) (n<1+n-lemma n') ⟩
+                trim-cases (newNF r') (inj₂ refl)
+            ≡⟨⟩
+                r'
+            ∎
+
+        K : newNF r' ≡ addChoice r' here
+        K = refl
+
+        pre-ans : Σ[ c ∈ Choices r' ] newNF r' ≡ addChoice r' c
+        pre-ans = (here , K)
+
+        P : NFRestr n' → Set
+        P x = Σ[ c ∈ Choices x ] newNF r' ≡ addChoice x c
+        
+        ans : P (trim (newNF r') (n<1+n n'))
+        ans = subst P (sym H) pre-ans 
+
+-- Same proof as other case, except all `newNF r'` are replaced by `oldNF r' c`.
+getLastChoice {n'} (oldNF r' c) = ans
+    where
+        H : trim {suc n'} (oldNF r' c) {n'} (n<1+n n') ≡ r'
+        H =
+            begin 
+                trim (oldNF r' c) (n<1+n n')
+            ≡⟨⟩
+                trim-cases (oldNF r' c) (m<1+n⇒m<n∨m≡n (n<1+n n'))
+            ≡⟨ cong (trim-cases {n'} (oldNF r' c) {n'}) (n<1+n-lemma n') ⟩
+                trim-cases (oldNF r' c) (inj₂ refl)
+            ≡⟨⟩
+                r'
+            ∎
+
+        K : oldNF r' c ≡ addChoice r' (earlier-new c)
+        K = refl
+
+        pre-ans : Σ[ k ∈ Choices r' ] oldNF r' c ≡ addChoice r' k
+        pre-ans = (earlier-new c , K)
+
+        P : NFRestr n' → Set
+        P x = Σ[ k ∈ Choices x ] oldNF r' c ≡ addChoice x k
+        
+        ans : P (trim (oldNF r' c) (n<1+n n'))
+        ans = subst P (sym H) pre-ans 
 
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.

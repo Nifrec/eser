@@ -357,6 +357,10 @@ n<n+Sm n m = m<m+n n Data.Nat.z<s
 Sm≤n→m≤n : {m n : ℕ} → (ℕ.suc m ≤ n) → m ≤ n
 Sm≤n→m≤n = <⇒≤
 
+n<1+n-lemma : (n : ℕ) → (m<1+n⇒m<n∨m≡n (n<1+n n)) ≡ inj₂ refl
+n<1+n-lemma n with m<1+n⇒m<n∨m≡n (n<1+n n)
+... | inj₁ n<n = ⊥-elim $ <-irrefl refl n<n
+... | inj₂ refl = refl
 
 --------------------------------------------------------------------------------
 -- Properties of ≡ᵇ used in Eser.EqRel.Conversions
