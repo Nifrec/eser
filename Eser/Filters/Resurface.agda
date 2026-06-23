@@ -5,8 +5,6 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -34,7 +32,7 @@ resurface
     → (r : NFRestr n)
     → {m : ℕ}
     → m < n
-    → Choices r
+    → NFS r
 resurface {suc n'} r {m} m<n = resurface-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
     module ResurfaceImpl where
         open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
@@ -43,9 +41,18 @@ resurface {suc n'} r {m} m<n = resurface-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m
             → (r : NFRestr (suc n'))
             → {m : ℕ}
             → (m < n') ⊎ (m ≡ n')
-            → Choices r
-        resurface-cases {n'} r {m} (inj₁ m<n') = ?
-        resurface-cases {n'} r {n'} (inj₂ refl) = ?
+            → NFS r
+        -- First two cases: the target choice was not the previous chocie,
+        -- dig deeper using recursion.
+        resurface-cases {n'} (newNF r') {m} (inj₁ m<n') = 
+            earlier-new (resurface {n'} r' {m} m<n')
+        resurface-cases {n'} (oldNF r' c) {m} (inj₁ m<n') = 
+            earlier-old (resurface {n'} r' {m} m<n')
+        -- Next two cases: we want to repeat the previous choice.
+        -- First one: the previous choice was 'here' : r' |-> newNF r'.
+        resurface-cases {n'} (newNF r') {n'} (inj₂ refl) = here
+        -- Second one: the previous choice was 'c' : r' |-> oldNF r' c.
+        resurface-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = earlier-old c
         
 -- Given that a sub-NFRestr of r of the form `newNF r'`,
 -- construct the choice of r that points to this normal form.
