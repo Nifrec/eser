@@ -302,7 +302,8 @@ module RestrictImplementation (f' : NFFun) where
     L n = L-cases n (<-cmp (f n) n)
     L-cases n (tri≈ _ fn≡n _) = here
     L-cases n (tri> _ _ n<fn) = ⊥-elim $ ≤⇒≯ (f-leq n) n<fn
-    L-cases n@(suc n') (tri< fn<n _ _) = resurface {n} (h n) {f n} fn<n
+    L-cases n@(suc n') (tri< fn<n _ _) = 
+        earlier-new $ resurface {n} (h n) {f n} fn<n
 
     N 0 m () 
     N n@(suc n') m m<n = N-cases n n' m refl (m<1+n⇒m<n∨m≡n m<n)
