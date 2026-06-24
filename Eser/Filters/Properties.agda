@@ -16,7 +16,8 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
-open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; n<1+n ; <-irrefl)
+open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; n<1+n ; <-irrefl 
+                                      ; m≤n⇒m<n∨m≡n)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
@@ -29,7 +30,11 @@ module Eser.Filters.Properties where
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
 --------------------------------------------------------------------------------
--- See also below for correctness proof and for `getLastChoice`.
+-- Contents:
+-- 1. Definition of trim.
+-- 2. correctness proof of trim.
+-- 3. Variant of `trim` with m≤n i.o. m<n.
+-- 4. getLastChoice.
  
 -- Trim a NFRestr n to a NFRestr m by simply forgetting the last few choices,
 -- given that m < n.
@@ -142,6 +147,25 @@ trim-correctness {suc n'} r {m} m<n =
                     ≡⟨⟩
                         r'
                     ∎
+
+-- Variant of `trim` that also allows the option to trimming to m ≡ n,
+-- in which case it just acts as the identity.
+trim' 
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → m ≤ n
+    → NFRestr m
+trim'-cases 
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → m < n ⊎ m ≡ n
+    → NFRestr m
+
+trim' r m≤n = trim'-cases r (m≤n⇒m<n∨m≡n m≤n)
+trim'-cases r (inj₁ m<n) = trim r m<n
+trim'-cases {n} r {n} (inj₂ refl) = r
 
 getLastChoice
     : {n' : ℕ}
