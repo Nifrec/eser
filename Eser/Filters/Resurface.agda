@@ -59,6 +59,7 @@ resurface-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = earlier-old c
 
 -- Proof that the output of resurface actually encodes the same normal form as
 -- encoded in the dug-up choice.
+-- I.e., that resurface doesn't contain a typo or a off-by-1 error.
 --
 -- Note about the types:
 -- * We want to resurface the choice of m. This requires looking
@@ -261,10 +262,59 @@ resurface-correctness {suc n'} r {m} p q =
         resurf-corr-cases {n'} r {m} p (inj₂ refl) p₁ q (inj₁ 1+m<n) q₁ = 
             -- We have suc n' ≡ suc m < n ≡ suc n'. A contradiction.
             ⊥-elim $ n≮n (suc n') 1+m<n
+
         resurf-corr-cases {n'} r {n'} p (inj₁ m<n') p₁ q (inj₂ refl) q₁ =
             -- We have n' ≡ m < n'. A contradiction.
             ⊥-elim $ n≮n n' m<n'
-        resurf-corr-cases {n'} r {n'} p (inj₂ refl) p₁ q (inj₂ refl) q₁ = {! !}
+
+        resurf-corr-cases {n'} r@(newNF r') {n'} p (inj₂ refl) p₁ q 
+                          (inj₂ refl) q₁ = 
+            begin 
+                just (NFSToℕ (resurface r p))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (resurface-cases r (m<1+n⇒m<n∨m≡n p))
+            ≡⟨ cong ((just ∘ NFSToℕ) ∘ (resurface-cases r)) p₁ ⟩
+                (just ∘ NFSToℕ) (resurface-cases r (inj₂ refl))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (resurface-cases (newNF r') (inj₂ refl))
+            ≡⟨⟩
+                just (NFSToℕ {suc n'} (here {n'} {r'} ))
+            ≡⟨⟩
+                just n' 
+            ≡⟨⟩
+                NFRestrToℕ r
+            ≡⟨⟩
+                NFRestrToℕ (trim'-cases r (inj₂ refl))
+            ≡⟨ cong (λ x → NFRestrToℕ (trim'-cases r x)) q₁ ⟩
+                NFRestrToℕ (trim'-cases r (m≤n⇒m<n∨m≡n q))
+            ≡⟨⟩
+                NFRestrToℕ (trim' r q)
+            ∎
+        -- Symmetric with previous case up 
+        -- to changing `newNF r'` to `oldNF r' c`.
+        resurf-corr-cases {n'} r@(oldNF r' c) {n'} p (inj₂ refl) p₁ q 
+                          (inj₂ refl) q₁ =
+            begin 
+                just (NFSToℕ (resurface r p))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (resurface-cases r (m<1+n⇒m<n∨m≡n p))
+            ≡⟨ cong ((just ∘ NFSToℕ) ∘ (resurface-cases r)) p₁ ⟩
+                (just ∘ NFSToℕ) (resurface-cases r (inj₂ refl))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (resurface-cases (oldNF r' c) (inj₂ refl))
+            ≡⟨⟩
+                just (NFSToℕ {suc n'} (earlier-old {n'} {r'} {c} c))
+            ≡⟨⟩
+                just (NFSToℕ {n'} {r'} c)
+            ≡⟨⟩
+                NFRestrToℕ r
+            ≡⟨⟩
+                NFRestrToℕ (trim'-cases r (inj₂ refl))
+            ≡⟨ cong (λ x → NFRestrToℕ (trim'-cases r x)) q₁ ⟩
+                NFRestrToℕ (trim'-cases r (m≤n⇒m<n∨m≡n q))
+            ≡⟨⟩
+                NFRestrToℕ (trim' r q)
+            ∎
         
 -- Given that a sub-NFRestr of r of the form `newNF r'`,
 -- construct the choice of r that points to this normal form.
