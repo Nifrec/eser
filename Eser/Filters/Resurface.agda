@@ -15,7 +15,8 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
-open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
+open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; m≤n⇒m<n∨m≡n ; n≮n)
+open import Data.Maybe
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
@@ -34,36 +35,99 @@ resurface
     → {m : ℕ}
     → m < n
     → NFS r
-resurface {suc n'} r {m} m<n = resurface-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
-    module ResurfaceImpl where
-        open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
-        resurface-cases
-            : {n' : ℕ}
-            → (r : NFRestr (suc n'))
-            → {m : ℕ}
-            → (m < n') ⊎ (m ≡ n')
-            → NFS r
-        -- First two cases: the target choice was not the previous chocie,
-        -- dig deeper using recursion.
-        resurface-cases {n'} (newNF r') {m} (inj₁ m<n') = 
-            earlier-new (resurface {n'} r' {m} m<n')
-        resurface-cases {n'} (oldNF r' c) {m} (inj₁ m<n') = 
-            earlier-old (resurface {n'} r' {m} m<n')
-        -- Next two cases: we want to repeat the previous choice.
-        -- First one: the previous choice was 'here' : r' |-> newNF r'.
-        resurface-cases {n'} (newNF r') {n'} (inj₂ refl) = here
-        -- Second one: the previous choice was 'c' : r' |-> oldNF r' c.
-        resurface-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = earlier-old c
+resurface-cases
+    : {n' : ℕ}
+    → (r : NFRestr (suc n'))
+    → {m : ℕ}
+    → (m < n') ⊎ (m ≡ n')
+    → NFS r
 
--- Proof that resurface actually gives the same normal form.
-lemma-resurface-coherence
+resurface {suc n'} r {m} m<n = resurface-cases {n'} r {m} (m<1+n⇒m<n∨m≡n m<n)
+
+-- First two cases: the target choice was not the previous chocie,
+-- dig deeper using recursion.
+resurface-cases {n'} (newNF r') {m} (inj₁ m<n') = 
+    earlier-new (resurface {n'} r' {m} m<n')
+resurface-cases {n'} (oldNF r' c) {m} (inj₁ m<n') = 
+    earlier-old (resurface {n'} r' {m} m<n')
+-- Next two cases: we want to repeat the previous choice.
+-- First one: the previous choice was 'here' : r' |-> newNF r'.
+resurface-cases {n'} (newNF r') {n'} (inj₂ refl) = here
+-- Second one: the previous choice was 'c' : r' |-> oldNF r' c.
+resurface-cases {n'} (oldNF r' c) {n'} (inj₂ refl) = earlier-old c
+
+-- Proof that the output of resurface actually encodes the same normal form as
+-- encoded in the dug-up choice.
+--
+-- Note about the types:
+-- * We want to resurface the choice of m. This requires looking
+--  in a NFRestr (suc m). Since m < n, it holds suc m ≤ n,
+--  so r always has a sub-NFRestr of size suc m.
+-- * NFRestrToℕ maps the NF encoded in the last choice to ℕ,
+--  so to map a choice of m to ℕ the input should be a NFRestr (suc m).
+-- * `resurface m<n` finds the choice of a NFRestr m that was
+--  used to create the NFRestr (suc m).
+-- * This explains the asymmetry with the LHS using m<n and the RHS using 1+m≤n.
+resurface-correctness
     : {n : ℕ}
     → (r : NFRestr n)
     → {m : ℕ}
-    → (p : m < n)
-    → just (NFSToℕ (resurface r p)) ≡ NFRestrToℕ {m} (trim r p)
-lemma-resurface-coherence {n} r {m} p = ?
-    
+    → (m<n : m < n)
+    → (1+m≤n : suc m ≤ n)
+    → just (NFSToℕ (resurface r m<n)) ≡ NFRestrToℕ {suc m} (trim' r 1+m≤n)
+resurface-correctness {suc n'} r {m} p q = 
+    resurf-corr-cases r p (m<1+n⇒m<n∨m≡n p) refl q (m≤n⇒m<n∨m≡n q) refl
+    where
+        resurf-corr-cases
+            : {n' : ℕ}
+            → (r : NFRestr (suc n'))
+            → {m : ℕ}
+            → (p : m < suc n')
+            → (p₀ : m < n' ⊎ m ≡ n')
+            → (p₁ : m<1+n⇒m<n∨m≡n p ≡ p₀)
+            → (q : suc m ≤ suc n')
+            → (q₀ : suc m < suc n' ⊎ suc m ≡ suc n')
+            → (q₁ : q₀ ≡ m≤n⇒m<n∨m≡n q)
+            → just (NFSToℕ (resurface r p)) ≡ NFRestrToℕ {suc m} (trim' r q)
+        
+        resurf-corr-cases {n'@(suc n'')} r@(newNF r') {m} p (inj₁ m<n') p₁ q (inj₁ 1+m<n) q₁ = 
+            begin 
+                just (NFSToℕ (resurface r p))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (resurface-cases r (m<1+n⇒m<n∨m≡n p))
+            ≡⟨ cong ((just ∘ NFSToℕ) ∘ (resurface-cases r)) p₁ ⟩
+                (just ∘ NFSToℕ) (resurface-cases r (inj₁ m<n'))
+            ≡⟨⟩
+                (just ∘ NFSToℕ ∘ earlier-new) (resurface r' m<n')
+            ≡⟨⟩ -- Definition NFSToℕ on `earlier-new`.
+                (just ∘ NFSToℕ) (resurface r' m<n')
+            ≡⟨ resurface-correctness {n'} r' {m} m<n' m<n' ⟩
+               NFRestrToℕ {suc m} (trim' r' m<n' ) 
+            ≡⟨⟩ -- Definition `trim'`.
+               NFRestrToℕ {suc m} (trim'-cases r' (m≤n⇒m<n∨m≡n m<n') ) 
+            -- 1+m<n means 1+m < 1+n' so also m < n'.
+            -- So the output of (m≤n⇒m<n∨m≡n m≤n') must be inj₁.
+            ≡⟨ ? ⟩ 
+               NFRestrToℕ {suc m} (trim'-cases r' (inj₁ ?)) 
+            ≡⟨⟩
+               NFRestrToℕ {suc m} (trim r' ?) 
+            ≡⟨ ? ⟩
+               NFRestrToℕ {suc m} (trim-cases (newNF r') (inj₁ ?)) 
+            ≡⟨ ? ⟩
+               NFRestrToℕ (trim' r q) 
+            ≡⟨ ? ⟩
+               NFRestrToℕ (trim' r q) 
+            ∎
+        -- Same as previous case but with `oldNF r' c` i.o. `newNF r'`.
+        resurf-corr-cases {n'} (oldNF r' c) {m} p (inj₁ m<n') p₁ q (inj₁ 1+m<n) q₁ = ?
+            
+        resurf-corr-cases {n'} r {m} p (inj₂ refl) p₁ q (inj₁ 1+m<n) q₁ = 
+            -- We have suc n' ≡ suc m < n ≡ suc n'. A contradiction.
+            ⊥-elim $ n≮n (suc n') 1+m<n
+        resurf-corr-cases {n'} r {n'} p (inj₁ m<n') p₁ q (inj₂ refl) q₁ =
+            -- We have n' ≡ m < n'. A contradiction.
+            ⊥-elim $ n≮n n' m<n'
+        resurf-corr-cases {n'} r {n'} p (inj₂ refl) p₁ q (inj₂ refl) q₁ = {! !}
         
 -- Given that a sub-NFRestr of r of the form `newNF r'`,
 -- construct the choice of r that points to this normal form.
