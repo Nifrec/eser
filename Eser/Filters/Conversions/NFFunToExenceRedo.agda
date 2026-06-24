@@ -320,9 +320,9 @@ module RestrictImplementation (f' : NFFun) where
             hn'⋖hn : h n' ⋖ h n
             hn'⋖hn = ⋖-addChoice {n'} {h n'} (L n')
 
-    H n = ?
+    H n = ⋖-addChoice {n} {h n} (L n)
 
-restrict+ f' = ? -- (h , H)
+restrict+ f' = (h , H)
     where open RestrictImplementation f'
 
 -- Extend a family B of dependent types from indices in {0, ..., n-1} 
