@@ -173,8 +173,90 @@ resurface-correctness {suc n'} r {m} p q =
                     ≡⟨⟩
                         trim r q'
                     ∎
-        -- Same as previous case but with `oldNF r' c` i.o. `newNF r'`.
-        resurf-corr-cases {n'} (oldNF r' c) {m} p (inj₁ m<n') p₁ q (inj₁ 1+m<n) q₁ = ?
+        -- Same as previous case but with `oldNF r' c` i.o. `newNF r'`
+        -- and `earlier-old` i.o. `earlier-new`.
+        resurf-corr-cases {n'@(suc n'')} r@(oldNF r' c) {m} p (inj₁ m<n') 
+            p₁ q (inj₁ 1+m<n) q₁ =
+            begin 
+                just (NFSToℕ (resurface r p))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (resurface-cases r (m<1+n⇒m<n∨m≡n p))
+            ≡⟨ cong ((just ∘ NFSToℕ) ∘ (resurface-cases r)) p₁ ⟩
+                (just ∘ NFSToℕ) (resurface-cases r (inj₁ m<n'))
+            ≡⟨⟩
+                (just ∘ NFSToℕ) (earlier-old {c = c} (resurface r' m<n'))
+            ≡⟨⟩ -- Definition NFSToℕ on `earlier-old`.
+                (just ∘ NFSToℕ) (resurface r' m<n')
+            ≡⟨ resurface-correctness {n'} r' {m} m<n' m<n' ⟩
+               NFRestrToℕ {suc m} (trim' r' m<n' ) 
+            ≡⟨⟩ -- Definition `trim'`.
+               NFRestrToℕ {suc m} (trim'-cases r' (m≤n⇒m<n∨m≡n m<n') ) 
+            ≡⟨ cong NFRestrToℕ $ lemma (m≤n⇒m<n∨m≡n m<n') refl ⟩
+               NFRestrToℕ (trim r q') 
+            ≡⟨⟩
+                NFRestrToℕ (trim'-cases r (inj₁ q'))
+            ≡⟨ cong (λ x → NFRestrToℕ (trim'-cases r x )) q₁ ⟩
+                NFRestrToℕ (trim'-cases r (m≤n⇒m<n∨m≡n q))
+            ≡⟨⟩
+               NFRestrToℕ (trim' r q) 
+            ∎
+            where
+                q' : suc m < suc n'
+                q' = 1+m<n
+
+                -- The next two sublemmas tell that,
+                -- if given a witness of one of the two options of m<n ⊎ m≡n,
+                -- then m<1+n⇒m<n∨m≡n always outputs that witness.
+                sublemma-<
+                    : (w : suc m < n')
+                    → (m<1+n⇒m<n∨m≡n q') ≡ inj₁ w
+                sublemma-< w with m<1+n⇒m<n∨m≡n q'
+                ... | inj₁ w' = cong inj₁ (≤-irrelevant w' w)
+                ... | inj₂ refl = ⊥-elim $ n≮n n' w
+                sublemma-≡
+                    : (w : suc m ≡ n')
+                    → (m<1+n⇒m<n∨m≡n q') ≡ inj₂ w
+                sublemma-≡ refl with m<1+n⇒m<n∨m≡n q'
+                ... | inj₁ m<n' = ⊥-elim $ n≮n n' m<n'
+                ... | inj₂ refl = refl
+
+                lemma 
+                    : (z₀ : suc m < n' ⊎ suc m ≡ n') 
+                    → (z₁ : (m≤n⇒m<n∨m≡n m<n') ≡ z₀) 
+                    → trim'-cases r' (m≤n⇒m<n∨m≡n m<n') ≡ trim r q'
+                lemma (inj₁ 1+m<n') z₁ = 
+                    begin 
+                        trim'-cases r' (m≤n⇒m<n∨m≡n m<n') 
+                    ≡⟨ cong (trim'-cases r') z₁ ⟩
+                        trim'-cases r' (inj₁ 1+m<n')
+                    ≡⟨⟩
+                        trim r' 1+m<n'
+                    ≡⟨⟩
+                        trim-cases (oldNF r' c) (inj₁ 1+m<n')
+                    ≡⟨ cong (trim-cases (oldNF r' c)) $ sym $ sublemma-< 1+m<n' ⟩
+                        trim-cases (oldNF r' c) (m<1+n⇒m<n∨m≡n q')
+                    ≡⟨⟩
+                        trim (oldNF r' c) q'
+                    ≡⟨⟩
+                        trim r q'
+                    ∎
+                    
+                lemma (inj₂ 1+m≡n'@refl) z₁ =
+                    begin 
+                        trim'-cases r' (m≤n⇒m<n∨m≡n m<n') 
+                    ≡⟨ cong (trim'-cases r') z₁ ⟩
+                        trim'-cases r' (inj₂ 1+m≡n')
+                    ≡⟨⟩
+                        r'
+                    ≡⟨⟩
+                        trim-cases (oldNF r' c) (inj₂ 1+m≡n')
+                    ≡⟨ cong (trim-cases (oldNF r' c)) $ sym $ sublemma-≡ 1+m≡n' ⟩
+                        trim-cases (oldNF r' c) (m<1+n⇒m<n∨m≡n q')
+                    ≡⟨⟩
+                        trim (oldNF r' c) q'
+                    ≡⟨⟩
+                        trim r q'
+                    ∎
             
         resurf-corr-cases {n'} r {m} p (inj₂ refl) p₁ q (inj₁ 1+m<n) q₁ = 
             -- We have suc n' ≡ suc m < n ≡ suc n'. A contradiction.
