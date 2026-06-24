@@ -15,7 +15,8 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
-open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; m≤n⇒m<n∨m≡n ; n≮n)
+open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; m≤n⇒m<n∨m≡n ; n≮n
+    ; ≤-irrelevant)
 open import Data.Maybe
 
 open import Eser.Filters.Base
@@ -90,7 +91,8 @@ resurface-correctness {suc n'} r {m} p q =
             → (q₁ : q₀ ≡ m≤n⇒m<n∨m≡n q)
             → just (NFSToℕ (resurface r p)) ≡ NFRestrToℕ {suc m} (trim' r q)
         
-        resurf-corr-cases {n'@(suc n'')} r@(newNF r') {m} p (inj₁ m<n') p₁ q (inj₁ 1+m<n) q₁ = 
+        resurf-corr-cases {n'@(suc n'')} r@(newNF r') {m} p (inj₁ m<n') 
+            p₁ q (inj₁ 1+m<n) q₁ = 
             begin 
                 just (NFSToℕ (resurface r p))
             ≡⟨⟩
@@ -105,19 +107,72 @@ resurface-correctness {suc n'} r {m} p q =
                NFRestrToℕ {suc m} (trim' r' m<n' ) 
             ≡⟨⟩ -- Definition `trim'`.
                NFRestrToℕ {suc m} (trim'-cases r' (m≤n⇒m<n∨m≡n m<n') ) 
-            -- 1+m<n means 1+m < 1+n' so also m < n'.
-            -- So the output of (m≤n⇒m<n∨m≡n m≤n') must be inj₁.
-            ≡⟨ ? ⟩ 
-               NFRestrToℕ {suc m} (trim'-cases r' (inj₁ ?)) 
+            ≡⟨ cong NFRestrToℕ $ lemma (m≤n⇒m<n∨m≡n m<n') refl ⟩
+               NFRestrToℕ (trim r q') 
             ≡⟨⟩
-               NFRestrToℕ {suc m} (trim r' ?) 
-            ≡⟨ ? ⟩
-               NFRestrToℕ {suc m} (trim-cases (newNF r') (inj₁ ?)) 
-            ≡⟨ ? ⟩
-               NFRestrToℕ (trim' r q) 
-            ≡⟨ ? ⟩
+                NFRestrToℕ (trim'-cases r (inj₁ q'))
+            ≡⟨ cong (λ x → NFRestrToℕ (trim'-cases r x )) q₁ ⟩
+                NFRestrToℕ (trim'-cases r (m≤n⇒m<n∨m≡n q))
+            ≡⟨⟩
                NFRestrToℕ (trim' r q) 
             ∎
+            where
+                q' : suc m < suc n'
+                q' = 1+m<n
+
+                -- The next two sublemmas tell that,
+                -- if given a witness of one of the two options of m<n ⊎ m≡n,
+                -- then m<1+n⇒m<n∨m≡n always outputs that witness.
+                sublemma-<
+                    : (w : suc m < n')
+                    → (m<1+n⇒m<n∨m≡n q') ≡ inj₁ w
+                sublemma-< w with m<1+n⇒m<n∨m≡n q'
+                ... | inj₁ w' = cong inj₁ (≤-irrelevant w' w)
+                ... | inj₂ refl = ⊥-elim $ n≮n n' w
+                sublemma-≡
+                    : (w : suc m ≡ n')
+                    → (m<1+n⇒m<n∨m≡n q') ≡ inj₂ w
+                sublemma-≡ refl with m<1+n⇒m<n∨m≡n q'
+                ... | inj₁ m<n' = ⊥-elim $ n≮n n' m<n'
+                ... | inj₂ refl = refl
+
+                lemma 
+                    : (z₀ : suc m < n' ⊎ suc m ≡ n') 
+                    → (z₁ : (m≤n⇒m<n∨m≡n m<n') ≡ z₀) 
+                    → trim'-cases r' (m≤n⇒m<n∨m≡n m<n') ≡ trim r q'
+                lemma (inj₁ 1+m<n') z₁ = 
+                    begin 
+                        trim'-cases r' (m≤n⇒m<n∨m≡n m<n') 
+                    ≡⟨ cong (trim'-cases r') z₁ ⟩
+                        trim'-cases r' (inj₁ 1+m<n')
+                    ≡⟨⟩
+                        trim r' 1+m<n'
+                    ≡⟨⟩
+                        trim-cases (newNF r') (inj₁ 1+m<n')
+                    ≡⟨ cong (trim-cases (newNF r')) $ sym $ sublemma-< 1+m<n' ⟩
+                        trim-cases (newNF r') (m<1+n⇒m<n∨m≡n q')
+                    ≡⟨⟩
+                        trim (newNF r') q'
+                    ≡⟨⟩
+                        trim r q'
+                    ∎
+                    
+                lemma (inj₂ 1+m≡n'@refl) z₁ =
+                    begin 
+                        trim'-cases r' (m≤n⇒m<n∨m≡n m<n') 
+                    ≡⟨ cong (trim'-cases r') z₁ ⟩
+                        trim'-cases r' (inj₂ 1+m≡n')
+                    ≡⟨⟩
+                        r'
+                    ≡⟨⟩
+                        trim-cases (newNF r') (inj₂ 1+m≡n')
+                    ≡⟨ cong (trim-cases (newNF r')) $ sym $ sublemma-≡ 1+m≡n' ⟩
+                        trim-cases (newNF r') (m<1+n⇒m<n∨m≡n q')
+                    ≡⟨⟩
+                        trim (newNF r') q'
+                    ≡⟨⟩
+                        trim r q'
+                    ∎
         -- Same as previous case but with `oldNF r' c` i.o. `newNF r'`.
         resurf-corr-cases {n'} (oldNF r' c) {m} p (inj₁ m<n') p₁ q (inj₁ 1+m<n) q₁ = ?
             
