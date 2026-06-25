@@ -333,6 +333,7 @@ restrict = proj₁ ∘ restrict+
 module LemmaL (f' : NFFun) where
     open RestrictImplementation f'
     open import Data.Nat.Induction
+    open import Data.Maybe
 
     lemma-L
         : (n : ℕ)
@@ -353,7 +354,63 @@ module LemmaL (f' : NFFun) where
 
     lemma-L-<-rec n rec = lemma-L-<-rec-cases n rec (<-cmp (f n) n) refl
 
-    lemma-L-<-rec-cases n rec t₀ t₁ = ?
+    lemma-L-<-rec-cases n rec (tri> _ _ n<fn) t₁ = ⊥-elim $ ≤⇒≯ (f-leq n) n<fn
+    lemma-L-<-rec-cases n rec (tri≈ v₀ fn≡n v₁) t₁ = 
+        begin 
+            choiceToℕ (L n)
+        ≡⟨⟩
+            choiceToℕ (L-cases n (<-cmp (f n) n))
+        ≡⟨ cong (λ x → choiceToℕ (L-cases n x)) t₁ ⟩
+            choiceToℕ (L-cases n (tri≈ v₀ fn≡n v₁))
+        ≡⟨⟩
+            choiceToℕ {n} {h n} here
+        ≡⟨⟩
+            n
+        ≡⟨ sym fn≡n ⟩
+            f n
+        ∎
+    lemma-L-<-rec-cases n@(suc n') rec (tri< fn<n v₀ v₁) t₁ =
+        begin 
+            choiceToℕ (L n)
+        ≡⟨⟩
+            choiceToℕ (L-cases n (<-cmp (f n) n))
+        ≡⟨ cong (λ x → choiceToℕ (L-cases n x)) t₁ ⟩
+            choiceToℕ (L-cases n (tri< fn<n v₀ v₁))
+        ≡⟨⟩
+            choiceToℕ (earlier-new $ resurface {n} (h n) {f n} fn<n)
+        ≡⟨ just-injective lemma ⟩
+            choiceToℕ (L (f n))
+        ≡⟨ rec (fn<n) ⟩
+            f (f n)
+        ≡⟨ f-fix n ⟩
+            f n
+        ∎
+        where
+            open import Data.Maybe.Properties using (just-injective)
+            1+fn≤n : suc (f n) ≤ n
+            1+fn≤n = fn<n
+
+            lemma : 
+                just (choiceToℕ (earlier-new $ resurface {n} (h n) {f n} fn<n))
+                ≡ 
+                just (choiceToℕ (L (f n)))
+            lemma =
+                begin 
+                    just (choiceToℕ (earlier-new $ resurface {n} (h n) {f n} fn<n))
+                ≡⟨⟩
+                    just (NFSToℕ (earlier-new $ resurface {n} (h n) {f n} fn<n))
+                ≡⟨⟩
+                    just (NFSToℕ (resurface {n} (h n) {f n} fn<n))
+                ≡⟨ resurface-correctness (h n) fn<n 1+fn≤n ⟩
+                    NFRestrToℕ (trim' (h n) 1+fn≤n)
+                ≡⟨ cong NFRestrToℕ {! TODO: lemma ℒ₁!}  ⟩
+                    NFRestrToℕ (h (suc (f n)))
+                ≡⟨⟩
+                    NFRestrToℕ (addChoice (h (f n)) (L (f n)))
+                ≡⟨ {! TODO: lemma-NFRestrToℕ-addChoice !} ⟩
+                    just (choiceToℕ (L (f n)))
+                ∎
+                
 
 
 theo-all-NFRestr-reachable {n} r = ?
