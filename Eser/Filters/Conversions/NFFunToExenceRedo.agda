@@ -75,11 +75,11 @@ theo-all-NFRestr-reachable
     → (r : NFRestr n)
     → Σ[ f ∈  NFFun ](r ≡ restrict f n)
 
-theo-restrict-combine
+theo-combine∘restrict+
     : (f : NFFun)
     →  (proj₁ ∘ combine ∘ restrict+) f ≈ proj₁ f
 
-theo-combine-restrict
+theo-restrict+∘combine
     : (H : Exence)
     → (proj₁ ∘ restrict+ ∘ combine) H ≈ proj₁ H
 
@@ -325,34 +325,65 @@ module RestrictImplementation (f' : NFFun) where
 restrict+ f' = (h , H)
     where open RestrictImplementation f'
 
--- Extend a family B of dependent types from indices in {0, ..., n-1} 
--- to {0, ..., n} by providing B n.
-dep-extend
-    : (n : ℕ)
-    → (B : ℕ → Set)
-    → ((m : ℕ) → m < n → B m)
-    → B n
-    → ((m : ℕ) → m < ℕ.suc n → B m)
-dep-extend n B Fam Bn m m<1+n with m Data.Nat.≟ n
-... | (yes m≡n) = subst B (sym m≡n) Bn
-... | (no m≢n) = Fam m m<n
-    where
-        open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n)
-        m<n : m < n
-        m<n = elimCaseRight (m<1+n⇒m<n∨m≡n m<1+n) m≢n
-
-{-# WARNING_ON_USAGE dep-extend "Move dep-extend to correct file" #-}
-
 restrict = proj₁ ∘ restrict+
-
-        
-
 
 --------------------------------------------------------------------------------
 -- Proofs of the theorems
 --------------------------------------------------------------------------------
+module LemmaL (f' : NFFun) where
+    open RestrictImplementation f'
+    open import Data.Nat.Induction
+
+    lemma-L
+        : (n : ℕ)
+        → choiceToℕ (L n) ≡ f n
+    lemma-L-<-rec
+        : (n : ℕ)
+        → ({m : ℕ} → (m < n) → (choiceToℕ (L m) ≡ f m))
+        → choiceToℕ (L n) ≡ f n
+
+    lemma-L-<-rec-cases
+        : (n : ℕ)
+        → ({m : ℕ} → (m < n) → (choiceToℕ (L m) ≡ f m))
+        → (t₀ : Tri (f n < n) (f n ≡ n) (n < f n))
+        → (t₁ : <-cmp (f n) n ≡ t₀) 
+        → choiceToℕ (L n) ≡ f n
+
+    lemma-L = <-rec (λ n → choiceToℕ (L n) ≡ f n) lemma-L-<-rec
+
+    lemma-L-<-rec n rec = lemma-L-<-rec-cases n rec (<-cmp (f n) n) refl
+
+    lemma-L-<-rec-cases n rec t₀ t₁ = ?
+
+
 theo-all-NFRestr-reachable {n} r = ?
 
-theo-restrict-combine f = ?
+theo-combine∘restrict+ f' n = 
+    begin 
+        proj₁ (combine (restrict+ f')) n
+    ≡⟨⟩ -- Unfold definitions:
+        choiceToℕ (getChoice (h n) (h (suc n)) (H n))
+    ≡⟨⟩
+        choiceToℕ (getChoice (h n) (addChoice (h n) (L n)) (H n))
+    ≡⟨ cong choiceToℕ $ lemma-getChoice-addChoice {n} (h n) (L n) (H n) ⟩
+        choiceToℕ (L n)  
+    ≡⟨ lemma-L n ⟩
+        f n
+    ∎
+    where
+        open RestrictImplementation f'
+        open LemmaL f'
+        -- This import gives the following:
+        -- f : ℕ → ℕ
+        -- f-leq : (n : ℕ) → f n ≤ n
+        -- f-fix : (n : ℕ) → f (f n) ≡ f n
+        -- f' ≡ (f , f-leq , f-fix)
+        -- h : (n : ℕ) → NFRestr n
+        -- h = proj₁ (restrict+ f')
+        -- H : (n : ℕ) → h n ⋖ h (suc n)
+        -- H = proj₂ (restrict+ f')
+        -- L : (n : ℕ) → Choices (h n)
+        -- N : (n m : ℕ) → (m < n) → h m ⋖+ h n
+    
 
-theo-combine-restrict H = ?
+theo-restrict+∘combine (h , H) = ?

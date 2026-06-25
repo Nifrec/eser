@@ -282,6 +282,14 @@ getLastChoice {n'} (oldNF r' c) = ans
 -- Properties of getChoice
 --------------------------------------------------------------------------------
 
+lemma-getChoice-addChoice
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → (p : r ⋖ addChoice r c)
+    → getChoice r (addChoice r c) p ≡ c
+lemma-getChoice-addChoice {n} r here (⋖-newNF r) = refl
+lemma-getChoice-addChoice {n} r (earlier-new c) (⋖-oldNF r c) = refl
 
 lemma-getChoice-subst
     : {n : ℕ}
