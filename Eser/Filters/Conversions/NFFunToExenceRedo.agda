@@ -403,15 +403,13 @@ module LemmaL (f' : NFFun) where
                     just (NFSToℕ (resurface {n} (h n) {f n} fn<n))
                 ≡⟨ resurface-correctness (h n) fn<n 1+fn≤n ⟩
                     NFRestrToℕ (trim' (h n) 1+fn≤n)
-                ≡⟨ cong NFRestrToℕ {! TODO: lemma ℒ₁!}  ⟩
+                ≡⟨ cong NFRestrToℕ $ lemma-trim'-exence h H n (f n) 1+fn≤n  ⟩
                     NFRestrToℕ (h (suc (f n)))
                 ≡⟨⟩
                     NFRestrToℕ (addChoice (h (f n)) (L (f n)))
-                ≡⟨ {! TODO: lemma-NFRestrToℕ-addChoice !} ⟩
+                ≡⟨ lemma-NFRestrToℕ-addChoice {f n} (h (f n)) (L (f n)) ⟩
                     just (choiceToℕ (L (f n)))
                 ∎
-                
-
 
 theo-all-NFRestr-reachable {n} r = ?
 
