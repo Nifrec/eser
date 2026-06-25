@@ -16,12 +16,20 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
-open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; n<1+n ; <-irrefl 
-                                      ; m≤n⇒m<n∨m≡n)
+open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n 
+                                      ; n<1+n 
+                                      ; <-irrefl 
+                                      ; m≤n⇒m<n∨m≡n
+                                      ; <-trans
+                                      ; n≮n
+                                      ; <-irrelevant
+                                      ; suc-injective
+                                      )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma )
+open import Data.Maybe
 
 open import Eser.Filters.Base
 
@@ -224,6 +232,143 @@ getLastChoice {n'} (oldNF r' c) = ans
         ans : P (trim (oldNF r' c) (n<1+n n'))
         ans = subst P (sym H) pre-ans 
 
+lemma-trim-addChoice-inj₁
+    : (n m : ℕ)
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → (p : m < n)
+    → trim-cases (addChoice r c) (inj₁ p) ≡ trim r p
+lemma-trim-addChoice-inj₁ n m r here p = refl
+lemma-trim-addChoice-inj₁ n m r (earlier-new c) p = refl
+
+lemma-trim-addChoice-inj₂
+    : (n : ℕ)
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → trim-cases (addChoice r c) (inj₂ refl) ≡ r
+lemma-trim-addChoice-inj₂ n r here = refl
+lemma-trim-addChoice-inj₂ n r (earlier-new c) = refl
+
+-- Trim will always trim away the `addChoice` from 
+-- a NFRestr of the form addChoice r c,
+-- but this might be the only thing it trims away.
+lemma-trim-addChoice
+    : (n m : ℕ)
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → (p : m < suc n)
+    → (q : m ≤ n)
+    → trim (addChoice r c) p ≡ trim' r q
+lemma-trim-addChoice n m r c p q =
+    lemma-trim-addChoice-cases n m r c p (m<1+n⇒m<n∨m≡n p) refl q (m≤n⇒m<n∨m≡n q) refl
+    where
+        lemma-trim-addChoice-cases
+            : (n m : ℕ)
+            → (r : NFRestr n)
+            → (c : Choices r)
+            → (p : m < suc n)
+            → (p₀ : m < n ⊎ m ≡ n)
+            → (p₁ : (m<1+n⇒m<n∨m≡n p) ≡ p₀)
+            → (q : m ≤ n)
+            → (q₀ : m < n ⊎ m ≡ n)
+            → (q₁ : (m≤n⇒m<n∨m≡n q) ≡ q₀)
+            → trim (addChoice r c) p ≡ trim' r q
+        lemma-trim-addChoice-cases n n r c p (inj₁ m<n) p₁ q (inj₂ refl) q₁ =
+            ⊥-elim $ n≮n n m<n
+        lemma-trim-addChoice-cases n n r c p (inj₂ refl) p₁ q (inj₁ m<n) q₁ = 
+            ⊥-elim $ n≮n n m<n
+        lemma-trim-addChoice-cases n m r c p (inj₁ m<n) p₁ q (inj₁ m<<n) q₁ = 
+            begin 
+                trim (addChoice r c) p
+            ≡⟨⟩
+                trim-cases (addChoice r c) (m<1+n⇒m<n∨m≡n p)
+            ≡⟨ cong (trim-cases (addChoice r c)) p₁ ⟩
+                trim-cases (addChoice r c) (inj₁ m<n)
+            ≡⟨ lemma-trim-addChoice-inj₁ n m r c m<n ⟩
+                trim r m<n
+            ≡⟨ cong (trim r) (<-irrelevant m<n m<<n) ⟩
+                trim r m<<n
+            ≡⟨⟩
+                trim'-cases r (inj₁ m<<n)
+            ≡⟨ cong (trim'-cases r) (sym q₁) ⟩
+                trim'-cases r (m≤n⇒m<n∨m≡n q)
+            ≡⟨⟩
+                trim' r q
+            ∎
+            
+        lemma-trim-addChoice-cases n n r c p (inj₂ refl) p₁ q (inj₂ refl) q₁ =
+            begin 
+                trim (addChoice r c) p
+            ≡⟨⟩
+                trim-cases (addChoice r c) (m<1+n⇒m<n∨m≡n p)
+            ≡⟨ cong (trim-cases (addChoice r c)) p₁ ⟩
+                trim-cases (addChoice r c) (inj₂ refl)
+            ≡⟨ lemma-trim-addChoice-inj₂ n r c ⟩
+                r
+            ≡⟨⟩
+                trim'-cases r (inj₂ refl)
+            ≡⟨ cong (trim'-cases r) (sym q₁) ⟩
+                trim'-cases r (m≤n⇒m<n∨m≡n q)
+            ≡⟨⟩
+                trim' r q
+            ∎
+
+-- Trimming an Exence is the same as evaluating an Excence on a smaller input.
+lemma-trim'-exence
+    : (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (n m : ℕ)
+    → (p : suc m ≤ n)
+    → trim' (h n) p ≡ h (suc m)
+lemma-trim'-exence h H n m p = 
+    lemma-trim'-exence-cases h H n m p (m≤n⇒m<n∨m≡n p) refl
+    where
+        lemma-trim'-exence-cases 
+            : (h : (n : ℕ) → NFRestr n)
+            → (H : (n : ℕ) → h n ⋖ h (suc n))
+            → (n m : ℕ)
+            → (p : suc m ≤ n)
+            → (p₀ : suc m < n ⊎ suc m ≡ n)
+            → (p₁ : (m≤n⇒m<n∨m≡n p) ≡ p₀)
+            → trim' (h n) p ≡ h (suc m)
+        lemma-trim'-exence-cases h H n@(suc n') m p (inj₁ 1+m<n) p₁ = 
+            begin 
+                trim' (h n) p
+            ≡⟨⟩
+                trim'-cases (h n) (m≤n⇒m<n∨m≡n p)  
+            ≡⟨ cong (trim'-cases (h n)) p₁ ⟩
+                trim'-cases (h n) (inj₁ 1+m<n)
+            ≡⟨⟩
+                trim (h n) 1+m<n
+            ≡⟨⟩
+                trim (h (suc n')) 1+m<n
+            ≡⟨ cong ( λ x → trim x 1+m<n)  c-prop ⟩
+                trim (addChoice (h n') c) 1+m<n
+            ≡⟨ lemma-trim-addChoice n' (suc m) (h n') c 1+m<n p' ⟩
+                trim' (h n') p'
+            ≡⟨ lemma-trim'-exence h H n' m p'  ⟩
+                h (suc m)  
+            ∎
+            where
+                p' : suc m ≤ n'
+                p' = s≤s⁻¹ 1+m<n
+                c : Choices (h n')
+                c = proj₁ $ ⋖-to-addChoice (H n')
+                c-prop : h (suc n') ≡ addChoice (h n') c
+                c-prop = proj₂ $ ⋖-to-addChoice (H n')
+            
+        lemma-trim'-exence-cases h H n@(suc n') m p (inj₂ refl) p₁ =
+            begin 
+                trim' (h n) p
+            ≡⟨⟩
+                trim'-cases (h n) (m≤n⇒m<n∨m≡n p)  
+            ≡⟨ cong (trim'-cases (h n)) p₁ ⟩
+                trim'-cases (h n) (inj₂ refl)
+            ≡⟨⟩
+                h n
+            ≡⟨⟩
+                h (suc m)
+            ∎
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
 --------------------------------------------------------------------------------
@@ -302,3 +447,16 @@ lemma-getChoice-subst
     → choiceToℕ (getChoice r s p) ≡ choiceToℕ (getChoice r' s' p')
 lemma-getChoice-subst r r s s p p' refl refl = 
     cong (λ p → choiceToℕ (getChoice r s p)) (⋖-irrel r s p p')
+
+--------------------------------------------------------------------------------
+-- Properties of NFRestrToℕ
+--------------------------------------------------------------------------------
+lemma-NFRestrToℕ-addChoice
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → NFRestrToℕ (addChoice r c) ≡ just (choiceToℕ c)
+lemma-NFRestrToℕ-addChoice {n} r here = refl
+lemma-NFRestrToℕ-addChoice {n} (newNF r) (earlier-new c) = refl
+lemma-NFRestrToℕ-addChoice {n} (oldNF r x) (earlier-new (earlier-old c)) = refl
+

@@ -178,6 +178,18 @@ data _⋖_ : {n : ℕ} → (r : NFRestr n) → (s : NFRestr (ℕ.suc n)) → Set
 ⋖-addChoice {n} {r} here = ⋖-newNF r
 ⋖-addChoice {n} {r} (earlier-new c) = ⋖-oldNF r c
 
+-- (Σ[ c ∈ Choices r ] s ≡ addChoice r c) and (r ⋖ s) are essentially
+-- the same statement. ⋖-addChoice gives the conversion in one direction,
+-- here is the reverse conversion:
+⋖-to-addChoice
+    : {n : ℕ} 
+    → {r : NFRestr n} 
+    → {s : NFRestr (ℕ.suc n)} 
+    → r ⋖ s
+    → Σ[ c ∈ Choices r ] s ≡ addChoice r c
+⋖-to-addChoice {n} {r} {newNF r} (⋖-newNF r) = (here , refl)
+⋖-to-addChoice {n} {r} {oldNF r c} (⋖-oldNF r c) = (earlier-new c , refl)
+
 -- Transitive closure of above relation.
 -- Note: the implementation could have used
 -- `⋖+-multistep : r ⋖+ s → s ⋖ t → r ⋖+ t` instead
