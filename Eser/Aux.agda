@@ -73,6 +73,19 @@ doubleSubst
     → X a' b'
 doubleSubst X refl refl x = x
 
+-- Given H : a ≡ a' in A and any `b : B a`,
+-- then (a , b) ≡ (a' , subst B H b).
+-- We cannot prove (a , b) ≡ (a' , b) because the RHS is ill-typed 
+-- when H is not refl.
+depSubst
+    : {A : Set}
+    → {B : A → Set}
+    → (a a' : A)
+    → (H : a ≡ a')
+    → (b : B a)
+    → (a , b) ≡ (a' , subst B H b)
+depSubst a a' refl b = refl
+
 proj₁₂ 
     : {A : Set}
     → {B : A → Set}

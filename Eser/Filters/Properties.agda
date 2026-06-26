@@ -36,6 +36,15 @@ open import Eser.Filters.Base
 module Eser.Filters.Properties where
 
 --------------------------------------------------------------------------------
+-- Basic properties of NFRestr
+--------------------------------------------------------------------------------
+empty-is-unique-zero
+    : (r : NFRestr zero)
+    → r ≡ empty
+empty-is-unique-zero empty = refl
+
+
+--------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
 --------------------------------------------------------------------------------
 -- Contents:
@@ -436,7 +445,7 @@ lemma-getChoice-addChoice
 lemma-getChoice-addChoice {n} r here (⋖-newNF r) = refl
 lemma-getChoice-addChoice {n} r (earlier-new c) (⋖-oldNF r c) = refl
 
-lemma-getChoice-subst
+lemma-choiceToℕ∘getChoice
     : {n : ℕ}
     → (r r' : NFRestr n)
     → (s s' : NFRestr (ℕ.suc n))
@@ -445,9 +454,21 @@ lemma-getChoice-subst
     → r ≡ r'
     → s ≡ s'
     → choiceToℕ (getChoice r s p) ≡ choiceToℕ (getChoice r' s' p')
-lemma-getChoice-subst r r s s p p' refl refl = 
+lemma-choiceToℕ∘getChoice r r s s p p' refl refl = 
     cong (λ p → choiceToℕ (getChoice r s p)) (⋖-irrel r s p p')
 
+lemma-getChoice-subst
+    : {n : ℕ}
+    → (r r' : NFRestr n)
+    → (s s' : NFRestr (ℕ.suc n))
+    → (p : r ⋖ s)
+    → (p' : r' ⋖ s')
+    → (Hr : r' ≡ r)
+    → s' ≡ s
+    → getChoice r s p ≡ subst Choices Hr (getChoice r' s' p')
+lemma-getChoice-subst {n} r r s s p p' refl refl = 
+    cong (getChoice r s ) (⋖-irrel r s p p')
+    
 --------------------------------------------------------------------------------
 -- Properties of NFRestrToℕ
 --------------------------------------------------------------------------------
