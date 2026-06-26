@@ -27,6 +27,7 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
     ; m<n⇒m≤1+n 
     ; ≤⇒≯ 
     ; m≤n⇒m<n∨m≡n
+    ; n≮n
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -34,6 +35,7 @@ open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n ; 1+n≮n 
                            ; doubleSubst 
                            ; depSubst
+                           ; tri-≡
                            )
 open import Eser.Logic
 
@@ -445,48 +447,77 @@ theo-combine∘restrict+ f' n =
         -- H = proj₂ (restrict+ f')
         -- L : (n : ℕ) → Choices (h n)
         -- N : (n m : ℕ) → (m < n) → h m ⋖+ h n
-    
 
-module L-Recovers-Choice (EX : Exence) where
-    h = proj₁ EX
-    H = proj₂ EX
+module ResCo 
+    (h : (n : ℕ) → NFRestr n) 
+    (H : (n : ℕ) → h n ⋖ h (suc n)) 
+    where
+    open RestrictImplementation (combine (h , H)) renaming (h to h' ; H to H')
 
-    open RestrictImplementation (combine EX)
-        renaming (h to h' ; H to H')
+    C : (n : ℕ) → Choices (h n)
+    C n = proj₁ (⋖-to-addChoice (H n))
 
-    --lemma-L-recovers-choice
-    --    : (h : (n : ℕ) → NFRestr n)
-    --    → (H : (n : ℕ) → h n ⋖ h (suc n))
-    --    → (n : ℕ)
-    --    → (c : Choices (h n)) -- Recall ⋖-to-addChoice always gives such a c.
-    --    → (h (suc n) ≡ addChoice (h n) c)
-    --    → (e : h' n ≡ h n)
-    --    → subst Choices e (L n) ≡ c
+    main-lemma
+        : (n : ℕ)
+        → (w : h' n ≡ h n)
+        → (c : Choices (h n))
+        → (c ≡ proj₁ ( ⋖-to-addChoice (H n)))
+        → _≡_ {A = Σ[ r ∈ NFRestr n ] Choices r} (h' n , L n) (h n , c)
+    main-lemma n w c@here c-prop = 
+        begin 
+            (h' n , L n)
+        ≡⟨⟩
+            (h' n , L-cases n (<-cmp (f n) n))
+        ≡⟨ cong (λ x → (h' n , L-cases n x)) <-cmp-outp ⟩
+            (h' n , L-cases n (tri≈ x₀ fn≡n x₁))
+        ≡⟨⟩
+            (h' n , here {n} {h' n})
+        ≡⟨ tuples-eq (h' n) (h n) w ⟩
+            (h n , here {n} {h n})
+        ∎
+        where
+            eq : h (suc n) ≡ addChoice (h n) c
+            eq = subst (λ x → h (suc n) ≡ addChoice (h n) x) 
+                       (sym c-prop)
+                       (proj₂ $ ⋖-to-addChoice (H n))
 
+            X : h n ⋖ addChoice (h n) c
+            X = subst (h n ⋖_) eq (H n)
 
-    --lemma-L-recovers-choice h H n c c-prop e = 
-    --    begin 
-    --        subst Choices e (L n)
-    --    ≡⟨ cong (subst Choices e) (lemma-L-recovers-choice-special n c' c'-prop) ⟩
-    --        subst Choices e c'
-    --    ≡⟨ lemma-choices-subst n e ⟩
-    --        proj₁ (⋖-to-addChoice (H n))
-    --    ≡⟨ {! sym c-prop !} ⟩ -- Use that `addChoice` is injective?
-    --        c
-    --    ∎
-    --    where
-    --        c' : Choices (h' n)
-    --        c' = proj₁ $ ⋖-to-addChoice (H' n)
-    --        c'-prop : h' (suc n) ≡ addChoice (h' n) c'
-    --        c'-prop = proj₂ $ ⋖-to-addChoice (H' n)
-    --        lemma-choices-subst
-    --            : (n : ℕ)
-    --            → (e : h' n ≡ h n)
-    --            → subst Choices e (proj₁ $ ⋖-to-addChoice (H' n)) 
-    --                ≡ 
-    --                (proj₁ $ ⋖-to-addChoice (H n))
+            X-prop : (h (suc n) , H n) ≡ (addChoice (h n) c , X)
+            X-prop = depSubst (h (suc n)) (addChoice (h n) c) eq (H n) 
+
+            fn≡n : f n ≡ n
+            fn≡n =
+                begin 
+                    f n
+                ≡⟨⟩
+                    choiceToℕ (getChoice (h n) (h (suc n)) (H n))
+                ≡⟨ cong (λ (x , y) → choiceToℕ (getChoice (h n) x y)) X-prop ⟩
+                    choiceToℕ (getChoice (h n) (addChoice (h n) c) X)
+                ≡⟨ cong choiceToℕ (lemma-getChoice-addChoice (h n) c X) ⟩
+                    choiceToℕ {n} {h n} c
+                ≡⟨⟩
+                    choiceToℕ {n} {h n} here
+                ≡⟨⟩
+                    n
+                ∎
+
+            x₀ : f n ≮ n
+            x₀ = proj₁ (tri-≡ (f n) n fn≡n)
+            x₁ : n ≮ f n
+            x₁ = proj₁ $ proj₂ (tri-≡ (f n) n fn≡n)
+            <-cmp-outp : <-cmp (f n) n ≡ tri≈ x₀ fn≡n x₁
+            <-cmp-outp = proj₂ $ proj₂ $ tri-≡ (f n) n (fn≡n)
         
-        
+            tuples-eq
+                : (r r' : NFRestr n)
+                → r ≡ r'
+                → (r , here {n} {r}) ≡ (r' , here {n} {r'})
+            tuples-eq r r' refl = refl
+
+    main-lemma n w (earlier-new c) c-prop = {! !}
+
 
 
 theo-restrict+∘combine (h , H) zero = 
@@ -497,41 +528,41 @@ theo-restrict+∘combine (h , H) zero =
     ≡⟨ sym $ empty-is-unique-zero (h zero) ⟩
         h zero
     ∎
-theo-restrict+∘combine (h , H) (suc n') =
-    begin 
-        (proj₁ ∘ restrict+ ∘ combine) (h , H) (suc n')
-    ≡⟨⟩
-        addChoice (h' n') (L n')
-    ≡⟨ cong (λ (r , c) → addChoice {n'} r c) 
-       $ depSubst (h' n') (h n') IH (L n') 
-     ⟩
-        addChoice (h n') (subst Choices IH (L n'))
-    ≡⟨ cong (λ x → addChoice (h n') (subst Choices IH x)) 
-            $ lemma-L-recovers-choice n' ⟩
-        addChoice (h n') (subst Choices IH $ getChoice (h' n') (h' (suc n')) (H' n'))
-    ≡⟨ cong (addChoice (h n')) 
-            $ sym 
-            $ lemma-getChoice-subst {n'} (h n') (h' n') 
-                                    (h (suc n')) (h' (suc n')) (H n') (H' n') IH ? ⟩
-        addChoice (h n') (getChoice (h n') (h (suc n')) (H n'))
-    ≡⟨ cong (λ (y , x) → addChoice (h n') (getChoice (h n') y x)) c-prop-X ⟩
-        addChoice (h n') (getChoice (h n') (addChoice (h n') c) X)
-    ≡⟨ cong (addChoice (h n')) $ lemma-getChoice-addChoice (h n') c X ⟩
-        addChoice (h n') c
-    ≡⟨ sym c-prop ⟩
-        h (suc n')
-    ∎
-    where
-        open RestrictImplementation (combine (h , H))
-            renaming (h to h' ; H to H')
-        IH : h' n' ≡ h n'
-        IH = theo-restrict+∘combine (h , H) n'
-        c : Choices (h n')
-        c = proj₁ $ ⋖-to-addChoice (H n')
-        c-prop : h (suc n') ≡ addChoice (h n') c
-        c-prop = proj₂ $ ⋖-to-addChoice (H n')
-        X : h n' ⋖ addChoice (h n') c
-        X = ⋖-addChoice c
-        c-prop-X : (h (suc n') , H n') ≡ (addChoice (h n') c , X)
-        c-prop-X = restIsProofIrrel (⋖-irrel (h n')) (H n') X c-prop 
+theo-restrict+∘combine (h , H) (suc n') = ?
+    --begin 
+    --    (proj₁ ∘ restrict+ ∘ combine) (h , H) (suc n')
+    --≡⟨⟩
+    --    addChoice (h' n') (L n')
+    --≡⟨ cong (λ (r , c) → addChoice {n'} r c) 
+    --   $ depSubst (h' n') (h n') IH (L n') 
+    -- ⟩
+    --    addChoice (h n') (subst Choices IH (L n'))
+    --≡⟨ cong (λ x → addChoice (h n') (subst Choices IH x)) 
+    --        $ lemma-L-recovers-choice n' ⟩
+    --    addChoice (h n') (subst Choices IH $ getChoice (h' n') (h' (suc n')) (H' n'))
+    --≡⟨ cong (addChoice (h n')) 
+    --        $ sym 
+    --        $ lemma-getChoice-subst {n'} (h n') (h' n') 
+    --                                (h (suc n')) (h' (suc n')) (H n') (H' n') IH ? ⟩
+    --    addChoice (h n') (getChoice (h n') (h (suc n')) (H n'))
+    --≡⟨ cong (λ (y , x) → addChoice (h n') (getChoice (h n') y x)) c-prop-X ⟩
+    --    addChoice (h n') (getChoice (h n') (addChoice (h n') c) X)
+    --≡⟨ cong (addChoice (h n')) $ lemma-getChoice-addChoice (h n') c X ⟩
+    --    addChoice (h n') c
+    --≡⟨ sym c-prop ⟩
+    --    h (suc n')
+    --∎
+    --where
+    --    open RestrictImplementation (combine (h , H))
+    --        renaming (h to h' ; H to H')
+    --    IH : h' n' ≡ h n'
+    --    IH = theo-restrict+∘combine (h , H) n'
+    --    c : Choices (h n')
+    --    c = proj₁ $ ⋖-to-addChoice (H n')
+    --    c-prop : h (suc n') ≡ addChoice (h n') c
+    --    c-prop = proj₂ $ ⋖-to-addChoice (H n')
+    --    X : h n' ⋖ addChoice (h n') c
+    --    X = ⋖-addChoice c
+    --    c-prop-X : (h (suc n') , H n') ≡ (addChoice (h n') c , X)
+    --    c-prop-X = restIsProofIrrel (⋖-irrel (h n')) (H n') X c-prop 
     

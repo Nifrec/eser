@@ -375,6 +375,17 @@ n<1+n-lemma n with m<1+n⇒m<n∨m≡n (n<1+n n)
 ... | inj₁ n<n = ⊥-elim $ <-irrefl refl n<n
 ... | inj₂ refl = refl
 
+-- Given a ≡ b, we know that `<-cmp a b` must output something
+-- of the form `tri≈ _ a≡b _`.
+tri-≡
+    : (a b : ℕ)
+    → (p : a ≡ b)
+    → Σ[ x₀ ∈ a ≮ b ] Σ[ x₁ ∈ b ≮ a ] <-cmp a b ≡ tri≈ x₀ p x₁
+tri-≡ a b refl with <-cmp a b
+... | tri< a<b a≢b b≮a = ⊥-elim $ n≮n a a<b
+... | tri≈ x₀ refl x₁  = (x₀ , x₁ , refl)
+... | tri> a≮b a≢b b<a = ⊥-elim $ n≮n a b<a
+
 --------------------------------------------------------------------------------
 -- Properties of ≡ᵇ used in Eser.EqRel.Conversions
 --------------------------------------------------------------------------------
