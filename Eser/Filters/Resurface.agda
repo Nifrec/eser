@@ -4,6 +4,7 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)

@@ -18,6 +18,7 @@ open import Function using (_∘_ ; _$_)
 
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
     ; ≤-irrelevant
+    ; <-irrelevant
     ; m<1+n⇒m<n∨m≡n
     ; <-≤-trans
     ; ≤-<-trans
@@ -525,10 +526,34 @@ module ResCo
             (h' n , L-cases n (tri< fn<n x₀ x₁))
         ≡⟨⟩
             (h' n , earlier-new (resurface {n} (h' n) {f n} fn<n))
-        ≡⟨ {! tuples-eq (h' n) (h n) w !} ⟩
+        ≡⟨ sublemma-2 (h' n) (h n) w (f n) fn<n fn<n ⟩
+            (h n , earlier-new (resurface {n} (h n) {f n} fn<n))
+        ≡⟨⟩
+            (h n , earlier-new (resurface {n} (h n) 
+                                {choiceToℕ (getChoice (h n) (h (suc n)) (H n))} 
+                                fn<n))
+        ≡⟨⟩
+            aux-fun ((getChoice (h n) (h (suc n)) (H n) , fn<n))
+        ≡⟨ cong aux-fun (trans eq'-paired eq'') ⟩
+            aux-fun (earlier-new k , toℕk<n)
+        ≡⟨⟩
+            (h n , earlier-new (resurface {n} (h n) 
+                                {choiceToℕ (earlier-new k)} 
+                                toℕk<n ))
+        ≡⟨ cong (λ x → (h n , earlier-new x)) 
+                (lemma-resurface-NFSToℕ (h n) k toℕk<n) ⟩
             (h n , earlier-new k)
         ∎
         where
+            -- Just an uncurried version of the output expression,
+            -- needed because we cannot substitute the value
+            -- without also substituting the <-proof that depends on it.
+            -- So replace both together as a dependent pair.
+            aux-fun 
+                : Σ[ x ∈ Choices (h n) ] choiceToℕ x < n 
+                → Σ[ r ∈ NFRestr n ](Choices r)
+            aux-fun (x , y) = (h n , earlier-new (resurface {n} (h n) 
+                                {choiceToℕ x} y)) 
             eq : h (suc n) ≡ addChoice (h n) c
             eq = subst (λ x → h (suc n) ≡ addChoice (h n) x) 
                        (sym c-prop)
@@ -540,21 +565,28 @@ module ResCo
             X-prop : (h (suc n) , H n) ≡ (addChoice (h n) c , X)
             X-prop = depSubst (h (suc n)) (addChoice (h n) c) eq (H n) 
 
-            fn<n : f n < n
-            fn<n = ≤-<-trans (
-                ≤R.begin
+
+
+            fn≡toℕk : f n ≡ NFSToℕ {n} {h n} k
+            fn≡toℕk = 
+                begin
                     f n
-                ≤R.≡⟨⟩
+                ≡⟨⟩
                     choiceToℕ (getChoice (h n) (h (suc n)) (H n))
-                ≤R.≡⟨ cong (λ (x , y) → choiceToℕ (getChoice (h n) x y)) X-prop ⟩
+                ≡⟨ cong (λ (x , y) → choiceToℕ (getChoice (h n) x y)) X-prop ⟩
                     choiceToℕ (getChoice (h n) (addChoice (h n) c) X)
-                ≤R.≡⟨ cong choiceToℕ (lemma-getChoice-addChoice (h n) c X) ⟩
+                ≡⟨ cong choiceToℕ (lemma-getChoice-addChoice (h n) c X) ⟩
                     choiceToℕ {n} {h n} c
-                ≤R.≡⟨⟩
+                ≡⟨⟩
                     choiceToℕ {n} {h n} (earlier-new k)
-                ≤R.≡⟨⟩
+                ≡⟨⟩
                     NFSToℕ {suc n} {newNF (h n)} (earlier-new k)
-                ≤R.≡⟨⟩
+                ≡⟨⟩
+                    NFSToℕ {n} {h n} k
+                ∎
+            toℕk<n : NFSToℕ {n} {h n} k < n
+            toℕk<n = ≤-<-trans (
+                ≤R.begin
                     NFSToℕ {n} {h n} k
                 ≤R.≡⟨⟩
                     NFSToℕ {suc n'} {h (suc n')} k
@@ -564,6 +596,9 @@ module ResCo
                 )
                 (n<1+n n')
 
+            fn<n : f n < n
+            fn<n = subst (λ x → x < n) (sym fn≡toℕk) (toℕk<n)
+
             x₀ : f n ≢ n
             x₀ = proj₁ (tri-< (f n) n fn<n)
             x₁ : n ≮ f n
@@ -571,6 +606,51 @@ module ResCo
             <-cmp-outp : <-cmp (f n) n ≡ tri< fn<n x₀ x₁
             <-cmp-outp = proj₂ $ proj₂ $ tri-< (f n) n fn<n
 
+            eq' : getChoice (h n) (h (suc n)) (H n) 
+                  ≡ 
+                  getChoice (h n) (addChoice (h n) c) X
+            eq' = cong (λ (x , y) → getChoice (h n) x y) X-prop
+
+            z : choiceToℕ (getChoice (h n) (addChoice (h n) c) X) < n
+            z = subst (λ x → choiceToℕ x < n) (eq') fn<n
+
+            eq'-paired : (getChoice (h n) (h (suc n)) (H n) , fn<n)
+                  ≡ (getChoice (h n) (addChoice (h n) c) X , z)
+            eq'-paired = restIsProofIrrel 
+                {A = Choices (h n)} 
+                {B = λ x → choiceToℕ x < n}
+                (λ x → <-irrelevant {choiceToℕ x} {n}) 
+                fn<n z eq'
+
+            eq'' : (getChoice (h n) (addChoice (h n) c) X , z)
+                  ≡ 
+                  (earlier-new k , toℕk<n)
+            eq'' = restIsProofIrrel 
+                {A = Choices (h n)} 
+                {B = λ x → choiceToℕ x < n}
+                (λ x → <-irrelevant {choiceToℕ x} {n}) 
+                z toℕk<n (lemma-getChoice-addChoice (h n) c X)
+
+            sublemma-1
+                : {n : ℕ}
+                → (r r' : NFRestr n)
+                → r ≡ r'
+                → (m : ℕ)
+                → (p p' : m < n)
+                → (r , resurface {n} r {m} p) ≡ (r' , resurface {n} r' {m} p')
+            sublemma-1 {n} r r refl m p p' =
+                cong (λ x → (r , resurface {n} r {m} x)) (<-irrelevant p p')
+
+            sublemma-2
+                : {n : ℕ}
+                → (r r' : NFRestr n)
+                → r ≡ r'
+                → (m : ℕ)
+                → (p p' : m < n)
+                → (r , earlier-new ( resurface {n} r {m} p) )
+                    ≡ (r' , earlier-new ( resurface {n} r' {m} p'))
+            sublemma-2 {n} r r' r≡r' m p p' = 
+                cong (λ(x , y) → (x , earlier-new y)) $ sublemma-1 r r' r≡r' m p p'
 
 theo-restrict+∘combine (h , H) zero = 
     begin 
