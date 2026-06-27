@@ -315,6 +315,25 @@ resurface-correctness {suc n'} r {m} p q =
             ≡⟨⟩
                 NFRestrToℕ (trim' r q)
             ∎
+
+lemma-resurface-NFSToℕ
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → (k : NFS r)   
+    → (p : NFSToℕ k < n)
+    → resurface {n} r {NFSToℕ k} p ≡ k
+lemma-resurface-NFSToℕ {n} (newNF r') here p = {! !}
+lemma-resurface-NFSToℕ {n} r (earlier-new k') p = {! !}
+lemma-resurface-NFSToℕ {n} r (earlier-old k') p = {! !}
+
+lemma-resurface-choiceToℕ-earlier-new
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → (k : NFS r)   
+    → (p : choiceToℕ (earlier-new k) < n)
+    → resurface {n} r {choiceToℕ (earlier-new k)} p ≡ k
+-- This is judgementally the same as the previous lemma! (By def of choiceToℕ).
+lemma-resurface-choiceToℕ-earlier-new = lemma-resurface-NFSToℕ
         
 -- Given that a sub-NFRestr of r of the form `newNF r'`,
 -- construct the choice of r that points to this normal form.

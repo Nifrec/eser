@@ -20,6 +20,7 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
     ; ≤-irrelevant
     ; m<1+n⇒m<n∨m≡n
     ; <-≤-trans
+    ; ≤-<-trans
     ; m≢1+n+m
     ; <-trans
     ; n<1+n
@@ -29,6 +30,7 @@ open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
     ; m≤n⇒m<n∨m≡n
     ; n≮n
     )
+module ≤R = Data.Nat.Properties.≤-Reasoning
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
@@ -36,6 +38,7 @@ open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n ; 
                            ; doubleSubst 
                            ; depSubst
                            ; tri-≡
+                           ; tri-<
                            )
 open import Eser.Logic
 
@@ -118,7 +121,7 @@ module CombineData
                 choiceToℕ (getChoice (h m) (h (ℕ.suc m)) (H m))
             ≡⟨⟩ 
                 choiceToℕ (getChoice (h n) (h (ℕ.suc n)) (H n))
-             ≡⟨ lemma-choiceToℕ∘getChoice (h n) r (h (ℕ.suc n)) (newNF r) (H n) 
+            ≡⟨ lemma-choiceToℕ∘getChoice (h n) r (h (ℕ.suc n)) (newNF r) (H n) 
                                       (⋖-newNF r) hn≡r (sym p) ⟩
                 choiceToℕ (getChoice r (newNF r) (⋖-newNF r))
             ≡⟨⟩ 
@@ -323,13 +326,6 @@ module RestrictImplementation (f' : NFFun) where
 
     H n = ⋖-addChoice {n} {h n} (L n)
 
-    lemma-L-recovers-choice
-        : (n : ℕ)
-        → L n ≡ getChoice (h n) (h (suc n)) (H n)
-
-    lemma-L-recovers-choice n = ? 
-        -- Use getChoice-addChoice lemma!
-
 restrict+ f' = (h , H)
     where open RestrictImplementation f'
 
@@ -457,6 +453,10 @@ module ResCo
     C : (n : ℕ) → Choices (h n)
     C n = proj₁ (⋖-to-addChoice (H n))
 
+    -- Remark: this lemma's proof does NOT depend on some inductive relation.
+    -- Instead it uses the fact that L n (in the case f n < n)
+    -- resurfaces the m ≗ choiceToℕ (getChoice (h n) (h (suc n)) (H n)),
+    -- i.e., choiceToℕ (getChoice c).
     main-lemma
         : (n : ℕ)
         → (w : h' n ≡ h n)
@@ -516,7 +516,60 @@ module ResCo
                 → (r , here {n} {r}) ≡ (r' , here {n} {r'})
             tuples-eq r r' refl = refl
 
-    main-lemma n w (earlier-new c) c-prop = {! !}
+    main-lemma n@(suc n') w c@(earlier-new k) c-prop =
+        begin 
+            (h' n , L n)
+        ≡⟨⟩
+            (h' n , L-cases n (<-cmp (f n) n))
+        ≡⟨ cong (λ x → (h' n , L-cases n x)) <-cmp-outp ⟩
+            (h' n , L-cases n (tri< fn<n x₀ x₁))
+        ≡⟨⟩
+            (h' n , earlier-new (resurface {n} (h' n) {f n} fn<n))
+        ≡⟨ {! tuples-eq (h' n) (h n) w !} ⟩
+            (h n , earlier-new k)
+        ∎
+        where
+            eq : h (suc n) ≡ addChoice (h n) c
+            eq = subst (λ x → h (suc n) ≡ addChoice (h n) x) 
+                       (sym c-prop)
+                       (proj₂ $ ⋖-to-addChoice (H n))
+
+            X : h n ⋖ addChoice (h n) c
+            X = subst (h n ⋖_) eq (H n)
+
+            X-prop : (h (suc n) , H n) ≡ (addChoice (h n) c , X)
+            X-prop = depSubst (h (suc n)) (addChoice (h n) c) eq (H n) 
+
+            fn<n : f n < n
+            fn<n = ≤-<-trans (
+                ≤R.begin
+                    f n
+                ≤R.≡⟨⟩
+                    choiceToℕ (getChoice (h n) (h (suc n)) (H n))
+                ≤R.≡⟨ cong (λ (x , y) → choiceToℕ (getChoice (h n) x y)) X-prop ⟩
+                    choiceToℕ (getChoice (h n) (addChoice (h n) c) X)
+                ≤R.≡⟨ cong choiceToℕ (lemma-getChoice-addChoice (h n) c X) ⟩
+                    choiceToℕ {n} {h n} c
+                ≤R.≡⟨⟩
+                    choiceToℕ {n} {h n} (earlier-new k)
+                ≤R.≡⟨⟩
+                    NFSToℕ {suc n} {newNF (h n)} (earlier-new k)
+                ≤R.≡⟨⟩
+                    NFSToℕ {n} {h n} k
+                ≤R.≡⟨⟩
+                    NFSToℕ {suc n'} {h (suc n')} k
+                ≤R.≤⟨ (s≤s⁻¹ $ NFSToℕ-≤ k) ⟩
+                    n'
+                ≤R.∎ 
+                )
+                (n<1+n n')
+
+            x₀ : f n ≢ n
+            x₀ = proj₁ (tri-< (f n) n fn<n)
+            x₁ : n ≮ f n
+            x₁ = proj₁ $ proj₂ (tri-< (f n) n fn<n)
+            <-cmp-outp : <-cmp (f n) n ≡ tri< fn<n x₀ x₁
+            <-cmp-outp = proj₂ $ proj₂ $ tri-< (f n) n fn<n
 
 
 theo-restrict+∘combine (h , H) zero = 
