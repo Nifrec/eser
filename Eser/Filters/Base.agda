@@ -339,20 +339,20 @@ choiceToℕ
 -- A choice of r is a NF of newNF r, by definition of `Choices`.
 choiceToℕ {n} {r} c = NFSToℕ {ℕ.suc n} {newNF r} c 
 
-NFSToℕ-≤ 
+NFSToℕ-< 
     : {n : ℕ}
     → {r : NFRestr n}
     → (x : NFS r)
     → NFSToℕ x < n
-NFSToℕ-≤ {suc n} {newNF r} here = s≤s ≤-refl
-NFSToℕ-≤ {suc n} {newNF r} (earlier-new x) = s≤s (≤-trans (n≤1+n (NFSToℕ x)) y)
+NFSToℕ-< {suc n} {newNF r} here = s≤s ≤-refl
+NFSToℕ-< {suc n} {newNF r} (earlier-new x) = s≤s (≤-trans (n≤1+n (NFSToℕ x)) y)
     where 
         y : NFSToℕ x < n
-        y = NFSToℕ-≤ {n} {r} x
-NFSToℕ-≤ {suc n} {oldNF r c} (earlier-old x) = s≤s (≤-trans (n≤1+n (NFSToℕ x)) y)
+        y = NFSToℕ-< {n} {r} x
+NFSToℕ-< {suc n} {oldNF r c} (earlier-old x) = s≤s (≤-trans (n≤1+n (NFSToℕ x)) y)
     where 
         y : NFSToℕ x < n
-        y = NFSToℕ-≤ {n} {r} x
+        y = NFSToℕ-< {n} {r} x
 
 -- Get the normal form of the last chosen element as a number in ℕ.
 -- Note that the last choice in a NFRestr n chose a normal form for n-1;

@@ -98,7 +98,7 @@ module CombineData
 
     opaque
         f-leq : (n : ℕ) → f n ≤ n
-        f-leq n = s≤s⁻¹ $ NFSToℕ-≤ (getChoiceFromExence (h , H) n)
+        f-leq n = s≤s⁻¹ $ NFSToℕ-< (getChoiceFromExence (h , H) n)
 
         lemma-1
             : {n : ℕ}
@@ -221,7 +221,7 @@ extension-must-be-newNF {n} {r} {newNF r} (⋖-newNF r) c refl refl = (refl , re
 extension-must-be-newNF {n} {r} {s} (⋖-oldNF r c) (earlier-new c) refl p = ans
     where
         n<n : n < n
-        n<n = subst (λ x → x < n) (sym p) (NFSToℕ-≤ {n} {r} c)
+        n<n = subst (λ x → x < n) (sym p) (NFSToℕ-< {n} {r} c)
         ans = ⊥-elim (1+n≰n n<n)
 
 -- Given a finite sequence of pointwise extensions,
@@ -581,7 +581,7 @@ module ResCo
                     NFSToℕ {n} {h n} k
                 ≤R.≡⟨⟩
                     NFSToℕ {suc n'} {h (suc n')} k
-                ≤R.≤⟨ (s≤s⁻¹ $ NFSToℕ-≤ k) ⟩
+                ≤R.≤⟨ (s≤s⁻¹ $ NFSToℕ-< k) ⟩
                     n'
                 ≤R.∎ 
                 )
