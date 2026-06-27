@@ -519,7 +519,6 @@ module ResCo
     main-lemma n w (earlier-new c) c-prop = {! !}
 
 
-
 theo-restrict+∘combine (h , H) zero = 
     begin 
         (proj₁ ∘ restrict+ ∘ combine) (h , H) zero
@@ -528,41 +527,26 @@ theo-restrict+∘combine (h , H) zero =
     ≡⟨ sym $ empty-is-unique-zero (h zero) ⟩
         h zero
     ∎
-theo-restrict+∘combine (h , H) (suc n') = ?
-    --begin 
-    --    (proj₁ ∘ restrict+ ∘ combine) (h , H) (suc n')
-    --≡⟨⟩
-    --    addChoice (h' n') (L n')
-    --≡⟨ cong (λ (r , c) → addChoice {n'} r c) 
-    --   $ depSubst (h' n') (h n') IH (L n') 
-    -- ⟩
-    --    addChoice (h n') (subst Choices IH (L n'))
-    --≡⟨ cong (λ x → addChoice (h n') (subst Choices IH x)) 
-    --        $ lemma-L-recovers-choice n' ⟩
-    --    addChoice (h n') (subst Choices IH $ getChoice (h' n') (h' (suc n')) (H' n'))
-    --≡⟨ cong (addChoice (h n')) 
-    --        $ sym 
-    --        $ lemma-getChoice-subst {n'} (h n') (h' n') 
-    --                                (h (suc n')) (h' (suc n')) (H n') (H' n') IH ? ⟩
-    --    addChoice (h n') (getChoice (h n') (h (suc n')) (H n'))
-    --≡⟨ cong (λ (y , x) → addChoice (h n') (getChoice (h n') y x)) c-prop-X ⟩
-    --    addChoice (h n') (getChoice (h n') (addChoice (h n') c) X)
-    --≡⟨ cong (addChoice (h n')) $ lemma-getChoice-addChoice (h n') c X ⟩
-    --    addChoice (h n') c
-    --≡⟨ sym c-prop ⟩
-    --    h (suc n')
-    --∎
-    --where
-    --    open RestrictImplementation (combine (h , H))
-    --        renaming (h to h' ; H to H')
-    --    IH : h' n' ≡ h n'
-    --    IH = theo-restrict+∘combine (h , H) n'
-    --    c : Choices (h n')
-    --    c = proj₁ $ ⋖-to-addChoice (H n')
-    --    c-prop : h (suc n') ≡ addChoice (h n') c
-    --    c-prop = proj₂ $ ⋖-to-addChoice (H n')
-    --    X : h n' ⋖ addChoice (h n') c
-    --    X = ⋖-addChoice c
-    --    c-prop-X : (h (suc n') , H n') ≡ (addChoice (h n') c , X)
-    --    c-prop-X = restIsProofIrrel (⋖-irrel (h n')) (H n') X c-prop 
-    
+theo-restrict+∘combine (h , H) (suc n') =
+    begin 
+        (proj₁ ∘ restrict+ ∘ combine) (h , H) (suc n')
+    ≡⟨⟩
+        addChoice (h' n') (L n')
+    ≡⟨⟩
+        (λ (x , y) → addChoice x y) (h' n' , L n')
+    ≡⟨ cong (λ (x , y) → addChoice x y) (ResCo.main-lemma h H n' IH c refl) ⟩
+        (λ (x , y) → addChoice x y) (h n' , c)
+    ≡⟨⟩
+        addChoice (h n') c
+    ≡⟨ sym $ c-prop ⟩
+        h (suc n')
+    ∎ 
+    where
+        open RestrictImplementation (combine (h , H))
+            renaming (h to h' ; H to H')
+        IH : h' n' ≡ h n'
+        IH = theo-restrict+∘combine (h , H) n'
+        c : Choices (h n')
+        c = proj₁ $ ⋖-to-addChoice (H n')
+        c-prop : h (suc n') ≡ addChoice (h n') c
+        c-prop = proj₂ $ ⋖-to-addChoice (H n')
