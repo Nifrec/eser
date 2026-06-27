@@ -4,7 +4,6 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
-{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
@@ -17,11 +16,15 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; m≤n⇒m<n∨m≡n ; n≮n
-    ; ≤-irrelevant)
+    ; ≤-irrelevant
+    ; <-irrelevant
+    ; n<1+n
+    )
 open import Data.Maybe
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
+open import Eser.Aux using (n<1+n-lemma ; m<1+n⇒m<n∨m≡n-when-<)
 
 module Eser.Filters.Resurface where
 
@@ -323,9 +326,62 @@ lemma-resurface-NFSToℕ
     → (k : NFS r)   
     → (p : NFSToℕ k < n)
     → resurface {n} r {NFSToℕ k} p ≡ k
-lemma-resurface-NFSToℕ {n} (newNF r') here p = {! !}
-lemma-resurface-NFSToℕ {n} r (earlier-new k') p = {! !}
-lemma-resurface-NFSToℕ {n} r (earlier-old k') p = {! !}
+lemma-resurface-NFSToℕ n@{suc n'} r@(newNF r') here p = 
+    begin 
+        resurface {n} r {NFSToℕ (here {n'} {r'})} p 
+    ≡⟨⟩
+        resurface {n} r {n'} p 
+    ≡⟨⟩
+        resurface-cases {n'} (newNF r') {n'} (m<1+n⇒m<n∨m≡n p)  
+    ≡⟨ cong (λ x → resurface-cases {n'} (newNF r') {n'} x) p-eq ⟩
+        resurface-cases {n'} (newNF r') {n'} (inj₂ refl)
+    ≡⟨⟩
+        here
+    ∎
+        where
+            p-eq : (m<1+n⇒m<n∨m≡n p) ≡ inj₂ refl
+            p-eq = subst (λ x → (m<1+n⇒m<n∨m≡n x) ≡ inj₂ refl) 
+                         (<-irrelevant (n<1+n n') p) 
+                         (n<1+n-lemma n' )
+lemma-resurface-NFSToℕ n@{suc n'} r@(newNF r') (earlier-new k') p =
+    begin 
+        resurface {n} r {NFSToℕ (earlier-new k')} p 
+    ≡⟨⟩
+        resurface {n} r {NFSToℕ k'} p 
+    ≡⟨⟩
+        resurface-cases {n'} (newNF r') {NFSToℕ k'} (m<1+n⇒m<n∨m≡n p)  
+    ≡⟨ cong (λ x → resurface-cases {n'} (newNF r') {NFSToℕ k'} x) p-eq ⟩
+        resurface-cases {n'} (newNF r') {NFSToℕ k'} (inj₁ p')
+    ≡⟨⟩
+        earlier-new ( resurface {n'} r' {NFSToℕ k'} p')
+    ≡⟨ cong earlier-new $ lemma-resurface-NFSToℕ r' k' p' ⟩
+        earlier-new k'
+    ∎
+        where
+            p' : NFSToℕ k' < n'
+            p' = NFSToℕ-< k'
+            p-eq : (m<1+n⇒m<n∨m≡n p) ≡ inj₁ p'
+            p-eq = m<1+n⇒m<n∨m≡n-when-< (NFSToℕ k') n' p p'
+
+lemma-resurface-NFSToℕ n@{suc n'} r@(oldNF r' k'') (earlier-old k') p =
+    begin 
+        resurface {n} r {NFSToℕ (earlier-old {n'} {r'} {k''} k')} p 
+    ≡⟨⟩
+        resurface {n} r {NFSToℕ k'} p 
+    ≡⟨⟩
+        resurface-cases {n'} r {NFSToℕ k'} (m<1+n⇒m<n∨m≡n p)  
+    ≡⟨ cong (λ x → resurface-cases {n'} r {NFSToℕ k'} x) p-eq ⟩
+        resurface-cases {n'} (oldNF r' k'') {NFSToℕ k'} (inj₁ p')
+    ≡⟨⟩
+        earlier-old ( resurface {n'} r' {NFSToℕ k'} p')
+    ≡⟨ cong earlier-old $ lemma-resurface-NFSToℕ r' k' p' ⟩
+        earlier-old k'
+    ∎
+        where
+            p' : NFSToℕ k' < n'
+            p' = NFSToℕ-< k'
+            p-eq : (m<1+n⇒m<n∨m≡n p) ≡ inj₁ p'
+            p-eq = m<1+n⇒m<n∨m≡n-when-< (NFSToℕ k') n' p p'
 
 lemma-resurface-choiceToℕ-earlier-new
     : {n : ℕ}
