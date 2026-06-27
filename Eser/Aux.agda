@@ -386,6 +386,28 @@ tri-≡ a b refl with <-cmp a b
 ... | tri≈ x₀ refl x₁  = (x₀ , x₁ , refl)
 ... | tri> a≮b a≢b b<a = ⊥-elim $ n≮n a b<a
 
+-- Given a < b, we know that `<-cmp a b` must output something
+-- of the form `tri< a<b _ _`.
+tri-<
+    : (a b : ℕ)
+    → (p : a < b)
+    → Σ[ x₀ ∈ a ≢ b ] Σ[ x₁ ∈ b ≮ a ] <-cmp a b ≡ tri< p x₀ x₁
+tri-< a b p = tri-<-cases a b p (<-cmp a b) refl
+    where
+        tri-<-cases 
+            : (a b : ℕ)
+            → (p : a < b)
+            → (t₀ : Tri (a < b) (a ≡ b) (a > b))
+            → (t₁ : <-cmp a b ≡ t₀)
+            → Σ[ x₀ ∈ a ≢ b ] Σ[ x₁ ∈ b ≮ a ] <-cmp a b ≡ tri< p x₀ x₁
+        tri-<-cases a b p (tri< a<b a≢b b≮a) t₁ = (a≢b , b≮a , eq)
+            where
+                eq : <-cmp a b ≡ tri< p a≢b b≮a
+                eq = subst (λ x → <-cmp a b ≡ tri< x a≢b b≮a) 
+                           (<-irrelevant a<b p) t₁
+        tri-<-cases a b p (tri≈ a≮b refl b≮a) t₁ = ⊥-elim $ n≮n a p
+        tri-<-cases a b p (tri> a≮b a≢b b<a) t₁ = ⊥-elim $ n≮n a (<-trans p b<a)
+
 --------------------------------------------------------------------------------
 -- Properties of ≡ᵇ used in Eser.EqRel.Conversions
 --------------------------------------------------------------------------------
