@@ -73,13 +73,6 @@ restrict : NFFun → (n : ℕ) → NFRestr n
 -- 2. combine & restrict+ form a pair of inverses
 --  (up to function extensionality and first projections).
 
--- Important is to show that for every NFRestr there actually is a normalisation
--- function whose restriction is represents.
-theo-all-NFRestr-reachable
-    : {n : ℕ}
-    → (r : NFRestr n)
-    → Σ[ f ∈  NFFun ](r ≡ restrict f n)
-
 theo-combine∘restrict+
     : (f : NFFun)
     →  (proj₁ ∘ combine ∘ restrict+) f ≈ proj₁ f
@@ -415,8 +408,6 @@ module LemmaL (f' : NFFun) where
                 ≡⟨ lemma-NFRestrToℕ-addChoice {f n} (h (f n)) (L (f n)) ⟩
                     just (choiceToℕ (L (f n)))
                 ∎
-
-theo-all-NFRestr-reachable {n} r = ?
 
 theo-combine∘restrict+ f' n = 
     begin 
