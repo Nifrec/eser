@@ -47,7 +47,7 @@ open import Eser.Filters.Base
 open import Eser.Filters.Properties 
 open import Eser.Filters.Resurface
 
-module Eser.Filters.Conversions.NFFunToExenceRedo where
+module Eser.Filters.Conversions.NFFunToExence where
 
 --------------------------------------------------------------------------------
 -- Main functions
