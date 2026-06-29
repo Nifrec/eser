@@ -19,6 +19,8 @@ open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
 
 open import Eser.Logic
+open import Eser.Stdlib using (∸-suc)
+
 module Eser.Aux where
 
 --------------------------------------------------------------------------------
@@ -195,6 +197,26 @@ module SigmaCasts {I : Set} {A : I → Set} where
 
 1+n≮n : (n : ℕ) → ¬ (ℕ.suc n < n)
 1+n≮n n 1+n<n = (n≮n (suc n) $ m<n⇒m<1+n 1+n<n)
+
+Sn∸n≡1 : (n : ℕ) → suc n ∸ n ≡ 1
+Sn∸n≡1 n = 
+    begin 
+        suc n ∸ n
+    ≡⟨ ∸-suc (≤-refl {n}) ⟩
+        suc (n ∸ n)
+    ≡⟨ cong suc (n∸n≡0 n) ⟩
+        suc 0
+    ≡⟨⟩
+        1
+    ∎
+    
+m<n<1+m→⊥
+    : {m n : ℕ}
+    → m < n
+    → n < suc m
+    → ⊥
+m<n<1+m→⊥ {suc m} {suc n} (s≤s p) (s≤s q) = m<n<1+m→⊥ p q
+
 
 m∸Sn≤m∸n
     : (n m : ℕ)

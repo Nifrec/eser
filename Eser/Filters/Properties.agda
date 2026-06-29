@@ -43,6 +43,13 @@ empty-is-unique-zero
     → r ≡ empty
 empty-is-unique-zero empty = refl
 
+lemma-NFRestr-subst
+    : {a b : ℕ}
+    → (r : NFRestr a)
+    → (p p' : a ≡ b)
+    → subst NFRestr p r ≡ subst NFRestr p' r
+lemma-NFRestr-subst r refl refl = refl
+
 
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
@@ -378,6 +385,19 @@ lemma-trim'-exence h H n m p =
             ≡⟨⟩
                 h (suc m)
             ∎
+
+lemma-trim-⋖
+    : {n m : ℕ}
+    → (r : NFRestr n)
+    → (p : m < n)
+    → (q : suc m < n)
+    → trim r p ⋖ trim r q
+lemma-trim-⋖ = ?
+    where
+        -- TODO: use trim correctness and r ⋖+ s -> r' ⋖+ s 
+        -- → r ⋖+ r' ⊎ r ≡ r' ⊎ r' ⋖+ r
+        -- with the special case thatm if r : NFRestr m and r' : NFRestr (suc m)
+        -- then r ⋖+ r' -> r ⋖ r'
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
 --------------------------------------------------------------------------------
@@ -431,6 +451,16 @@ lemma-trim'-exence h H n m p =
     → r ≡ r'
 ⋖-left-corollary-oldNF {n} {r} {r'} {s} {s'} r⋖s refl c refl = 
     ⋖-left-unique r⋖s (⋖-oldNF r' c)
+
+lemma-⋖-subst
+    : {a b : ℕ}
+    → (v : a ≡ b)
+    → (w : suc a ≡ suc b)
+    → {r : NFRestr a}
+    → {s : NFRestr (suc a)}
+    → r ⋖ s
+    → (subst NFRestr v r) ⋖ (subst NFRestr w s)
+lemma-⋖-subst refl refl r⋖s = r⋖s
 
 --------------------------------------------------------------------------------
 -- Properties of getChoice
