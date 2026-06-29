@@ -427,6 +427,28 @@ tri-< a b p = tri-<-cases a b p (<-cmp a b) refl
         tri-<-cases a b p (tri≈ a≮b refl b≮a) t₁ = ⊥-elim $ n≮n a p
         tri-<-cases a b p (tri> a≮b a≢b b<a) t₁ = ⊥-elim $ n≮n a (<-trans p b<a)
 
+-- b < a analog of previous lemma: `<-cmp a b ≗ tri> _ _ b<a` when given
+-- some proof that b < a in advance.
+tri->
+    : (a b : ℕ)
+    → (p : b < a)
+    → Σ[ x₀ ∈ a ≮ b ] Σ[ x₁ ∈ a ≢ b ] <-cmp a b ≡ tri> x₀ x₁ p
+tri-> a b p = tri->-cases a b p (<-cmp a b) refl
+    where
+        tri->-cases 
+            : (a b : ℕ)
+            → (p : b < a)
+            → (t₀ : Tri (a < b) (a ≡ b) (a > b))
+            → (t₁ : <-cmp a b ≡ t₀)
+            → Σ[ x₀ ∈ a ≮ b ] Σ[ x₁ ∈ a ≢ b ] <-cmp a b ≡ tri> x₀ x₁ p
+        tri->-cases a b p (tri< a<b a≢b b≮a) t₁ = ⊥-elim $ n≮n b (<-trans p a<b)
+        tri->-cases a b p (tri≈ a≮b refl b≮a) t₁ = ⊥-elim $ n≮n a p
+        tri->-cases a b p (tri> a≮b a≢b b<a) t₁ = (a≮b , a≢b , eq)
+            where
+                eq : <-cmp a b ≡ tri> a≮b a≢b p
+                eq = subst (λ x → <-cmp a b ≡ tri> a≮b a≢b x) 
+                           (<-irrelevant b<a p) t₁
+
 --------------------------------------------------------------------------------
 -- Properties of ≡ᵇ used in Eser.EqRel.Conversions
 --------------------------------------------------------------------------------
