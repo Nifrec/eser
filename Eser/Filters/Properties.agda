@@ -16,15 +16,19 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
-open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n 
-                                      ; n<1+n 
-                                      ; <-irrefl 
-                                      ; m≤n⇒m<n∨m≡n
-                                      ; <-trans
-                                      ; n≮n
-                                      ; <-irrelevant
-                                      ; suc-injective
-                                      )
+open import Data.Nat.Properties using 
+    (m<1+n⇒m<n∨m≡n 
+    ; n<1+n 
+    ; <-irrefl 
+    ; m≤n⇒m<n∨m≡n
+    ; <-trans
+    ; n≮n
+    ; <-irrelevant
+    ; suc-injective
+    ; ≤-refl
+    ; ≤-trans
+    ; n≤1+n
+    )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
@@ -394,6 +398,7 @@ lemma-trim-⋖
     → trim r p ⋖ trim r q
 lemma-trim-⋖ = ?
     where
+        ans = ?
         -- TODO: use trim correctness and r ⋖+ s -> r' ⋖+ s 
         -- → r ⋖+ r' ⊎ r ≡ r' ⊎ r' ⋖+ r
         -- with the special case thatm if r : NFRestr m and r' : NFRestr (suc m)
@@ -461,6 +466,38 @@ lemma-⋖-subst
     → r ⋖ s
     → (subst NFRestr v r) ⋖ (subst NFRestr w s)
 lemma-⋖-subst refl refl r⋖s = r⋖s
+
+lemma-⋖+-not-smaller-idx
+    : {n m : ℕ}
+    → {r : NFRestr n}
+    → {s : NFRestr m}
+    → m ≤ n
+    → r ⋖+ s
+    → ⊥
+lemma-⋖+-not-smaller-idx {n} {suc n} {r} {newNF r} m≤n (⋖+-onestep (⋖-newNF r)) 
+    = n≮n n m≤n
+lemma-⋖+-not-smaller-idx {n} {suc n} {r} {oldNF r c} m≤n (⋖+-onestep (⋖-oldNF r c)) 
+    = n≮n n m≤n
+lemma-⋖+-not-smaller-idx {suc n} {suc m} {r} {newNF s} 
+    (s≤s m≤n) (⋖+-multistep-newNF p) = 
+    lemma-⋖+-not-smaller-idx (≤-trans m≤n (n≤1+n n)) p
+lemma-⋖+-not-smaller-idx {suc n} {suc m} {r} {oldNF s c} 
+    (s≤s m≤n ) (⋖+-multistep-oldNF c p) =
+    lemma-⋖+-not-smaller-idx (≤-trans m≤n (n≤1+n n)) p
+
+-- If r ⋖+ s but r : NFRestr n and s : NFRestr (suc n)
+-- then it must be that r ⋖ s directly as well.
+lemma-⋖+-to-⋖
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → {s : NFRestr (suc n)}
+    → r ⋖+ s
+    → r ⋖ s
+lemma-⋖+-to-⋖ {n} {r} {s} (⋖+-onestep r⋖s) = r⋖s
+lemma-⋖+-to-⋖ {n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) =
+    ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
+lemma-⋖+-to-⋖ {n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
+    ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
 
 --------------------------------------------------------------------------------
 -- Properties of getChoice

@@ -20,7 +20,6 @@
 --------------------------------------------------------------------------------
 
 open import Data.Nat
---open import Data.Bool hiding (_<_ ; _≤_ ; _≤?_ )
 open import Data.Empty
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
@@ -38,21 +37,6 @@ open import Data.Nat.Properties using
     ; n<1+n
     ; <-trans
     )
---open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; 1+n≰n
---    ; ≤-irrelevant
---    ; <-irrelevant
---    ; m<1+n⇒m<n∨m≡n
---    ; <-≤-trans
---    ; ≤-<-trans
---    ; m≢1+n+m
---    ; <-trans
---    ; <⇒≤ 
---    ; m<n⇒m≤1+n 
---    ; ≤⇒≯ 
---    ; m≤n⇒m<n∨m≡n
---    ; n≮n
---    )
---module ≤R = Data.Nat.Properties.≤-Reasoning
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
@@ -68,7 +52,6 @@ open import Eser.Aux using
     ; m<n<1+m→⊥
     )
 open import Eser.Stdlib using (∸-suc)
---open import Eser.Logic
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
@@ -105,7 +88,8 @@ NFRestrToExence {n} r = (h , H , eq)
 
         h-cases m (tri< m<n x₀ x₁)  = trim r m<n
         h-cases n (tri≈ x₀ refl x₁) = r
-        h-cases m (tri> x₀ x₁ m>n)  = subst NFRestr (x+n≡m) (extendWithNewNFs r x)
+        h-cases m (tri> x₀ x₁ m>n)  
+            = subst NFRestr (x+n≡m) (extendWithNewNFs r x)
             where
                 x : ℕ
                 x = m ∸ n
@@ -195,15 +179,39 @@ NFRestrToExence {n} r = (h , H , eq)
                 ans : h m ⋖ h (suc m)
                 ans = doubleSubst _⋖_ (sym eq-m) (sym eq-1+m) trimmed-⋖
 
-        H-cases-m<n m p x₀ x₁ p₁ (tri≈ y₀ 1+m≡n y₁) q₁ = ? 
+        H-cases-m<n m p x₀ x₁ p₁ (tri≈ y₀ refl y₁) q₁ = ans
+            where
+                LHS : h m ≡ trim r p
+                LHS = cong (h-cases m) p₁
+
+                RHS : h (suc m) ≡ r
+                RHS =
+                    begin 
+                        h (suc m)
+                    ≡⟨⟩
+                        h n 
+                    ≡⟨⟩
+                        h-cases n (<-cmp n n)
+                    ≡⟨ cong (h-cases n) q₁ ⟩
+                        h-cases n (tri≈ y₀ refl y₁)
+                    ≡⟨⟩
+                        r
+                    ∎
+
+                K : trim r p ⋖ r
+                K = lemma-⋖+-to-⋖ (trim-correctness r p)
+                    
+                ans : h m ⋖ h (suc m)
+                ans = doubleSubst _⋖_ (sym LHS) (sym RHS) K
+
         H-cases-m<n m p x₀ x₁ p₁ (tri> y₀ y₁ 1+m>n) q₁ =
             ⊥-elim $ m<n<1+m→⊥ p 1+m>n
 
-        {-# WARNING_ON_USAGE H-cases-m<n "Don't fortget to prove lemma-trim-⋖" #-}
-        
         H-cases m (tri< m<n x₀ x₁) p₁ = 
             H-cases-m<n m m<n x₀ x₁ p₁ (<-cmp (suc m) n) refl
-        H-cases n (tri≈ x₀ refl x₁) p₁ = ?
+        H-cases n (tri≈ x₀ refl x₁) p₁ = 
+            doubleSubst _⋖_ (sym LHS) (sym RHS) (⋖-newNF r)
+            
             where
                 LHS : h n ≡ r
                 LHS = 
@@ -319,8 +327,10 @@ NFRestrToExence {n} r = (h , H , eq)
                         subst NFRestr u (E r ((suc m) ∸ n))
                     ≡⟨⟩
                         F (suc m ∸ n , u)
-                    ≡⟨ cong F $ depSubst ((suc m) ∸ n) (suc (m ∸ n)) (∸-suc 1+m>n) u ⟩
-                        F (suc (m ∸ n) , subst (λ z → z + n ≡ suc m) (∸-suc 1+m>n) u)
+                    ≡⟨ cong F $ depSubst ((suc m) ∸ n) (suc (m ∸ n)) 
+                                         (∸-suc 1+m>n) u ⟩
+                        F (suc (m ∸ n) 
+                          , subst (λ z → z + n ≡ suc m) (∸-suc 1+m>n) u)
                     ≡⟨ cong (λ u → F (suc (m ∸ n) , u)) 
                        (uip (subst (λ z → z + n ≡ suc m) (∸-suc 1+m>n) u) w)
                      ⟩
@@ -339,5 +349,24 @@ NFRestrToExence {n} r = (h , H , eq)
                 K₂ = doubleSubst _⋖_ (sym LHS) (sym RHS) K₁
 
 
-
-theo-all-NFRestr-reachable {n} r = ?
+theo-all-NFRestr-reachable {n} r = (f' , sym prf)
+    where
+        h : (m : ℕ) → NFRestr m
+        h = proj₁ $ NFRestrToExence r
+        H : (m : ℕ) → h m ⋖ h (suc m)
+        H = proj₁ $ proj₂ $ NFRestrToExence r
+        f' : NFFun
+        f' = combine (h , H)
+        f : ℕ → ℕ
+        f = proj₁ f'
+        prf : restrict f' n ≡ r
+        prf =
+            begin 
+                restrict f' n
+            ≡⟨⟩
+                (proj₁ ∘ restrict+ ∘ combine) (h , H) n
+            ≡⟨ theo-restrict+∘combine (h , H) n ⟩
+                h n
+            ≡⟨ proj₂ $ proj₂ $ NFRestrToExence r ⟩
+                r
+            ∎
