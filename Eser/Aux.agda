@@ -397,6 +397,24 @@ n<1+n-lemma n with m<1+n⇒m<n∨m≡n (n<1+n n)
 ... | inj₁ n<n = ⊥-elim $ <-irrefl refl n<n
 ... | inj₂ refl = refl
 
+m<1+n⇒m<n∨m≡n-when-≡
+    : (m n : ℕ)
+    → (p : m < suc n)
+    → (q : m ≡ n)
+    → (m<1+n⇒m<n∨m≡n p) ≡ inj₂ q
+m<1+n⇒m<n∨m≡n-when-≡ m n p refl = 
+    m<1+n⇒m<n∨m≡n-when-≡-cases m n p refl (m<1+n⇒m<n∨m≡n p) refl
+    where
+    m<1+n⇒m<n∨m≡n-when-≡-cases
+        : (m n : ℕ)
+        → (p : m < suc n)
+        → (q : m ≡ n)
+        → (p₀ : m < n ⊎ m ≡ n)
+        → (p₁ : (m<1+n⇒m<n∨m≡n p) ≡ p₀)
+        → (m<1+n⇒m<n∨m≡n p) ≡ inj₂ q
+    m<1+n⇒m<n∨m≡n-when-≡-cases n n p refl (inj₁ m<n) p₁ = ⊥-elim $ n≮n n m<n
+    m<1+n⇒m<n∨m≡n-when-≡-cases m n p refl (inj₂ refl) p₁ = p₁
+
 m<1+n⇒m<n∨m≡n-when-<
     : (m n : ℕ)
     → (p : m < suc n)

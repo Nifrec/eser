@@ -5,8 +5,6 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -32,7 +30,11 @@ open import Data.Nat.Properties using
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma )
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma 
+    ; doubleSubst
+    ; m<1+n⇒m<n∨m≡n-when-≡
+    ; m<1+n⇒m<n∨m≡n-when-<
+    )
 open import Data.Maybe
 
 open import Eser.Filters.Base
@@ -396,13 +398,114 @@ lemma-trim-⋖
     → (p : m < n)
     → (q : suc m < n)
     → trim r p ⋖ trim r q
-lemma-trim-⋖ = ?
+lemma-trim-⋖-cases
+    : (n' m : ℕ)
+    → (r : NFRestr (suc n'))
+    → (r' : NFRestr n')
+    → (c : Choices r')
+    → r ≡ addChoice r' c
+    → (p : m < suc n')
+    → (q : suc m < suc n')
+    → (v : suc m < n' ⊎ suc m ≡ n')
+    → trim r p ⋖ trim r q
+    
+lemma-trim-⋖ {suc n'} {m} r@(newNF r') p q = 
+    lemma-trim-⋖-cases n' m r r' here refl p q (m<1+n⇒m<n∨m≡n q)
+lemma-trim-⋖ {suc n'} {m} r@(oldNF r' c) p q =
+    lemma-trim-⋖-cases n' m r r' (earlier-new c) refl p q (m<1+n⇒m<n∨m≡n q)
+
+lemma-trim-⋖-cases n' m r r' c K p q (inj₁ 1+m<n') 
+    = doubleSubst _⋖_ (sym LHS) (sym RHS) rec
     where
-        ans = ?
-        -- TODO: use trim correctness and r ⋖+ s -> r' ⋖+ s 
-        -- → r ⋖+ r' ⊎ r ≡ r' ⊎ r' ⋖+ r
-        -- with the special case thatm if r : NFRestr m and r' : NFRestr (suc m)
-        -- then r ⋖+ r' -> r ⋖ r'
+        m<n' : m < n'
+        m<n' = <-trans (n<1+n m) 1+m<n'
+
+        LHS : trim r p ≡ trim r' m<n'
+        LHS = 
+            let p₁ :  m<1+n⇒m<n∨m≡n p ≡ inj₁ m<n'
+                p₁ = m<1+n⇒m<n∨m≡n-when-< m n' p m<n'
+            in
+            begin 
+                trim r p
+            ≡⟨⟩
+                trim-cases r (m<1+n⇒m<n∨m≡n p)
+            ≡⟨ cong (trim-cases r) p₁ ⟩
+                trim-cases r (inj₁ m<n')
+            ≡⟨ cong (λ r → trim-cases r (inj₁ m<n')) K ⟩
+                trim-cases (addChoice r' c) (inj₁ m<n')
+            ≡⟨ lemma-trim-addChoice-inj₁ n' m r' c m<n' ⟩
+                trim r' m<n'
+            ∎
+            
+        -- Similar proof as LHS but with `suc m` instead of `m`.
+        RHS : trim r q ≡ trim r' 1+m<n'
+        RHS =
+            let q₁ :  m<1+n⇒m<n∨m≡n q ≡ inj₁ 1+m<n'
+                q₁ = m<1+n⇒m<n∨m≡n-when-< (suc m) n' q 1+m<n'
+            in
+            begin 
+                trim r q
+            ≡⟨⟩
+                trim-cases r (m<1+n⇒m<n∨m≡n q)
+            ≡⟨ cong (trim-cases r) q₁ ⟩
+                trim-cases r (inj₁ 1+m<n')
+            ≡⟨ cong (λ r → trim-cases r (inj₁ 1+m<n')) K ⟩
+                trim-cases (addChoice r' c) (inj₁ 1+m<n')
+            ≡⟨ lemma-trim-addChoice-inj₁ n' (suc m) r' c 1+m<n' ⟩
+                trim r' 1+m<n'
+            ∎
+
+        -- We have r' : NFRestr n', 
+        -- and n' is structurally smaller than (suc n'),
+        -- so recurse on n' and r'.
+        rec : trim r' m<n' ⋖ trim r' 1+m<n'
+        rec = lemma-trim-⋖ {n'} {m} r' m<n' 1+m<n'
+
+lemma-trim-⋖-cases n' m r r' c K p q (inj₂ 1+m≡n'@refl)
+    = doubleSubst _⋖_ (sym LHS) (sym RHS) Z
+    where
+        m<n' : m < n'
+        m<n' = n<1+n m -- That suc m ≗ n holds by reflexivity.
+
+        -- #TWEAK: same proof as the LHS in the previous case,
+        -- instance of copy-paste that might be refactorable.
+        LHS : trim r p ≡ trim r' m<n'
+        LHS =
+            let p₁ :  m<1+n⇒m<n∨m≡n p ≡ inj₁ m<n'
+                p₁ = m<1+n⇒m<n∨m≡n-when-< m n' p m<n'
+            in
+            begin 
+                trim r p
+            ≡⟨⟩
+                trim-cases r (m<1+n⇒m<n∨m≡n p)
+            ≡⟨ cong (trim-cases r) p₁ ⟩
+                trim-cases r (inj₁ m<n')
+            ≡⟨ cong (λ r → trim-cases r (inj₁ m<n')) K ⟩
+                trim-cases (addChoice r' c) (inj₁ m<n')
+            ≡⟨ lemma-trim-addChoice-inj₁ n' m r' c m<n' ⟩
+                trim r' m<n'
+            ∎
+
+        RHS : trim r q ≡ r'
+        RHS = 
+            let q₁ :  m<1+n⇒m<n∨m≡n q ≡ inj₂ refl
+                q₁ = m<1+n⇒m<n∨m≡n-when-≡ (suc m) n' q refl
+            in
+            begin 
+                trim r q
+            ≡⟨⟩
+                trim-cases r (m<1+n⇒m<n∨m≡n q)
+            ≡⟨ cong (trim-cases r) q₁ ⟩
+                trim-cases r (inj₂ refl)
+            ≡⟨ cong (λ r → trim-cases r (inj₂ refl)) K ⟩
+                trim-cases (addChoice r' c) (inj₂ refl)
+            ≡⟨ lemma-trim-addChoice-inj₂ n' r' c ⟩
+                r'
+            ∎
+
+        Z : trim r' m<n' ⋖ r'
+        Z = lemma-⋖+-to-⋖ $ trim-correctness r' m<n'
+        
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
 --------------------------------------------------------------------------------
