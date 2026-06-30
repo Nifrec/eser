@@ -56,6 +56,102 @@ lemma-NFRestr-subst
     → subst NFRestr p r ≡ subst NFRestr p' r
 lemma-NFRestr-subst r refl refl = refl
 
+        
+--------------------------------------------------------------------------------
+-- Properties of the _⋖_ relation.
+--------------------------------------------------------------------------------
+
+⋖-cases 
+    : {n : ℕ} 
+    → {r : NFRestr n} 
+    → {s : NFRestr (ℕ.suc n)}
+    → r ⋖ s
+    → (s ≡ newNF r) ⊎ Σ[ c ∈ NFS r ](s ≡ oldNF r c)
+⋖-cases {n} {r} {s} (⋖-newNF r) = inj₁ refl
+⋖-cases {n} {r} {s} (⋖-oldNF r c) = inj₂ (c , refl)
+
+⋖-irrel 
+    : {n : ℕ} 
+    → (r : NFRestr n) 
+    → (s : NFRestr (ℕ.suc n))
+    → Relation.Nullary.Irrelevant (r ⋖ s )
+⋖-irrel {n} r (newNF s) (⋖-newNF r) (⋖-newNF r) = refl
+⋖-irrel {n} r (oldNF r c) (⋖-oldNF r x) (⋖-oldNF r c) = refl
+
+⋖-left-unique
+    : {n : ℕ} 
+    → {r r' : NFRestr n} 
+    → {s : NFRestr (ℕ.suc n)}
+    → r ⋖ s
+    → r' ⋖ s
+    → r ≡ r'
+⋖-left-unique {n} {r} {r'} {s} (⋖-newNF r) (⋖-newNF r) = refl
+⋖-left-unique {n} {r} {r'} {s} (⋖-oldNF r c) (⋖-oldNF r c) = refl
+
+⋖-left-corollary-newNF
+    : {n : ℕ} 
+    → {r r' : NFRestr n} 
+    → {s s' : NFRestr (ℕ.suc n)}
+    → r ⋖ s
+    → s ≡ s'
+    → s' ≡ newNF r'
+    → r ≡ r'
+⋖-left-corollary-newNF {n} {r} {r'} {s} {s'} r⋖s refl refl = 
+    ⋖-left-unique r⋖s (⋖-newNF r')
+    
+⋖-left-corollary-oldNF
+    : {n : ℕ} 
+    → {r r' : NFRestr n} 
+    → {s s' : NFRestr (ℕ.suc n)}
+    → r ⋖ s
+    → s ≡ s'
+    → (c : NFS r')
+    → s' ≡ oldNF r' c
+    → r ≡ r'
+⋖-left-corollary-oldNF {n} {r} {r'} {s} {s'} r⋖s refl c refl = 
+    ⋖-left-unique r⋖s (⋖-oldNF r' c)
+
+lemma-⋖-subst
+    : {a b : ℕ}
+    → (v : a ≡ b)
+    → (w : suc a ≡ suc b)
+    → {r : NFRestr a}
+    → {s : NFRestr (suc a)}
+    → r ⋖ s
+    → (subst NFRestr v r) ⋖ (subst NFRestr w s)
+lemma-⋖-subst refl refl r⋖s = r⋖s
+
+lemma-⋖+-not-smaller-idx
+    : {n m : ℕ}
+    → {r : NFRestr n}
+    → {s : NFRestr m}
+    → m ≤ n
+    → r ⋖+ s
+    → ⊥
+lemma-⋖+-not-smaller-idx {n} {suc n} {r} {newNF r} m≤n (⋖+-onestep (⋖-newNF r)) 
+    = n≮n n m≤n
+lemma-⋖+-not-smaller-idx {n} {suc n} {r} {oldNF r c} m≤n (⋖+-onestep (⋖-oldNF r c)) 
+    = n≮n n m≤n
+lemma-⋖+-not-smaller-idx {suc n} {suc m} {r} {newNF s} 
+    (s≤s m≤n) (⋖+-multistep-newNF p) = 
+    lemma-⋖+-not-smaller-idx (≤-trans m≤n (n≤1+n n)) p
+lemma-⋖+-not-smaller-idx {suc n} {suc m} {r} {oldNF s c} 
+    (s≤s m≤n ) (⋖+-multistep-oldNF c p) =
+    lemma-⋖+-not-smaller-idx (≤-trans m≤n (n≤1+n n)) p
+
+-- If r ⋖+ s but r : NFRestr n and s : NFRestr (suc n)
+-- then it must be that r ⋖ s directly as well.
+lemma-⋖+-to-⋖
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → {s : NFRestr (suc n)}
+    → r ⋖+ s
+    → r ⋖ s
+lemma-⋖+-to-⋖ {n} {r} {s} (⋖+-onestep r⋖s) = r⋖s
+lemma-⋖+-to-⋖ {n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) =
+    ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
+lemma-⋖+-to-⋖ {n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
+    ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
 
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
@@ -65,6 +161,7 @@ lemma-NFRestr-subst r refl refl = refl
 -- 2. correctness proof of trim.
 -- 3. Variant of `trim` with m≤n i.o. m<n.
 -- 4. getLastChoice.
+-- 5. ... and many lemmas about these things ...
  
 -- Trim a NFRestr n to a NFRestr m by simply forgetting the last few choices,
 -- given that m < n.
@@ -505,102 +602,6 @@ lemma-trim-⋖-cases n' m r r' c K p q (inj₂ 1+m≡n'@refl)
 
         Z : trim r' m<n' ⋖ r'
         Z = lemma-⋖+-to-⋖ $ trim-correctness r' m<n'
-        
---------------------------------------------------------------------------------
--- Properties of the _⋖_ relation.
---------------------------------------------------------------------------------
-
-⋖-cases 
-    : {n : ℕ} 
-    → {r : NFRestr n} 
-    → {s : NFRestr (ℕ.suc n)}
-    → r ⋖ s
-    → (s ≡ newNF r) ⊎ Σ[ c ∈ NFS r ](s ≡ oldNF r c)
-⋖-cases {n} {r} {s} (⋖-newNF r) = inj₁ refl
-⋖-cases {n} {r} {s} (⋖-oldNF r c) = inj₂ (c , refl)
-
-⋖-irrel 
-    : {n : ℕ} 
-    → (r : NFRestr n) 
-    → (s : NFRestr (ℕ.suc n))
-    → Relation.Nullary.Irrelevant (r ⋖ s )
-⋖-irrel {n} r (newNF s) (⋖-newNF r) (⋖-newNF r) = refl
-⋖-irrel {n} r (oldNF r c) (⋖-oldNF r x) (⋖-oldNF r c) = refl
-
-⋖-left-unique
-    : {n : ℕ} 
-    → {r r' : NFRestr n} 
-    → {s : NFRestr (ℕ.suc n)}
-    → r ⋖ s
-    → r' ⋖ s
-    → r ≡ r'
-⋖-left-unique {n} {r} {r'} {s} (⋖-newNF r) (⋖-newNF r) = refl
-⋖-left-unique {n} {r} {r'} {s} (⋖-oldNF r c) (⋖-oldNF r c) = refl
-
-⋖-left-corollary-newNF
-    : {n : ℕ} 
-    → {r r' : NFRestr n} 
-    → {s s' : NFRestr (ℕ.suc n)}
-    → r ⋖ s
-    → s ≡ s'
-    → s' ≡ newNF r'
-    → r ≡ r'
-⋖-left-corollary-newNF {n} {r} {r'} {s} {s'} r⋖s refl refl = 
-    ⋖-left-unique r⋖s (⋖-newNF r')
-    
-⋖-left-corollary-oldNF
-    : {n : ℕ} 
-    → {r r' : NFRestr n} 
-    → {s s' : NFRestr (ℕ.suc n)}
-    → r ⋖ s
-    → s ≡ s'
-    → (c : NFS r')
-    → s' ≡ oldNF r' c
-    → r ≡ r'
-⋖-left-corollary-oldNF {n} {r} {r'} {s} {s'} r⋖s refl c refl = 
-    ⋖-left-unique r⋖s (⋖-oldNF r' c)
-
-lemma-⋖-subst
-    : {a b : ℕ}
-    → (v : a ≡ b)
-    → (w : suc a ≡ suc b)
-    → {r : NFRestr a}
-    → {s : NFRestr (suc a)}
-    → r ⋖ s
-    → (subst NFRestr v r) ⋖ (subst NFRestr w s)
-lemma-⋖-subst refl refl r⋖s = r⋖s
-
-lemma-⋖+-not-smaller-idx
-    : {n m : ℕ}
-    → {r : NFRestr n}
-    → {s : NFRestr m}
-    → m ≤ n
-    → r ⋖+ s
-    → ⊥
-lemma-⋖+-not-smaller-idx {n} {suc n} {r} {newNF r} m≤n (⋖+-onestep (⋖-newNF r)) 
-    = n≮n n m≤n
-lemma-⋖+-not-smaller-idx {n} {suc n} {r} {oldNF r c} m≤n (⋖+-onestep (⋖-oldNF r c)) 
-    = n≮n n m≤n
-lemma-⋖+-not-smaller-idx {suc n} {suc m} {r} {newNF s} 
-    (s≤s m≤n) (⋖+-multistep-newNF p) = 
-    lemma-⋖+-not-smaller-idx (≤-trans m≤n (n≤1+n n)) p
-lemma-⋖+-not-smaller-idx {suc n} {suc m} {r} {oldNF s c} 
-    (s≤s m≤n ) (⋖+-multistep-oldNF c p) =
-    lemma-⋖+-not-smaller-idx (≤-trans m≤n (n≤1+n n)) p
-
--- If r ⋖+ s but r : NFRestr n and s : NFRestr (suc n)
--- then it must be that r ⋖ s directly as well.
-lemma-⋖+-to-⋖
-    : {n : ℕ}
-    → {r : NFRestr n}
-    → {s : NFRestr (suc n)}
-    → r ⋖+ s
-    → r ⋖ s
-lemma-⋖+-to-⋖ {n} {r} {s} (⋖+-onestep r⋖s) = r⋖s
-lemma-⋖+-to-⋖ {n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) =
-    ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
-lemma-⋖+-to-⋖ {n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
-    ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
 
 --------------------------------------------------------------------------------
 -- Properties of getChoice
