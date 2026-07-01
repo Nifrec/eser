@@ -61,7 +61,7 @@ infixl 4 _⋀_ -- `And` in Cornelis. `and` (for `∧`) is on Bool.
 _⋀_ : Filter → Filter → Filter
 (F ⋀ G) {n} r c = F r c ∧ G r c
 
--- All sub-restrictions of a restriction satisfy a filer.
+-- All sub-restrictions of a restriction satisfy a filter.
 data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
     allsat-empty : AllRestr-sat F empty
     allsat-newNF 
@@ -103,22 +103,20 @@ self-compat-to-passable = ?
 --------------------------------------------------------------------------------
 -- If F ♥ F, then there exists at least one normalisation function
 -- satisfying F. There may be multiple. 
--- Two obvious such functions are as follows:
--- * Always choose the smallest allowed choice.
---      (This minimises the number of equivalence classes).
--- * Always choose the largest allowed choice.
+-- Some of such functions are as follows:
+-- 1. Always pick the witnessing-choice given by the proof of F ♥ F.
+-- 2. Introduce a new equivalence class when possible, otherwise
+--      use the witnessing-choice of F ♥ F 
+--      (implemented below as `extract-maxclass-nf).
 --      (This maximises the number of equivalence classes).
--- For many actual filters I consider to implement, the first one becomes
+-- 3. Always choose the largest allowed choice.
+--      (This maximises the number of equivalence classes).
+-- 4. Always choose the smallest allowed choice.
+--      (This minimises the number of equivalence classes).
+-- For many actual filters I consider to implement, the last one becomes
 -- trivial: it always can choose 0, and does so accordingly;
--- resulting in one boring equivalence class.
--- However, choosing the largest often gives the desired relation.
-
---#TODO: remove and update documentation above.
-extract-maxchoice-nf
-    : {F : Filter}
-    → F ♥ F
-    → Σ[ f ∈ NFFun ] (Filter-sats F f)
-extract-maxchoice-nf {F} F♥F = ?
+-- resulting in an equivalence relation of just one boring equivalence class.
+-- However, options 2 and 3 often give the desired relation.
 
 -- An NFFun maximises the number of equivalence classes if it introduces
 -- a new normal form whenever allowed by F.
@@ -130,7 +128,7 @@ MaximisesClasses F f = {!
     → (F (restrict f n) here ≡ true)
     → getChoice f n ≡ here !}
 
--- Extract a normalisation function from a passable
+-- Extract a normalisation function from a passable Filter.
 extract-maxclass-nf
     : {F : Filter}
     → Passable F
