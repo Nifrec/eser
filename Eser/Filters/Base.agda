@@ -243,6 +243,11 @@ _⋖+=_ {n} {m} r s = (Σ[ p ∈ m ≡ n ] (r ≡ subst NFRestr p s)) ⊎ (r ⋖
 Filter : Set
 Filter = {n : ℕ} → (r : NFRestr n) → Choices r → Bool
 
+FilterAllows : {n : ℕ} → Filter → (r : NFRestr n) → Choices r → Set
+FilterAllows F r c = F r c ≡ true
+
+syntax FilterAllows F r c = F Allows c In r
+
 --------------------------------------------------------------------------------
 -- Restriction Coherent families of predicates (recos)
 --------------------------------------------------------------------------------
