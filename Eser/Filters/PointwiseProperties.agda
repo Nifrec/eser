@@ -228,8 +228,18 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
         → (r : NFRestr n)
         → AllRestr-sat F r
         → Σ[ c ∈ Choices r ] F Allows c In r
+    nextChoice-cases
+        : {n : ℕ}
+        → (r : NFRestr (suc n))
+        → AllRestr-sat F r
+        → (b : Bool)
+        → F r here ≡ b
+        → Σ[ c ∈ Choices r ] F Allows c In r
     nextChoice {0} empty _ = (here , lemma-DeadEndFree-firstchoice DeF)
-    nextChoice {suc n} r z = DeF r z
+    nextChoice {suc n} r z = nextChoice-cases {n} r z (F r here) refl
+    
+    nextChoice-cases {n} r z true p = (here , p)
+    nextChoice-cases {n} r z false p = DeF r z
 
     h+ : (n : ℕ) → Σ[ r ∈ NFRestr n ] AllRestr-sat F r
     h+ 0 = (empty , allsat-empty)
