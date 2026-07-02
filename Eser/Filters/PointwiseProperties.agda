@@ -257,7 +257,68 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     h : (n : ℕ) → NFRestr n 
     h = proj₁ ∘ h+
 
+    H : (n : ℕ) → h n ⋖ h (suc n)
+    H n = ⋖-addChoice (proj₁ $ nextChoice (h n) (proj₂ $ h+ n))
 
+    altsat : Exence-sats-alt F (h , H)
+    altsat = proj₂ ∘ h+
+
+    sat : Exence-sats F (h , H)
+    sat = Exence-sats-from-alt F (h , H) altsat
+
+    greedy : GreedilyIntroducesClasses F (h , H)
+    greedy zero _ =
+        begin 
+            getChoiceFromExence (h , H) zero
+        ≡⟨⟩
+            getChoice (h 0) (h 1) (H 0)
+        ≡⟨⟩
+            getChoice empty (addChoice empty c) (H 0)
+        ≡⟨ lemma-getChoice-addChoice empty c (H 0) ⟩
+            c
+        ≡⟨ empty-has-one-choice c ⟩
+            here {0} {empty}
+        ∎
+        where
+            c : Choices empty
+            c = proj₁ $ nextChoice empty (proj₂ $ h+ zero)
+        
+    greedy n@(suc n') p =
+        begin 
+            getChoiceFromExence (h , H) n
+        ≡⟨⟩
+            getChoice (h n) (h (suc n)) (H n)
+        ≡⟨⟩
+            getChoice (h n) (addChoice (h n) c) (H n)
+        ≡⟨ lemma-getChoice-addChoice (h n) c (H n) ⟩
+            proj₁ ( nextChoice (h n) (proj₂ $ h+ n))
+        ≡⟨⟩
+            proj₁ (nextChoice-cases (h n) (proj₂ $ h+ n) (F (h n) here) refl)
+        ≡⟨ cong 
+            (λ (x , y) → proj₁ (nextChoice-cases (h n) (proj₂ $ h+ n) x y ))
+            p+ 
+        ⟩
+            proj₁ (nextChoice-cases (h n) (proj₂ $ h+ n) true p)
+        ≡⟨⟩
+            here 
+        ∎
+        where
+            c : Choices (h n)
+            c = proj₁ $ nextChoice (h n) (proj₂ $ h+ n)
+
+            sublemma 
+                : {A : Set} 
+                → (a b c : A) 
+                → (p : a ≡ b) 
+                → (q : a ≡ c)
+                → _≡_ {A = Σ[ x ∈ A ] (a ≡ x)} (b ,  p) (c , q)
+            sublemma a b c refl refl = refl
+
+
+            p+ : _≡_ {A = Σ[ b ∈ Bool ] (F (h n) here ≡ b)} 
+                (F (h n) here , refl)
+                (true , p)
+            p+ = sublemma (F (h n) here) (F (h n) here) true refl p
 
 
 --extract-greedynewclass-exence
