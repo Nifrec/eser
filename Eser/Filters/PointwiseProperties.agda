@@ -210,8 +210,8 @@ extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
         z-cases 
             : (n : ℕ) 
             → (b : Bool) 
-            → (F (h (pred n)) here ≡ b) 
-            → AllRestr-sat F (h n)
+            → (F (h n) here ≡ b) 
+            → AllRestr-sat F (h (suc n))
 
         h zero = empty
         h (suc n) = h-cases n (F (h n) here)
@@ -222,10 +222,9 @@ extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
                 c = proj₁ $ DeF (h n) (z n)
         h-cases n true = newNF (h n)
 
-        --z zero = allsat-empty
-        z n = z-cases n (F (h (pred n)) here) refl
-        z-cases zero _ _ = allsat-empty
-        z-cases (suc n) false p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
+        z zero = allsat-empty
+        z (suc n) = z-cases n (F (h n) here) refl
+        z-cases n false p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
             where
                 c : Choices (h n)
                 c = proj₁ $ DeF (h n) (z n)
@@ -247,7 +246,7 @@ extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
                 ans' : AllRestr-sat F (addChoice (h n) c)
                 ans' = allsat-addChoice (h n) c (z n) c-allowed
 
-        z-cases (suc n) true p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
+        z-cases n true p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
             where
                 h1+n-rewr : h (suc n) ≡ newNF (h n)
                 h1+n-rewr = 
