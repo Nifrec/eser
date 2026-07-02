@@ -68,6 +68,27 @@ allsat-addChoice {F} {n} r here sat allowed
     = allsat-newNF r sat allowed
 allsat-addChoice {F} {n} r (earlier-new c) sat allowed 
     = allsat-oldNF r c sat allowed
+
+
+-- Alternative but logically equivalent definition of Exence-sat.
+Exence-sats-alt : Filter → Exence → Set
+Exence-sats-alt F (h , H) = (n : ℕ) → AllRestr-sat F (h n)
+
+Exence-sats-to-alt
+    : (F : Filter)
+    → (E : Exence)
+    → Exence-sats F E
+    → Exence-sats-alt F E
+Exence-sats-to-alt F (h , H) sat = ?
+
+Exence-sats-from-alt
+    : (F : Filter)
+    → (E : Exence)
+    → Exence-sats-alt F E
+    → Exence-sats F E
+Exence-sats-from-alt F (h , H) sat = ?
+
+
 --------------------------------------------------------------------------------
 -- Satisfiable Filters
 --------------------------------------------------------------------------------
@@ -194,82 +215,117 @@ GreedilyIntroducesClasses F (h , H) =
     → F (h n) (here {n} {h n}) ≡ true 
     → getChoiceFromExence (h , H) n ≡ here {n} {h n}
 
-extract-greedynewclass-exence
-    : {F : Filter}
-    → DeadEndFree F
-    → Σ[ H' ∈ Exence ] (Exence-sats F H' ) × (GreedilyIntroducesClasses F H')
-extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
-    where
-        -- z and h are defined in mutual induction.
-        h : (n : ℕ) → NFRestr n
-        h-cases 
-            : (n : ℕ) 
-            → (b : Bool) 
-            → NFRestr (suc n)
-        z : (n : ℕ) → AllRestr-sat F (h n)
-        z-cases 
-            : (n : ℕ) 
-            → (b : Bool) 
-            → (F (h n) here ≡ b) 
-            → AllRestr-sat F (h (suc n))
+module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
+    -- Pick the next choice (normal form for n) 
+    -- accoding to the following rules:
+    -- 1. If F allows a new equivalence class, do that.
+    -- 2. Else, pick the allowed choice that DeF gives.
+    -- Note: this recursively defines a sequence of allowed choices,
+    -- but the definition is NOT RECURSIVE. (My previous implementation was and
+    -- was rejected by the termination checker).
+    nextChoice
+        : {n : ℕ}
+        → (r : NFRestr n)
+        → AllRestr-sat F r
+        → Σ[ c ∈ Choices r ] F Allows c In r
+    nextChoice {0} empty _ = (here , lemma-DeadEndFree-firstchoice DeF)
+    nextChoice {suc n} r z = DeF r z
 
-        h zero = empty
-        h (suc n) = h-cases n (F (h n) here)
+    h+ : (n : ℕ) → Σ[ r ∈ NFRestr n ] AllRestr-sat F r
+    h+ 0 = (empty , allsat-empty)
+    h+ (suc n) = (addChoice r c , allsat-addChoice r c r-sat c-allowed)
+        where
+            r : NFRestr n
+            r = proj₁ $ h+ n
+            r-sat : AllRestr-sat F r
+            r-sat = proj₂ $ h+ n
+            c : Choices r
+            c = proj₁ $ nextChoice r r-sat
+            c-allowed : F Allows c In r
+            c-allowed = proj₂ $ nextChoice r r-sat
 
-        h-cases n false = addChoice (h n) c
-            where
-                c : Choices (h n)
-                c = proj₁ $ DeF (h n) (z n)
-        h-cases n true = newNF (h n)
+    h : (n : ℕ) → NFRestr n 
+    h = proj₁ ∘ h+
 
-        z zero = allsat-empty
-        z (suc n) = z-cases n (F (h n) here) refl
-        z-cases n false p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
-            where
-                c : Choices (h n)
-                c = proj₁ $ DeF (h n) (z n)
-                c-allowed : F Allows c In (h n)
-                c-allowed = proj₂ $ DeF (h n) (z n)
-                h1+n-rewr : h (suc n) ≡ addChoice (h n) c
-                h1+n-rewr = 
-                    begin 
-                        h (suc n)
-                    ≡⟨⟩
-                        h-cases n (F (h n) here)
-                    ≡⟨ cong (h-cases n) p ⟩
-                        h-cases n false
-                    ≡⟨⟩
-                        addChoice (h n) c
-                    ∎
+
+
+
+--extract-greedynewclass-exence
+--    : {F : Filter}
+--    → DeadEndFree F
+--    → Σ[ H' ∈ Exence ] (Exence-sats F H' ) × (GreedilyIntroducesClasses F H')
+--extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
+--    where
+--        -- z and h are defined in mutual induction.
+--        h : (n : ℕ) → NFRestr n
+--        h-cases 
+--            : (n : ℕ) 
+--            → (b : Bool) 
+--            → NFRestr (suc n)
+--        z : (n : ℕ) → AllRestr-sat F (h n)
+--        z-cases 
+--            : (n : ℕ) 
+--            → (b : Bool) 
+--            → (F (h n) here ≡ b) 
+--            → AllRestr-sat F (h (suc n))
+
+--        h zero = empty
+--        h (suc n) = h-cases n (F (h n) here)
+
+--        h-cases n false = addChoice (h n) c
+--            where
+--                c : Choices (h n)
+--                c = proj₁ $ DeF (h n) (z n)
+--        h-cases n true = newNF (h n)
+
+--        z zero = allsat-empty
+--        z (suc n) = z-cases n (F (h n) here) refl
+--        z-cases n false p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
+--            where
+--                c : Choices (h n)
+--                c = proj₁ $ DeF (h n) (z n)
+--                c-allowed : F Allows c In (h n)
+--                c-allowed = proj₂ $ DeF (h n) (z n)
+--                h1+n-rewr : h (suc n) ≡ addChoice (h n) c
+--                h1+n-rewr = 
+--                    begin 
+--                        h (suc n)
+--                    ≡⟨⟩
+--                        h-cases n (F (h n) here)
+--                    ≡⟨ cong (h-cases n) p ⟩
+--                        h-cases n false
+--                    ≡⟨⟩
+--                        addChoice (h n) c
+--                    ∎
                     
 
-                ans' : AllRestr-sat F (addChoice (h n) c)
-                ans' = allsat-addChoice (h n) c (z n) c-allowed
+--                ans' : AllRestr-sat F (addChoice (h n) c)
+--                ans' = allsat-addChoice (h n) c (z n) c-allowed
 
-        z-cases n true p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
-            where
-                h1+n-rewr : h (suc n) ≡ newNF (h n)
-                h1+n-rewr = 
-                    begin 
-                        h (suc n)
-                    ≡⟨⟩
-                        h-cases n (F (h n) here)
-                    ≡⟨ cong (h-cases n) p ⟩
-                        h-cases n true
-                    ≡⟨⟩
-                        newNF (h n)
-                    ∎
+--        z-cases n true p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
+--            where
+--                h1+n-rewr : h (suc n) ≡ newNF (h n)
+--                h1+n-rewr = 
+--                    begin 
+--                        h (suc n)
+--                    ≡⟨⟩
+--                        h-cases n (F (h n) here)
+--                    ≡⟨ cong (h-cases n) p ⟩
+--                        h-cases n true
+--                    ≡⟨⟩
+--                        newNF (h n)
+--                    ∎
 
-                ans' : AllRestr-sat F (newNF (h n))
-                ans' = allsat-newNF (h n) (z n) p
+--                ans' : AllRestr-sat F (newNF (h n))
+--                ans' = allsat-newNF (h n) (z n) p
 
 
-        H : (n : ℕ) → h n ⋖ h (suc n)
-        H = ?
-        hH-sats-F : Exence-sats F (h , H)
-        hH-sats-F = ?
-        hH-greedy : GreedilyIntroducesClasses F (h , H)
-        hH-greedy = ?
+--        H : (n : ℕ) → h n ⋖ h (suc n)
+--        H = ?
+--        hH-sats-F : Exence-sats F (h , H)
+--        hH-sats-F = ?
+--        hH-greedy : GreedilyIntroducesClasses F (h , H)
+--        hH-greedy = ?
 
     
 
