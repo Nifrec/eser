@@ -9,6 +9,7 @@ open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
 open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
@@ -20,6 +21,7 @@ open import Eser.Aux using (_↔_ ; _≈_)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Conversions.NFFunToExence
+open import Eser.Filters.Properties
 
 module Eser.Filters.PointwiseProperties where
 
@@ -43,16 +45,29 @@ data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
         : {n : ℕ} 
         → (r : NFRestr n) 
         → AllRestr-sat F r
-        → (F r here ≡ true)
+        → F Allows here In r
         → AllRestr-sat F (newNF r)
     allsat-oldNF 
         : {n : ℕ} 
         → (r : NFRestr n) 
         → (c : NFS r)
         → AllRestr-sat F r
-        → (F r (earlier-new c) ≡ true)
+        → F Allows (earlier-new c) In r
         → AllRestr-sat F (oldNF r c)
 
+-- Derived constructor that mutiplexes over the previous two constructors.
+allsat-addChoice
+    : {F : Filter}
+    → {n : ℕ} 
+    → (r : NFRestr n) 
+    → (c : Choices r)
+    → AllRestr-sat F r
+    → F Allows c In r
+    → AllRestr-sat F (addChoice r c)
+allsat-addChoice {F} {n} r here sat allowed 
+    = allsat-newNF r sat allowed
+allsat-addChoice {F} {n} r (earlier-new c) sat allowed 
+    = allsat-oldNF r c sat allowed
 --------------------------------------------------------------------------------
 -- Satisfiable Filters
 --------------------------------------------------------------------------------
@@ -130,6 +145,23 @@ self-compat-to-passable
     → DeadEndFree F
 self-compat-to-passable = ?
 
+-- The only possible normal form of 0 is 0.
+-- So any DeadEndFree Filter must allow this unique choice.
+-- #TWEAK: function not used in the end.
+lemma-DeadEndFree-firstchoice
+    : {F : Filter}
+    → DeadEndFree F
+    → F Allows here {0} {empty} In empty
+lemma-DeadEndFree-firstchoice {F} DeF 
+    = subst (λ c → F Allows c In empty) c≡here c-allowed
+    where
+        c : Choices empty
+        c = proj₁ $ DeF {0} empty allsat-empty
+        c-allowed : F Allows c In empty
+        c-allowed = proj₂ $ DeF {0} empty allsat-empty
+        c≡here : c ≡ here
+        c≡here = empty-has-one-choice c
+
 --------------------------------------------------------------------------------
 -- Extracting a normalisation function out of a satisfiable filter
 --------------------------------------------------------------------------------
@@ -166,15 +198,72 @@ extract-greedynewclass-exence
     : {F : Filter}
     → DeadEndFree F
     → Σ[ H' ∈ Exence ] (Exence-sats F H' ) × (GreedilyIntroducesClasses F H')
-extract-greedynewclass-exence {F} pass = ((h , H) , hH-sats-F , hH-greedy)
+extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
     where
         -- z and h are defined in mutual induction.
-
         h : (n : ℕ) → NFRestr n
+        h-cases 
+            : (n : ℕ) 
+            → (b : Bool) 
+            → NFRestr (suc n)
         z : (n : ℕ) → AllRestr-sat F (h n)
+        z-cases 
+            : (n : ℕ) 
+            → (b : Bool) 
+            → (F (h n) here ≡ b) 
+            → AllRestr-sat F (h (suc n))
 
-        h = ?
-        z = ?
+        h zero = empty
+        h (suc n) = h-cases n (F (h n) here)
+
+        h-cases n false = addChoice (h n) c
+            where
+                c : Choices (h n)
+                c = proj₁ $ DeF (h n) (z n)
+        h-cases n true = newNF (h n)
+
+        z zero = allsat-empty
+        z (suc n) = z-cases n (F (h n) here) refl
+        z-cases n false p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
+            where
+                c : Choices (h n)
+                c = proj₁ $ DeF (h n) (z n)
+                c-allowed : F Allows c In (h n)
+                c-allowed = proj₂ $ DeF (h n) (z n)
+                h1+n-rewr : h (suc n) ≡ addChoice (h n) c
+                h1+n-rewr = 
+                    begin 
+                        h (suc n)
+                    ≡⟨⟩
+                        h-cases n (F (h n) here)
+                    ≡⟨ cong (h-cases n) p ⟩
+                        h-cases n false
+                    ≡⟨⟩
+                        addChoice (h n) c
+                    ∎
+                    
+
+                ans' : AllRestr-sat F (addChoice (h n) c)
+                ans' = allsat-addChoice (h n) c (z n) c-allowed
+
+        z-cases n true p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
+            where
+                h1+n-rewr : h (suc n) ≡ newNF (h n)
+                h1+n-rewr = 
+                    begin 
+                        h (suc n)
+                    ≡⟨⟩
+                        h-cases n (F (h n) here)
+                    ≡⟨ cong (h-cases n) p ⟩
+                        h-cases n true
+                    ≡⟨⟩
+                        newNF (h n)
+                    ∎
+
+                ans' : AllRestr-sat F (newNF (h n))
+                ans' = allsat-newNF (h n) (z n) p
+
+
         H : (n : ℕ) → h n ⋖ h (suc n)
         H = ?
         hH-sats-F : Exence-sats F (h , H)

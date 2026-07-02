@@ -49,6 +49,12 @@ empty-is-unique-zero
     → r ≡ empty
 empty-is-unique-zero empty = refl
 
+-- The only possible equivalence class for 0 is 0 itself.
+empty-has-one-choice
+    : (c : Choices empty)
+    → c ≡ here {0} {empty}
+empty-has-one-choice here = refl
+
 lemma-NFRestr-subst
     : {a b : ℕ}
     → (r : NFRestr a)
