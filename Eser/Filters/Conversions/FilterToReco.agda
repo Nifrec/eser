@@ -9,6 +9,7 @@ open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
 open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
@@ -21,6 +22,7 @@ open import Eser.Aux using (_↔_ ; _≈_)
 open import Eser.Logic using (∧-elim-right)
 
 open import Eser.Filters.Base
+open Reco
 open import Eser.Filters.Conversions.NFFunToExence
 open import Eser.Filters.PointwiseProperties
 
@@ -76,6 +78,16 @@ recoToFilter : Reco → Filter
 recoToFilter (reco P C 0K) {n} r here = P (newNF r)
 recoToFilter (reco P C 0K) {n} r (earlier-new c) = P (oldNF r c)
 
+recoToFilter-addChoice 
+    : (P' : Reco)
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → (recoToFilter P') r c ≡ predicate P' (addChoice r c)
+recoToFilter-addChoice (reco P C 0K) {n} r here = refl
+recoToFilter-addChoice (reco P C 0K) {n} r (earlier-new c) = refl
+
+
 infixl 4 recoToFilter
 syntax recoToFilter P = ↓ P
 
@@ -89,7 +101,28 @@ theo-filter-reco-filter-same-sat
     : (F : Filter)
     → (E : Exence)
     → Exence-sats F E ↔ Exence-sats (↓ ↑ F) E
-theo-filter-reco-filter-same-sat F (h , H) = ?
+theo-filter-reco-filter-same-sat F E@(h , H) = (LEFT , RIGHT)
+    where
+        LEFT : Exence-sats F E → Exence-sats (↓ ↑ F) E
+        LEFT sat n = 
+            begin 
+                (↓ ↑ F) (h n) (getChoice (h n) (h (suc n)) (H n))
+            ≡⟨ {! use reco-to-filter-addChoice !} ⟩
+                predicate ( ↑ F ) (addChoice (h n) (getChoice (h n) (h (suc n)) (H n)))
+            ≡⟨ ? ⟩
+                predicate ( ↑ F ) (h (suc n)) -- Rewrite to `addChoice (h n) c`
+            ≡⟨ ? ⟩ -- addChoice lemma for filterToReco
+                F (h n) c ∧ (↑ F (h n))
+            ≡⟨ cong (_∧ (↑ F (h n))) (sat n)  ⟩
+                true ∧ (↑ F (h n))
+            ≡⟨ ? ⟩
+                true
+            ∎
+            
+
+        RIGHT : Exence-sats (↓ ↑ F) E → Exence-sats F E
+        RIGHT sat = ?
+        
 
 theo-filter-reco-filter-same-sat-NFFun
     : (F : Filter)
