@@ -645,6 +645,55 @@ lemma-getChoice-subst
     → getChoice r s p ≡ subst Choices Hr (getChoice r' s' p')
 lemma-getChoice-subst {n} r r s s p p' refl refl = 
     cong (getChoice r s ) (⋖-irrel r s p p')
+
+-- The abstraction over c instead of replacing
+-- c by `proj₁ $ ⋖-to-addChoice (H n)` is primality done for readability.
+lemma-⋖-addChoice-exence
+    : {n : ℕ}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (c : Choices (h n))
+    → c ≡ (proj₁ $ ⋖-to-addChoice (H n))
+    → (addChoice (h n) c , ⋖-addChoice c) ≡ (h (suc n) , H n)
+lemma-⋖-addChoice-exence {n} h H c refl = 
+    restIsProofIrrel (⋖-irrel (h n)) (⋖-addChoice c) (H n) c-prop
+    where
+        c-prop : addChoice (h n) c ≡ h (suc n)
+        c-prop = sym $ proj₂ $ ⋖-to-addChoice (H n)
+        
+
+lemma-getChoice-exence
+    : {n : ℕ}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (c : Choices (h n))
+    → c ≡ (proj₁ $ ⋖-to-addChoice (H n))
+    → c ≡ getChoice (h n) (h (suc n)) (H n)
+lemma-getChoice-exence {n} h H c refl = 
+    begin
+        c
+    ≡⟨ sym $ lemma-getChoice-addChoice (h n) c (⋖-addChoice c) ⟩
+        getChoice (h n) (addChoice (h n) c) (⋖-addChoice c)
+    ≡⟨⟩
+        (λ (x , y) → getChoice (h n) x y) 
+        (addChoice (h n) c , ⋖-addChoice c)
+    ≡⟨ cong (λ (x , y) → getChoice (h n) x y) 
+        (lemma-⋖-addChoice-exence h H c refl)
+    ⟩
+        (λ (x , y) → getChoice (h n) x y) (h (suc n) , H n)
+    ≡⟨⟩
+        getChoice (h n) (h (suc n)) (H n)
+    ∎
+
+-- Same lemma as above, but without abstraction over c.
+lemma-getChoice-exence-alt
+    : {n : ℕ}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (proj₁ $ ⋖-to-addChoice (H n)) ≡ getChoice (h n) (h (suc n)) (H n)
+lemma-getChoice-exence-alt {n} h H = lemma-getChoice-exence h H c refl
+    where
+        c = proj₁ $ ⋖-to-addChoice (H n)
     
 --------------------------------------------------------------------------------
 -- Properties of NFRestrToℕ

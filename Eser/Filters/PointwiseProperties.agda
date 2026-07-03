@@ -90,7 +90,23 @@ Exence-sats-to-alt
     → {E : Exence}
     → Exence-sats F E
     → Exence-sats-alt F E
-Exence-sats-to-alt {F} {(h , H)} sat = ?
+Exence-sats-to-alt {F} {h , H} sat zero = 
+    subst (AllRestr-sat F) (sym $ empty-is-unique-zero (h 0)) allsat-empty
+Exence-sats-to-alt {F} {h , H} sat (suc n) = {! !}
+    where
+        IH : AllRestr-sat F (h n)
+        IH = Exence-sats-to-alt sat n
+
+        c : Choices (h n)
+        c = proj₁ $ ⋖-to-addChoice (H n)
+        c-prop : h (suc n) ≡ addChoice (h n) c
+        c-prop = proj₂ $ ⋖-to-addChoice (H n)
+        c-allowed : F Allows c In (h n)
+        c-allowed = ?
+
+        ans' : AllRestr-sat F (addChoice (h n) c)
+        ans' = {! allsat-addChoice (h n) c IH c-allowed !}
+        
 
 Exence-sats-from-alt
     : {F : Filter}
@@ -108,22 +124,9 @@ Exence-sats-from-alt {F} {(h , H)} sat n = ans
         K₁ : AllRestr-sat F (addChoice (h n) c)
         K₁ = subst (AllRestr-sat F) c-prop K₀
         eq : (addChoice (h n) c , ⋖-addChoice c) ≡ (h (suc n) , H n)
-        eq = restIsProofIrrel (⋖-irrel (h n)) (⋖-addChoice c) (H n) (sym c-prop)
+        eq = lemma-⋖-addChoice-exence h H c refl
         K₂ : c ≡ getChoice (h n) (h (suc n)) (H n)
-        K₂ =
-            begin
-                c
-            ≡⟨ sym $ lemma-getChoice-addChoice (h n) c (⋖-addChoice c) ⟩
-                getChoice (h n) (addChoice (h n) c) (⋖-addChoice c)
-            ≡⟨⟩
-                (λ (x , y) → getChoice (h n) x y) 
-                (addChoice (h n) c , ⋖-addChoice c)
-            ≡⟨ cong (λ (x , y) → getChoice (h n) x y) eq  ⟩
-                (λ (x , y) → getChoice (h n) x y) (h (suc n) , H n)
-            ≡⟨⟩
-                getChoice (h n) (h (suc n)) (H n)
-            ∎
-
+        K₂ = lemma-getChoice-exence-alt h H
         c-allowed : F Allows c In (h n)
         c-allowed = lemma-allrestr-sat-addchoice (h n) c K₁
         ans : F Allows (getChoice (h n) (h (suc n)) (H n)) In (h n)
