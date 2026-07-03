@@ -60,8 +60,9 @@ Between a b ℓ = (a < ℓ) × (ℓ < b)
 -- gave type errors with Agda being unable to fill all constraints.
 _Presv_To_ : {A B : Set} → (A → B) → Rel A 0ℓ → Rel B 0ℓ → Set
 _Presv_To_ {A} {B} f _<A_ _<B_ = (a a' : A) → a <A a' → (f a) <B (f a')
+
 --------------------------------------------------------------------------------
--- Substitution of equalities
+-- Equalities and substitutions
 --------------------------------------------------------------------------------
 
 doubleSubst
@@ -133,6 +134,17 @@ cong-proj₂ {A} {B} x y refl = refl
 -- are propositions, i.e., all their terms are equal.
 uip : {A : Set} → {a a' : A} → (p q : a ≡ a') → p ≡ q
 uip {A} {a} {a'} refl refl = refl
+
+-- Given two independent equalities a ≡ a' in A and b ≡ b' in B,
+-- produce a (a , b) ≡ (a' , b') equality in A × B
+pair-eq
+    : {A B : Set}
+    → {a a' : A}
+    → {b b' : B}
+    → a ≡ a'
+    → b ≡ b'
+    → (a , b) ≡ (a' , b')
+pair-eq refl refl = refl
 
 -- Given an index-preserving function α : Σ[ i ∈ I ] A i → Σ[ i ∈ I ] B i
 -- (so proj₁ ∘ α (i , a) ≡ i), then for any i : I 

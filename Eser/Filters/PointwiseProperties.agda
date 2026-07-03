@@ -17,7 +17,7 @@ open import Function using (_∘_ ; _$_)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; pair-eq)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Conversions.NFFunToExence
@@ -167,13 +167,31 @@ theo-combine-presv-sat {F} (h , H) sat n =
     -- and `h' (suc n) ≡ h (suc n)`, while `H' n` and `H n` are
     -- proof-irrelevant.
     -- So substitute those equalities in (G) and we are done.
+    -- (Implementation detail: we first need to combine the equalities
+    -- into equalities of tuples).
     where
         A : Set
         A = Σ[ p ∈ NFRestr n × NFRestr (suc n) ] (proj₁ p ⋖ proj₂ p)
         h' = proj₁ $ (restrict+ ∘ combine) (h , H)
         H' = proj₂ $ (restrict+ ∘ combine) (h , H)
+        B : NFRestr n × NFRestr (suc n) → Set
+        B (r , s) = r ⋖ s
+        B-irrel 
+            : (p : NFRestr n × NFRestr (suc n)) 
+            → Relation.Nullary.Irrelevant (B p)
+        B-irrel (r , s) = ⋖-irrel r s
+        homot : h' ≈ h
+        homot = theo-restrict+∘combine (h , H)
+
         eq : _≡_ {A = A} ((h n , h (suc n)) , H n) ((h' n , h' (suc n)) , H' n)
-        eq = ?
+        eq = restIsProofIrrel 
+            {A = NFRestr n × NFRestr (suc n)} 
+            {B = B}
+            B-irrel
+            (H n)
+            (H' n)
+            (pair-eq (sym $ homot n) (sym $ homot (suc n)))
+
 
 --------------------------------------------------------------------------------
 -- Satisfiable Filters
