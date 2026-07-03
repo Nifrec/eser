@@ -285,27 +285,27 @@ lemma-DeadEndFree-firstchoice {F} DeF
 -- classes, although some filters may allow more equivalence classes
 -- to be introduced later when fewer introduced earlier.
 -- Hence "Greedily". 
-GreedilyIntroducesClasses : Filter → Exence → Set
-GreedilyIntroducesClasses F (h , H) = 
+ClassGreedy : Filter → Exence → Set
+ClassGreedy F (h , H) = 
     (n : ℕ) 
     → F Allows (here {n} {h n}) In (h n)
     → getChoiceFromExence (h , H) n ≡ here {n} {h n}
 
-GreedilyIntroducesClassesNFFun : Filter → NFFun → Set
-GreedilyIntroducesClassesNFFun F f' = GreedilyIntroducesClasses F (restrict+ f')
+ClassGreedyNFFun : Filter → NFFun → Set
+ClassGreedyNFFun F f' = ClassGreedy F (restrict+ f')
 
 theo-restrict+-presv-greed
     : {F : Filter}
     → (f' : NFFun)
-    → GreedilyIntroducesClassesNFFun F f'
-    → GreedilyIntroducesClasses F (restrict+ f')
+    → ClassGreedyNFFun F f'
+    → ClassGreedy F (restrict+ f')
 theo-restrict+-presv-greed {F} f' greedy = greedy
 
 theo-combine-presv-greed
     : {F : Filter}
     → (E : Exence)
-    → GreedilyIntroducesClasses F E
-    → GreedilyIntroducesClassesNFFun F (combine E)
+    → ClassGreedy F E
+    → ClassGreedyNFFun F (combine E)
 theo-combine-presv-greed {F} (h , H) greedy n = 
     subst 
         (λ (( r , s) , r⋖s) →
@@ -314,7 +314,7 @@ theo-combine-presv-greed {F} (h , H) greedy n =
         eq
         (greedy n)
     -- The goal unfolds to showing 
-    -- GreedilyIntroducesClasses F (restrict+ ∘ combine (h , H))
+    -- ClassGreedy F (restrict+ ∘ combine (h , H))
     -- i.e.
     -- (n : ℕ) 
     --      → F Allows here In (h' n) 
@@ -385,7 +385,7 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     sat : Exence-sats F (h , H)
     sat = Exence-sats-from-alt altsat
 
-    greedy : GreedilyIntroducesClasses F (h , H)
+    greedy : ClassGreedy F (h , H)
     greedy zero _ =
         begin 
             getChoiceFromExence (h , H) zero
@@ -443,7 +443,7 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
 extract-greedynewclass-Exence
     : {F : Filter}
     → DeadEndFree F
-    → Σ[ E ∈ Exence ] (Exence-sats F E ) × (GreedilyIntroducesClasses F E)
+    → Σ[ E ∈ Exence ] (Exence-sats F E ) × (ClassGreedy F E)
 extract-greedynewclass-Exence {F} DeF = ((h , H) , sat , greedy)
     where
         open GreedyNewClass F DeF
@@ -460,11 +460,11 @@ lemma-DEF-to-Passable F DeF =
 extract-greedynewclass-NFFun
     : {F : Filter}
     → DeadEndFree F
-    → Σ[ f' ∈ NFFun ] (NFFun-sats F f' ) × (GreedilyIntroducesClassesNFFun F f')
+    → Σ[ f' ∈ NFFun ] (NFFun-sats F f' ) × (ClassGreedyNFFun F f')
 extract-greedynewclass-NFFun {F} DeF = (f' , sat , greedy)
     where
         extractedExence : Σ[ E ∈ Exence ] 
-                          (Exence-sats F E ) × (GreedilyIntroducesClasses F E)
+                          (Exence-sats F E ) × (ClassGreedy F E)
         extractedExence = extract-greedynewclass-Exence {F} DeF
 
         E : Exence
@@ -482,7 +482,7 @@ extract-greedynewclass-NFFun {F} DeF = (f' , sat , greedy)
               theo-combine-presv-sat {F} E (proj₁ $ proj₂ extractedExence)
 
         -- Same reasoning for greediness.
-        greedy : GreedilyIntroducesClassesNFFun F f'
+        greedy : ClassGreedyNFFun F f'
         greedy = theo-restrict+-presv-greed {F} f' $
                  theo-combine-presv-greed {F} E (proj₂ $ proj₂ extractedExence)
 
