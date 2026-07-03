@@ -41,8 +41,8 @@ module Eser.Filters.Conversions.FilterToReco where
 -- since it does not influence which normalisation
 -- functions are accepted by the predicate that the filter encodes.
 -- It just means that we cannot define the bijective correspondence directly as
--- a homotopy between input and output, but instead define it in acceptance
--- of normalisation functions.
+-- a homotopy between input and output, but instead we define it via acceptance
+-- of normalisation functions (and their alternative representation of Exences).
 
 Reco-Exence-sats : Reco → Exence → Set
 Reco-Exence-sats (reco P C 0K) (h , H) = (n : ℕ) → P (h n) ≡ true
@@ -73,7 +73,8 @@ infixl 4 filterToReco
 syntax filterToReco F = ↑ F
 
 recoToFilter : Reco → Filter
-recoToFilter = ?
+recoToFilter (reco P C 0K) {n} r here = P (newNF r)
+recoToFilter (reco P C 0K) {n} r (earlier-new c) = P (oldNF r c)
 
 infixl 4 recoToFilter
 syntax recoToFilter P = ↓ P
