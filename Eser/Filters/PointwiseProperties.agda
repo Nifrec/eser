@@ -30,13 +30,10 @@ module Eser.Filters.PointwiseProperties where
 --------------------------------------------------------------------------------
 
 Exence-sats : Filter → Exence → Set
-Exence-sats F (h , H) = (n : ℕ) → F (h n) (getChoiceFromExence (h , H) n) ≡ true
+Exence-sats F (h , H) = (n : ℕ) → F Allows (getChoiceFromExence (h , H) n) In h n
 
 NFFun-sats : Filter → NFFun → Set
 NFFun-sats F f' = Exence-sats F (restrict+ f')
-
-Reco-sats : Reco → NFFun → Set
-Reco-sats = ?
 
 -- All sub-restrictions of a restriction satisfy a filter.
 data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
@@ -141,13 +138,17 @@ Exence-sats-from-alt {F} {(h , H)} sat n = ans
 -- Then:
 -- (1) f' satisfies F => (restrict+ f') satisfies F
 -- (2) E  satisfies F => (combine E) satisfies F
+--
+-- (1) is trivial since the definition of the premise is exactly the conclusion.
+-- (2) uses that restrict+ ∘ combine pointwise acts as the identity
+--  (up to function extensionality).
 
 theo-restrict+-presv-sat
     : {F : Filter}
     → (f' : NFFun)
     → NFFun-sats F f'
     → Exence-sats F (restrict+ f')
-theo-restrict+-presv-sat {F} f'@(f , f-leq , f-fix) f'sat = ?
+theo-restrict+-presv-sat {F} f' sat = sat
 
 theo-combine-presv-sat
     : {F : Filter}
@@ -192,12 +193,6 @@ DeadEndFree F =
     → AllRestr-sat F r 
     → Σ[ c ∈ Choices r ] F Allows c In r
 
-lemma-DEF-to-Passable
-    : (F : Filter)
-    → DeadEndFree F
-    → Passable F
-lemma-DEF-to-Passable F = ?
-
 --------------------------------------------------------------------------------
 -- Filter compatibility relation
 --------------------------------------------------------------------------------
@@ -225,13 +220,6 @@ _⋀_ : Filter → Filter → Filter
 infixl 4 _♥_
 _♥_ : (F G : Filter) → Set
 _♥_ F G = DeadEndFree (F ⋀ G)
-
--- #TODO: use idempotence of ⋀
-self-compat-to-passable
-    : {F : Filter}
-    → F ♥ F
-    → DeadEndFree F
-self-compat-to-passable = ?
 
 -- The only possible normal form of 0 is 0.
 -- So any DeadEndFree Filter must allow this unique choice.
@@ -413,6 +401,15 @@ extract-greedynewclass-Exence {F} DeF = ((h , H) , sat , greedy)
     where
         open GreedyNewClass F DeF
 
+-- This is now an easy corollary.
+lemma-DEF-to-Passable
+    : (F : Filter)
+    → DeadEndFree F
+    → Passable F
+lemma-DEF-to-Passable F DeF = 
+    let (E , sat , greedy) = extract-greedynewclass-Exence DeF
+    in (E , sat)
+
 extract-greedynewclass-NFFun
     : {F : Filter}
     → DeadEndFree F
@@ -441,4 +438,5 @@ extract-greedynewclass-NFFun {F} DeF = (f' , sat , greedy)
         greedy : GreedilyIntroducesClassesNFFun F f'
         greedy = theo-restrict+-presv-greed {F} f' $
                  theo-combine-presv-greed {F} E (proj₂ $ proj₂ extractedExence)
+
 
