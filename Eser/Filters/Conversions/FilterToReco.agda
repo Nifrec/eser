@@ -18,6 +18,8 @@ open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
 
+open import Eser.Logic using (∧-elim-right)
+
 open import Eser.Filters.Base
 open import Eser.Filters.Conversions.NFFunToExence
 open import Eser.Filters.PointwiseProperties
@@ -48,23 +50,24 @@ Reco-Exence-sats (reco P C 0K) (h , H) = (n : ℕ) → P (h n) ≡ true
 Reco-NFFun-sats  : Reco → NFFun  → Set
 Reco-NFFun-sats P f' = Reco-Exence-sats P (restrict+ f')
 
-
 filterToReco : Filter → Reco
-filterToReco F = reco h H refl
+filterToReco F = reco P C refl
     where
-        h : {n : ℕ} → (r : NFRestr n) → Bool
-        h {0} empty = true
-        h {suc n} (newNF r) = (F r here) ∧ (h r)
-        h {suc n} (oldNF r c) = (F r (earlier-new c)) ∧ (h r)
-        H   : {n : ℕ}
+        P : {n : ℕ} → (r : NFRestr n) → Bool
+        P {0} empty = true
+        P {suc n} (newNF r) = (F r here) ∧ (P r)
+        P {suc n} (oldNF r c) = (F r (earlier-new c)) ∧ (P r)
+
+        C   : {n : ℕ}
             → (r : NFRestr n)
             → (s : NFRestr (ℕ.suc n))
             → r ⋖ s
-            → h s ≡ true
-            → h r ≡ true
-        H {zero} empty s r⋖s hs = refl
-        H {suc n} r s (⋖-newNF r) hs = {! !}
-        H {suc n} r (oldNF r c) (⋖-oldNF r c) hs = {! !}
+            → P s ≡ true
+            → P r ≡ true
+        C {zero} empty s r⋖s hs = refl
+        C {suc n} r (newNF r) (⋖-newNF r) hs = ∧-elim-right (F r here) (P r) hs
+        C {suc n} r (oldNF r c) (⋖-oldNF r c) hs 
+            = ∧-elim-right (F r (earlier-new c)) (P r) hs
 
 infixl 4 filterToReco
 syntax filterToReco F = ↑ F

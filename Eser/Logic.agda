@@ -41,3 +41,24 @@ implCongrRight
     → X ⊎ Z
 implCongrRight (inj₁ x) f = inj₁ x
 implCongrRight (inj₂ y) f = inj₂ (f y)
+
+--------------------------------------------------------------------------------
+-- Logic on terms of Data.Bool (instead of on types-as-propositions)
+--------------------------------------------------------------------------------
+open import Data.Bool
+open import Relation.Binary.PropositionalEquality
+
+-- If A ∧ B is true then both A and B are true.
+∧-elim-left
+    : (a b : Bool)
+    → a ∧ b ≡ true
+    → a ≡ true
+∧-elim-left true true refl = refl
+∧-elim-right
+    : (a b : Bool)
+    → a ∧ b ≡ true
+    → b ≡ true
+∧-elim-right true true refl = refl
+
+
+
