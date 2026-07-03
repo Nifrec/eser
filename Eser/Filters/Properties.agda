@@ -662,14 +662,14 @@ lemma-⋖-addChoice-exence {n} h H c refl =
         c-prop = sym $ proj₂ $ ⋖-to-addChoice (H n)
         
 
-lemma-getChoice-exence
+lemma-getChoice-exence-alt
     : {n : ℕ}
     → (h : (n : ℕ) → NFRestr n)
     → (H : (n : ℕ) → h n ⋖ h (suc n))
     → (c : Choices (h n))
     → c ≡ (proj₁ $ ⋖-to-addChoice (H n))
     → c ≡ getChoice (h n) (h (suc n)) (H n)
-lemma-getChoice-exence {n} h H c refl = 
+lemma-getChoice-exence-alt {n} h H c refl = 
     begin
         c
     ≡⟨ sym $ lemma-getChoice-addChoice (h n) c (⋖-addChoice c) ⟩
@@ -686,12 +686,12 @@ lemma-getChoice-exence {n} h H c refl =
     ∎
 
 -- Same lemma as above, but without abstraction over c.
-lemma-getChoice-exence-alt
+lemma-getChoice-exence
     : {n : ℕ}
     → (h : (n : ℕ) → NFRestr n)
     → (H : (n : ℕ) → h n ⋖ h (suc n))
     → (proj₁ $ ⋖-to-addChoice (H n)) ≡ getChoice (h n) (h (suc n)) (H n)
-lemma-getChoice-exence-alt {n} h H = lemma-getChoice-exence h H c refl
+lemma-getChoice-exence {n} h H = lemma-getChoice-exence-alt h H c refl
     where
         c = proj₁ $ ⋖-to-addChoice (H n)
     
