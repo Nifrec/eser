@@ -5,8 +5,6 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -21,6 +19,7 @@ open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
 
 open import Eser.Filters.Base
+open import Eser.Filters.Conversions.NFFunToExence
 open import Eser.Filters.PointwiseProperties
 
 module Eser.Filters.Conversions.FilterToReco where
@@ -42,6 +41,13 @@ module Eser.Filters.Conversions.FilterToReco where
 -- It just means that we cannot define the bijective correspondence directly as
 -- a homotopy between input and output, but instead define it in acceptance
 -- of normalisation functions.
+
+Reco-Exence-sats : Reco → Exence → Set
+Reco-Exence-sats (reco P C 0K) (h , H) = (n : ℕ) → P (h n) ≡ true
+
+Reco-NFFun-sats  : Reco → NFFun  → Set
+Reco-NFFun-sats P f' = Reco-Exence-sats P (restrict+ f')
+
 
 filterToReco : Filter → Reco
 filterToReco F = reco h H refl
@@ -70,22 +76,34 @@ infixl 4 recoToFilter
 syntax recoToFilter P = ↓ P
 
 Filter-to-pred : Filter → Predicate
-Filter-to-pred F R = Filter-sats F (RelToFun R)
+Filter-to-pred F R = NFFun-sats F (RelToFun R)
 
 Reco-to-pred : Reco → Predicate
-Reco-to-pred P R = Reco-sats P (RelToFun R)
+Reco-to-pred P R = Reco-NFFun-sats P (RelToFun R)
 
-theo-filter-reco-correspondence
+theo-filter-reco-filter-same-sat
     : (F : Filter)
-    → (f : NFFun)
-    → Filter-sats F f ↔ Filter-sats (↓ ↑ F) f
-theo-filter-reco-correspondence F f = ?
+    → (E : Exence)
+    → Exence-sats F E ↔ Exence-sats (↓ ↑ F) E
+theo-filter-reco-filter-same-sat F (h , H) = ?
+
+theo-filter-reco-filter-same-sat-NFFun
+    : (F : Filter)
+    → (f' : NFFun)
+    → NFFun-sats F f' ↔ NFFun-sats (↓ ↑ F) f'
+theo-filter-reco-filter-same-sat-NFFun F f' = ?
     
-theo-reco-filter-correspondence
+theo-reco-filter-reco-same-sat
     : (P : Reco)
-    → (f : NFFun)
-    → Reco-sats P f ↔ Reco-sats (↑ ↓ P) f
-theo-reco-filter-correspondence P f = ?
+    → (E : Exence) 
+    → Reco-Exence-sats P E ↔ Reco-Exence-sats (↑ ↓ P) E
+theo-reco-filter-reco-same-sat P (h , H) = ?
+
+theo-reco-filter-reco-same-sat-NFFun
+    : (P : Reco)
+    → (f' : NFFun)
+    → Reco-NFFun-sats P f' ↔ Reco-NFFun-sats (↑ ↓ P) f'
+theo-reco-filter-reco-same-sat-NFFun P f' = ?
 
 --------------------------------------------------------------------------------
 -- Auxiliary concepts used by proof of theo-filter-reco-correspondence
