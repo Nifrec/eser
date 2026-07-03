@@ -109,7 +109,6 @@ Exence-sats-to-alt {F} {h , H} sat (suc n) =
 
         ans' : AllRestr-sat F (addChoice (h n) c)
         ans' = allsat-addChoice (h n) c IH c-allowed
-        
 
 Exence-sats-from-alt
     : {F : Filter}
@@ -134,6 +133,29 @@ Exence-sats-from-alt {F} {(h , H)} sat n = ans
         c-allowed = lemma-allrestr-sat-addchoice (h n) c K₁
         ans : F Allows (getChoice (h n) (h (suc n)) (H n)) In (h n)
         ans = subst (λ x → F Allows x In (h n)) K₂ c-allowed
+
+--------------------------------------------------------------------------------
+-- Conversions preserve satisfiablity
+--------------------------------------------------------------------------------
+-- Let f' be an NFFun and E be an Exence and F be a Filter.
+-- Then:
+-- (1) f' satisfies F => (restrict+ f') satisfies F
+-- (2) E  satisfies F => (combine E) satisfies F
+
+theo-restrict+-presv-sat
+    : {F : Filter}
+    → (f' : NFFun)
+    → NFFun-sats F f'
+    → Exence-sats F (restrict+ f')
+theo-restrict+-presv-sat {F} f'@(f , f-leq , f-fix) f'sat = ?
+
+theo-combine-presv-sat
+    : {F : Filter}
+    → (E : Exence)
+    → Exence-sats F E
+    → NFFun-sats F (combine E)
+theo-combine-presv-sat {F} (h , H) Esat = ?
+
 --------------------------------------------------------------------------------
 -- Satisfiable Filters
 --------------------------------------------------------------------------------
@@ -260,6 +282,23 @@ GreedilyIntroducesClasses F (h , H) =
     → F (h n) (here {n} {h n}) ≡ true 
     → getChoiceFromExence (h , H) n ≡ here {n} {h n}
 
+GreedilyIntroducesClassesNFFun : Filter → NFFun → Set
+GreedilyIntroducesClassesNFFun F f' = GreedilyIntroducesClasses F (restrict+ f')
+
+theo-restrict+-presv-greed
+    : {F : Filter}
+    → (f' : NFFun)
+    → GreedilyIntroducesClassesNFFun F f'
+    → GreedilyIntroducesClasses F (restrict+ f')
+theo-restrict+-presv-greed {F} f'@(f , f-leq , f-fix) f'sat = ?
+
+theo-combine-presv-greed
+    : {F : Filter}
+    → (E : Exence)
+    → GreedilyIntroducesClasses F E
+    → GreedilyIntroducesClassesNFFun F (combine E)
+theo-combine-presv-greed {F} (h , H) Esat = ?
+
 module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     -- Pick the next choice (normal form for n) 
     -- accoding to the following rules:
@@ -366,113 +405,40 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
             p+ = sublemma (F (h n) here) (F (h n) here) true refl p
 
 
---extract-greedynewclass-exence
---    : {F : Filter}
---    → DeadEndFree F
---    → Σ[ H' ∈ Exence ] (Exence-sats F H' ) × (GreedilyIntroducesClasses F H')
---extract-greedynewclass-exence {F} DeF = ((h , H) , hH-sats-F , hH-greedy)
---    where
---        -- z and h are defined in mutual induction.
---        h : (n : ℕ) → NFRestr n
---        h-cases 
---            : (n : ℕ) 
---            → (b : Bool) 
---            → NFRestr (suc n)
---        z : (n : ℕ) → AllRestr-sat F (h n)
---        z-cases 
---            : (n : ℕ) 
---            → (b : Bool) 
---            → (F (h n) here ≡ b) 
---            → AllRestr-sat F (h (suc n))
+extract-greedynewclass-Exence
+    : {F : Filter}
+    → DeadEndFree F
+    → Σ[ E ∈ Exence ] (Exence-sats F E ) × (GreedilyIntroducesClasses F E)
+extract-greedynewclass-Exence {F} DeF = ((h , H) , sat , greedy)
+    where
+        open GreedyNewClass F DeF
 
---        h zero = empty
---        h (suc n) = h-cases n (F (h n) here)
+extract-greedynewclass-NFFun
+    : {F : Filter}
+    → DeadEndFree F
+    → Σ[ f' ∈ NFFun ] (NFFun-sats F f' ) × (GreedilyIntroducesClassesNFFun F f')
+extract-greedynewclass-NFFun {F} DeF = (f' , sat , greedy)
+    where
+        extractedExence : Σ[ E ∈ Exence ] 
+                          (Exence-sats F E ) × (GreedilyIntroducesClasses F E)
+        extractedExence = extract-greedynewclass-Exence {F} DeF
 
---        h-cases n false = addChoice (h n) c
---            where
---                c : Choices (h n)
---                c = proj₁ $ DeF (h n) (z n)
---        h-cases n true = newNF (h n)
+        E : Exence
+        E = proj₁ extractedExence
+        
+        f' : NFFun
+        f' = combine E
 
---        z zero = allsat-empty
---        z (suc n) = z-cases n (F (h n) here) refl
---        z-cases n false p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
---            where
---                c : Choices (h n)
---                c = proj₁ $ DeF (h n) (z n)
---                c-allowed : F Allows c In (h n)
---                c-allowed = proj₂ $ DeF (h n) (z n)
---                h1+n-rewr : h (suc n) ≡ addChoice (h n) c
---                h1+n-rewr = 
---                    begin 
---                        h (suc n)
---                    ≡⟨⟩
---                        h-cases n (F (h n) here)
---                    ≡⟨ cong (h-cases n) p ⟩
---                        h-cases n false
---                    ≡⟨⟩
---                        addChoice (h n) c
---                    ∎
-                    
+        -- The statement `NFFun-sats F f'` checks if the Exence `restrict+ f'`
+        -- satisfies F.
+        -- However, we know that f' was build from an Exence satisfying F,
+        -- and `restrict+ ∘ combine` is essentially the identity.
+        sat : Exence-sats F (restrict+ f')
+        sat = theo-restrict+-presv-sat {F} f' $
+              theo-combine-presv-sat {F} E (proj₁ $ proj₂ extractedExence)
 
---                ans' : AllRestr-sat F (addChoice (h n) c)
---                ans' = allsat-addChoice (h n) c (z n) c-allowed
-
---        z-cases n true p = subst (AllRestr-sat F) (sym h1+n-rewr) ans'
---            where
---                h1+n-rewr : h (suc n) ≡ newNF (h n)
---                h1+n-rewr = 
---                    begin 
---                        h (suc n)
---                    ≡⟨⟩
---                        h-cases n (F (h n) here)
---                    ≡⟨ cong (h-cases n) p ⟩
---                        h-cases n true
---                    ≡⟨⟩
---                        newNF (h n)
---                    ∎
-
---                ans' : AllRestr-sat F (newNF (h n))
---                ans' = allsat-newNF (h n) (z n) p
-
-
---        H : (n : ℕ) → h n ⋖ h (suc n)
---        H = ?
---        hH-sats-F : Exence-sats F (h , H)
---        hH-sats-F = ?
---        hH-greedy : GreedilyIntroducesClasses F (h , H)
---        hH-greedy = ?
-
-    
-
----- Extract a normalisation function from a passable Filter.
---extract-maxclass-nf
---    : {F : Filter}
---    → Passable F
---    → Σ[ f ∈ NFFun ] (NFFun-sats F f ) × (MaximisesClasses F f)
---extract-maxclass-nf {F} pass = (f' , f-stats-F , f-max-classes)
---    where
---        E : Exence
---        E = proj₁ pass
-
---        f' = combine E
-
---        --f : ℕ → ℕ
---        --f = ?
-
---        --f-leq : (n : ℕ) → f n ≤ n
---        --f-leq n = ?
-
---        --f-fix : (n : ℕ) → f (f n) ≡ f n
---        --f-fix n = ?
-
---        --f' : NFFun
---        --f' = (f , f-leq , f-fix)
-
---        --f-stats-F : (Filter-sats F f' )
---        --f-stats-F = ?
-
---        f-max-classes : (MaximisesClasses F f')
---        f-max-classes = ?
-
+        -- Same reasoning for greediness.
+        greedy : GreedilyIntroducesClassesNFFun F f'
+        greedy = theo-restrict+-presv-greed {F} f' $
+                 theo-combine-presv-greed {F} E (proj₂ $ proj₂ extractedExence)
 
