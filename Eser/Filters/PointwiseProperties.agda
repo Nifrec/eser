@@ -278,14 +278,14 @@ theo-restrict+-presv-greed
     → (f' : NFFun)
     → GreedilyIntroducesClassesNFFun F f'
     → GreedilyIntroducesClasses F (restrict+ f')
-theo-restrict+-presv-greed {F} f'@(f , f-leq , f-fix) f'sat = ?
+theo-restrict+-presv-greed {F} f' greedy = greedy
 
 theo-combine-presv-greed
     : {F : Filter}
     → (E : Exence)
     → GreedilyIntroducesClasses F E
     → GreedilyIntroducesClassesNFFun F (combine E)
-theo-combine-presv-greed {F} (h , H) Esat = ?
+theo-combine-presv-greed {F} (h , H) greedy = ?
 
 module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     -- Pick the next choice (normal form for n) 
