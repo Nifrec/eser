@@ -17,7 +17,7 @@ open import Function using (_∘_ ; _$_)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_↔_ ; _≈_)
+open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Conversions.NFFunToExence
@@ -74,21 +74,60 @@ allsat-addChoice {F} {n} r (earlier-new c) sat allowed
 Exence-sats-alt : Filter → Exence → Set
 Exence-sats-alt F (h , H) = (n : ℕ) → AllRestr-sat F (h n)
 
+lemma-allrestr-sat-addchoice
+    : {F : Filter}
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → AllRestr-sat F (addChoice r c)
+    → F Allows c In r
+lemma-allrestr-sat-addchoice {F} {n} r here (allsat-newNF r sat x) = x
+lemma-allrestr-sat-addchoice {F} {n} r 
+                             (earlier-new c) (allsat-oldNF r c sat x) = x
+
 Exence-sats-to-alt
-    : (F : Filter)
-    → (E : Exence)
+    : {F : Filter}
+    → {E : Exence}
     → Exence-sats F E
     → Exence-sats-alt F E
-Exence-sats-to-alt F (h , H) sat = ?
+Exence-sats-to-alt {F} {(h , H)} sat = ?
 
 Exence-sats-from-alt
-    : (F : Filter)
-    → (E : Exence)
+    : {F : Filter}
+    → {E : Exence}
     → Exence-sats-alt F E
     → Exence-sats F E
-Exence-sats-from-alt F (h , H) sat = ?
+Exence-sats-from-alt {F} {(h , H)} sat n = ans
+    where
+        K₀ : AllRestr-sat F (h (suc n))
+        K₀ = sat (suc n)
+        c : Choices (h n)
+        c = proj₁ $ ⋖-to-addChoice (H n)
+        c-prop : h (suc n) ≡ addChoice (h n) c
+        c-prop = proj₂ $ ⋖-to-addChoice (H n)
+        K₁ : AllRestr-sat F (addChoice (h n) c)
+        K₁ = subst (AllRestr-sat F) c-prop K₀
+        eq : (addChoice (h n) c , ⋖-addChoice c) ≡ (h (suc n) , H n)
+        eq = restIsProofIrrel (⋖-irrel (h n)) (⋖-addChoice c) (H n) (sym c-prop)
+        K₂ : c ≡ getChoice (h n) (h (suc n)) (H n)
+        K₂ =
+            begin
+                c
+            ≡⟨ sym $ lemma-getChoice-addChoice (h n) c (⋖-addChoice c) ⟩
+                getChoice (h n) (addChoice (h n) c) (⋖-addChoice c)
+            ≡⟨⟩
+                (λ (x , y) → getChoice (h n) x y) 
+                (addChoice (h n) c , ⋖-addChoice c)
+            ≡⟨ cong (λ (x , y) → getChoice (h n) x y) eq  ⟩
+                (λ (x , y) → getChoice (h n) x y) (h (suc n) , H n)
+            ≡⟨⟩
+                getChoice (h n) (h (suc n)) (H n)
+            ∎
 
-
+        c-allowed : F Allows c In (h n)
+        c-allowed = lemma-allrestr-sat-addchoice (h n) c K₁
+        ans : F Allows (getChoice (h n) (h (suc n)) (H n)) In (h n)
+        ans = subst (λ x → F Allows x In (h n)) K₂ c-allowed
 --------------------------------------------------------------------------------
 -- Satisfiable Filters
 --------------------------------------------------------------------------------
@@ -264,7 +303,7 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     altsat = proj₂ ∘ h+
 
     sat : Exence-sats F (h , H)
-    sat = Exence-sats-from-alt F (h , H) altsat
+    sat = Exence-sats-from-alt altsat
 
     greedy : GreedilyIntroducesClasses F (h , H)
     greedy zero _ =
