@@ -155,7 +155,25 @@ theo-combine-presv-sat
     → (E : Exence)
     → Exence-sats F E
     → NFFun-sats F (combine E)
-theo-combine-presv-sat {F} (h , H) Esat = ?
+theo-combine-presv-sat {F} (h , H) sat n = 
+    subst (λ ((r , s)  , r⋖s) → F Allows getChoice r s r⋖s In r) eq (sat n)
+    -- The goal unfolds to showing 
+    -- Exence-sats F (restrict+ ∘ combine (h , H))
+    -- i.e.
+    -- (n : ℕ) → F Allows getChoice (h' n) (h' (suc n)) (H' n) In (h' n)    (G)
+    -- where
+    -- (h' , H') ≔ (restrict+ ∘ combine (h , H)).
+    -- But the `restrict+ ∘ combine ≈ id` theorem gives that `h' n ≡ h n`
+    -- and `h' (suc n) ≡ h (suc n)`, while `H' n` and `H n` are
+    -- proof-irrelevant.
+    -- So substitute those equalities in (G) and we are done.
+    where
+        A : Set
+        A = Σ[ p ∈ NFRestr n × NFRestr (suc n) ] (proj₁ p ⋖ proj₂ p)
+        h' = proj₁ $ (restrict+ ∘ combine) (h , H)
+        H' = proj₂ $ (restrict+ ∘ combine) (h , H)
+        eq : _≡_ {A = A} ((h n , h (suc n)) , H n) ((h' n , h' (suc n)) , H' n)
+        eq = ?
 
 --------------------------------------------------------------------------------
 -- Satisfiable Filters
