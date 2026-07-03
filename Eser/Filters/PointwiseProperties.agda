@@ -173,15 +173,9 @@ theo-combine-presv-sat {F} (h , H) sat n =
         h' = proj₁ $ (restrict+ ∘ combine) (h , H)
         H' = proj₂ $ (restrict+ ∘ combine) (h , H)
 
-        eq : _≡_ {A = ⋖-Pair n} ((h n , h (suc n)) , H n) ((h' n , h' (suc n)) , H' n)
+        eq : _≡_ {A = ⋖-Pair n} ((h n , h (suc n)) , H n) 
+                                ((h' n , h' (suc n)) , H' n)
         eq = exence-successor-tuples-eq h h' H H' refl n
-        --restIsProofIrrel 
-        --    {A = NFRestr n × NFRestr (suc n)} 
-        --    {B = B}
-        --    B-irrel
-        --    (H n)
-        --    (H' n)
-        --    (pair-eq (sym $ homot n) (sym $ homot (suc n)))
 
 
 --------------------------------------------------------------------------------
@@ -312,7 +306,13 @@ theo-combine-presv-greed
     → (E : Exence)
     → GreedilyIntroducesClasses F E
     → GreedilyIntroducesClassesNFFun F (combine E)
-theo-combine-presv-greed {F} (h , H) greedy = ?
+theo-combine-presv-greed {F} (h , H) greedy n = 
+    subst 
+        (λ (( r , s) , r⋖s) →
+          (F Allows here In r → getChoice r s r⋖s ≡ here)
+        )
+        eq
+        (greedy n)
     -- The goal unfolds to showing 
     -- GreedilyIntroducesClasses F (restrict+ ∘ combine (h , H))
     -- i.e.
@@ -326,6 +326,13 @@ theo-combine-presv-greed {F} (h , H) greedy = ?
     -- from restrict+-combine inversity and proof-irrelevance.
     -- We can rewrite the goal as a function of such triples
     -- and then just substitute that equality.
+    where
+        h' = proj₁ $ (restrict+ ∘ combine) (h , H)
+        H' = proj₂ $ (restrict+ ∘ combine) (h , H)
+
+        eq : _≡_ {A = ⋖-Pair n} ((h n , h (suc n)) , H n) 
+                                ((h' n , h' (suc n)) , H' n)
+        eq = exence-successor-tuples-eq h h' H H' refl n
 
 module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     -- Pick the next choice (normal form for n) 
