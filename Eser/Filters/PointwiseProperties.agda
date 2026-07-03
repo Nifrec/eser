@@ -170,27 +170,18 @@ theo-combine-presv-sat {F} (h , H) sat n =
     -- (Implementation detail: we first need to combine the equalities
     -- into equalities of tuples).
     where
-        A : Set
-        A = Σ[ p ∈ NFRestr n × NFRestr (suc n) ] (proj₁ p ⋖ proj₂ p)
         h' = proj₁ $ (restrict+ ∘ combine) (h , H)
         H' = proj₂ $ (restrict+ ∘ combine) (h , H)
-        B : NFRestr n × NFRestr (suc n) → Set
-        B (r , s) = r ⋖ s
-        B-irrel 
-            : (p : NFRestr n × NFRestr (suc n)) 
-            → Relation.Nullary.Irrelevant (B p)
-        B-irrel (r , s) = ⋖-irrel r s
-        homot : h' ≈ h
-        homot = theo-restrict+∘combine (h , H)
 
-        eq : _≡_ {A = A} ((h n , h (suc n)) , H n) ((h' n , h' (suc n)) , H' n)
-        eq = restIsProofIrrel 
-            {A = NFRestr n × NFRestr (suc n)} 
-            {B = B}
-            B-irrel
-            (H n)
-            (H' n)
-            (pair-eq (sym $ homot n) (sym $ homot (suc n)))
+        eq : _≡_ {A = ⋖-Pair n} ((h n , h (suc n)) , H n) ((h' n , h' (suc n)) , H' n)
+        eq = exence-successor-tuples-eq h h' H H' refl n
+        --restIsProofIrrel 
+        --    {A = NFRestr n × NFRestr (suc n)} 
+        --    {B = B}
+        --    B-irrel
+        --    (H n)
+        --    (H' n)
+        --    (pair-eq (sym $ homot n) (sym $ homot (suc n)))
 
 
 --------------------------------------------------------------------------------
@@ -303,7 +294,7 @@ lemma-DeadEndFree-firstchoice {F} DeF
 GreedilyIntroducesClasses : Filter → Exence → Set
 GreedilyIntroducesClasses F (h , H) = 
     (n : ℕ) 
-    → F (h n) (here {n} {h n}) ≡ true 
+    → F Allows (here {n} {h n}) In (h n)
     → getChoiceFromExence (h , H) n ≡ here {n} {h n}
 
 GreedilyIntroducesClassesNFFun : Filter → NFFun → Set
@@ -322,6 +313,19 @@ theo-combine-presv-greed
     → GreedilyIntroducesClasses F E
     → GreedilyIntroducesClassesNFFun F (combine E)
 theo-combine-presv-greed {F} (h , H) greedy = ?
+    -- The goal unfolds to showing 
+    -- GreedilyIntroducesClasses F (restrict+ ∘ combine (h , H))
+    -- i.e.
+    -- (n : ℕ) 
+    --      → F Allows here In (h' n) 
+    --      → getChoice (h' n) (h' (suc n)) (H' n) ≡ here
+    -- where
+    -- (h' , H') ≔ (restrict+ ∘ combine (h , H)).
+    -- Now proof is similar to theo-combine-presv-sat:
+    -- we get ((h' n , h' (suc n)) , H' n) ≡ ((h n , h (suc n)) , H n)
+    -- from restrict+-combine inversity and proof-irrelevance.
+    -- We can rewrite the goal as a function of such triples
+    -- and then just substitute that equality.
 
 module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
     -- Pick the next choice (normal form for n) 

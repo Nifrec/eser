@@ -40,6 +40,7 @@ open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; Sm≤n→m≤n ; 
                            ; depSubst
                            ; tri-≡
                            ; tri-<
+                           ; pair-eq
                            )
 open import Eser.Logic
 
@@ -674,3 +675,38 @@ theo-restrict+∘combine (h , H) (suc n') =
         c = proj₁ $ ⋖-to-addChoice (H n')
         c-prop : h (suc n') ≡ addChoice (h n') c
         c-prop = proj₂ $ ⋖-to-addChoice (H n')
+
+--------------------------------------------------------------------------------
+-- Corollaries
+--------------------------------------------------------------------------------
+⋖-Pair : ℕ → Set
+⋖-Pair n = Σ[ p ∈ NFRestr n × NFRestr (suc n) ] (proj₁ p ⋖ proj₂ p)
+
+-- The absraction over `(h' , H') ≡ ((restrict+ ∘ combine) (h , H))`
+-- is just for readability. 
+-- Because `(proj₁ ∘ restrict+ ∘ combine) (h , H)` is much more verbose than
+-- just `h'`, idem for `H'`.
+exence-successor-tuples-eq
+    : (h h' : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (H' : (n : ℕ) → h' n ⋖ h' (suc n))
+    → _≡_ {A = Exence} (h' , H') ((restrict+ ∘ combine) (h , H))
+    → (n : ℕ)
+    → _≡_ {A = ⋖-Pair n} ((h n , h (suc n)) , H n) ((h' n , h' (suc n)) , H' n)
+exence-successor-tuples-eq h h' H H' refl n 
+    = restIsProofIrrel 
+          {A = NFRestr n × NFRestr (suc n)} 
+          {B = B}
+          B-irrel
+          (H n)
+          (H' n)
+          (pair-eq (sym $ homot n) (sym $ homot (suc n)))
+    where
+        B : NFRestr n × NFRestr (suc n) → Set
+        B (r , s) = r ⋖ s
+        B-irrel 
+            : (p : NFRestr n × NFRestr (suc n)) 
+            → Relation.Nullary.Irrelevant (B p)
+        B-irrel (r , s) = ⋖-irrel r s
+        homot : h' ≈ h
+        homot = theo-restrict+∘combine (h , H)
