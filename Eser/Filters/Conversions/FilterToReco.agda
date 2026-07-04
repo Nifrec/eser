@@ -151,7 +151,19 @@ stronger-to-implication {F} {G} {n} r c G>F G-allows
         
 
 lemma-↓↑-stronger : (F : Filter) → (↓ ↑ F) StrongerThan F
-lemma-↓↑-stronger = ?
+lemma-↓↑-stronger F {n} r c F-disallows =
+    begin 
+        (↓ ↑ F) r c
+    ≡⟨ recoToFilter-addChoice (↑ F) r c ⟩
+        predicate (↑ F) (addChoice r c)
+    ≡⟨ filterToReco-addChoice F r c ⟩
+        F r c ∧ predicate (↑ F) r
+    ≡⟨ cong (_∧ predicate (↑ F) r) F-disallows ⟩
+        false ∧ predicate (↑ F) r
+    ≡⟨⟩
+        false
+    ∎
+    
 
 --------------------------------------------------------------------------------
 -- Correspondence theorems.
