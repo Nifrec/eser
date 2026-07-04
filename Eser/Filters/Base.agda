@@ -297,13 +297,6 @@ NFRestrFam : Set
 NFRestrFam = (n : ℕ) → NFRestr n
 Exence : Set
 Exence = Σ[ h ∈ NFRestrFam ]((n : ℕ) → h n ⋖ h (ℕ.suc n))
---------------------------------------------------------------------------------
--- TODOs
---------------------------------------------------------------------------------
--- * Sheets '◊': PointwiseChooser and aux lemmas.
--- * add lemma that extract-maxchoice-nf is pointwise actually the maximum
--- choice.
-
 
 --------------------------------------------------------------------------------
 -- Functions on NFRestrs.
