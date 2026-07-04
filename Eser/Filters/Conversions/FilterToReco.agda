@@ -109,6 +109,55 @@ Filter-to-pred F R = NFFun-sats F (RelToFun R)
 Reco-to-pred : Reco → Predicate
 Reco-to-pred P R = Reco-NFFun-sats P (RelToFun R)
 
+--------------------------------------------------------------------------------
+-- StrongerThan-relation on filters
+--------------------------------------------------------------------------------
+-- Auxiliary concepts used by correspondence theorems.
+-- G is stronger than F if G disallows any choice that F disallows.
+-- G might disallow also choices that F allows.
+_StrongerThan_ : Filter → Filter → Set
+_StrongerThan_ G F = 
+    {n : ℕ} 
+    → (r : NFRestr n) 
+    → (c : Choices r) 
+    → F r c ≡ false 
+    → G r c ≡ false
+
+-- If G is stronger than F, but G does Allow c In r,
+-- then F does Allow c In r as well.
+-- In other words, G => F.
+stronger-to-implication
+    : {F G : Filter}
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → G StrongerThan F
+    → G Allows c In r
+    → F Allows c In r
+stronger-to-implication {F} {G} {n} r c G>F G-allows 
+    = stronger-to-implication-cases (F r c) refl
+    where
+        stronger-to-implication-cases 
+            : (b : Bool) 
+            → (F r c ≡ b) 
+            → F Allows c In r
+        stronger-to-implication-cases false p = ⊥-elim $ true≢false true≡false
+            where
+                G-disallows : G r c ≡ false
+                G-disallows = G>F r c p
+                true≡false : true ≡ false
+                true≡false = trans (sym G-allows) G-disallows
+        stronger-to-implication-cases true p = p
+        
+
+lemma-↓↑-stronger : (F : Filter) → (↓ ↑ F) StrongerThan F
+lemma-↓↑-stronger = ?
+
+--------------------------------------------------------------------------------
+-- Correspondence theorems.
+--------------------------------------------------------------------------------
+
+
 theo-filter-reco-filter-same-sat
     : (F : Filter)
     → (E : Exence)
@@ -162,8 +211,12 @@ theo-filter-reco-filter-same-sat F E@(h , H) = (LEFT , RIGHT)
                     ∎
 
         RIGHT : Exence-sats (↓ ↑ F) E → Exence-sats F E
-        RIGHT sat = ?
-        
+        RIGHT sat n = stronger-to-implication (h n) c ↓↑F>F (sat n)
+            where
+                c : Choices (h n)
+                c = getChoiceFromExence (h , H) n
+                ↓↑F>F : (↓ ↑ F) StrongerThan F
+                ↓↑F>F = lemma-↓↑-stronger F
 
 theo-filter-reco-filter-same-sat-NFFun
     : (F : Filter)
@@ -182,48 +235,4 @@ theo-reco-filter-reco-same-sat-NFFun
     → (f' : NFFun)
     → Reco-NFFun-sats P f' ↔ Reco-NFFun-sats (↑ ↓ P) f'
 theo-reco-filter-reco-same-sat-NFFun P f' = ?
-
---------------------------------------------------------------------------------
--- Auxiliary concepts used by proof of theo-filter-reco-correspondence
---------------------------------------------------------------------------------
-
--- G is stronger than F if G disallows any choice that F disallows.
--- G might disallow also choices that F allows.
-_StrongerThan_ : Filter → Filter → Set
-_StrongerThan_ G F = 
-    {n : ℕ} 
-    → (r : NFRestr n) 
-    → (c : Choices r) 
-    → F r c ≡ false 
-    → G r c ≡ false
-
--- If G is stronger than F, but G does Allow c In r,
--- then F does Allow c In r as well.
--- In other words, G => F.
-stronger-to-implication
-    : {F G : Filter}
-    → {n : ℕ}
-    → (r : NFRestr n)
-    → (c : Choices r)
-    → G StrongerThan F
-    → G Allows c In r
-    → F Allows c In r
-stronger-to-implication {F} {G} {n} r c G>F G-allows 
-    = stronger-to-implication-cases (F r c) refl
-    where
-        stronger-to-implication-cases 
-            : (b : Bool) 
-            → (F r c ≡ b) 
-            → F Allows c In r
-        stronger-to-implication-cases false p = ⊥-elim $ true≢false true≡false
-            where
-                G-disallows : G r c ≡ false
-                G-disallows = G>F r c p
-                true≡false : true ≡ false
-                true≡false = trans (sym G-allows) G-disallows
-        stronger-to-implication-cases true p = p
-        
-
-lemma-↓↑-stronger : (F : Filter) → (↓ ↑ F) StrongerThan F
-lemma-↓↑-stronger = ?
 
