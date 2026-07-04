@@ -48,6 +48,9 @@ implCongrRight (inj₂ y) f = inj₂ (f y)
 open import Data.Bool
 open import Relation.Binary.PropositionalEquality
 
+true≢false : true ≢ false
+true≢false ()
+
 -- If A ∧ B is true then both A and B are true.
 ∧-elim-left
     : (a b : Bool)

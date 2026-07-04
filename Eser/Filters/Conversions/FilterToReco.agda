@@ -19,7 +19,7 @@ open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
 
-open import Eser.Logic using (∧-elim-right)
+open import Eser.Logic using (∧-elim-right ; true≢false)
 
 open import Eser.Filters.Base
 open Reco
@@ -189,14 +189,41 @@ theo-reco-filter-reco-same-sat-NFFun P f' = ?
 
 -- G is stronger than F if G disallows any choice that F disallows.
 -- G might disallow also choices that F allows.
-stronger : Filter → Filter → Set
-stronger F G = 
+_StrongerThan_ : Filter → Filter → Set
+_StrongerThan_ G F = 
     {n : ℕ} 
     → (r : NFRestr n) 
     → (c : Choices r) 
     → F r c ≡ false 
     → G r c ≡ false
 
-lemma-↓↑-stronger : (F : Filter) → stronger (↓ ↑ F) F
+-- If G is stronger than F, but G does Allow c In r,
+-- then F does Allow c In r as well.
+-- In other words, G => F.
+stronger-to-implication
+    : {F G : Filter}
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → G StrongerThan F
+    → G Allows c In r
+    → F Allows c In r
+stronger-to-implication {F} {G} {n} r c G>F G-allows 
+    = stronger-to-implication-cases (F r c) refl
+    where
+        stronger-to-implication-cases 
+            : (b : Bool) 
+            → (F r c ≡ b) 
+            → F Allows c In r
+        stronger-to-implication-cases false p = ⊥-elim $ true≢false true≡false
+            where
+                G-disallows : G r c ≡ false
+                G-disallows = G>F r c p
+                true≡false : true ≡ false
+                true≡false = trans (sym G-allows) G-disallows
+        stronger-to-implication-cases true p = p
+        
+
+lemma-↓↑-stronger : (F : Filter) → (↓ ↑ F) StrongerThan F
 lemma-↓↑-stronger = ?
 
