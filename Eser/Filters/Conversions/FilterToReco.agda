@@ -286,16 +286,40 @@ lemma-reco-filter-reco-retract P {suc n} r =
         c-prop : r ≡ addChoice r' c
         c-prop = proj₂ $ getLastChoice r
 
-    
+-- This is now an easy corollary of the previous lemma:    
 theo-reco-filter-reco-same-sat
     : (P : Reco)
     → (E : Exence) 
     → Reco-Exence-sats P E ↔ Reco-Exence-sats (↑ ↓ P) E
-theo-reco-filter-reco-same-sat P (h , H) = ?
+theo-reco-filter-reco-same-sat P E@(h , H) = (LEFT , RIGHT)
+    where
+        LEFT : Reco-Exence-sats P E → Reco-Exence-sats (↑ ↓ P) E
+        LEFT sat n = 
+            begin 
+                predicate (↑ ↓ P) (h n)
+            ≡⟨ lemma-reco-filter-reco-retract P {n} (h n) ⟩
+                predicate P (h n)
+            ≡⟨ sat n ⟩
+                true
+            ∎
+            
+        RIGHT : Reco-Exence-sats (↑ ↓ P) E → Reco-Exence-sats P E
+        RIGHT sat n =
+            begin 
+                predicate P (h n)
+            ≡⟨ sym $ lemma-reco-filter-reco-retract P {n} (h n) ⟩
+                predicate (↑ ↓ P) (h n)
+            ≡⟨ sat n ⟩
+                true
+            ∎
 
 theo-reco-filter-reco-same-sat-NFFun
     : (P : Reco)
     → (f' : NFFun)
     → Reco-NFFun-sats P f' ↔ Reco-NFFun-sats (↑ ↓ P) f'
-theo-reco-filter-reco-same-sat-NFFun P f' = ?
+theo-reco-filter-reco-same-sat-NFFun P f' = (LEFT , RIGHT)
+    where
+        LEFT : Reco-NFFun-sats P f' → Reco-NFFun-sats (↑ ↓ P) f'
+        LEFT = ?
+        RIGHT = ?
 
