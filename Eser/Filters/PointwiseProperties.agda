@@ -100,7 +100,7 @@ Exence-sats-to-alt {F} {h , H} sat (suc n) =
         c-prop : h (suc n) ≡ addChoice (h n) c
         c-prop = proj₂ $ ⋖-to-addChoice (H n)
         c-eq : getChoice (h n) (h (suc n)) (H n) ≡ c
-        c-eq = sym $ lemma-getChoice-exence h H
+        c-eq = sym $ lemma-getChoice-exence n h H
         c-allowed : F Allows c In (h n)
         c-allowed = subst (λ x → FilterAllows F (h n) x) c-eq (sat n)
 
@@ -125,7 +125,7 @@ Exence-sats-from-alt {F} {(h , H)} sat n = ans
         eq : (addChoice (h n) c , ⋖-addChoice c) ≡ (h (suc n) , H n)
         eq = lemma-⋖-addChoice-exence h H c refl
         K₂ : c ≡ getChoice (h n) (h (suc n)) (H n)
-        K₂ = lemma-getChoice-exence h H
+        K₂ = lemma-getChoice-exence n h H
         c-allowed : F Allows c In (h n)
         c-allowed = lemma-allrestr-sat-addchoice (h n) c K₁
         ans : F Allows (getChoice (h n) (h (suc n)) (H n)) In (h n)

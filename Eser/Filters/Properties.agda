@@ -687,11 +687,11 @@ lemma-getChoice-exence-alt {n} h H c refl =
 
 -- Same lemma as above, but without abstraction over c.
 lemma-getChoice-exence
-    : {n : ℕ}
+    : (n : ℕ)
     → (h : (n : ℕ) → NFRestr n)
     → (H : (n : ℕ) → h n ⋖ h (suc n))
     → (proj₁ $ ⋖-to-addChoice (H n)) ≡ getChoice (h n) (h (suc n)) (H n)
-lemma-getChoice-exence {n} h H = lemma-getChoice-exence-alt h H c refl
+lemma-getChoice-exence n h H = lemma-getChoice-exence-alt h H c refl
     where
         c = proj₁ $ ⋖-to-addChoice (H n)
     
