@@ -121,13 +121,10 @@ theo-filter-reco-filter-same-sat F E@(h , H) = (LEFT , RIGHT)
             begin 
                 (↓ ↑ F) (h n) (getChoice (h n) (h (suc n)) (H n))
             ≡⟨⟩
-            --≡⟨ cong ((↓ ↑ F) (h n)) (sym $ lemma-getChoice-exence n h H) ⟩
                 (↓ ↑ F) (h n) c
             ≡⟨ recoToFilter-addChoice (↑ F) (h n) c ⟩
                 predicate (↑ F) (addChoice (h n) c)
-            --≡⟨ cong (predicate (↑ F)) (c-prop) ⟩
-            --    predicate (↑ F) (h (suc n)) -- Rewrite to `addChoice (h n) c`
-            ≡⟨ filterToReco-addChoice F (h n) c ⟩ -- addChoice lemma for filterToReco
+            ≡⟨ filterToReco-addChoice F (h n) c ⟩
                 F (h n) c ∧ predicate (↑ F) (h n)
             ≡⟨ cong (_∧ (predicate $ ↑ F) (h n)) (sat n)  ⟩
                 true ∧ (predicate $ ↑ F) (h n)
@@ -137,17 +134,13 @@ theo-filter-reco-filter-same-sat F E@(h , H) = (LEFT , RIGHT)
                 true
             ∎
             where
-                --c : Choices (h n)
-                --c = proj₁ $ ⋖-to-addChoice (H n)
-                --c-prop : addChoice (h n) c ≡ h (suc n)
-                --c-prop = sym $ proj₂ $ ⋖-to-addChoice (H n)
                 sublemma : (m : ℕ) → (n ≡ m) → predicate (↑ F) (h n) ≡ true
                 sublemma zero refl = 
                     begin 
                         predicate (↑ F) (h n)
                     ≡⟨⟩
                         predicate (↑ F) (h 0)
-                    ≡⟨ cong (predicate (↑ F)) (empty-is-unique-zero (h 0))  ⟩
+                    ≡⟨ cong (predicate (↑ F)) (empty-is-unique-zero (h 0)) ⟩
                         predicate (↑ F) (empty)
                     ≡⟨⟩ -- Definition of '↑'
                        true 
@@ -167,57 +160,6 @@ theo-filter-reco-filter-same-sat F E@(h , H) = (LEFT , RIGHT)
                     ≡⟨ LEFT sat n' ⟩
                        true 
                     ∎
-        --LEFT sat n = 
-        --    begin 
-        --        (↓ ↑ F) (h n) (getChoice (h n) (h (suc n)) (H n))
-        --    ≡⟨ cong ((↓ ↑ F) (h n)) (sym $ lemma-getChoice-exence n h H) ⟩
-        --        (↓ ↑ F) (h n) c
-        --    ≡⟨ recoToFilter-addChoice (↑ F) (h n) c ⟩
-        --        predicate (↑ F) (addChoice (h n) c)
-        --    --≡⟨ cong (predicate (↑ F)) (c-prop) ⟩
-        --    --    predicate (↑ F) (h (suc n)) -- Rewrite to `addChoice (h n) c`
-        --    ≡⟨ filterToReco-addChoice F (h n) c ⟩ -- addChoice lemma for filterToReco
-        --        F (h n) c ∧ predicate (↑ F) (h n)
-        --    ≡⟨ cong (_∧ (predicate $ ↑ F) (h n)) {! subst (λ c → F (h n) c ≡ true) (sat n) !}  ⟩
-        --        true ∧ (predicate $ ↑ F) (h n)
-        --    ≡⟨⟩
-        --        predicate (↑ F) (h n)
-        --    ≡⟨ sublemma n refl ⟩
-        --        true
-        --    ∎
-        --    where
-        --        c : Choices (h n)
-        --        c = proj₁ $ ⋖-to-addChoice (H n)
-        --        c-prop : addChoice (h n) c ≡ h (suc n)
-        --        c-prop = sym $ proj₂ $ ⋖-to-addChoice (H n)
-        --        sublemma : (m : ℕ) → (n ≡ m) → predicate (↑ F) (h n) ≡ true
-        --        sublemma zero refl = 
-        --            begin 
-        --                predicate (↑ F) (h n)
-        --            ≡⟨⟩
-        --                predicate (↑ F) (h 0)
-        --            ≡⟨ cong (predicate (↑ F)) (empty-is-unique-zero (h 0))  ⟩
-        --                predicate (↑ F) (empty)
-        --            ≡⟨⟩ -- Definition of '↑'
-        --               true 
-        --            ∎
-        --        sublemma (suc n') refl = 
-        --            let (c' , c'-prop) = ⋖-to-addChoice (H n') in
-        --            begin 
-        --                predicate (↑ F) (h n)
-        --            ≡⟨⟩
-        --                predicate (↑ F) (h (suc n'))
-        --            ≡⟨ cong (predicate (↑ F)) (c'-prop)  ⟩
-        --                predicate (↑ F) (addChoice (h n') c')
-        --            ≡⟨ sym $ recoToFilter-addChoice (↑ F) (h n') c' ⟩
-        --                (↓ ↑ F) (h n') c'
-        --            ≡⟨ cong ((↓ ↑ F) (h n')) (lemma-getChoice-exence n' h H ) ⟩
-        --                (↓ ↑ F) (h n') (getChoice (h n') (h (suc n')) (H n'))
-        --            ≡⟨ LEFT sat n' ⟩
-        --               true 
-        --            ∎
-                    
-            
 
         RIGHT : Exence-sats (↓ ↑ F) E → Exence-sats F E
         RIGHT sat = ?
