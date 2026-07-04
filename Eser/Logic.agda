@@ -10,6 +10,9 @@ module Eser.Logic where
 open import Data.Sum
 open import Relation.Nullary
 open import Data.Empty
+open import Data.Bool
+open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
 
 -- This also works with `¬ (A ⊎ B)`, as it is a shorthand for `A ⊎ B → ⊥` 
 -- (i.e., special case with `C := ⊥`).
@@ -45,8 +48,6 @@ implCongrRight (inj₂ y) f = inj₂ (f y)
 --------------------------------------------------------------------------------
 -- Logic on terms of Data.Bool (instead of on types-as-propositions)
 --------------------------------------------------------------------------------
-open import Data.Bool
-open import Relation.Binary.PropositionalEquality
 
 true≢false : true ≢ false
 true≢false ()
@@ -63,5 +64,17 @@ true≢false ()
     → b ≡ true
 ∧-elim-right true true refl = refl
 
-
-
+-- If A => B then A ∧ B is equal to A.
+∧-left-implies-right
+    : (a b : Bool)
+    → (a ≡ true → b ≡ true)
+    → a ∧ b ≡ a
+∧-left-implies-right false b a=>b = refl
+∧-left-implies-right true b a=>b = 
+    begin 
+        true ∧ b
+    ≡⟨ cong (true ∧_) (a=>b refl) ⟩
+        true ∧ true
+    ≡⟨⟩
+        true
+    ∎

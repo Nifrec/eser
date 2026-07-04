@@ -14,12 +14,13 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
+open import Data.Nat.Properties using (n<1+n)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
 
-open import Eser.Logic using (∧-elim-right ; true≢false)
+open import Eser.Logic using (∧-elim-right ; true≢false ; ∧-left-implies-right)
 
 open import Eser.Filters.Base
 open Reco
@@ -163,12 +164,10 @@ lemma-↓↑-stronger F {n} r c F-disallows =
     ≡⟨⟩
         false
     ∎
-    
 
 --------------------------------------------------------------------------------
 -- Correspondence theorems.
 --------------------------------------------------------------------------------
-
 
 theo-filter-reco-filter-same-sat
     : (F : Filter)
@@ -235,6 +234,58 @@ theo-filter-reco-filter-same-sat-NFFun
     → (f' : NFFun)
     → NFFun-sats F f' ↔ NFFun-sats (↓ ↑ F) f'
 theo-filter-reco-filter-same-sat-NFFun F f' = ?
+
+-- filterToReco is a retraction of recoToFilter
+-- (up to function extensionality and first projections;
+-- second projections are pointwise proof-irrelevant anyway).
+-- (It is NOT an inverse though, see lemma-↓↑-stronger for a counterargument to
+-- that).
+lemma-reco-filter-reco-retract
+    : (P : Reco)
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → predicate (↑ ↓ P) r ≡ predicate P r
+-- Case 1 : all Recos map 'empty' to 'true'.
+lemma-reco-filter-reco-retract P {zero} empty = 
+    begin 
+        predicate (↑ ↓ P) empty
+    ≡⟨ empty-is-ok (↑ ↓ P) ⟩
+        true
+    ≡⟨ sym $ empty-is-ok P ⟩
+        predicate P empty
+    ∎
+lemma-reco-filter-reco-retract P {suc n} r = 
+    begin 
+        predicate (↑ ↓ P) r
+    -- Since r : NFRestr (suc n), there must exist a smaller NFRestr n
+    -- of which r is an extension, i.e., r = addChoice r' c.
+    ≡⟨ cong (predicate (↑ ↓ P)) c-prop ⟩
+        predicate (↑ ↓ P) (addChoice r' c)
+    ≡⟨ filterToReco-addChoice (↓ P) r' c ⟩
+        (↓ P) r' c ∧ predicate (↑ ↓ P) r'
+    ≡⟨ cong (_∧ predicate (↑ ↓ P) r') (recoToFilter-addChoice P r' c) ⟩
+        predicate P (addChoice r' c) ∧ predicate (↑ ↓ P) r'
+    -- Now make a recursive call on the RHS.
+    ≡⟨ cong (predicate P (addChoice r' c) ∧_ )
+            $ lemma-reco-filter-reco-retract P {n} r' ⟩
+        predicate P (addChoice r' c) ∧ predicate P r'
+    -- Because P is coherent, the LHS implies the RHS.
+    ≡⟨ ∧-left-implies-right 
+        (predicate P (addChoice r' c)) 
+        (predicate P r') 
+        (coherence P r' (addChoice r' c) (⋖-addChoice c)) ⟩
+        predicate P (addChoice r' c)
+    ≡⟨ cong (predicate P) (sym $ c-prop) ⟩
+        predicate P r
+    ∎
+    where
+        r' : NFRestr n
+        r' = trim r (n<1+n n)
+        c : Choices r'
+        c = proj₁ $ getLastChoice r
+        c-prop : r ≡ addChoice r' c
+        c-prop = proj₂ $ getLastChoice r
+
     
 theo-reco-filter-reco-same-sat
     : (P : Reco)
