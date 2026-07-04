@@ -233,7 +233,11 @@ theo-filter-reco-filter-same-sat-NFFun
     : (F : Filter)
     → (f' : NFFun)
     → NFFun-sats F f' ↔ NFFun-sats (↓ ↑ F) f'
-theo-filter-reco-filter-same-sat-NFFun F f' = ?
+-- Trivial, because `NFFun-sats F f'` is defined as 
+-- `Exence-sats F (restrict+ f')`, and we already have the correspondence for
+-- Exences.
+theo-filter-reco-filter-same-sat-NFFun F f' = 
+    theo-filter-reco-filter-same-sat F (restrict+ f')
 
 -- filterToReco is a retraction of recoToFilter
 -- (up to function extensionality and first projections;
@@ -317,9 +321,9 @@ theo-reco-filter-reco-same-sat-NFFun
     : (P : Reco)
     → (f' : NFFun)
     → Reco-NFFun-sats P f' ↔ Reco-NFFun-sats (↑ ↓ P) f'
-theo-reco-filter-reco-same-sat-NFFun P f' = (LEFT , RIGHT)
-    where
-        LEFT : Reco-NFFun-sats P f' → Reco-NFFun-sats (↑ ↓ P) f'
-        LEFT = ?
-        RIGHT = ?
+-- Proof is trivial, since Reco-NFFun-sats P f' is defined as 
+-- Reco-Exence-sats P (restrict+ f), and we already have the theorem for
+-- Exences.
+theo-reco-filter-reco-same-sat-NFFun P f' = 
+    theo-reco-filter-reco-same-sat P (restrict+ f') 
 
