@@ -334,4 +334,26 @@ module ForSignature {μ : ℕ∞} {ζ : ℕ∞} (S : Signature (suc∞ μ) (suc�
     toReplaceStruct .replace = {! !}
     toReplaceStruct .replace-< = {! !}
 
+    ----------------------------------------------------------------------------
+    -- 𝟓. Familiar definition of congruence
+    ----------------------------------------------------------------------------
+    -- Is-an-argument-of-relation, lifted to ℕ via the bijection φ : 𝕋 ≃ ℕ.
+    _⋤ℕ_ : ℕ → ℕ → Set
+    t ⋤ℕ a = (proj₂ $ φ⁻¹ t) ⋤ (proj₂ $ φ⁻¹ a)
 
+    IsCongruence : DecEquiv → Set
+    IsCongruence R'@(R , is-equiv-rel) 
+        = (t : ℕ)                         --^ For all closed terms t ...
+        → (a : ℕ) → (a ⋤ℕ t)              --^ ... and all arguments a of t
+        → (a' : ℕ)                        --^ ... and all alternatives a'
+        → R a a' ≡ true                   --^     that are related to a
+        → R t (sig-replace t a a') ≡ true --^ t and t[a'/a] must be related.
+            
+    ----------------------------------------------------------------------------
+    -- 𝟔. ReplaceResp specialises to IsCongruence for Signatures
+    ----------------------------------------------------------------------------
+    open ReplaceResp toReplaceStruct
+    theo-ReplaceResp-is-IsCongr
+        : (R : DecEquiv)
+        → ReplaceRespGlobal R ↔ IsCongruence R
+    theo-ReplaceResp-is-IsCongr R = ?
