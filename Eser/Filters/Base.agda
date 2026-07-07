@@ -360,3 +360,4 @@ NFRestrToℕ : {n : ℕ} → NFRestr n → Maybe ℕ
 NFRestrToℕ {n} empty = nothing
 NFRestrToℕ {suc n'} (newNF r') = just n'
 NFRestrToℕ {suc n'} (oldNF r' c) = just $ NFSToℕ {n'} {r'} c
+

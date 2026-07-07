@@ -10,6 +10,7 @@ open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
+open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
@@ -62,7 +63,40 @@ lemma-NFRestr-subst
     → subst NFRestr p r ≡ subst NFRestr p' r
 lemma-NFRestr-subst r refl refl = refl
 
-        
+-- The normal forms of a NFRestr n enjoy decidable equality,
+-- since they are defined as a rather simple inductive type,
+-- and are equal iff they are syntactically equal.
+_≡?_ : {n : ℕ} → {r : NFRestr n} → DecidableEquality (NFS r)
+here ≡? here =  true because ofʸ refl
+here ≡? earlier-new c' = false because ofⁿ λ { () }
+earlier-new c ≡? here = false because ofⁿ λ { () }
+earlier-new c ≡? earlier-new c' with c ≡? c'
+... | (yes c≡c') = true because ofʸ (cong earlier-new c≡c')
+... | (no c≢c') 
+    = false because ofⁿ λ { eq → c≢c' $ earlier-new-injective eq }
+    where
+        earlier-new-injective 
+            : {n : ℕ} 
+            → {r : NFRestr n} 
+            → {c c' : NFS r}
+            → earlier-new c ≡ earlier-new c'
+            → c ≡ c'
+        earlier-new-injective refl = refl
+_≡?_ {suc n} {oldNF r k} (earlier-old c) (earlier-old c') with c ≡? c'
+... | (yes c≡c') = true because ofʸ (cong earlier-old c≡c')
+... | (no c≢c') 
+    = false because ofⁿ 
+        λ { eq → c≢c' $ earlier-old-injective {n} {r} {c}{c'}{k} eq }
+    where
+        earlier-old-injective 
+            : {n : ℕ} 
+            → {r : NFRestr n} 
+            → {c c' k : NFS r}
+            → earlier-old {n} {r} {k} c ≡ earlier-old {n} {r} {k} c'
+            → c ≡ c'
+        earlier-old-injective refl = refl
+
+
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
 --------------------------------------------------------------------------------

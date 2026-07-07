@@ -19,11 +19,13 @@ open import Data.Maybe
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
-open import Eser.EqRel.Conversions using (RelToFun)
+open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_)
 
 open import Eser.Filters.Base
+open import Eser.Filters.Properties
 open import Eser.Filters.Resurface
+open import Eser.Filters.PointwiseProperties
 
 module Eser.Filters.Congruence where
 
@@ -55,8 +57,8 @@ module Eser.Filters.Congruence where
 -- so w.l.o.g. we omit the bijection T ≃ ℕ and just work directly on ℕ.
 --
 -- Concretely, we will do the following:
--- 1. Define ReplaceStructs.
--- 2. Define two notions of ReplaceRespecting (parametrised by a ReplaceStruct).
+-- 𝟏. Define ReplaceStructs.
+-- 𝟐. Define two notions of ReplaceRespecting (parametrised by a ReplaceStruct).
 --   Recall that decidable equivalence relations correspond
 --   to normalisation functions ℕ → ℕ, which correspond to extension-sequences
 --   (Exences). We can define predicates globally on equivalence relations,
@@ -64,24 +66,24 @@ module Eser.Filters.Congruence where
 --   of n when extending the domain a restricted 
 --   equivalence relation from {0, ..., n-1} to {0, ..., n}.
 --   The notions are:
--- 2.1. A global notion on equivalence relations ℕ → ℕ → Bool.
--- 2.2. A local notion implemented as a Filter.
--- 3. We prove that the global notion holds if and only if the local does.
+-- 𝟐.𝟏. A global notion on equivalence relations ℕ → ℕ → Bool.
+-- 𝟐.𝟐. A local notion implemented as a Filter.
+-- 𝟑. We prove that the global notion holds if and only if the local does.
 --
 -- Thereafter we will demonstrate this terse generalisation of congruence
 -- 'works as intended' in practial contexts,
 -- by specialising it to our implementation of signatures and term algebras
 -- (from the modules in `Eser.Signature`, using the `Signatures` and
 -- `ClosedTerms' of the `Eser` library):
--- 4. Show that the closed terms over any Signature from a ReplaceStruct.
--- 5. Define the traditional notion of 'congruence' (as a predicate
+-- 𝟒. Show that the closed terms over any Signature from a ReplaceStruct.
+-- 𝟓. Define the traditional notion of 'congruence' (as a predicate
 --  on relations).
--- 6. Show that a relation satisfies this notion of congruence
+-- 𝟔. Show that a relation satisfies this notion of congruence
 --  if and only if it satisfies the (global notion) of 'ReplaceRespecting'.
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
--- Replacement Structures
+-- 𝟏. Replacement Structures
 --------------------------------------------------------------------------------
 -- Terse encoding of an enumerable type A with a 'is-argument-of'
 -- relation _⊂_. We omit the bijection A ≃ ℕ and work on ℕ directly.
@@ -115,14 +117,17 @@ open ReplaceStruct
 
 
 --------------------------------------------------------------------------------
--- Predicate 'ReplaceResp'
+-- 𝟐. Predicate 'ReplaceResp'
 --------------------------------------------------------------------------------
 module ReplaceResp (T : ReplaceStruct) where
     _⊂_ : ℕ → ℕ → Set
     _⊂_ n m = (_is-arg-of_ T) n m ≡ true
 
 
-    -- Global version: a relation is 'Replacement Respecting'
+    ----------------------------------------------------------------------------
+    -- 𝟐.𝟏. Global version
+    ----------------------------------------------------------------------------
+    -- A relation is 'Replacement Respecting'
     -- if replacing an argument x of y by a related argument x'
     -- results in a term y' that is related to y.
     module _ (R' : DecEquiv) where
@@ -140,45 +145,17 @@ module ReplaceResp (T : ReplaceStruct) where
         -- For well-behaved `replace` functions it seems that this
         -- version of `ReplaceRespGlobal` implies the variant
         -- without the `x' < x` premise anyway (we don't prove this).
-    
-    -- #TODO: move next to defs to `Base.agda`.
 
-    -- The normal forms of a NFRestr n enjoy decidable equality,
-    -- since they are defined as a rather simple inductive type,
-    -- and are equal iff they are syntactically equal.
-    _≡?_ : {n : ℕ} → {r : NFRestr n} → DecidableEquality (NFS r)
-    here ≡? here =  true because ofʸ refl
-    here ≡? earlier-new c' = false because ofⁿ λ { () }
-    earlier-new c ≡? here = false because ofⁿ λ { () }
-    earlier-new c ≡? earlier-new c' with c ≡? c'
-    ... | (yes c≡c') = true because ofʸ (cong earlier-new c≡c')
-    ... | (no c≢c') 
-        = false because ofⁿ λ { eq → c≢c' $ earlier-new-injective eq }
-        where
-            earlier-new-injective 
-                : {n : ℕ} 
-                → {r : NFRestr n} 
-                → {c c' : NFS r}
-                → earlier-new c ≡ earlier-new c'
-                → c ≡ c'
-            earlier-new-injective refl = refl
-    _≡?_ {suc n} {oldNF r k} (earlier-old c) (earlier-old c') with c ≡? c'
-    ... | (yes c≡c') = true because ofʸ (cong earlier-old c≡c')
-    ... | (no c≢c') 
-        = false because ofⁿ 
-            λ { eq → c≢c' $ earlier-old-injective {n} {r} {c}{c'}{k} eq }
-        where
-            earlier-old-injective 
-                : {n : ℕ} 
-                → {r : NFRestr n} 
-                → {c c' k : NFS r}
-                → earlier-old {n} {r} {k} c ≡ earlier-old {n} {r} {k} c'
-                → c ≡ c'
-            earlier-old-injective refl = refl
- 
+    ----------------------------------------------------------------------------
+    -- 𝟐.𝟐. Local version
+    ----------------------------------------------------------------------------
 
     -- An NFRestr n encodes an equivalence relation restricted
     -- to domain {0, ..., n-1}. So on this domain we can use it as a relation.
+    -- Implementation note: this is not in `Eser.Filters.Base`
+    -- nor in `Eser.Filter.Properties` because it depends
+    -- on `Eser.Filter.Resurface`, which in turn depends
+    -- on Base and Properties.
     NFRestrRel 
         : {n : ℕ}
         → (r : NFRestr n)
@@ -190,7 +167,8 @@ module ReplaceResp (T : ReplaceStruct) where
 
     AreRelated : {n : ℕ} → (r : NFRestr n) → ℕ → ℕ → Set
     AreRelated {n} r x x' = (p : x < n) → (q : x' < n) → NFRestrRel r p q ≡ true
-
+        
+    
     -- Predicate that no argument of y is related (according to r)
     -- to a smaller term.
     AllArgsNormal
@@ -224,7 +202,7 @@ module ReplaceResp (T : ReplaceStruct) where
         → AllArgsNormal r ⊎ NonNormalArg r
     allArgsNormal? {n} r = ?
 
-    -- Local version.
+    -- 𝟐.𝟐. Local version.
     -- When needing to filter out the allowed equivalence classes for `y`,
     -- it checks whether `y` contains an argument x 'not in normal form',
     -- which in this abstract context is defined as 'related to a smaller term
@@ -258,5 +236,71 @@ module ReplaceResp (T : ReplaceStruct) where
 
     ReplaceRespLocal {y} r c = ReplaceRespLocal-cases {y} r c (allArgsNormal? r)
     
+
+    ----------------------------------------------------------------------------
+    -- 𝟑. Correspondence Global and Local definition
+    ----------------------------------------------------------------------------
+    -- Implementation note: we could also have given a `R' : DecEquiv`
+    -- and use relToFun instead. 
+    theo-ReplaceResp-left
+        : (f' : NFFun)
+        → ReplaceRespGlobal (FunToRel f') → NFFun-sats ReplaceRespLocal f'
+    theo-ReplaceResp-right
+        : (f' : NFFun)
+        → NFFun-sats ReplaceRespLocal f' → ReplaceRespGlobal (FunToRel f')
+    theo-ReplaceResp-correspondence
+        : (f' : NFFun)
+        → ReplaceRespGlobal (FunToRel f') ↔ NFFun-sats ReplaceRespLocal f'
+    theo-ReplaceResp-correspondence f' = (theo-ReplaceResp-left f'
+                                         , theo-ReplaceResp-right f')
+
+    theo-ReplaceResp-left f' = ?
+    theo-ReplaceResp-right f' = ?
+
+--------------------------------------------------------------------------------
+-- 𝟒. Signatures give ReplaceStructs
+--------------------------------------------------------------------------------
+open import Eser.Signature.Definitions
+open import Eser.Signature.NoWeight
+open import Eser.Card
+
+module ForSignature {μ : ℕ∞} {ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ)) where
+    C = ClosedTermsNW S
+    OT = OpenTermsNW S
+
+    -- Is-an-argument-of-relation.
+    -- Not to be confused with the 'subterm' relation in Eser.Signature.Subterm.
+    -- The latter relation is transitive and also relates
+    -- t to `giveArg t a`, while t is not an argument.
+    data _⋤_ : {n n' : ℕ} → OT n → OT n' → Set where
+        here 
+            : {n : ℕ} 
+            → (t : OT (ℕ.suc n)) 
+            → (x : OT 0) 
+            → x ⋤ giveArg-nw t x
+        earlier 
+            : {n : ℕ} 
+            → (t : OT (ℕ.suc n)) 
+            → (a a' : OT 0) 
+            → a ⋤ t
+            → a ⋤ giveArg-nw t a'
+
+    -- Replacement of arguments defined on Open Terms.
+    -- The enumeration bijection will allow to lift this from OT to ℕ.
+    OT-replace 
+        : {n : ℕ} 
+        → (t : OT n) 
+        → (a : OT 0) 
+        → (a' : OT 0) 
+        → a ⋤ t
+        → Σ[ t' ∈ OT n ] (a' ⋤ t)
+    OT-replace = ?
+
+    -- Extract underlying replacement structure from a Signature.
+    toReplaceStruct : ReplaceStruct
+    toReplaceStruct ._is-arg-of_ = {! !}
+    toReplaceStruct .⊂-resp-< = {! !}
+    toReplaceStruct .replace = {! !}
+    toReplaceStruct .replace-< = {! !}
 
 
