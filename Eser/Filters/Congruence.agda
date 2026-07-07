@@ -10,6 +10,7 @@ open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary
+open import Relation.Binary.Definitions using (Decidable)
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
@@ -76,3 +77,24 @@ module Eser.Filters.Congruence where
 --  if and only if it satisfies the (global notion) of 'ReplaceRespecting'.
 --------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
+-- Replacement Structures
+--------------------------------------------------------------------------------
+-- Terse encoding of an enumerable type A with a 'is-argument-of'
+-- relation _⊂_. We omit the bijection A ≃ ℕ and work on ℕ directly.
+-- Arguments must be smaller in the enumertion than the term containing them.
+-- There is a `replace` operation such that `replace y x x'`
+-- represents the term `y` with argument `x` substituted by `x'`.
+-- We abstract from most implementation details of `replace`,
+-- and do not even distinguish between replacing a 
+-- single or all occurrences of `x`.
+-- Replacing an argument by a smaller one must result
+-- in a term that is overall smaller:
+
+record ReplaceStruct : Set where
+    field
+        _⊂_ : ℕ → ℕ → Set
+        ⊂-dec : Decidable _⊂_
+        ⊂-resp-< : (y x : ℕ) → x ⊂ y → x < y
+        replace : ℕ → ℕ → ℕ → ℕ
+        replace-< : (y x x' : ℕ) → (x < x') → (x ⊂ y) → (replace y x x' < y)
