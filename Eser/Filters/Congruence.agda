@@ -13,7 +13,7 @@ open import Relation.Nullary
 open import Relation.Binary.Definitions using (Decidable ; DecidableEquality)
 open import Data.Product
 open import Data.Sum
-open import Function using (_∘_ ; _$_)
+open import Function using (_∘_ ; _$_ ; id)
 open import Data.Maybe
 
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
@@ -261,40 +261,71 @@ module ReplaceResp (T : ReplaceStruct) where
 -- 𝟒. Signatures give ReplaceStructs
 --------------------------------------------------------------------------------
 open import Eser.Signature.Definitions
-open import Eser.Signature.NoWeight
+open import Eser.Signature.MainTheorem
 open import Eser.Card
+open import Eser.Equivalences
+open import Eser.Equivalences.Notation
 
 module ForSignature {μ : ℕ∞} {ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ)) where
-    C = ClosedTermsNW S
-    OT = OpenTermsNW S
+    -- Implementation note: we are using the version with weight annotations
+    -- because this will make it much easier to prove how replacement of an
+    -- argument by a smaller argument leads to a smaller term.
+    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
+    OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
 
     -- Is-an-argument-of-relation.
     -- Not to be confused with the 'subterm' relation in Eser.Signature.Subterm.
     -- The latter relation is transitive and also relates
     -- t to `giveArg t a`, while t is not an argument.
-    data _⋤_ : {n n' : ℕ} → OT n → OT n' → Set where
+    data _⋤_ : {n n' w w' : ℕ} → OT w n → OT w' n' → Set where
         here 
-            : {n : ℕ} 
-            → (t : OT (ℕ.suc n)) 
-            → (x : OT 0) 
-            → x ⋤ giveArg-nw t x
+            : {n wₜ wₐ : ℕ} 
+            → (t : OT wₜ (ℕ.suc n)) 
+            → (a : OT wₐ 0) 
+            → a ⋤ giveArg t a
         earlier 
-            : {n : ℕ} 
-            → (t : OT (ℕ.suc n)) 
-            → (a a' : OT 0) 
+            : {n wₜ wₐ wₐ' : ℕ} 
+            → (t : OT wₜ (ℕ.suc n)) 
+            → (a : OT wₐ 0) 
+            → (a' : OT wₐ' 0) 
             → a ⋤ t
-            → a ⋤ giveArg-nw t a'
+            → a ⋤ giveArg t a'
 
     -- Replacement of arguments defined on Open Terms.
     -- The enumeration bijection will allow to lift this from OT to ℕ.
     OT-replace 
-        : {n : ℕ} 
-        → (t : OT n) 
-        → (a : OT 0) 
-        → (a' : OT 0) 
-        → a ⋤ t
-        → Σ[ t' ∈ OT n ] (a' ⋤ t)
-    OT-replace = ?
+        : {n wₜ wₐ wₐ' : ℕ} 
+        → (t : OT wₜ n) 
+        → (a : OT wₐ 0) 
+        → (a' : OT wₐ' 0) 
+        → a ⋤ t 
+        --^ Implies wₜ > wₐ, so wₜ ∸ wₐ will be nonzero.
+        --  Can be proven using `subterm-smaller-weight` in Signature.Subterm.
+        → Σ[ w' ∈ ℕ ] Σ[ t' ∈ OT w' n ] (a' ⋤ t) × (w' ≡ (wₜ + wₐ') ∸ wₐ)
+    OT-replace t a a' = ?
+
+    𝕋 : Set
+    𝕋 = AllTerms {suc∞ μ} {suc∞ ζ} S
+
+    𝕋≃ℕ = infTermAlgEnum {μ} {ζ} S
+    --open EquivShorthandsForEnumSet 𝕋≃ℕ
+    φ : 𝕋 → ℕ
+    φ = ≃-to 𝕋≃ℕ
+    φ⁻¹ : ℕ → 𝕋
+    φ⁻¹ = ≃-from 𝕋≃ℕ
+    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
+    φ∘φ⁻¹≈id = ≃-toFrom 𝕋≃ℕ
+    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
+    φ⁻¹∘φ≈id = ≃-fromTo 𝕋≃ℕ
+
+    -- #TODO: if `a` doesn't occur in t then return t unchanged.
+    -- So add a case distinction!
+    sig-replace : ℕ → ℕ → ℕ → ℕ
+    sig-replace t a a' = 
+        let (w' , t' , _) = OT-replace (proj₂ $ φ⁻¹ t) (proj₂ $ φ⁻¹ a) 
+                                       (proj₂ $ φ⁻¹ a') ?
+        in
+        φ (w' , t')
 
     -- Extract underlying replacement structure from a Signature.
     toReplaceStruct : ReplaceStruct
