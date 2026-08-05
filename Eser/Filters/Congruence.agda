@@ -7,6 +7,7 @@
 
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
+open import Data.Bool.Properties using (T-≡)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary
@@ -16,16 +17,18 @@ open import Data.Sum
 open import Function using (_∘_ ; _$_ ; id)
 open import Data.Maybe
 
-open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
+open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; ≡⇒≡ᵇ)
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_)
+open import Eser.Logic using (true≢false ; ≡→≡ᵇ)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties
 open import Eser.Filters.Resurface
 open import Eser.Filters.PointwiseProperties
+open import Eser.Filters.Conversions.NFFunToExence
 
 module Eser.Filters.Congruence where
 
@@ -237,6 +240,17 @@ module ReplaceResp (T : ReplaceStruct) where
     ReplaceRespLocal {y} r c = ReplaceRespLocal-cases {y} r c (allArgsNormal? r)
     
 
+    -- If known that `y` has a non-normal argument,
+    -- then we know the output of ReplaceRespLocal:
+    -- the only allowed choice for the nf of y is
+    -- the nf of replace y x x'.
+    lemma-ReplaceRespLocal-NonNormalArg
+        : {y : ℕ}
+        → (r : NFRestr y)
+        → (c : Choices r)
+        → AllArgsNormal r ⊎ NonNormalArg r
+        → Bool
+        
     ----------------------------------------------------------------------------
     -- 𝟑. Correspondence Global and Local definition
     ----------------------------------------------------------------------------
@@ -255,7 +269,67 @@ module ReplaceResp (T : ReplaceStruct) where
                                          , theo-ReplaceResp-right f')
 
     theo-ReplaceResp-left f' = ?
-    theo-ReplaceResp-right f' = ?
+
+    -- Strategy of right-to-left direction: 
+    -- pattern match on the Boolean `R y (replace T y x x')`
+    -- where R ≗ proj₁ (FunToRel f'),
+    -- i.e., (unfolding R), pattern match on `f y ≡ᵇ f (replace T y x x')`.
+    -- The `true` case is trivial.
+    -- The `false` case leads to a contradiction, since f satisfies
+    -- the ReplaceRespLocal filter; not all of y' arguments are normal
+    -- (x is a counterexample), so the filter only allows the choice
+    -- `replace T y x x'` for f y.
+    theo-ReplaceResp-right-cases
+        : (f' : NFFun)
+        → NFFun-sats ReplaceRespLocal f' 
+        → (y x x' : ℕ)
+        → x ⊂ y
+        → x' < x
+        → (proj₁ $ FunToRel f') x x' ≡ true
+        → (b : Bool)
+        → (proj₁ $ FunToRel f') y (replace T y x x') ≡ b
+        → b ≡ true
+    theo-ReplaceResp-right f' LocSat y x x' x⊂y x'<x xRx' = 
+        theo-ReplaceResp-right-cases f' LocSat y x x' x⊂y x'<x xRx' b refl
+            where
+                b : Bool
+                b = (proj₁ $ FunToRel f') y (replace T y x x')
+
+    theo-ReplaceResp-right-cases f' LocSat y x x' x⊂y x'<x xRx' true p = refl
+    theo-ReplaceResp-right-cases f' LocSat y x x' x⊂y x'<x xRx' false p = 
+        ⊥-elim contra
+        where
+            NonNormalArg-y : NonNormalArg (restrict f' y)
+            -- Add general lemma relating FunToRel and NFRestrRel ∘ restrict.
+            NonNormalArg-y = (x , x' , x⊂y , x'<x , {! xRx' !})
+
+            fy-as-choice : Choices (restrict f' y)
+            fy-as-choice = getChoiceFromExence (restrict+ f') y
+
+            y' : ℕ
+            y' = replace T y x x'
+
+            f : ℕ → ℕ
+            f = proj₁ f'
+
+            -- Unfold the definition of `FunToRel f'` in p to obtain:
+            p' : (f y ≡ᵇ f y') ≡ false
+            p' = p
+
+            fy≢fy' : f y ≢ f y'
+            fy≢fy' fy≡fy' = true≢false $ trans (sym $ ≡→≡ᵇ (f y) (f y') fy≡fy') p
+
+
+            -- By definition of ReplaceRespLocal-cases,
+            -- the following is only possible if fy-as-choice
+            -- equals `earlier-new $ resurface r y'<y`.
+            -- We know this is not the case since `p` proves that f y ≢ f y'
+            -- (where y'  ≔ replace y x x').
+            satAty : ReplaceRespLocal {y} (restrict f' y) fy-as-choice ≡ true
+            satAty = LocSat y
+
+            contra : ⊥
+            contra = ?
 
 --------------------------------------------------------------------------------
 -- 𝟒. Signatures give ReplaceStructs

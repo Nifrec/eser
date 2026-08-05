@@ -78,3 +78,17 @@ true≢false ()
     ≡⟨⟩
         true
     ∎
+
+--------------------------------------------------------------------------------
+-- Conversions between ≡ᵇ and ≡ in ℕ. 
+--------------------------------------------------------------------------------
+module _ where
+    open import Data.Nat
+
+    ≡→≡ᵇ
+        : (m n : ℕ)
+        → m ≡ n
+        → (m ≡ᵇ n) ≡ true
+    ≡→≡ᵇ zero zero refl = refl
+    ≡→≡ᵇ (suc m) (suc m) refl = ≡→≡ᵇ m m refl
+
