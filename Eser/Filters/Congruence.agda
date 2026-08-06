@@ -240,15 +240,30 @@ module ReplaceResp (T : ReplaceStruct) where
 
     ReplaceRespLocal {y} r c = ReplaceRespLocal-cases {y} r c (allArgsNormal? r)
     
-
     -- If known that `y` has a non-normal argument,
     -- then we know the output of ReplaceRespLocal:
     -- the only allowed choice for the nf of y is
     -- the nf of replace y x x'.
+    lemma-ReplaceRespLocal-NonNormalArg-Exence
+        : {y x x' : ℕ}
+        → (h : (n : ℕ) → NFRestr n)
+        → (H : (n : ℕ) → h n ⋖ h (suc n))
+        → x ⊂ y
+        → x' < x
+        → (p : (replace T y x x') < y)
+        → AreRelated (h y) x x'
+        → Exence-sats ReplaceRespLocal (h , H)
+        → getChoiceFromExence (h , H) y ≡ (earlier-new $ resurface (h y) p)
+    lemma-ReplaceRespLocal-NonNormalArg-Exence = ?
+
+    -- Variant of the above lemma in special case where the Exence
+    -- is a restrict+-ed normalisation function f.
+    -- It carries the result back from an equality on used extension choices
+    -- in restrictions of f to an equality on inputs to f.
     -- Implementation note: we don't take an argument z
     -- of type `z : NonNormalArg {y} r` because the output type depends on
     -- the data within z, namely x and x'.
-    lemma-ReplaceRespLocal-NonNormalArg
+    lemma-ReplaceRespLocal-NonNormalArg-NFFun
         : {y x x' : ℕ}
         → x ⊂ y
         → x' < x
@@ -256,7 +271,7 @@ module ReplaceResp (T : ReplaceStruct) where
         → AreRelated (restrict f' y) x x'
         → NFFun-sats ReplaceRespLocal f'
         → (proj₁ f' y) ≡ (proj₁ f' (replace T y x x'))
-    lemma-ReplaceRespLocal-NonNormalArg {y} {x} {x'} x⊂y x'<x 
+    lemma-ReplaceRespLocal-NonNormalArg-NFFun {y} {x} {x'} x⊂y x'<x 
                                         f'@(f , f-leq , f-fix) xRx' LocSat =
         begin 
             f y    
@@ -269,11 +284,14 @@ module ReplaceResp (T : ReplaceStruct) where
         -- #TODO: some lemma with r := restrict f' y and E = restrict+ f'
         ≡⟨ cong choiceToℕ forcedChoice ⟩
             choiceToℕ (earlier-new $ resurface (restrict f' y) y'<y)
-        ≡⟨ ? ⟩ -- Maybe we don't need this step.
+        ≡⟨⟩ -- Maybe we don't need this step.
             NFSToℕ (resurface (restrict f' y) y'<y)
-        ≡⟨ ? ⟩
+        ≡⟨ {! lemma-resurface-getChoice h H y'<y !} ⟩
+            -- #TODO: implement that lemma^. This thing typechecks,
+            -- the {! ... !} is just to ensure I won't forget to implement the
+            -- proof...
             (choiceToℕ ∘ (getChoiceFromExence $ restrict+ f')) y'
-        ≡⟨ ? ⟩ -- Fold definition `combine`.
+        ≡⟨⟩ -- Fold definition `combine`.
             (proj₁ ∘ combine ∘ restrict+) f' y'
         ≡⟨ theo-combine∘restrict+ f' y' ⟩
             proj₁ f' y'
@@ -285,17 +303,40 @@ module ReplaceResp (T : ReplaceStruct) where
             y' = replace T y x x'
 
             y'<y : y' < y
-            y'<y = ?
+            y'<y = replace-< T y x x' x⊂y x'<x
+
+            h = proj₁ $ restrict+ f'
+            H = proj₂ $ restrict+ f'
 
             forcedChoice : getChoiceFromExence (restrict+ f') y 
                            ≡ 
                            (earlier-new $ resurface (restrict f' y) y'<y)
-            forcedChoice = ? -- #TODO: lemma using LocSat
+            forcedChoice = lemma-ReplaceRespLocal-NonNormalArg-Exence
+                h H x⊂y x'<x y'<y xRx' LocSat
         
         
     ----------------------------------------------------------------------------
     -- 𝟑. Correspondence Global and Local definition
     ----------------------------------------------------------------------------
+    --lemma-FunToRel-AreRelated
+    --    : (f' : NFFun)
+    --    → (y x x' : ℕ)
+    --    → (x<y : x < y)
+    --    → (x'<y : x' < y)
+    --    → proj₁ (FunToRel f') x x' ≡ true
+    --    → AreRelated (restrict (proj₁ f') y) x x' x<y x'<y
+    --lemma-FunToRel-AreRelated = ?
+
+    lemma-FunToRel-AreRelated
+        : (f' : NFFun)
+        → (x x' : ℕ)
+        --→ (x<y : x < y)
+        --→ (x'<y : x' < y)
+        → proj₁ (FunToRel f') x x' ≡ true
+        → (y : ℕ)
+        → AreRelated (restrict f' y) x x'
+    lemma-FunToRel-AreRelated f' x x' xRx' x<y x'<y = ?
+
     -- Implementation note: we could also have given a `R' : DecEquiv`
     -- and use RelToFun instead. 
     theo-ReplaceResp-left
@@ -311,6 +352,7 @@ module ReplaceResp (T : ReplaceStruct) where
                                          , theo-ReplaceResp-right f')
 
     theo-ReplaceResp-left f' = ?
+
 
     -- Strategy of right-to-left direction: 
     -- pattern match on the Boolean `R y (replace T y x x')`
@@ -343,9 +385,8 @@ module ReplaceResp (T : ReplaceStruct) where
         where
 
             xRx'-alt : AreRelated (restrict f' y) x x'
-            -- #TODO:
-            -- Add general lemma relating FunToRel and NFRestrRel ∘ restrict.
-            xRx'-alt = ?
+            xRx'-alt = lemma-FunToRel-AreRelated f' x x' xRx' y
+
 
             NonNormalArg-y : NonNormalArg (restrict f' y)
             NonNormalArg-y = (x , x' , x⊂y , x'<x , xRx'-alt)
@@ -367,7 +408,8 @@ module ReplaceResp (T : ReplaceStruct) where
             fy≢fy' fy≡fy' = true≢false $ trans (sym $ ≡→≡ᵇ (f y) (f y') fy≡fy') p
 
             fy≡fy' : f y ≡ f y'
-            fy≡fy' = lemma-ReplaceRespLocal-NonNormalArg x⊂y x'<x f' xRx'-alt LocSat
+            fy≡fy' = lemma-ReplaceRespLocal-NonNormalArg-NFFun x⊂y x'<x f' 
+                                                               xRx'-alt LocSat
 
 
             -- By definition of ReplaceRespLocal-cases,
@@ -379,7 +421,7 @@ module ReplaceResp (T : ReplaceStruct) where
             satAty = LocSat y
 
             contra : ⊥
-            contra = ?
+            contra = fy≢fy' fy≡fy'
 
 --------------------------------------------------------------------------------
 -- 𝟒. Signatures give ReplaceStructs

@@ -5,6 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --allow-unsolved-metas #-}
+
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -452,3 +454,19 @@ resurface-nf-⋖+-case {n} {suc m} r' (oldNF s c)
             x' = earlier-old {c = c} (proj₁ rec)
             p : NFSToℕ x' ≡ n
             p = proj₂ rec
+
+--------------------------------------------------------------------------------
+-- Properties of `resurface` in case of an Exence
+--------------------------------------------------------------------------------
+
+-- Resurfacing a choice at n' from one NFRestr n in an Exence
+-- returns the same underlying number (the normal form) 
+-- as does extracting that choice at n' directly.
+lemma-resurface-getChoice
+    : {n n' : ℕ}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (n'<n : n' < n)
+    → NFSToℕ (resurface (h n) n'<n) ≡ choiceToℕ (getChoiceFromExence (h , H) n')
+lemma-resurface-getChoice {n} {n'} h H n'<n = ?
+    -- #TODO: remove {-# OPTIONS --allow-unsolved-metas #-}
