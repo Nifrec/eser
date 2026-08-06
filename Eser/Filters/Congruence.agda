@@ -206,6 +206,19 @@ module ReplaceResp (T : ReplaceStruct) where
         → AllArgsNormal r ⊎ NonNormalArg r
     allArgsNormal? {n} r = ?
 
+    -- Given evidence of a non-normal argument, we know the output of
+    -- `allArgsNormal?`.
+    lemma-allArgsNormal?-NonNormal
+        : {y : ℕ}
+        → (r : NFRestr y)
+        → {x x' : ℕ}
+        → (x⊂y : x ⊂ y)
+        → (x'<x : x' < x)
+        → (xRx' : AreRelated r x x')
+        → allArgsNormal r ≡ inj₂ (x , x' , x⊂y , x'<x , xRx')
+    lemma-allArgsNormal?-NonNormal = ?
+        
+
     -- 𝟐.𝟐. Local version.
     -- When needing to filter out the allowed equivalence classes for `y`,
     -- it checks whether `y` contains an argument x 'not in normal form',
