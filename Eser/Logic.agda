@@ -11,6 +11,7 @@ open import Data.Sum
 open import Relation.Nullary
 open import Data.Empty
 open import Data.Bool
+open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 
@@ -92,3 +93,19 @@ module _ where
     ≡→≡ᵇ zero zero refl = refl
     ≡→≡ᵇ (suc m) (suc m) refl = ≡→≡ᵇ m m refl
 
+--------------------------------------------------------------------------------
+-- Extracting proofs from decidable equivalence relations.
+--------------------------------------------------------------------------------
+
+decEqReflection
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → (a b : A)
+    → does (a ≡? b) ≡ true
+    → a ≡ b
+decEqReflection {A} _≡?_ a b p = q'
+    where
+        q : Reflects (a ≡ b) (does (a ≡? b))
+        q = proof (a ≡? b)
+        q' : a ≡ b
+        q' = invert ( (subst (λ x → Reflects (a ≡ b) x) p q))

@@ -18,12 +18,18 @@ open import Data.Sum
 open import Function using (_∘_ ; _$_ ; id)
 open import Data.Maybe
 
-open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n ; ≡⇒≡ᵇ)
+open import Data.Nat.Properties using (
+    ≤-refl 
+    ; ≤-trans 
+    ; n≤1+n 
+    ; ≡⇒≡ᵇ
+    ; <-irrelevant
+    )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_)
-open import Eser.Logic using (true≢false ; ≡→≡ᵇ)
+open import Eser.Logic using (true≢false ; ≡→≡ᵇ ; decEqReflection)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties
@@ -215,7 +221,7 @@ module ReplaceResp (T : ReplaceStruct) where
         → (x⊂y : x ⊂ y)
         → (x'<x : x' < x)
         → (xRx' : AreRelated r x x')
-        → allArgsNormal r ≡ inj₂ (x , x' , x⊂y , x'<x , xRx')
+        → allArgsNormal? r ≡ inj₂ (x , x' , x⊂y , x'<x , xRx')
     lemma-allArgsNormal?-NonNormal = ?
         
 
@@ -267,8 +273,54 @@ module ReplaceResp (T : ReplaceStruct) where
         → AreRelated (h y) x x'
         → Exence-sats ReplaceRespLocal (h , H)
         → getChoiceFromExence (h , H) y ≡ (earlier-new $ resurface (h y) p)
-    lemma-ReplaceRespLocal-NonNormalArg-Exence = ?
+    lemma-ReplaceRespLocal-NonNormalArg-Exence {y} {x} {x'} h H x⊂y x'<x y'<y 
+                                               xRx' LocSat 
+                                               = decEqReflection _≡?_ LHS RHS K'
+        where
+            LHS : Choices (h y)
+            LHS = getChoiceFromExence (h , H) y
 
+            RHS : Choices (h y)
+            RHS = earlier-new $ resurface (h y) y'<y
+
+            F : Filter
+            F = ReplaceRespLocal
+
+            K : F (h y) LHS ≡ true
+            K = LocSat y
+
+            y' : ℕ
+            y' = replace T y x x'
+
+            y'<y-alt : y' < y
+            y'<y-alt = replace-< T y x x' x⊂y x'<x
+
+            
+            y'<y-alt≡y'<y : y'<y-alt ≡ y'<y
+            y'<y-alt≡y'<y = <-irrelevant y'<y-alt y'<y
+
+            -- Compute definition of F, after forcing the output of
+            -- the call to `allArgsNormal?`.
+            K' : does (LHS ≡? RHS) ≡ true
+            K' = sym $
+                begin 
+                    true 
+                ≡⟨ sym K ⟩
+                    F (h y) LHS
+                ≡⟨⟩
+                    ReplaceRespLocal-cases (h y) LHS (allArgsNormal? (h y))
+                ≡⟨ cong (ReplaceRespLocal-cases (h y) LHS) 
+                   $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx' ⟩ 
+                    ReplaceRespLocal-cases (h y) LHS 
+                        (inj₂ (x , x' , x⊂y , x'<x , xRx'))
+                ≡⟨⟩ -- Definition ReplaceRespLocal-cases.
+                    does (LHS ≡? (earlier-new $ resurface (h y) y'<y-alt))
+                    -- Now substitute the proof-irrelevant proof that
+                    -- y' < y by the one given.
+                ≡⟨ cong (λ p → does (LHS ≡? (earlier-new $ resurface (h y) p)))
+                        y'<y-alt≡y'<y ⟩
+                    does (LHS ≡? RHS)
+                ∎
     -- Variant of the above lemma in special case where the Exence
     -- is a restrict+-ed normalisation function f.
     -- It carries the result back from an equality on used extension choices
