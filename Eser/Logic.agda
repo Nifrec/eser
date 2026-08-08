@@ -14,6 +14,7 @@ open import Data.Bool
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
+open import Function using (_$_)
 
 -- This also works with `¬ (A ⊎ B)`, as it is a shorthand for `A ⊎ B → ⊥` 
 -- (i.e., special case with `C := ⊥`).
@@ -80,21 +81,10 @@ true≢false ()
         true
     ∎
 
---------------------------------------------------------------------------------
--- Conversions between ≡ᵇ and ≡ in ℕ. 
---------------------------------------------------------------------------------
-module _ where
-    open import Data.Nat
-
-    ≡→≡ᵇ
-        : (m n : ℕ)
-        → m ≡ n
-        → (m ≡ᵇ n) ≡ true
-    ≡→≡ᵇ zero zero refl = refl
-    ≡→≡ᵇ (suc m) (suc m) refl = ≡→≡ᵇ m m refl
 
 --------------------------------------------------------------------------------
 -- Extracting proofs from decidable equivalence relations.
+-- And vice versa.
 --------------------------------------------------------------------------------
 
 decEqReflection
@@ -109,3 +99,56 @@ decEqReflection {A} _≡?_ a b p = q'
         q = proof (a ≡? b)
         q' : a ≡ b
         q' = invert ( (subst (λ x → Reflects (a ≡ b) x) p q))
+
+-- Given a proof of truth, force the Bool-part of a decidable type to be `true`.
+-- (This might exist in the StdLib, but I could not find it).
+forceDoesTrue
+    : {A : Set}
+    → (d : Dec A)
+    → A
+    → does d ≡ true
+forceDoesTrue {A} (no ¬a) a = ⊥-elim $ ¬a a
+forceDoesTrue {A} (yes a) _ = refl
+
+decEqCoReflection
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → (a b : A)
+    → a ≡ b
+    → does (a ≡? b) ≡ true
+decEqCoReflection {A} _≡?_ a a refl 
+    = decEqCoReflectionCases _≡?_ a a refl (does (a ≡? a)) refl
+    where
+        decEqCoReflectionCases
+            : {A : Set}
+            → (_≡?_ : DecidableEquality A)
+            → (a b : A)
+            → a ≡ b
+            → (x : Bool)
+            → (x ≡ does (a ≡? b))
+            → x ≡ true
+        decEqCoReflectionCases _≡?_ a a refl false p = 
+            ⊥-elim $ true≢false $ sym $ 
+                subst (λ z → false ≡ z) (forceDoesTrue {a ≡ a} (a ≡? a) refl) p
+        decEqCoReflectionCases _≡?_ a a refl true p = refl
+
+--------------------------------------------------------------------------------
+-- Conversions between ≡ᵇ and ≡ in ℕ. 
+--------------------------------------------------------------------------------
+module _ where
+    open import Data.Nat
+
+    ≡→≡ᵇ
+        : (m n : ℕ)
+        → m ≡ n
+        → (m ≡ᵇ n) ≡ true
+    ≡→≡ᵇ zero zero refl = refl
+    ≡→≡ᵇ (suc m) (suc m) refl = ≡→≡ᵇ m m refl
+
+    ≡ᵇ→≡
+        : (m n : ℕ)
+        → (m ≡ᵇ n) ≡ true
+        → m ≡ n
+    ≡ᵇ→≡ 0 0 refl = refl
+    ≡ᵇ→≡ (suc m) (suc n) p = cong suc (≡ᵇ→≡ m n p)
+
