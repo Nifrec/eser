@@ -93,7 +93,7 @@ theo-restrict+∘combine
 module CombineData 
     (h : (n : ℕ) → NFRestr n)
     (H : (n : ℕ) → h n ⋖ h (ℕ.suc n))
-    where
+     where
     f : ℕ → ℕ
     f = choiceToℕ ∘ (getChoiceFromExence (h , H))
 
@@ -710,3 +710,32 @@ exence-successor-tuples-eq h h' H H' refl n
         B-irrel (r , s) = ⋖-irrel r s
         homot : h' ≈ h
         homot = theo-restrict+∘combine (h , H)
+
+-- The ℕ-versions of the NF-choices in the restrictions of a NFFun f
+-- correspond to the outputs of f.
+resurf-restrict-to-fun-output
+    : (f' : NFFun)
+    → (n m : ℕ)
+    → (m<n : m < n)
+    → NFSToℕ (resurface (restrict f' n) m<n) ≡ (proj₁ f') m
+resurf-restrict-to-fun-output f' n m m<n =
+    begin 
+        NFSToℕ (resurface (restrict f' n) m<n)
+    ≡⟨  lemma-resurface-getChoice h H m<n ⟩
+        choiceToℕ (getChoiceFromExence (restrict+ f') m)
+    ≡⟨⟩
+        (proj₁ ∘ combine ∘ restrict+) f' m
+    ≡⟨ theo-combine∘restrict+ f' m ⟩
+        proj₁ f' m
+    ≡⟨⟩
+        f m    
+    ∎
+    where
+        f : ℕ → ℕ
+        f = proj₁ f'
+
+        h = restrict f'
+        H = proj₂ $ restrict+ f'
+    
+    
+
