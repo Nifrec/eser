@@ -28,8 +28,14 @@ open import Data.Nat.Properties using (
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
-open import Eser.Aux using (_↔_ ; _≈_)
-open import Eser.Logic using (true≢false ; ≡→≡ᵇ ; decEqReflection)
+open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst)
+open import Eser.Logic using 
+    (true≢false 
+    ; ≡→≡ᵇ 
+    ; ≡ᵇ→≡ 
+    ; decEqReflection
+    ; decEqCoReflection
+    )
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties
@@ -383,24 +389,45 @@ module ReplaceResp (T : ReplaceStruct) where
     ----------------------------------------------------------------------------
     -- 𝟑. Correspondence Global and Local definition
     ----------------------------------------------------------------------------
-    --lemma-FunToRel-AreRelated
-    --    : (f' : NFFun)
-    --    → (y x x' : ℕ)
-    --    → (x<y : x < y)
-    --    → (x'<y : x' < y)
-    --    → proj₁ (FunToRel f') x x' ≡ true
-    --    → AreRelated (restrict (proj₁ f') y) x x' x<y x'<y
-    --lemma-FunToRel-AreRelated = ?
 
     lemma-FunToRel-AreRelated
         : (f' : NFFun)
         → (x x' : ℕ)
-        --→ (x<y : x < y)
-        --→ (x'<y : x' < y)
         → proj₁ (FunToRel f') x x' ≡ true
         → (y : ℕ)
         → AreRelated (restrict f' y) x x'
-    lemma-FunToRel-AreRelated f' x x' xRx' x<y x'<y = ?
+    lemma-FunToRel-AreRelated f'@(f , f-leq , f-fix) x x' xRx' y x<y x'<y 
+        = NFS-DecEq
+        where
+            -- From xRx' and definition of FunToRel f' we get:
+            fx≡f'x : f x ≡ f x'
+            fx≡f'x = ≡ᵇ→≡ (f x) (f x') xRx'
+
+            NFS-as-ℕ-Eq :
+                NFSToℕ (resurface (restrict f' y) x<y)
+                ≡ 
+                NFSToℕ (resurface (restrict f' y) x'<y)
+            NFS-as-ℕ-Eq = doubleSubst {ℕ} {ℕ} _≡_ p q fx≡f'x
+                where
+                    p = sym $ resurf-restrict-to-fun-output f' y x x<y
+                    q = sym $ resurf-restrict-to-fun-output f' y x' x'<y
+
+            c = resurface (restrict f' y) x<y
+            c' = resurface (restrict f' y) x'<y
+
+            NFS-Eq : 
+                (resurface (restrict f' y) x<y)
+                ≡ 
+                (resurface (restrict f' y) x'<y)
+            NFS-Eq = NFSToℕ-injective c c' NFS-as-ℕ-Eq
+
+            NFS-DecEq :
+                does (
+                    (resurface (restrict f' y) x<y)
+                    ≡? 
+                    (resurface (restrict f' y) x'<y)
+                ) ≡ true
+            NFS-DecEq = decEqCoReflection _≡?_ c c' NFS-Eq
 
     -- Implementation note: we could also have given a `R' : DecEquiv`
     -- and use RelToFun instead. 
