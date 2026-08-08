@@ -113,23 +113,23 @@ NFSToℕ-earlier-smaller-than-here r c = NFSToℕ-< c
     
 NFSToℕ-injective
     : {n : ℕ}
-    → (r : NFRestr n)
+    → {r : NFRestr n}
     → (c c' : NFS r)
     → NFSToℕ c ≡ NFSToℕ c'
     → c ≡ c'
-NFSToℕ-injective {n} (newNF r) here here refl = refl
-NFSToℕ-injective {n} (newNF r) here (earlier-new c') eq-in-ℕ = 
+NFSToℕ-injective {n} {newNF r} here here refl = refl
+NFSToℕ-injective {n} {newNF r} here (earlier-new c') eq-in-ℕ = 
     ⊥-elim $ n≮n (NFSToℕ c')
         (subst (λ x → NFSToℕ c' < x) eq-in-ℕ
                (NFSToℕ-earlier-smaller-than-here r c'))
-NFSToℕ-injective {n} (newNF r) (earlier-new c) here eq-in-ℕ =
+NFSToℕ-injective {n} {newNF r} (earlier-new c) here eq-in-ℕ =
     ⊥-elim $ n≮n (NFSToℕ c)
         (subst (λ x → NFSToℕ c < x) (sym eq-in-ℕ)
                (NFSToℕ-earlier-smaller-than-here r c))
-NFSToℕ-injective {n} (newNF r) (earlier-new c) (earlier-new c') eq-in-ℕ = 
-    cong earlier-new $ NFSToℕ-injective r c c' eq-in-ℕ
-NFSToℕ-injective {n} (oldNF r x) (earlier-old c) (earlier-old c') eq-in-ℕ =
-    cong earlier-old $ NFSToℕ-injective r c c' eq-in-ℕ
+NFSToℕ-injective {n} {newNF r} (earlier-new c) (earlier-new c') eq-in-ℕ = 
+    cong earlier-new $ NFSToℕ-injective c c' eq-in-ℕ
+NFSToℕ-injective {n} {oldNF r x} (earlier-old c) (earlier-old c') eq-in-ℕ =
+    cong earlier-old $ NFSToℕ-injective c c' eq-in-ℕ
 
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
