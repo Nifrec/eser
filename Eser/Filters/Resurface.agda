@@ -5,8 +5,6 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -23,6 +21,7 @@ open import Data.Nat.Properties using (m<1+n⇒m<n∨m≡n ; m≤n⇒m<n∨m≡n
     ; n<1+n
     )
 open import Data.Maybe
+open import Data.Maybe.Properties using (just-injective)
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties 
@@ -462,11 +461,30 @@ resurface-nf-⋖+-case {n} {suc m} r' (oldNF s c)
 -- Resurfacing a choice at n' from one NFRestr n in an Exence
 -- returns the same underlying number (the normal form) 
 -- as does extracting that choice at n' directly.
+--
+-- Implementation note: this is a very high-level proof
+-- employing a lot of earlier lemmas.
 lemma-resurface-getChoice
     : {n n' : ℕ}
     → (h : (n : ℕ) → NFRestr n)
     → (H : (n : ℕ) → h n ⋖ h (suc n))
     → (n'<n : n' < n)
     → NFSToℕ (resurface (h n) n'<n) ≡ choiceToℕ (getChoiceFromExence (h , H) n')
-lemma-resurface-getChoice {n} {n'} h H n'<n = ?
-    -- #TODO: remove {-# OPTIONS --allow-unsolved-metas #-}
+lemma-resurface-getChoice {n} {n'} h H n'<n = 
+    just-injective $ 
+    begin 
+        (just $ NFSToℕ (resurface (h n) n'<n))
+    ≡⟨ resurface-correctness (h n) n'<n n'<n ⟩
+        NFRestrToℕ (trim' (h n) n'<n)
+    ≡⟨ cong NFRestrToℕ $ lemma-trim'-exence h H n n' n'<n  ⟩
+        NFRestrToℕ (h (suc n'))
+    ≡⟨ cong NFRestrToℕ $ proj₂ $ ⋖-to-addChoice (H n') ⟩
+        NFRestrToℕ (addChoice (h n') c)
+    ≡⟨ lemma-NFRestrToℕ-addChoice (h n') c ⟩
+        (just $ choiceToℕ c)
+    ≡⟨ cong (just ∘ choiceToℕ) $ lemma-getChoice-exence n' h H ⟩
+        (just $ choiceToℕ c')
+    ∎
+        where
+            c = proj₁ $ ⋖-to-addChoice (H n')
+            c' = (getChoiceFromExence (h , H) n') 
