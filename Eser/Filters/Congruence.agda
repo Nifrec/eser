@@ -21,6 +21,7 @@ open import Data.Maybe
 open import Data.Nat.Properties using (
     ≤-refl 
     ; ≤-trans 
+    ; <-trans
     ; n≤1+n 
     ; ≡⇒≡ᵇ
     ; <-irrelevant
@@ -357,10 +358,7 @@ module ReplaceResp (T : ReplaceStruct) where
             choiceToℕ (earlier-new $ resurface (restrict f' y) y'<y)
         ≡⟨⟩ -- Maybe we don't need this step.
             NFSToℕ (resurface (restrict f' y) y'<y)
-        ≡⟨ {! lemma-resurface-getChoice h H y'<y !} ⟩
-            -- #TODO: implement that lemma^. This thing typechecks,
-            -- the {! ... !} is just to ensure I won't forget to implement the
-            -- proof...
+        ≡⟨ lemma-resurface-getChoice h H y'<y ⟩
             (choiceToℕ ∘ (getChoiceFromExence $ restrict+ f')) y'
         ≡⟨⟩ -- Fold definition `combine`.
             (proj₁ ∘ combine ∘ restrict+) f' y'
@@ -443,8 +441,91 @@ module ReplaceResp (T : ReplaceStruct) where
     theo-ReplaceResp-correspondence f' = (theo-ReplaceResp-left f'
                                          , theo-ReplaceResp-right f')
 
-    theo-ReplaceResp-left f' = ?
+    theo-ReplaceResp-left-cases
+        : (f' : NFFun)
+        → (y : ℕ)
+        → (p : AllArgsNormal (restrict f' y) ⊎ NonNormalArg (restrict f' y))
+        → p ≡ allArgsNormal? (restrict f' y)
+        → ReplaceRespGlobal (FunToRel f') 
+        → ReplaceRespLocal Allows (getChoiceFromExence (restrict+ f') y) 
+                           In (restrict f' y)
 
+    theo-ReplaceResp-left f' G y 
+        = theo-ReplaceResp-left-cases f' y (allArgsNormal? (restrict f' y)) refl G
+
+    theo-ReplaceResp-left-cases f' y (inj₁ normal) p≡allArgsNormal? G =
+        -- This case is easy: all arguments to y are in normal form,
+        -- so ResplaceRespLocal just gives free choice;
+        -- in particular including the choice c.
+        let r = (restrict f' y) in
+        let c = (getChoiceFromExence (restrict+ f') y) in
+        begin 
+            ReplaceRespLocal r c
+        ≡⟨⟩ -- Definition ReplaceRespLocal
+            ReplaceRespLocal-cases r c (allArgsNormal? r)
+        ≡⟨ cong (ReplaceRespLocal-cases r c) (sym p≡allArgsNormal?) ⟩
+            ReplaceRespLocal-cases r c (inj₁ normal)
+        ≡⟨⟩
+            true
+        ∎
+        
+    theo-ReplaceResp-left-cases f'@(f , f-leq , f-fix) y 
+                                (inj₂ p@(x , x' , x⊂y , x'<x , xRx')) 
+                                p≡allArgsNormal? G =
+        begin 
+            ReplaceRespLocal r c
+        ≡⟨⟩
+            ReplaceRespLocal-cases r c (allArgsNormal? r)
+        ≡⟨ cong (ReplaceRespLocal-cases r c) (sym p≡allArgsNormal?) ⟩
+            ReplaceRespLocal-cases r c (inj₂ p)
+        ≡⟨⟩
+            does (c ≡? y'-nf)
+        ≡⟨ ? ⟩
+            does (c ≡? y'-nf)
+        ≡⟨ ? ⟩
+            
+            true
+        ∎
+        where
+            r : NFRestr y
+            r = restrict f' y
+            c : Choices r
+            c = getChoiceFromExence (restrict+ f') y
+            y' : ℕ
+            y' = replace T y x x'
+            y'<y : y' < y
+            y'<y = replace-< T y x x' x⊂y x'<x
+            y'-nf : Choices r
+            y'-nf = earlier-new $ resurface r y'<y
+
+
+            x<y : x < y
+            x<y = ⊂-resp-< T y x x⊂y
+            x'<y : x' < y
+            x'<y = <-trans x'<x x<y
+
+            q : AreRelated r x x'
+            q = lemma-FunToRel-AreRelated f' x x' {! xRx' x<y x'<y !} y
+
+            q' : resurface r x<y ≡ resurface r x'<y
+            q' = decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) (q x<y x'<y)
+
+            q'' : f x ≡ f x'
+            q'' = 
+                begin 
+                    f x
+                ≡⟨ ? ⟩
+                    NFSToℕ (resurface r x<y)
+                ≡⟨ cong NFSToℕ q' ⟩
+                    NFSToℕ (resurface r x'<y)
+                ≡⟨ ? ⟩
+                    f x'
+                ∎
+                
+            fy≡fy' : f y ≡ f y'
+            fy≡fy' = ≡ᵇ→≡ (f y) (f y') 
+                $ G y x x' x⊂y x'<x (≡→≡ᵇ (f x) (f x') q'')
+                --$ lemma-FunToRel-AreRelated f' x x' {! xRx' x<y x'<y !} y x<y x'<y
 
     -- Strategy of right-to-left direction: 
     -- pattern match on the Boolean `R y (replace T y x x')`
