@@ -17,6 +17,7 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_ ; id)
 open import Data.Maybe
+open import Data.Maybe.Properties using (just-injective)
 
 open import Data.Nat.Properties using (
     ≤-refl 
@@ -25,6 +26,7 @@ open import Data.Nat.Properties using (
     ; n≤1+n 
     ; ≡⇒≡ᵇ
     ; <-irrelevant
+    ; n<1+n
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -388,6 +390,15 @@ module ReplaceResp (T : ReplaceStruct) where
     -- 𝟑. Correspondence Global and Local definition
     ----------------------------------------------------------------------------
 
+    ----------------------------------------------------------------------------
+    -- Auxiliary result: FunToRel and AreRelated∘restrict are the same relation.
+    ----------------------------------------------------------------------------
+    -- This is relevant because ReplaceRespGlobal uses FunToRel
+    -- and ReplaceRespLocal uses AreRelated∘restrict.
+    -- So the proof of the theorem ReplaceRespGlobal <-> ReplaceRespLocal
+    -- needs to use  FunToRel <-> AreRelated∘restrict.
+    
+
     lemma-FunToRel-AreRelated
         : (f' : NFFun)
         → (x x' : ℕ)
@@ -426,6 +437,18 @@ module ReplaceResp (T : ReplaceStruct) where
                     (resurface (restrict f' y) x'<y)
                 ) ≡ true
             NFS-DecEq = decEqCoReflection _≡?_ c c' NFS-Eq
+
+    lemma-AreRelated-FunToRel
+        : (f' : NFFun)
+        → (x x' : ℕ)
+        → (y : ℕ)
+        → AreRelated (restrict f' y) x x'
+        → proj₁ (FunToRel f') x x' ≡ true
+    lemma-AreRelated-FunToRel f'@(f , f-leq , f-fix) x x' y xRx' = ?
+
+    ----------------------------------------------------------------------------
+    -- Main theorems
+    ----------------------------------------------------------------------------
 
     -- Implementation note: we could also have given a `R' : DecEquiv`
     -- and use RelToFun instead. 
@@ -480,10 +503,7 @@ module ReplaceResp (T : ReplaceStruct) where
             ReplaceRespLocal-cases r c (inj₂ p)
         ≡⟨⟩
             does (c ≡? y'-nf)
-        ≡⟨ ? ⟩
-            does (c ≡? y'-nf)
-        ≡⟨ ? ⟩
-            
+        ≡⟨ decEqCoReflection _≡?_ c y'-nf choice-eq-alt  ⟩
             true
         ∎
         where
@@ -511,21 +531,81 @@ module ReplaceResp (T : ReplaceStruct) where
             q' = decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) (q x<y x'<y)
 
             q'' : f x ≡ f x'
-            q'' = 
-                begin 
-                    f x
-                ≡⟨ ? ⟩
-                    NFSToℕ (resurface r x<y)
-                ≡⟨ cong NFSToℕ q' ⟩
-                    NFSToℕ (resurface r x'<y)
-                ≡⟨ ? ⟩
-                    f x'
-                ∎
+            q'' = ≡ᵇ→≡ (f x) (f x') $ lemma-AreRelated-FunToRel f' x x' y xRx'
                 
             fy≡fy' : f y ≡ f y'
             fy≡fy' = ≡ᵇ→≡ (f y) (f y') 
                 $ G y x x' x⊂y x'<x (≡→≡ᵇ (f x) (f x') q'')
-                --$ lemma-FunToRel-AreRelated f' x x' {! xRx' x<y x'<y !} y x<y x'<y
+
+            z : ℕ
+            z = suc y
+            y<z : y < z
+            y<z = n<1+n y
+            y'<z : y' < z
+            y'<z = <-trans y'<y y<z
+
+            r' : NFRestr z
+            r' = restrict f' z
+
+            --q''' : NFSToℕ(resurface r' y<z) ≡ NFSToℕ(resurface r' y'<z)
+            --q''' = 
+            --    begin 
+            --        NFSToℕ(resurface r' y<z)
+            --    ≡⟨ resurf-restrict-to-fun-output f' z y y<z ⟩
+            --        f y
+            --    ≡⟨ fy≡fy' ⟩
+            --        f y'
+            --    ≡⟨ sym $ resurf-restrict-to-fun-output f' z y' y'<z ⟩
+            --        NFSToℕ(resurface r' y'<z)
+            --    ∎
+                
+            q'''' : NFSToℕ(resurface r' y<z) ≡ NFSToℕ(resurface r y'<y)
+            q'''' = 
+                begin 
+                    NFSToℕ(resurface r' y<z)
+                ≡⟨ resurf-restrict-to-fun-output f' z y y<z ⟩
+                    f y
+                ≡⟨ fy≡fy' ⟩
+                    f y'
+                ≡⟨ sym $ resurf-restrict-to-fun-output f' y y' y'<y ⟩
+                    NFSToℕ(resurface r y'<y)
+                ∎
+
+            h = proj₁ $ restrict+ f'
+            H = proj₂ $ restrict+ f'
+
+            dontforget : {A : Set} → A → A
+            dontforget = {! prove choiceToℕ-injective! !}
+
+            --choice-eq : c ≡ y'-nf
+            --choice-eq = 
+            --    choiceToℕ-injective c y'-nf $ 
+            --    begin 
+            --      choiceToℕ c
+            --    ≡⟨ sym $ lemma-resurface-getChoice h H y<z  ⟩
+            --      NFSToℕ (resurface r' y<z)
+            --    ≡⟨ q''' ⟩
+            --      NFSToℕ (resurface r' y'<z)
+            --    ≡⟨ lemma-resurf-point-independent h H y'<z y'<y ⟩
+            --      NFSToℕ (resurface r y'<y)
+            --    ≡⟨⟩
+            --      choiceToℕ (earlier-new y'-nf)
+            --    ∎
+
+            -- In hindsight, I found an easier proof for the above:
+            choice-eq-alt : c ≡ y'-nf
+            choice-eq-alt = 
+                choiceToℕ-injective c y'-nf $ 
+                begin 
+                  choiceToℕ c
+                ≡⟨ sym $ lemma-resurface-getChoice h H y<z  ⟩
+                  NFSToℕ (resurface r' y<z)
+                ≡⟨ q'''' ⟩
+                  NFSToℕ (resurface r y'<y)
+                ≡⟨⟩
+                  choiceToℕ (earlier-new y'-nf)
+                ∎
+                
 
     -- Strategy of right-to-left direction: 
     -- pattern match on the Boolean `R y (replace T y x x')`

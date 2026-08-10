@@ -5,6 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --allow-unsolved-metas #-}
+
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -131,6 +133,13 @@ NFSToℕ-injective {n} {newNF r} (earlier-new c) (earlier-new c') eq-in-ℕ =
 NFSToℕ-injective {n} {oldNF r x} (earlier-old c) (earlier-old c') eq-in-ℕ =
     cong earlier-old $ NFSToℕ-injective c c' eq-in-ℕ
 
+choiceToℕ-injective
+    : {n : ℕ}
+    → {r : NFRestr n}
+    → (c c' : Choices r)
+    → choiceToℕ c ≡ choiceToℕ c'
+    → c ≡ c'
+choiceToℕ-injective {n} {r} c c' eq = ? --#TODO: remove {-# OPTIONS --allow-unsolved-metas #-}
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
 --------------------------------------------------------------------------------
