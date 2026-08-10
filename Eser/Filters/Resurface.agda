@@ -488,3 +488,26 @@ lemma-resurface-getChoice {n} {n'} h H n'<n =
         where
             c = proj₁ $ ⋖-to-addChoice (H n')
             c' = (getChoiceFromExence (h , H) n') 
+
+-- Resurfacing the same NF to different later points
+-- gives the same result.
+-- This is easily proven from the previous lemma,
+-- whose RHS does not depent on the point one is resurfacing to.
+lemma-resurf-point-independent
+    : {m n k : ℕ}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → (k<n : k < n)
+    → (k<m : k < m)
+    → NFSToℕ (resurface (h n) k<n) ≡ NFSToℕ (resurface (h m) k<m)
+lemma-resurf-point-independent {m} {n} {k} h H k<n k<m
+    =
+    begin 
+       NFSToℕ (resurface (h n) k<n)
+    ≡⟨ lemma-resurface-getChoice h H k<n ⟩
+       choiceToℕ (getChoiceFromExence (h , H) k) 
+    ≡⟨ sym $ lemma-resurface-getChoice h H k<m ⟩
+       NFSToℕ (resurface (h m) k<m) 
+    ∎
+    
+    
