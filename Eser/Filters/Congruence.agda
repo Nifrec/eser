@@ -442,9 +442,31 @@ module ReplaceResp (T : ReplaceStruct) where
         : (f' : NFFun)
         → (x x' : ℕ)
         → (y : ℕ)
+        → x < y
+        → x' < y
         → AreRelated (restrict f' y) x x'
         → proj₁ (FunToRel f') x x' ≡ true
-    lemma-AreRelated-FunToRel f'@(f , f-leq , f-fix) x x' y xRx' = ?
+    lemma-AreRelated-FunToRel f'@(f , f-leq , f-fix) x x' y x<y x'<y xRx' =  ans
+        where
+            r : NFRestr y
+            r = restrict f' y
+
+            resurf-eq : resurface r x<y ≡ resurface r x'<y
+            resurf-eq = decEqReflection _≡?_ 
+                (resurface r x<y) (resurface r x'<y) $ xRx' x<y x'<y
+
+            ans : (f x ≡ᵇ f x') ≡ true
+            ans = ≡→≡ᵇ (f x) (f x') $
+                begin 
+                    f x
+                ≡⟨ sym $ resurf-restrict-to-fun-output f' y x x<y ⟩
+                    NFSToℕ (resurface r x<y)
+                ≡⟨ cong NFSToℕ resurf-eq ⟩
+                    NFSToℕ (resurface r x'<y)
+                ≡⟨ resurf-restrict-to-fun-output f' y x' x'<y ⟩
+                    f x'
+                ∎
+                
 
     ----------------------------------------------------------------------------
     -- Main theorems
@@ -531,7 +553,8 @@ module ReplaceResp (T : ReplaceStruct) where
             q' = decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) (q x<y x'<y)
 
             q'' : f x ≡ f x'
-            q'' = ≡ᵇ→≡ (f x) (f x') $ lemma-AreRelated-FunToRel f' x x' y xRx'
+            q'' = ≡ᵇ→≡ (f x) (f x') 
+                       $ lemma-AreRelated-FunToRel f' x x' y x<y x'<y xRx'
                 
             fy≡fy' : f y ≡ f y'
             fy≡fy' = ≡ᵇ→≡ (f y) (f y') 
