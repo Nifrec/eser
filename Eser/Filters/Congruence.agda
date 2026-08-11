@@ -200,8 +200,28 @@ module ReplaceResp (T : ReplaceStruct) where
     AreRelated : {n : ℕ} → (r : NFRestr n) → ℕ → ℕ → Set
     AreRelated {n} r x x' = (p : x < n) → (q : x' < n) → NFRestrRel r p q ≡ true
 
-    areRelated? : {n : ℕ} → (r : NFRestr n) → (x x' : ℕ) → Dec (AreRelated r x x')
-    areRelated? {n} r x x' = ?
+    areRelated? 
+        : {y : ℕ} 
+        → (r : NFRestr y) 
+        → (x x' : ℕ) 
+        → (x < y) 
+        → (x' < y) 
+        → Dec (AreRelated r x x')
+    areRelated? {y} r x x' x<y x'<y with (resurface r x<y ≡? resurface r x'<y)
+    ... | yes eq = yes (λ (a : x < y) (b : x' < y) → 
+        let x<y≡a : x<y ≡ a 
+            x<y≡a = <-irrelevant x<y a
+        in
+        let x'<y≡b : x'<y ≡ b 
+            x'<y≡b = <-irrelevant x'<y b
+        in
+        doubleSubst (λ a b 
+            → does (resurface r a ≡? resurface r b) ≡ true) x<y≡a x'<y≡b 
+            $ decEqCoReflection _≡?_ (resurface r x<y) (resurface r x'<y) eq
+        )
+    ... | no  ¬eq = no (λ q → ¬eq 
+        (decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) 
+         $ q x<y x'<y))
 
     -- Check if the normal form of a number is equal to itself.
     IsNormal
@@ -237,17 +257,16 @@ module ReplaceResp (T : ReplaceStruct) where
 
             isNormal?-rec w@(suc w') w≤x = 
                 cases (isNormal?-rec w' (≤-trans (n≤1+n w') w≤x)) 
-                      (areRelated? r x w')
+                      (areRelated? r x w' x<y (<-trans w'<x x<y) )
                 where
+                    w'<x : w' < x
+                    w'<x = <-≤-trans (n<1+n w') w≤x
                     cases 
                         : (p : OutType w')
                         → (Dec (AreRelated r x w'))
                         → OutType w
                     cases (inj₂ p) wR?x = inj₂ p
                     cases (inj₁ _) (yes w'Rx) = inj₂ (w' , w'<x , w'Rx)
-                        where
-                            w'<x : w' < x
-                            w'<x = <-≤-trans (n<1+n w') w≤x
                     cases (inj₁ p) (no ¬w'Rx) = inj₁ g
                         where
                             g : ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
