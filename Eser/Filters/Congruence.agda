@@ -525,7 +525,7 @@ module ReplaceResp (T : ReplaceStruct) where
             ReplaceRespLocal-cases r c (inj₂ p)
         ≡⟨⟩
             does (c ≡? y'-nf)
-        ≡⟨ decEqCoReflection _≡?_ c y'-nf choice-eq-alt  ⟩
+        ≡⟨ decEqCoReflection _≡?_ c y'-nf choice-eq ⟩
             true
         ∎
         where
@@ -546,19 +546,13 @@ module ReplaceResp (T : ReplaceStruct) where
             x'<y : x' < y
             x'<y = <-trans x'<x x<y
 
-            q : AreRelated r x x'
-            q = lemma-FunToRel-AreRelated f' x x' {! xRx' x<y x'<y !} y
-
-            q' : resurface r x<y ≡ resurface r x'<y
-            q' = decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) (q x<y x'<y)
-
-            q'' : f x ≡ f x'
-            q'' = ≡ᵇ→≡ (f x) (f x') 
+            q' : f x ≡ f x'
+            q' = ≡ᵇ→≡ (f x) (f x') 
                        $ lemma-AreRelated-FunToRel f' x x' y x<y x'<y xRx'
                 
             fy≡fy' : f y ≡ f y'
             fy≡fy' = ≡ᵇ→≡ (f y) (f y') 
-                $ G y x x' x⊂y x'<x (≡→≡ᵇ (f x) (f x') q'')
+                $ G y x x' x⊂y x'<x (≡→≡ᵇ (f x) (f x') q')
 
             z : ℕ
             z = suc y
@@ -569,21 +563,9 @@ module ReplaceResp (T : ReplaceStruct) where
 
             r' : NFRestr z
             r' = restrict f' z
-
-            --q''' : NFSToℕ(resurface r' y<z) ≡ NFSToℕ(resurface r' y'<z)
-            --q''' = 
-            --    begin 
-            --        NFSToℕ(resurface r' y<z)
-            --    ≡⟨ resurf-restrict-to-fun-output f' z y y<z ⟩
-            --        f y
-            --    ≡⟨ fy≡fy' ⟩
-            --        f y'
-            --    ≡⟨ sym $ resurf-restrict-to-fun-output f' z y' y'<z ⟩
-            --        NFSToℕ(resurface r' y'<z)
-            --    ∎
                 
-            q'''' : NFSToℕ(resurface r' y<z) ≡ NFSToℕ(resurface r y'<y)
-            q'''' = 
+            q'' : NFSToℕ(resurface r' y<z) ≡ NFSToℕ(resurface r y'<y)
+            q'' = 
                 begin 
                     NFSToℕ(resurface r' y<z)
                 ≡⟨ resurf-restrict-to-fun-output f' z y y<z ⟩
@@ -597,33 +579,14 @@ module ReplaceResp (T : ReplaceStruct) where
             h = proj₁ $ restrict+ f'
             H = proj₂ $ restrict+ f'
 
-            dontforget : {A : Set} → A → A
-            dontforget = {! prove choiceToℕ-injective! !}
-
-            --choice-eq : c ≡ y'-nf
-            --choice-eq = 
-            --    choiceToℕ-injective c y'-nf $ 
-            --    begin 
-            --      choiceToℕ c
-            --    ≡⟨ sym $ lemma-resurface-getChoice h H y<z  ⟩
-            --      NFSToℕ (resurface r' y<z)
-            --    ≡⟨ q''' ⟩
-            --      NFSToℕ (resurface r' y'<z)
-            --    ≡⟨ lemma-resurf-point-independent h H y'<z y'<y ⟩
-            --      NFSToℕ (resurface r y'<y)
-            --    ≡⟨⟩
-            --      choiceToℕ (earlier-new y'-nf)
-            --    ∎
-
-            -- In hindsight, I found an easier proof for the above:
-            choice-eq-alt : c ≡ y'-nf
-            choice-eq-alt = 
+            choice-eq : c ≡ y'-nf
+            choice-eq = 
                 choiceToℕ-injective c y'-nf $ 
                 begin 
                   choiceToℕ c
                 ≡⟨ sym $ lemma-resurface-getChoice h H y<z  ⟩
                   NFSToℕ (resurface r' y<z)
-                ≡⟨ q'''' ⟩
+                ≡⟨ q''' ⟩
                   NFSToℕ (resurface r y'<y)
                 ≡⟨⟩
                   choiceToℕ (earlier-new y'-nf)
