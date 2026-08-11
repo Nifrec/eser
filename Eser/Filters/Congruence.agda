@@ -446,7 +446,7 @@ module ReplaceResp (T : ReplaceStruct) where
         → x' < y
         → AreRelated (restrict f' y) x x'
         → proj₁ (FunToRel f') x x' ≡ true
-    lemma-AreRelated-FunToRel f'@(f , f-leq , f-fix) x x' y x<y x'<y xRx' =  ans
+    lemma-AreRelated-FunToRel f'@(f , f-leq , f-fix) x x' y x<y x'<y xRx' = ans
         where
             r : NFRestr y
             r = restrict f' y

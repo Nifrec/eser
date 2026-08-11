@@ -5,8 +5,6 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -139,7 +137,7 @@ choiceToℕ-injective
     → (c c' : Choices r)
     → choiceToℕ c ≡ choiceToℕ c'
     → c ≡ c'
-choiceToℕ-injective {n} {r} c c' eq = ? --#TODO: remove {-# OPTIONS --allow-unsolved-metas #-}
+choiceToℕ-injective {n} {r} c c' eq = NFSToℕ-injective c c' eq
 --------------------------------------------------------------------------------
 -- Properties of the _⋖_ relation.
 --------------------------------------------------------------------------------
