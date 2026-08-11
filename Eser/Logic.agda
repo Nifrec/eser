@@ -152,3 +152,8 @@ module _ where
     ≡ᵇ→≡ 0 0 refl = refl
     ≡ᵇ→≡ (suc m) (suc n) p = cong suc (≡ᵇ→≡ m n p)
 
+    is-false-to-not-true
+        : (b : Bool)
+        → (p : b ≡ false)
+        → ¬ (b ≡ true)
+    is-false-to-not-true b p b≡true = true≢false $ trans (sym b≡true) p

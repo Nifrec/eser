@@ -27,6 +27,10 @@ open import Data.Nat.Properties using (
     ; ≡⇒≡ᵇ
     ; <-irrelevant
     ; n<1+n
+    ; n≮0
+    ; <-≤-trans
+    ; ≤-<-trans
+    ; m≤n⇒m<n∨m≡n
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -38,6 +42,7 @@ open import Eser.Logic using
     ; ≡ᵇ→≡ 
     ; decEqReflection
     ; decEqCoReflection
+    ; is-false-to-not-true
     )
 
 open import Eser.Filters.Base
@@ -142,6 +147,14 @@ module ReplaceResp (T : ReplaceStruct) where
     _⊂_ : ℕ → ℕ → Set
     _⊂_ n m = (_is-arg-of_ T) n m ≡ true
 
+    _⊂?_ : (n m : ℕ) → Dec (n ⊂ m)
+    n ⊂? m = ⊂?-cases (_is-arg-of_ T n m) refl
+        where
+            ⊂?-cases : (b : Bool) → (_is-arg-of_ T n m ≡ b) → Dec (n ⊂ m)
+            ⊂?-cases true p = true because ofʸ p
+            ⊂?-cases false p = false because ofⁿ 
+                (is-false-to-not-true ((T is-arg-of n) m) p)
+
 
     ----------------------------------------------------------------------------
     -- 𝟐.𝟏. Global version
@@ -186,7 +199,61 @@ module ReplaceResp (T : ReplaceStruct) where
 
     AreRelated : {n : ℕ} → (r : NFRestr n) → ℕ → ℕ → Set
     AreRelated {n} r x x' = (p : x < n) → (q : x' < n) → NFRestrRel r p q ≡ true
-        
+
+    areRelated? : {n : ℕ} → (r : NFRestr n) → (x x' : ℕ) → Dec (AreRelated r x x')
+    areRelated? {n} r x x' = ?
+
+    -- Check if the normal form of a number is equal to itself.
+    IsNormal
+        : {x y : ℕ}
+        → (r : NFRestr y)
+        → x < y
+        → Set
+    IsNormal {x} {y} r x<y = ¬ (Σ[ x' ∈ ℕ ] (x' < x) × (AreRelated r x x'))
+
+    isNormal?
+        : {x y : ℕ}
+        → (r : NFRestr y)
+        → (x<y : x < y)
+        → IsNormal r x<y ⊎ Σ[ x' ∈ ℕ ] (x' < x) × AreRelated r x x'
+    isNormal? {x} {y} r x<y = isNormal?-rec x ≤-refl
+        where
+            OutType : ℕ → Set
+            OutType w = 
+                  ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
+                  ⊎ 
+                  Σ[ x' ∈ ℕ ] (x' < x) × AreRelated r x x'
+            isNormal?-rec
+                : (w : ℕ)
+                → (w ≤ x)
+                → OutType w
+            isNormal?-rec 0 0≤x = inj₁ g
+                where
+                    0<y : 0 < y
+                    0<y = ≤-<-trans 0≤x x<y
+
+                    g : ¬ (Σ[ x' ∈ ℕ ] (x' < 0) × AreRelated r x x') 
+                    g (x' , x'<0 , xR0) = ⊥-elim $ n≮0 x'<0
+
+            isNormal?-rec w@(suc w') w≤x = 
+                cases (isNormal?-rec w' (≤-trans (n≤1+n w') w≤x)) 
+                      (areRelated? r x w')
+                where
+                    cases 
+                        : (p : OutType w')
+                        → (Dec (AreRelated r x w'))
+                        → OutType w
+                    cases (inj₂ p) wR?x = inj₂ p
+                    cases (inj₁ _) (yes w'Rx) = inj₂ (w' , w'<x , w'Rx)
+                        where
+                            w'<x : w' < x
+                            w'<x = <-≤-trans (n<1+n w') w≤x
+                    cases (inj₁ p) (no ¬w'Rx) = inj₁ g
+                        where
+                            g : ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
+                            g (x' , x'<w , x'Rx) with (m≤n⇒m<n∨m≡n (s≤s⁻¹ x'<w))
+                            ... | inj₁ (x'<w') = p (x' , x'<w' , x'Rx)
+                            ... | inj₂ refl  = ¬w'Rx x'Rx
     
     -- Predicate that no argument of y is related (according to r)
     -- to a smaller term.
@@ -198,8 +265,9 @@ module ReplaceResp (T : ReplaceStruct) where
         = (x : ℕ) 
         → (x ⊂ y)
         → ¬ (Σ[ x' ∈ ℕ ] 
-             Σ[ p ∈ x' < x ] 
-             (AreRelated r x x')
+                (x' < x)
+                × 
+                (AreRelated r x x')
             )
     -- Note: p and q are proof-irrelevant, and are already implied
     -- by x ⊂ y and (via transitivity) x' < x.
@@ -215,11 +283,92 @@ module ReplaceResp (T : ReplaceStruct) where
     NonNormalArg {y} r =
         Σ[ x ∈ ℕ ] Σ[ x' ∈ ℕ ] (x ⊂ y) × (x' < x) × (AreRelated r x x')
 
+    AllSmallerNormal : {y : ℕ} → (r : NFRestr y) → ℕ → Set
+    AllSmallerNormal {y} r x = 
+        ((z : ℕ) 
+                → (z ≤ x) 
+                → (z⊂y : z ⊂ y) 
+                → IsNormal r (⊂-resp-< T y z z⊂y) 
+          )
+    
+    -- Auxiliary function of allArgsNormal? below.
+    allArgsNormal?Rec
+        : (x y : ℕ)
+        → (r : NFRestr y)
+        → (x < y)
+        → AllSmallerNormal r x ⊎ NonNormalArg r
+    allArgsNormal?Rec 0 y r x<y = inj₁ p
+        where
+            p   : (z : ℕ) 
+                → z ≤ 0 
+                → (z⊂y : z ⊂ y) 
+                → IsNormal r (⊂-resp-< T y z z⊂y)
+            p z z≤0 z⊂y (x' , x'<z , zRx') = ⊥-elim $ n≮0 (<-≤-trans x'<z z≤0)
+    allArgsNormal?Rec x@(suc x') y r x<y = allArgsNormal?Rec-cases 
+       (allArgsNormal?Rec x' y r x'<y) refl (x ⊂? y)
+        where
+            x'<y : x' < y
+            x'<y = <-trans (n<1+n x') x<y
+            allArgsNormal?Rec-cases
+                : (p : AllSmallerNormal r x' ⊎ NonNormalArg r)
+                → (p ≡ allArgsNormal?Rec x' y r x'<y)
+                → (Dec (x ⊂ y))
+                → AllSmallerNormal r x ⊎ NonNormalArg r
+            allArgsNormal?Rec-cases-x⊂y 
+                : (p : AllSmallerNormal r x')
+                → x ⊂ y
+                → AllSmallerNormal r x ⊎ NonNormalArg r
+
+            allArgsNormal?Rec-cases (inj₂ nonNormal) p-eq _ = inj₂ nonNormal
+            allArgsNormal?Rec-cases (inj₁ p') p-eq (yes x⊂y) = 
+                allArgsNormal?Rec-cases-x⊂y p' x⊂y
+            allArgsNormal?Rec-cases (inj₁ p') p-eq (no x⊄y) = inj₁ g
+                where
+                    g : AllSmallerNormal r x
+                    g z z≤x z⊂y with (m≤n⇒m<n∨m≡n z≤x)
+                    ... | inj₂ (z≡x) = ⊥-elim $ x⊄y (subst (_⊂ y) z≡x z⊂y )
+                    ... | inj₁ (z<x) = k
+                        where
+                            z<y : z < y
+                            z<y = ⊂-resp-< T y z z⊂y
+
+                            k : IsNormal r z<y
+                            k = p' z (s≤s⁻¹ z<x) z⊂y
+            allArgsNormal?Rec-cases-x⊂y allSmallerNorm x⊂y with isNormal? r x<y
+            ... | inj₁ isNormal = inj₁ g
+                where
+                    g : AllSmallerNormal r x
+                    g z z≤x z⊂y with (m≤n⇒m<n∨m≡n z≤x)
+                    ... | inj₂ (refl) = isNormal
+                    ... | inj₁ (z<x) = allSmallerNorm z (s≤s⁻¹ z<x) z⊂y
+            ... | inj₂ (x'' , x''<x , xRx'')  
+                = inj₂ (x , x'' , x⊂y , x''<x , xRx'')
+
+    -- Test if some argument of y has a normal form (accoding to r)
+    -- not equal to itself.
+    -- Implementation: just brute force check all x < y by induction.
     allArgsNormal?
-        : {n : ℕ}
-        → (r : NFRestr n)
+        : {y : ℕ}
+        → (r : NFRestr y)
         → AllArgsNormal r ⊎ NonNormalArg r
-    allArgsNormal? {n} r = ?
+    allArgsNormal? {0} r = inj₁ ans
+        where
+            ans : (x : ℕ) → (x ⊂ 0)
+                → ¬ (Σ[ x' ∈ ℕ ] 
+                     (x' < x)
+                     ×
+                     (AreRelated r x x')
+                    )
+            ans x x⊂0 = ⊥-elim $ n≮0 (⊂-resp-< T 0 x x⊂0)
+    allArgsNormal? y@{suc y'} r with allArgsNormal?Rec y' (suc y') r (n<1+n y')
+    ... | inj₁ allSmallerNormal = inj₁ ans
+        where
+            ans : (x : ℕ) → (x⊂y : x ⊂ y) → IsNormal r (⊂-resp-< T y x x⊂y)
+            ans x x⊂y (x' , x'<x , xRx') = 
+                allSmallerNormal x (s≤s⁻¹ $ ⊂-resp-< T y x x⊂y) 
+                                 x⊂y (x' , x'<x , xRx')
+    ... | inj₂ p = inj₂ p
+
 
     -- Given evidence of a non-normal argument, we know the output of
     -- `allArgsNormal?`.
@@ -586,7 +735,7 @@ module ReplaceResp (T : ReplaceStruct) where
                   choiceToℕ c
                 ≡⟨ sym $ lemma-resurface-getChoice h H y<z  ⟩
                   NFSToℕ (resurface r' y<z)
-                ≡⟨ q''' ⟩
+                ≡⟨ q'' ⟩
                   NFSToℕ (resurface r y'<y)
                 ≡⟨⟩
                   choiceToℕ (earlier-new y'-nf)
