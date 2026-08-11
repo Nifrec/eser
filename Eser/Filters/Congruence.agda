@@ -398,8 +398,27 @@ module ReplaceResp (T : ReplaceStruct) where
         → (x⊂y : x ⊂ y)
         → (x'<x : x' < x)
         → (xRx' : AreRelated r x x')
-        → allArgsNormal? r ≡ inj₂ (x , x' , x⊂y , x'<x , xRx')
-    lemma-allArgsNormal?-NonNormal = ?
+        → Σ[ nonNormalArg ∈ NonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
+    lemma-allArgsNormal?-NonNormal {y} r {x} {x'} x⊂y x'<x xRx' = 
+        cases (allArgsNormal? r) refl
+        where   
+            cases
+                : (p : AllArgsNormal r ⊎ NonNormalArg r)
+                → (p ≡ allArgsNormal? r)
+                → Σ[ nonNormalArg ∈ NonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
+            cases (inj₁ p) p-eq = ? 
+            cases (inj₂ p) p-eq = {! p , sym p-eq !}
+                -- use `sym p` and substitute proof-irrelevant stuff
+                -- No wait, that might now work, because the witness x
+                -- may be different. The lemma should be changed,
+                -- to any genereric ` ≡ inj₂ nonNormalArg`, 
+                -- but does that break anything?
+                --
+                -- No, it is only used in K' below, which ignores the data of
+                -- the proof anyway.
+                -- Fix: let this proof output an unknown `nonNormalArg`
+                -- and in that proof with K', also catch this nonNormalArg
+                -- and use it in the proof.
         
 
     -- 𝟐.𝟐. Local version.
@@ -480,6 +499,9 @@ module ReplaceResp (T : ReplaceStruct) where
             -- the call to `allArgsNormal?`.
             K' : does (LHS ≡? RHS) ≡ true
             K' = sym $
+                --let isNonNormal = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
+                let (w , w' , w⊂y , w'<w , wRw') = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
+                in
                 begin 
                     true 
                 ≡⟨ sym K ⟩
@@ -487,9 +509,19 @@ module ReplaceResp (T : ReplaceStruct) where
                 ≡⟨⟩
                     ReplaceRespLocal-cases (h y) LHS (allArgsNormal? (h y))
                 ≡⟨ cong (ReplaceRespLocal-cases (h y) LHS) 
-                   $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx' ⟩ 
-                    ReplaceRespLocal-cases (h y) LHS 
-                        (inj₂ (x , x' , x⊂y , x'<x , xRx'))
+                   $ proj₂ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx' ⟩ 
+                    --ReplaceRespLocal-cases (h y) LHS (inj₂ (w , w' , w⊂y , w'<w , wRw'))
+                    ReplaceRespLocal-cases (h y) LHS (inj₂ (w , w' , w⊂y , w'<w , wRw'))
+                    -- (inj₂ (x , x' , x⊂y , x'<x , xRx'))
+                    -- #TODO : need to match isNonNormal deeper.
+                    -- #TODO: problem: y' does depend on x, not on w.
+                    -- This won't work.
+                    -- ReplaceRespLocal does call areRelated?,
+                    -- and the output of ReplaceRespLocal is all we have.
+                    -- 2 options:
+                    -- - Somehow get a contradiction when unequal
+                    -- - Make `allArgsNormal` come with a proof of being the
+                    -- smallest counterexample.
                 ≡⟨⟩ -- Definition ReplaceRespLocal-cases.
                     does (LHS ≡? (earlier-new $ resurface (h y) y'<y-alt))
                     -- Now substitute the proof-irrelevant proof that
