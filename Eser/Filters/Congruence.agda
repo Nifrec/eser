@@ -6,13 +6,14 @@
 --------------------------------------------------------------------------------
 
 open import Data.Nat
-open import Data.Bool hiding (_<_ ; _≤_)
+open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ )
 open import Data.Bool.Properties using (T-≡)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Relation.Nullary
-open import Relation.Binary.Definitions using (Decidable ; DecidableEquality)
+open import Relation.Binary.Definitions using (Decidable ; DecidableEquality 
+    ; tri< ; tri≈ ; tri>)
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_ ; id)
@@ -31,6 +32,7 @@ open import Data.Nat.Properties using (
     ; <-≤-trans
     ; ≤-<-trans
     ; m≤n⇒m<n∨m≡n
+    ; n≮n
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -273,26 +275,73 @@ module ReplaceResp (T : ReplaceStruct) where
         (decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) 
          $ q x<y x'<y))
 
+    IsNormalisable
+        : {x y : ℕ}
+        → (r : NFRestr y)
+        → x < y
+        → Set
+    IsNormalisable {x} {y} r x<y = Σ[ x' ∈ ℕ ] (x' < x) × (AreRelated r x x')
+
+    -- Proof-relevant predicate that there exists an
+    -- x' smaller than x itself, such that x'<x and r relates x' and x.
+    -- If at least one such an x' exists, return the minimal one.
+    IsMinNormalisable
+        : {y : ℕ}
+        → (r : NFRestr y)
+        → ℕ
+        → Set
+    IsMinNormalisable {y} r x =
+        Σ[ x' ∈ ℕ ] 
+            (x' < x) 
+            × (AreRelated r x x')
+            -- All other alternatives are bigger or equal.
+            × (
+                (x'' : ℕ) 
+                → (x'' < x) 
+                → AreRelated r x x''
+                → (x' < x'') ⊎ (x'' ≡ x')
+            )
+    IsMinNormalisableArg
+        : {y : ℕ}
+        → (r : NFRestr y)
+        → ℕ
+        → Set
+    IsMinNormalisableArg {y} r x =
+        x ⊂ y
+        × Σ[ x' ∈ ℕ ] 
+            (x' < x) 
+            × (AreRelated r x x')
+            -- All other normalisable pairs are bigger or equal.
+            × ((w w' : ℕ) → (w ⊂ y) → (w' < w) → AreRelated r w w'
+                →
+                (x < w)
+                ⊎
+                (x ≡ w × x' < w')
+                ⊎
+                (x ≡ w × x' ≡ w')
+                )
+
+
     -- Check if the normal form of a number is equal to itself.
     IsNormal
         : {x y : ℕ}
         → (r : NFRestr y)
         → x < y
         → Set
-    IsNormal {x} {y} r x<y = ¬ (Σ[ x' ∈ ℕ ] (x' < x) × (AreRelated r x x'))
+    IsNormal {x} {y} r x<y = ¬ IsNormalisable r x<y
 
     isNormal?
         : {x y : ℕ}
         → (r : NFRestr y)
         → (x<y : x < y)
-        → IsNormal r x<y ⊎ Σ[ x' ∈ ℕ ] (x' < x) × AreRelated r x x'
+        → IsNormal r x<y ⊎ IsMinNormalisable r x
     isNormal? {x} {y} r x<y = isNormal?-rec x ≤-refl
         where
             OutType : ℕ → Set
             OutType w = 
                   ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
                   ⊎ 
-                  Σ[ x' ∈ ℕ ] (x' < x) × AreRelated r x x'
+                  IsMinNormalisable r x
             isNormal?-rec
                 : (w : ℕ)
                 → (w ≤ x)
@@ -316,7 +365,20 @@ module ReplaceResp (T : ReplaceStruct) where
                         → (Dec (AreRelated r x w'))
                         → OutType w
                     cases (inj₂ p) wR?x = inj₂ p
-                    cases (inj₁ _) (yes w'Rx) = inj₂ (w' , w'<x , w'Rx)
+                    cases (inj₁ p) (yes w'Rx) = inj₂ minNonNormal
+                        where
+                            isMin 
+                                : (v : ℕ) 
+                                → v < x 
+                                → AreRelated r x v 
+                                → w' < v ⊎ v ≡ w'
+                            isMin v v<x xRv with <-cmp v w' 
+                            ... | tri< v<w _ _ = ⊥-elim $ p (v , v<w , xRv)
+                            ... | tri≈ _ v≡w _ = inj₂ v≡w
+                            ... | tri> _ _ w<v = inj₁ w<v
+                            minNonNormal : IsMinNormalisable r x
+                            minNonNormal = (w' , w'<x , w'Rx , isMin)
+
                     cases (inj₁ p) (no ¬w'Rx) = inj₁ g
                         where
                             g : ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
@@ -352,6 +414,14 @@ module ReplaceResp (T : ReplaceStruct) where
     NonNormalArg {y} r =
         Σ[ x ∈ ℕ ] Σ[ x' ∈ ℕ ] (x ⊂ y) × (x' < x) × (AreRelated r x x')
 
+    -- Proof-relevant predicate that y had a SMALLEST argument
+    -- x for which there exists an x'<x s.t. x' is related to x.
+    MinNonNormalArg
+        : {y : ℕ}
+        → (r : NFRestr y)
+        → Set
+    MinNonNormalArg {y} r = Σ[ x ∈ ℕ ] IsMinNormalisableArg r x
+
     AllSmallerNormal : {y : ℕ} → (r : NFRestr y) → ℕ → Set
     AllSmallerNormal {y} r x = 
         ((z : ℕ) 
@@ -365,7 +435,7 @@ module ReplaceResp (T : ReplaceStruct) where
         : (x y : ℕ)
         → (r : NFRestr y)
         → (x < y)
-        → AllSmallerNormal r x ⊎ NonNormalArg r
+        → AllSmallerNormal r x ⊎ MinNonNormalArg r
     allArgsNormal?Rec 0 y r x<y = inj₁ p
         where
             p   : (z : ℕ) 
@@ -379,14 +449,14 @@ module ReplaceResp (T : ReplaceStruct) where
             x'<y : x' < y
             x'<y = <-trans (n<1+n x') x<y
             allArgsNormal?Rec-cases
-                : (p : AllSmallerNormal r x' ⊎ NonNormalArg r)
+                : (p : AllSmallerNormal r x' ⊎ MinNonNormalArg r)
                 → (p ≡ allArgsNormal?Rec x' y r x'<y)
                 → (Dec (x ⊂ y))
-                → AllSmallerNormal r x ⊎ NonNormalArg r
+                → AllSmallerNormal r x ⊎ MinNonNormalArg r
             allArgsNormal?Rec-cases-x⊂y 
                 : (p : AllSmallerNormal r x')
                 → x ⊂ y
-                → AllSmallerNormal r x ⊎ NonNormalArg r
+                → AllSmallerNormal r x ⊎ MinNonNormalArg r
 
             allArgsNormal?Rec-cases (inj₂ nonNormal) p-eq _ = inj₂ nonNormal
             allArgsNormal?Rec-cases (inj₁ p') p-eq (yes x⊂y) = 
@@ -410,8 +480,33 @@ module ReplaceResp (T : ReplaceStruct) where
                     g z z≤x z⊂y with (m≤n⇒m<n∨m≡n z≤x)
                     ... | inj₂ (refl) = isNormal
                     ... | inj₁ (z<x) = allSmallerNorm z (s≤s⁻¹ z<x) z⊂y
-            ... | inj₂ (x'' , x''<x , xRx'')  
-                = inj₂ (x , x'' , x⊂y , x''<x , xRx'')
+            ... | inj₂ (x'' , x''<x , xRx'' , isMin')  
+                = inj₂ minNonNormalArg
+                    where
+                        isMin 
+                            : (w w' : ℕ) 
+                            → (w ⊂ y) 
+                            → (w' < w) 
+                            → AreRelated r w w'
+                            → (x < w) ⊎ (x ≡ w × x'' < w') ⊎ (x ≡ w × x'' ≡ w')
+                        isMin w w' w⊂y w'<w wRw' with <-cmp x w
+                        ... | tri< x<w _ _ = inj₁ x<w
+                        ... | tri> _ _ w<x = 
+                                ⊥-elim $ allSmallerNorm w (s≤s⁻¹ w<x) w⊂y 
+                                                        (w' , w'<w , wRw')
+                        ... | tri≈ _ refl _ with <-cmp x'' w'
+                        ... |   tri< x''<w' _ _ = inj₂ (inj₁ (refl , x''<w'))
+                        ... |   tri≈ _ refl _ = inj₂ (inj₂ (refl , refl))
+                        ... |   tri> _ _ w'<x'' with (isMin' w' w'<w wRw')
+                        ... |     inj₁ x''<w' = 
+                                        ⊥-elim $ n≮n x'' (<-trans x''<w' w'<x'')
+                        ... |     inj₂ refl = 
+                                        ⊥-elim $ n≮n x'' w'<x''
+
+                        minNonNormalArg : MinNonNormalArg r
+                        minNonNormalArg = (x , x⊂y , x'' , x''<x , xRx'' , 
+                                           isMin)
+
 
     -- Test if some argument of y has a normal form (accoding to r)
     -- not equal to itself.
@@ -419,7 +514,7 @@ module ReplaceResp (T : ReplaceStruct) where
     allArgsNormal?
         : {y : ℕ}
         → (r : NFRestr y)
-        → AllArgsNormal r ⊎ NonNormalArg r
+        → AllArgsNormal r ⊎ MinNonNormalArg r
     allArgsNormal? {0} r = inj₁ ans
         where
             ans : (x : ℕ) → (x ⊂ 0)
@@ -448,14 +543,14 @@ module ReplaceResp (T : ReplaceStruct) where
         → (x⊂y : x ⊂ y)
         → (x'<x : x' < x)
         → (xRx' : AreRelated r x x')
-        → Σ[ nonNormalArg ∈ NonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
+        → Σ[ nonNormalArg ∈ MinNonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
     lemma-allArgsNormal?-NonNormal {y} r {x} {x'} x⊂y x'<x xRx' = 
         cases (allArgsNormal? r) refl
         where   
             cases
-                : (p : AllArgsNormal r ⊎ NonNormalArg r)
+                : (p : AllArgsNormal r ⊎ MinNonNormalArg r)
                 → (p ≡ allArgsNormal? r)
-                → Σ[ nonNormalArg ∈ NonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
+                → Σ[ nonNormalArg ∈ MinNonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
             cases (inj₁ p) p-eq = ? 
             cases (inj₂ p) p-eq = {! p , sym p-eq !}
                 -- use `sym p` and substitute proof-irrelevant stuff
@@ -492,7 +587,7 @@ module ReplaceResp (T : ReplaceStruct) where
     -- Some argument of y can be 'normalised'. The equivalence class
     -- of y must equal the equivalence class of 
     -- y-but-with-this-argument-normalised.
-    ReplaceRespLocal-cases {y} r c (inj₂ (x , x' , x⊂y , x'<x , x'∼x)) =
+    ReplaceRespLocal-cases {y} r c (inj₂ (x , x' , x⊂y  , x'<x , xRx')) =
         does (c ≡? y'-nf)
         where
             y' : ℕ
@@ -503,7 +598,19 @@ module ReplaceResp (T : ReplaceStruct) where
             y'-nf : Choices r
             y'-nf = earlier-new $ resurface r y'<y
 
-    ReplaceRespLocal {y} r c = ReplaceRespLocal-cases {y} r c (allArgsNormal? r)
+    forgetMinimality 
+        : {y : ℕ}
+        → {r : NFRestr y}
+        → AllArgsNormal r ⊎ MinNonNormalArg r 
+        → AllArgsNormal r ⊎ NonNormalArg r 
+    forgetMinimality {y} {r} (inj₁ p) = inj₁ p
+    forgetMinimality {y} {r} (inj₂ (x , x⊂y , x' , x'<x , xRx' , minimality)) 
+        = inj₂ (x , x' , x⊂y , x'<x , xRx' )
+
+
+    ReplaceRespLocal {y} r c = 
+        ReplaceRespLocal-cases {y} r c (forgetMinimality $ allArgsNormal? r)
+                
     
     -- If known that `y` has a non-normal argument,
     -- then we know the output of ReplaceRespLocal:
@@ -550,16 +657,16 @@ module ReplaceResp (T : ReplaceStruct) where
             K' : does (LHS ≡? RHS) ≡ true
             K' = sym $
                 --let isNonNormal = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
-                let (w , w' , w⊂y , w'<w , wRw') = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
+                let (w , w⊂y , w' , w'<w , wRw' , isMin) = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
                 in
                 begin 
                     true 
                 ≡⟨ sym K ⟩
                     F (h y) LHS
                 ≡⟨⟩
-                    ReplaceRespLocal-cases (h y) LHS (allArgsNormal? (h y))
+                    ReplaceRespLocal-cases (h y) LHS (forgetMinimality $ allArgsNormal? (h y))
                 ≡⟨ cong (ReplaceRespLocal-cases (h y) LHS) 
-                   $ proj₂ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx' ⟩ 
+                   $ {! proj₂ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx' !} ⟩ 
                     --ReplaceRespLocal-cases (h y) LHS (inj₂ (w , w' , w⊂y , w'<w , wRw'))
                     ReplaceRespLocal-cases (h y) LHS (inj₂ (w , w' , w⊂y , w'<w , wRw'))
                     -- (inj₂ (x , x' , x⊂y , x'<x , xRx'))
@@ -739,7 +846,7 @@ module ReplaceResp (T : ReplaceStruct) where
     theo-ReplaceResp-left-cases
         : (f' : NFFun)
         → (y : ℕ)
-        → (p : AllArgsNormal (restrict f' y) ⊎ NonNormalArg (restrict f' y))
+        → (p : AllArgsNormal (restrict f' y) ⊎ MinNonNormalArg (restrict f' y))
         → p ≡ allArgsNormal? (restrict f' y)
         → ReplaceRespGlobal (FunToRel f') 
         → ReplaceRespLocal Allows (getChoiceFromExence (restrict+ f') y) 
@@ -757,22 +864,24 @@ module ReplaceResp (T : ReplaceStruct) where
         begin 
             ReplaceRespLocal r c
         ≡⟨⟩ -- Definition ReplaceRespLocal
-            ReplaceRespLocal-cases r c (allArgsNormal? r)
-        ≡⟨ cong (ReplaceRespLocal-cases r c) (sym p≡allArgsNormal?) ⟩
+            ReplaceRespLocal-cases r c (forgetMinimality $ allArgsNormal? r)
+        ≡⟨ cong (ReplaceRespLocal-cases r c) 
+            (cong forgetMinimality $ sym p≡allArgsNormal?) ⟩
             ReplaceRespLocal-cases r c (inj₁ normal)
         ≡⟨⟩
             true
         ∎
         
     theo-ReplaceResp-left-cases f'@(f , f-leq , f-fix) y 
-                                (inj₂ p@(x , x' , x⊂y , x'<x , xRx')) 
+                                (inj₂ p@(x , x⊂y , x' , x'<x , xRx' , isMin)) 
                                 p≡allArgsNormal? G =
         begin 
             ReplaceRespLocal r c
         ≡⟨⟩
-            ReplaceRespLocal-cases r c (allArgsNormal? r)
-        ≡⟨ cong (ReplaceRespLocal-cases r c) (sym p≡allArgsNormal?) ⟩
-            ReplaceRespLocal-cases r c (inj₂ p)
+            ReplaceRespLocal-cases r c (forgetMinimality $ allArgsNormal? r)
+        ≡⟨ cong (ReplaceRespLocal-cases r c) 
+            (cong forgetMinimality $ sym p≡allArgsNormal?) ⟩
+            ReplaceRespLocal-cases r c ((forgetMinimality $ inj₂ p))
         ≡⟨⟩
             does (c ≡? y'-nf)
         ≡⟨ decEqCoReflection _≡?_ c y'-nf choice-eq ⟩
