@@ -130,15 +130,65 @@ module Eser.Filters.Congruence where
 record ReplaceStruct : Set where
     field
         _is-arg-of_ : ℕ → ℕ → Bool
+        -- Arguments are always smaller than the while construction.
         ⊂-resp-< : (y x : ℕ) → x is-arg-of y ≡ true → x < y
         replace : ℕ → ℕ → ℕ → ℕ
+        -- Replacing an argument by a smaller alternative reduces
+        -- the size of the whole construction.
         replace-< 
             : (y x x' : ℕ) 
             → (x is-arg-of y ≡ true) 
             → (x' < x) 
             → (replace y x x' < y)
+        -- Replacing one argument keeps the other arguments in place.
+        keep-oth 
+            : (y x x' z : ℕ) 
+            → (x is-arg-of y ≡ true) 
+            → (z is-arg-of y ≡ true) 
+            → (x ≢ z)
+            → (z is-arg-of (replace y x x') ≡ true)
+        -- When performing two non-overlapping replacements
+        -- (the replacement of one is not the replacecant of the other),
+        -- their order does not matter.
+        comm
+            : (y x x' z z' : ℕ) 
+            → (x is-arg-of y ≡ true) 
+            → (z is-arg-of y ≡ true) 
+            → (x ≢ z')
+            → (z ≢ x')
+            → (replace (replace y z z') x x') ≡ (replace (replace y x x') z z')
 open ReplaceStruct
 
+-- Unused laws that would also make sense to more strictly describe term
+-- algebras:
+
+record ReplaceStructUnneededLawsCollection : Set where
+    field
+        -- These are copied from ReplaceStruct; 
+        -- if ReplaceStructUnneededLawsCollection is ever to be used, 
+        -- one had better merge the two records
+        -- or give this one a parameter/field of value ReplaceStruct.
+        _is-arg-of_ : ℕ → ℕ → Bool
+        replace : ℕ → ℕ → ℕ → ℕ
+
+        noeff
+            : (y x x' : ℕ) 
+            → (x is-arg-of y ≡ false) 
+            → y ≡ replace y x x'
+        idempot
+            : (y x x' x'' : ℕ)
+            → replace y x x' ≡ replace (replace y x x') x x''
+        monotone
+            : (y x x' x'' : ℕ)
+            → (x is-arg-of y ≡ true) 
+            → x' < x''
+            → replace y x x' < replace y x x''
+        -- The replacement completely replaces ALL instances of an argument.
+        complete
+            : (y x x' x'' : ℕ)
+            → (x is-arg-of y ≡ true) 
+            → (x is-arg-of (replace y x x')) ≡ false
+            
 
 --------------------------------------------------------------------------------
 -- 𝟐. Predicate 'ReplaceResp'
@@ -522,7 +572,7 @@ module ReplaceResp (T : ReplaceStruct) where
                     -- - Somehow get a contradiction when unequal
                     -- - Make `allArgsNormal` come with a proof of being the
                     -- smallest counterexample.
-                ≡⟨⟩ -- Definition ReplaceRespLocal-cases.
+                ≡⟨ ? ⟩ -- Definition ReplaceRespLocal-cases.
                     does (LHS ≡? (earlier-new $ resurface (h y) y'<y-alt))
                     -- Now substitute the proof-irrelevant proof that
                     -- y' < y by the one given.
