@@ -46,6 +46,7 @@ open import Eser.Logic using
     ; decEqCoReflection
     ; is-false-to-not-true
     )
+open import Eser.NatTriples
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties
@@ -656,9 +657,11 @@ module ReplaceResp (T : ReplaceStruct) where
             -- the call to `allArgsNormal?`.
             K' : does (LHS ≡? RHS) ≡ true
             K' = sym $
-                --let isNonNormal = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
-                let (w , w⊂y , w' , w'<w , wRw' , isMin) = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
+                let (w , w⊂y , w' , w'<w , wRw' , isMin) 
+                        = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y 
+                                                                  x'<x xRx')
                 in
+                {! 
                 begin 
                     true 
                 ≡⟨ sym K ⟩
@@ -687,6 +690,7 @@ module ReplaceResp (T : ReplaceStruct) where
                         y'<y-alt≡y'<y ⟩
                     does (LHS ≡? RHS)
                 ∎
+                !}
     -- Variant of the above lemma in special case where the Exence
     -- is a restrict+-ed normalisation function f.
     -- It carries the result back from an equality on used extension choices
@@ -846,28 +850,85 @@ module ReplaceResp (T : ReplaceStruct) where
           choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
 
     ReplaceRespLocal-anyreplacement {y} h H LocSat {x} {x'} x⊂y x'<x xRx' = 
-        cases (allArgsNormal? (h y)) refl
+        <<<-rec P recursion (y , x , x') x⊂y x'<x xRx'
         where
-            Goal = choiceToℕ (getChoiceFromExence (h , H) y) 
+            f : ℕ → ℕ
+            -- Same as: f  ≔ proj₁ (combine (h , H))
+            f n = choiceToℕ (getChoiceFromExence (h , H) n) 
+
+            Goal : ℕ → ℕ → ℕ → Set
+            Goal y x x' = choiceToℕ (getChoiceFromExence (h , H) y) 
                    ≡ 
                    choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+
+            P : (ℕ × ℕ × ℕ) → Set
+            P (y , z , z') = 
+                  z ⊂ y
+                → z' < z
+                → AreRelated (h y) z z'
+                → Goal y x x'
+
+
             cases 
-                : (p : AllArgsNormal (h y) ⊎ MinNonNormalArg (h y)) 
+                : (y x x' : ℕ)
+                → ({ s : (ℕ × ℕ × ℕ) } → s <<< (y , x , x') → P s)
+                --→ x ⊂ y
+                --→ x' < x
+                --→ AreRelated (h y) x x'
+                → (p : AllArgsNormal (h y) ⊎ MinNonNormalArg (h y)) 
                 → (p ≡ allArgsNormal? (h y)) 
-                → Goal
-            cases (inj₁ allNormal) p-eq = ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
-            cases (inj₂ (w , w⊂y , w' , w'<w , w'Rw , isMin)) p-eq 
-                with (isMin w w' w⊂y w'<w w'Rw)
-            ... | inj₁ x<w = ?
-            ... | inj₂ (inj₁ (x≡w , x'<w')) = ?
-            ... | inj₂ (inj₂ (x≡w , x'≡w')) = ?
-            --    with <-cmp x w
-            --... | tri< x<w _ _ = ?
-            --... | tri≈ _ refl _ = ? 
-            --    -- #TODO: make case on x'<w' x'≡w' x'>w'.
-            --    -- Last case is contra by isMin.
-            --    --
-            --... | tri> _ _ x>w = ⊥-elim $ ?
+                → P (y , x  , x')
+
+            cases y x x' IH (inj₁ allNormal) p-eq x⊂y x'<x xRx' = 
+                ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
+            cases y x x' IH 
+                  (inj₂ (w , w⊂y , w' , w'<w , w'Rw , isMin)) p-eq 
+                  x⊂y x'<x xRx' 
+                with (isMin x x' x⊂y x'<x xRx')
+            ... | inj₁ w<x = ?
+                where
+                    yx  : ℕ
+                    yx  = replace T y x x'
+                    yxw : ℕ
+                    yxw = replace T yx w w'
+                    yw  : ℕ
+                    yw  = replace T y w w'
+                    ywx : ℕ
+                    ywx = replace T yw x x'
+                    
+                    yx-smaller : (yx , w , w') <<< (y , x , x')
+                    yx-smaller = ?
+                    yww'<<<yxx' : (y , w , w') <<< (y , x , x')
+                    yww'<<<yxx' = ?
+
+                    fyx≡fyxw : f yx ≡ f yxw 
+                    fyx≡fyxw = {! rec yx-smaller !}
+
+                    x≢w' : x ≢ w'
+                    x≢w' = λ eq → (n≮n x (<-trans (subst (_< w) (sym eq) w'<w) w<x)) 
+
+                    fyxw≡fywx : f yxw ≡ f ywx
+                    fyxw≡fywx = subcases (w ≟ x')
+                        where
+                            subcases : Dec (w ≡ x') → f yxw ≡ f ywx
+                            subcases (no w≢x') = cong f $ sym $ 
+                                comm T y x x' w w' x⊂y w⊂y 
+                                    x≢w'
+                                    w≢x'
+                            subcases (yes refl) = cong f {! some-lemma cofix 5 !}
+                                    
+
+            ... | inj₂ (inj₁ (w≡x , w'<x')) = ?
+            ... | inj₂ (inj₂ (w≡x , w'≡x')) = ?
+
+            recursion 
+                : (t : ℕ × ℕ × ℕ) 
+                → ({ s : (ℕ × ℕ × ℕ) } → s <<< t → P s)
+                → P t
+            recursion (y , x , x') IH -- x⊂y x'<x xRx' 
+                = cases y x x' IH (allArgsNormal? (h y)) refl -- x⊂y x'<x xRx' 
+
+
     -- Variant of above lemma where an NFFun instead of an Exence is given.
     ReplaceRespLocal-anyreplacement-NFFun
         : {y : ℕ}
