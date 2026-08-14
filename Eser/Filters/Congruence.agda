@@ -741,51 +741,6 @@ module ReplaceResp (T : ReplaceStruct) where
             forcedChoice = lemma-ReplaceRespLocal-NonNormalArg-Exence
                 h H x⊂y x'<x y'<y xRx' LocSat
         
-    -- The ReplaceRespLocal filter requires that the normal form
-    -- of y equals `replace y x x'` in case there exists some x ⊂ y
-    -- that is related to some x' < x.
-    -- But multiple such replacement pairs (x , x') may exist,
-    -- and the filter only explicitly states the constraint for the
-    -- lexicographically least (x , x').
-    -- However, it indirectly inductively follows that the filter requires
-    -- y to be related to `replace y w w'` for ANY replacement pair (w , w'),
-    -- (provided that the NFRestr so far satisfies the filter at every point).
-    ReplaceRespLocal-anyreplacement
-        : {y : ℕ}
-        → (h : (n : ℕ) → NFRestr n)
-        → (H : (n : ℕ) → h n ⋖ h (ℕ.suc n))
-        → Exence-sats ReplaceRespLocal (h , H)
-        → {x x' : ℕ}
-        → x ⊂ y
-        → x' < x
-        → AreRelated (h y) x x'
-        → choiceToℕ (getChoiceFromExence (h , H) y)
-          ≡ 
-          choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
-
-    ReplaceRespLocal-anyreplacement {y} h H locSat {x} {x'} x⊂y x'<x xRx' = 
-        cases (allArgsNormal? (h y)) refl
-        where
-            Goal = choiceToℕ (getChoiceFromExence (h , H) y) 
-                   ≡ 
-                   choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
-            cases 
-                : (p : AllArgsNormal (h y) ⊎ MinNonNormalArg (h y)) 
-                → (p ≡ allArgsNormal? (h y)) 
-                → Goal
-            cases (inj₁ allNormal) p-eq = ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
-            cases (inj₂ (w , w⊂y , w' , w'<w , w'Rw , isMin)) p-eq 
-                with (isMin w w' w⊂y w'<w w'Rw)
-            ... | inj₁ x<w = ?
-            ... | inj₂ (inj₁ (x≡w , x'<w')) = ?
-            ... | inj₂ (inj₂ (x≡w , x'≡w')) = ?
-            --    with <-cmp x w
-            --... | tri< x<w _ _ = ?
-            --... | tri≈ _ refl _ = ? 
-            --    -- #TODO: make case on x'<w' x'≡w' x'>w'.
-            --    -- Last case is contra by isMin.
-            --    --
-            --... | tri> _ _ x>w = ⊥-elim $ ?
     ----------------------------------------------------------------------------
     -- 𝟑. Correspondence Global and Local definition
     ----------------------------------------------------------------------------
@@ -868,6 +823,87 @@ module ReplaceResp (T : ReplaceStruct) where
                 ∎
                 
 
+    -- The ReplaceRespLocal filter requires that the normal form
+    -- of y equals `replace y x x'` in case there exists some x ⊂ y
+    -- that is related to some x' < x.
+    -- But multiple such replacement pairs (x , x') may exist,
+    -- and the filter only explicitly states the constraint for the
+    -- lexicographically least (x , x').
+    -- However, it indirectly inductively follows that the filter requires
+    -- y to be related to `replace y w w'` for ANY replacement pair (w , w'),
+    -- (provided that the NFRestr so far satisfies the filter at every point).
+    ReplaceRespLocal-anyreplacement
+        : {y : ℕ}
+        → (h : (n : ℕ) → NFRestr n)
+        → (H : (n : ℕ) → h n ⋖ h (ℕ.suc n))
+        → Exence-sats ReplaceRespLocal (h , H)
+        → {x x' : ℕ}
+        → x ⊂ y
+        → x' < x
+        → AreRelated (h y) x x'
+        → choiceToℕ (getChoiceFromExence (h , H) y)
+          ≡ 
+          choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+
+    ReplaceRespLocal-anyreplacement {y} h H LocSat {x} {x'} x⊂y x'<x xRx' = 
+        cases (allArgsNormal? (h y)) refl
+        where
+            Goal = choiceToℕ (getChoiceFromExence (h , H) y) 
+                   ≡ 
+                   choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+            cases 
+                : (p : AllArgsNormal (h y) ⊎ MinNonNormalArg (h y)) 
+                → (p ≡ allArgsNormal? (h y)) 
+                → Goal
+            cases (inj₁ allNormal) p-eq = ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
+            cases (inj₂ (w , w⊂y , w' , w'<w , w'Rw , isMin)) p-eq 
+                with (isMin w w' w⊂y w'<w w'Rw)
+            ... | inj₁ x<w = ?
+            ... | inj₂ (inj₁ (x≡w , x'<w')) = ?
+            ... | inj₂ (inj₂ (x≡w , x'≡w')) = ?
+            --    with <-cmp x w
+            --... | tri< x<w _ _ = ?
+            --... | tri≈ _ refl _ = ? 
+            --    -- #TODO: make case on x'<w' x'≡w' x'>w'.
+            --    -- Last case is contra by isMin.
+            --    --
+            --... | tri> _ _ x>w = ⊥-elim $ ?
+    -- Variant of above lemma where an NFFun instead of an Exence is given.
+    ReplaceRespLocal-anyreplacement-NFFun
+        : {y : ℕ}
+        → (f' : NFFun)
+        → NFFun-sats ReplaceRespLocal f'
+        → {x x' : ℕ}
+        → x ⊂ y
+        → x' < x
+        → (proj₁ $ FunToRel f') x x' ≡ true
+        → proj₁ f' y
+          ≡ 
+          proj₁ f' (replace T y x x')
+    ReplaceRespLocal-anyreplacement-NFFun {y} f' LocSat {x} {x'} x⊂y x'<x xRx'  
+        = ans
+        where
+            areRelated : AreRelated (restrict f' y) x x'
+            areRelated = lemma-FunToRel-AreRelated f' x x' xRx' y
+            f = proj₁ f'
+            h = proj₁ (restrict+ f')
+            H = proj₂ (restrict+ f')
+            almost : choiceToℕ (getChoiceFromExence (h , H) y)
+                     ≡ 
+                     choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+            almost = ReplaceRespLocal-anyreplacement h H LocSat {x} {x'} x⊂y 
+                                                     x'<x areRelated
+            ans =
+                begin 
+                    f y
+                ≡⟨ sym $ theo-combine∘restrict+ f' y ⟩
+                    choiceToℕ (getChoiceFromExence (h , H) y)
+                ≡⟨ almost ⟩
+                    choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+                ≡⟨ theo-combine∘restrict+ f' (replace T y x x') ⟩
+                    f (replace T y x x')
+                ∎
+                
     ----------------------------------------------------------------------------
     -- Main theorems
     ----------------------------------------------------------------------------
@@ -1049,9 +1085,11 @@ module ReplaceResp (T : ReplaceStruct) where
             fy≢fy' fy≡fy' = true≢false $ trans (sym $ ≡→≡ᵇ (f y) (f y') fy≡fy') p
 
             fy≡fy' : f y ≡ f y'
-            fy≡fy' = lemma-ReplaceRespLocal-NonNormalArg-NFFun x⊂y x'<x f' 
-                                                               xRx'-alt LocSat
-
+            fy≡fy' = ReplaceRespLocal-anyreplacement-NFFun f'
+                                                     LocSat
+                                                     x⊂y
+                                                     x'<x
+                                                     xRx'
 
             -- By definition of ReplaceRespLocal-cases,
             -- the following is only possible if fy-as-choice
