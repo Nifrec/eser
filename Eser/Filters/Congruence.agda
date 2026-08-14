@@ -712,10 +712,9 @@ module ReplaceResp (T : ReplaceStruct) where
             (proj₁ ∘ combine ∘ restrict+) f' y
         ≡⟨⟩ -- Unfold definition of `combine`:
             (choiceToℕ ∘ (getChoiceFromExence $ restrict+ f')) y
-        -- #TODO: some lemma with r := restrict f' y and E = restrict+ f'
         ≡⟨ cong choiceToℕ forcedChoice ⟩
             choiceToℕ (earlier-new $ resurface (restrict f' y) y'<y)
-        ≡⟨⟩ -- Maybe we don't need this step.
+        ≡⟨⟩ 
             NFSToℕ (resurface (restrict f' y) y'<y)
         ≡⟨ lemma-resurface-getChoice h H y'<y ⟩
             (choiceToℕ ∘ (getChoiceFromExence $ restrict+ f')) y'
