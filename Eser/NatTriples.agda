@@ -78,3 +78,20 @@ Lex3-rec P H = wfRec 0ℓ P H
                 IH' {s@(n , m , l)} s<<<v = IH {toVec s} 
                     $ subst (toVec s lex3_) (toVec∘toTriple≈id v) s<<<v
 
+first-<-to-<<<
+    : (m n l x y z : ℕ)
+    → m < x
+    → (m , n , l) <<< (x , y , z)
+first-<-to-<<< m n l x y z m<x = this m<x refl
+
+second-<-to-<<<
+    : (a n l y z : ℕ)
+    → n < y
+    → (a , n , l) <<< (a , y , z)
+second-<-to-<<< a n l y z n<y = next refl $ this n<y refl
+
+third-<-to-<<<
+    : (a b l z : ℕ)
+    → l < z
+    → (a , b , l) <<< (a , b , z)
+third-<-to-<<< a b l z l<z = next refl $ next refl $ this l<z refl
