@@ -1060,6 +1060,8 @@ module ReplaceResp (T : ReplaceStruct) where
                     yw  = replace T y w w'
                     ywx : ℕ
                     ywx = replace T yw x x'
+                    ywxw : ℕ
+                    ywxw = replace T ywx w w'
 
                     yx<y : yx < y
                     yx<y = replace-< T y x x' x⊂y x'<x
@@ -1067,11 +1069,10 @@ module ReplaceResp (T : ReplaceStruct) where
                     yw<y = replace-< T y w w' w⊂y w'<w
 
                     yx,w,w'<<<y,x,x' : (yx , w , w') <<< (y , x , x')
-                    yx,w,w'<<<y,x,x' = ?
+                    yx,w,w'<<<y,x,x' = first-<-to-<<< yx w w' y x x' yx<y
                     
                     yw,x,x'<<<y,x,x' : (yw , x , x') <<< (y , x , x')
-                    yw,x,x'<<<y,x,x' = ?
-
+                    yw,x,x'<<<y,x,x' = first-<-to-<<< yw x x' y x x' yw<y
 
                     xR[yw]x' : AreRelated (h yw) x x'
                     xR[yw]x' = areRelated-in-restriction (h yw) (h y) 
@@ -1130,10 +1131,25 @@ module ReplaceResp (T : ReplaceStruct) where
                                         comm T y x x' w w' x⊂y w⊂y 
                                             x≢w'
                                             w≢x'
-                                    subsubcases (yes refl) = {! cong f 
-                                        $ lemma-replace-wxw y w w' x x' (≢-sym x≢w') !}
-                                        -- #TODO this ^ proof is in the wrong
-                                        -- place?
+                                    subsubcases (yes refl) = 
+                                        sym $ 
+                                        begin 
+                                            f ywx
+                                        ≡⟨ sub-eq ⟩
+                                            f ywxw
+                                        ≡⟨ cong f $ lemma-replace-wxw y w w'
+                                           x x' (≢-sym x≢w') 
+                                         ⟩
+                                            f yxw
+                                        ∎
+                                        -- #TODO see cofix 5 (frontpage;
+                                        -- backpage says I need to look there)
+                                        where
+                                            sub-eq : f ywx ≡ f ywxw
+                                            sub-eq with w ⊂? ywx
+                                            ... | yes w⊂ywx = 
+                                                {! IH ywx,w,w'<<<yw,x,x' w⊂ywx!}
+                                            ... | no w⊄ywx = {! noeff !}
                     subcases(inj₂ (inj₁ (w≡x , w'<x'))) = ?
                     subcases(inj₂ (inj₂ (w≡x , w'≡x'))) = ?
 
