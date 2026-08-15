@@ -153,7 +153,14 @@ module _ where
     ≡ᵇ→≡ (suc m) (suc n) p = cong suc (≡ᵇ→≡ m n p)
 
     is-false-to-not-true
-        : (b : Bool)
-        → (p : b ≡ false)
+        : {b : Bool}
+        → b ≡ false
         → ¬ (b ≡ true)
-    is-false-to-not-true b p b≡true = true≢false $ trans (sym b≡true) p
+    is-false-to-not-true {b} p b≡true = true≢false $ trans (sym b≡true) p
+
+    not-true-to-is-false
+        : {b : Bool}
+        → ¬ (b ≡ true)
+        → b ≡ false
+    not-true-to-is-false {false} ¬True = refl
+    not-true-to-is-false {true} ¬True = ⊥-elim $ ¬True refl
