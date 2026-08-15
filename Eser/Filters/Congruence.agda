@@ -826,6 +826,25 @@ module ReplaceResp (T : ReplaceStruct) where
                     f x'
                 ∎
                 
+    --#TODO: maybe move this general lemma to other place?
+    --
+    -- If two elements have the same normal form in a NFRestr `s`
+    -- then then also do have the same normal form in any restriction
+    -- of `s`. More specifically, we use the definition `AreRelated`,
+    -- which ensures they are still related even when not an element
+    -- of the NFRestr 
+    -- (i.e., when one of the two elements is at least as great as the
+    -- index of the NFRestr).
+    areRelated-in-restriction
+        : {m n : ℕ}
+        → (r : NFRestr m)
+        → (s : NFRestr n)
+        → r ⋖+ s
+        → {x x' : ℕ}
+        → AreRelated s x x'
+        → AreRelated r x x'
+    areRelated-in-restriction {m} {n} r s r⋖+s {x} {x'} xSx' with <-cmp x m
+    ... | q = ? -- #TODO: see sheet "Cofix 5"
 
     -- The ReplaceRespLocal filter requires that the normal form
     -- of y equals `replace y x x'` in case there exists some x ⊂ y
@@ -897,6 +916,10 @@ module ReplaceResp (T : ReplaceStruct) where
                     
                     yw,x,x'<<<y,x,x' : (yw , x , x') <<< (y , x , x')
                     yw,x,x'<<<y,x,x' = ?
+
+                    xR[yw]x' : AreRelated h yw x x'
+                    xR[yw]x' = areRelated-in-restriction yw y 
+
 
                     -- There are several subcases, but most end by concluding
                     -- in the following way:
