@@ -234,6 +234,18 @@ lemma-⋖+-to-⋖ {n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) =
 lemma-⋖+-to-⋖ {n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
     ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
 
+lemma-⋖+-exence
+    : (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → {m n : ℕ}
+    → m < n
+    → h m ⋖+ h n
+lemma-⋖+-exence h H {m} {suc n} m<1+n@(s≤s q) with m<1+n⇒m<n∨m≡n m<1+n
+... | inj₁ (m<n) = ⋖+-multistep-anychoice hm⋖+hn (H n)
+    where
+        hm⋖+hn : h m ⋖+ h n
+        hm⋖+hn = lemma-⋖+-exence h H m<n
+... | inj₂ (refl) = ⋖+-onestep (H n)
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
 --------------------------------------------------------------------------------
