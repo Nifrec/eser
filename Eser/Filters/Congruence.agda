@@ -849,8 +849,8 @@ module ReplaceResp (T : ReplaceStruct) where
           ≡ 
           choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
 
-    ReplaceRespLocal-anyreplacement {y} h H LocSat {x} {x'} x⊂y x'<x xRx' = 
-        <<<-rec P recursion (y , x , x') x⊂y x'<x xRx'
+    ReplaceRespLocal-anyreplacement {y*} h H LocSat {x*} {x*'} =
+        <<<-rec P recursion (y* , x* , x*')
         where
             f : ℕ → ℕ
             -- Same as: f  ≔ proj₁ (combine (h , H))
@@ -866,15 +866,11 @@ module ReplaceResp (T : ReplaceStruct) where
                   z ⊂ y
                 → z' < z
                 → AreRelated (h y) z z'
-                → Goal y x x'
-
+                → Goal y z z'
 
             cases 
                 : (y x x' : ℕ)
                 → ({ s : (ℕ × ℕ × ℕ) } → s <<< (y , x , x') → P s)
-                --→ x ⊂ y
-                --→ x' < x
-                --→ AreRelated (h y) x x'
                 → (p : AllArgsNormal (h y) ⊎ MinNonNormalArg (h y)) 
                 → (p ≡ allArgsNormal? (h y)) 
                 → P (y , x  , x')
@@ -882,11 +878,11 @@ module ReplaceResp (T : ReplaceStruct) where
             cases y x x' IH (inj₁ allNormal) p-eq x⊂y x'<x xRx' = 
                 ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
             cases y x x' IH 
-                  (inj₂ (w , w⊂y , w' , w'<w , w'Rw , isMin)) p-eq 
+                  (inj₂ (w , w⊂y , w' , w'<w , wRw' , isMin)) p-eq 
                   x⊂y x'<x xRx' 
-                with (isMin x x' x⊂y x'<x xRx')
-            ... | inj₁ w<x = ?
-                where
+                  = subcases (isMin x x' x⊂y x'<x xRx')
+                  where
+
                     yx  : ℕ
                     yx  = replace T y x x'
                     yxw : ℕ
@@ -895,31 +891,62 @@ module ReplaceResp (T : ReplaceStruct) where
                     yw  = replace T y w w'
                     ywx : ℕ
                     ywx = replace T yw x x'
+
+                    yx,w,w'<<<y,x,x' : (yx , w , w') <<< (y , x , x')
+                    yx,w,w'<<<y,x,x' = ?
                     
-                    yx-smaller : (yx , w , w') <<< (y , x , x')
-                    yx-smaller = ?
-                    yww'<<<yxx' : (y , w , w') <<< (y , x , x')
-                    yww'<<<yxx' = ?
+                    yw,x,x'<<<y,x,x' : (yw , x , x') <<< (y , x , x')
+                    yw,x,x'<<<y,x,x' = ?
 
-                    fyx≡fyxw : f yx ≡ f yxw 
-                    fyx≡fyxw = {! rec yx-smaller !}
+                    -- There are several subcases, but most end by concluding
+                    -- in the following way:
+                    conclude
+                        : f yxw ≡ f ywx
+                        → (y , w , w') <<< (y , x , x')
+                        → (x ⊂ yw)
+                        → Goal y x x'
+                    conclude eq y,w,w'<<<y,x,x' x⊂yw = sym $
+                        begin 
+                            f yx 
+                        ≡⟨ IH yx,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
+                            f yxw
+                        ≡⟨ eq ⟩
+                            f ywx
+                        ≡⟨ sym $ IH yw,x,x'<<<y,x,x' x⊂yw x'<x xRx' ⟩
+                            f yw
+                        ≡⟨ sym $ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
+                            f y
+                        ∎
+                    
 
-                    x≢w' : x ≢ w'
-                    x≢w' = λ eq → (n≮n x (<-trans (subst (_< w) (sym eq) w'<w) w<x)) 
-
-                    fyxw≡fywx : f yxw ≡ f ywx
-                    fyxw≡fywx = subcases (w ≟ x')
+                    subcases 
+                        : (w < x) ⊎ (w ≡ x × w' < x') ⊎ (w ≡ x × w' ≡ x') 
+                        → Goal y x x'
+                    subcases (inj₁ w<x) = ?
                         where
-                            subcases : Dec (w ≡ x') → f yxw ≡ f ywx
-                            subcases (no w≢x') = cong f $ sym $ 
-                                comm T y x x' w w' x⊂y w⊂y 
-                                    x≢w'
-                                    w≢x'
-                            subcases (yes refl) = cong f {! some-lemma cofix 5 !}
-                                    
+                            
+                            yx-smaller : (yx , w , w') <<< (y , x , x')
+                            yx-smaller = ?
+                            yww'<<<yxx' : (y , w , w') <<< (y , x , x')
+                            yww'<<<yxx' = ?
 
-            ... | inj₂ (inj₁ (w≡x , w'<x')) = ?
-            ... | inj₂ (inj₂ (w≡x , w'≡x')) = ?
+                            fyx≡fyxw : f yx ≡ f yxw 
+                            fyx≡fyxw = {! rec yx-smaller !}
+
+                            x≢w' : x ≢ w'
+                            x≢w' = λ eq → (n≮n x (<-trans (subst (_< w) (sym eq) w'<w) w<x)) 
+
+                            fyxw≡fywx : f yxw ≡ f ywx
+                            fyxw≡fywx = subsubcases (w ≟ x')
+                                where
+                                    subsubcases : Dec (w ≡ x') → f yxw ≡ f ywx
+                                    subsubcases (no w≢x') = cong f $ sym $ 
+                                        comm T y x x' w w' x⊂y w⊂y 
+                                            x≢w'
+                                            w≢x'
+                                    subsubcases (yes refl) = cong f {! some-lemma cofix 5 !}
+                    subcases(inj₂ (inj₁ (w≡x , w'<x'))) = ?
+                    subcases(inj₂ (inj₂ (w≡x , w'≡x'))) = ?
 
             recursion 
                 : (t : ℕ × ℕ × ℕ) 
