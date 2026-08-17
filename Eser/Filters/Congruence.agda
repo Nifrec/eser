@@ -1091,38 +1091,10 @@ module ReplaceResp (T : ReplaceStruct) where
                     wR[yx]w' = areRelated-in-restriction (h yx) (h y) 
                         (lemma-⋖+-exence h H yx<y) wRw'
 
-                    todo2 : ⊥
-                    todo2 = {! `conclude` is only used in the first case; merge them.!}
-                    -- There are several subcases, but most end by concluding
-                    -- in the following way:
-                    conclude
-                        : f yxw ≡ f ywx
-                        → (y , w , w') <<< (y , x , x')
-                        → (x ≢ w)
-                        → Goal y x x'
-                    conclude eq y,w,w'<<<y,x,x' x≢w = sym $
-                        begin 
-                            f yx 
-                        ≡⟨ IH yx,w,w'<<<y,x,x' w⊂yx w'<w wR[yx]w' ⟩
-                            f yxw
-                        ≡⟨ eq ⟩
-                            f ywx
-                        ≡⟨ sym $ IH yw,x,x'<<<y,x,x' x⊂yw x'<x xR[yw]x' ⟩
-                            f yw
-                        ≡⟨ sym $ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
-                            f y
-                        ∎
-                        where
-                            w⊂yx : w ⊂ yx
-                            w⊂yx = keep T y x x' w x⊂y w⊂y x≢w
-                            x⊂yw : x ⊂ yw
-                            x⊂yw = keep T y w w' x w⊂y x⊂y (≢-sym x≢w)
-                    
-
                     subcases 
                         : (w < x) ⊎ (w ≡ x × w' < x') ⊎ (w ≡ x × w' ≡ x') 
                         → Goal y x x'
-                    subcases (inj₁ w<x) = conclude fyxw≡fywx y,w,w'<<<y,x,x' x≢w
+                    subcases (inj₁ w<x) = ans 
                         where
                             y,w,w'<<<y,x,x' : (y , w , w') <<< (y , x , x')
                             y,w,w'<<<y,x,x' = second-<-to-<<< y w w' x x' w<x
@@ -1176,6 +1148,22 @@ module ReplaceResp (T : ReplaceStruct) where
                                                 cong f 
                                                     $ noeff T ywx w w' 
                                                     $ not-true-to-is-false w⊄ywx
+                            w⊂yx : w ⊂ yx
+                            w⊂yx = keep T y x x' w x⊂y w⊂y x≢w
+
+                            ans : Goal y x x'
+                            ans = sym $
+                                begin 
+                                    f yx 
+                                ≡⟨ IH yx,w,w'<<<y,x,x' w⊂yx w'<w wR[yx]w' ⟩
+                                    f yxw
+                                ≡⟨ fyxw≡fywx ⟩
+                                    f ywx
+                                ≡⟨ sym $ IH yw,x,x'<<<y,x,x' x⊂yw x'<x xR[yw]x' ⟩
+                                    f yw
+                                ≡⟨ sym $ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
+                                    f y
+                                ∎
                     subcases(inj₂ (inj₁ (x≡w@refl , w'<x'))) = 
                         begin 
                             f y
