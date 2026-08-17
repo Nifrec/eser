@@ -10,6 +10,7 @@ open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ )
 open import Data.Bool.Properties using (T-≡)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
+open import Relation.Binary
 open ≡-Reasoning
 open import Relation.Nullary
 open import Relation.Binary.Definitions using (Decidable ; DecidableEquality 
@@ -37,7 +38,9 @@ open import Data.Nat.Properties using (
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
-open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst)
+open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst ; irrel-×-closure ; uip
+    ; restIsProofIrrel
+    )
 open import Eser.Logic using 
     (true≢false 
     ; ≡→≡ᵇ 
@@ -330,6 +333,9 @@ module ReplaceStructLemmas (T : ReplaceStruct) where
                 where
                     w⊄yw : w ⊄ (rep y w w')
                     w⊄yw = complete T y w w' w≢w' w⊂y
+
+    ⊂-irrelevant : Relation.Binary.Irrelevant _⊂_
+    ⊂-irrelevant p q = uip p q
 
 -- Unused laws that would also make sense to more strictly describe term
 -- algebras:
@@ -685,6 +691,8 @@ module ReplaceResp (T : ReplaceStruct) where
     ... | inj₂ p = inj₂ p
 
 
+    todo1 : ?
+    todo1 = {! remove lemma below? !}
     -- Given evidence of a non-normal argument, we know the output of
     -- `allArgsNormal?`.
     lemma-allArgsNormal?-NonNormal
@@ -1083,8 +1091,8 @@ module ReplaceResp (T : ReplaceStruct) where
                     wR[yx]w' = areRelated-in-restriction (h yx) (h y) 
                         (lemma-⋖+-exence h H yx<y) wRw'
 
-                    todo : ⊥
-                    todo : {! `conclude` is only used in the first case; merge them.
+                    todo2 : ⊥
+                    todo2 = {! `conclude` is only used in the first case; merge them.!}
                     -- There are several subcases, but most end by concluding
                     -- in the following way:
                     conclude
@@ -1198,14 +1206,118 @@ module ReplaceResp (T : ReplaceStruct) where
                                 : (y , w , w') <<< (y , x , x')
                             y,w,w'<<<y,x,x' = third-<-to-<<< y x w' x' w'<x'
 
-                    subcases(inj₂ (inj₂ (w≡x , w'≡x'))) = ?
+                    subcases(inj₂ (inj₂ (refl , refl))) = fy≡fyw
+                        where
+                            nf-yx : Choices (h y)
+                            nf-yx = earlier-new $ resurface (h y) yx<y
+
+                            -- This is the choice that the ReplaceRespLocal
+                            -- filter enforces equality to. 
+                            nf-yw : Choices (h y)
+                            nf-yw = earlier-new $ resurface (h y) yw<y
+
+                            eq : yx ≡ yw
+                            eq = refl
+
+                            ⊂-<-irrel : (y z z' : ℕ) 
+                                → Relation.Nullary.Irrelevant ((z ⊂ y) × (z' < z))
+                            ⊂-<-irrel y z z' = irrel-×-closure 
+                                (⊂-irrelevant {z} {y}) 
+                                (<-irrelevant {z'} {z})
+
+
+                            A : Set
+                            A = Σ[ t ∈ ℕ × ℕ ] 
+                                (proj₁ t ⊂ y) × (proj₂ t < proj₁ t)
+
+                            tuplesEq : _≡_ {A = A} ((w , w') , w⊂y , w'<w)
+                                                   ((x , x') , x⊂y , x'<x)
+                            tuplesEq = restIsProofIrrel {A = ℕ × ℕ} 
+                                {B = λ (z , z') → (z ⊂ y) × (z' < z)}
+                                (λ (z , z') → ⊂-<-irrel y z z')
+                                (w⊂y , w'<w)
+                                (x⊂y , x'<x)
+                                refl
+
+                            nf-yw≡nf-yx : nf-yw ≡ nf-yx
+                            nf-yw≡nf-yx = 
+                                begin 
+                                nf-yw
+                                ≡⟨⟩
+                                    (earlier-new $ resurface (h y)
+                                        $ replace-< T y w w' w⊂y w'<w )
+                                ≡⟨⟩
+                                    auxfun ((w , w') , w⊂y , w'<w)
+                                ≡⟨ cong auxfun tuplesEq ⟩
+                                    auxfun ((x , x') , x⊂y , x'<x)
+                                ≡⟨⟩
+                                    (earlier-new $ resurface (h y)
+                                        $ replace-< T y x x' x⊂y x'<x )
+                                ≡⟨⟩
+                                    nf-yx
+                                ∎
+                                where
+                                    auxfun : A → Choices (h y)
+                                    auxfun ((z , z') , z⊂y , z'<z)
+                                        = earlier-new 
+                                            $ resurface (h y)
+                                            $ replace-< T y z z' z⊂y z'<z
+                                        
+                                
+                                                   
+
+
+                            g : (n : ℕ) → Choices (h n)
+                            g = getChoiceFromExence (h , H)
+
+                            gy≡nf-yx : g y ≡ nf-yx
+                            gy≡nf-yx = decEqReflection _≡?_ (g y) nf-yx $
+                                sym $
+                                begin 
+                                    true
+                                ≡⟨ sym $ LocSat y ⟩
+                                    ReplaceRespLocal (h y) (g y)
+                                ≡⟨⟩
+                                    ReplaceRespLocal-cases (h y) (g y) 
+                                        (forgetMinimality 
+                                        $ allArgsNormal? (h y))
+                                ≡⟨ cong (λ t → ReplaceRespLocal-cases (h y) (g y) 
+                                        (forgetMinimality t )) (sym p-eq) ⟩
+                                    ReplaceRespLocal-cases (h y) (g y) 
+                                        (forgetMinimality 
+                                        $ (inj₂ (w , w⊂y , w' , w'<w , wRw' , isMin)))
+                                ≡⟨⟩
+                                    ReplaceRespLocal-cases (h y) (g y) 
+                                        (inj₂ (w , w' , w⊂y , w'<w , wRw'))
+                                ≡⟨⟩
+                                    does (g y ≡? nf-yw)
+                                ≡⟨ cong (λ v → does (g y ≡? v)) nf-yw≡nf-yx ⟩
+                                    does (g y ≡? nf-yx)
+                                ∎
+
+                            fy≡fyw : f y ≡ f yw
+                            fy≡fyw =
+                                begin 
+                                    f y
+                                ≡⟨⟩
+                                    choiceToℕ (getChoiceFromExence (h , H) y)
+                                ≡⟨ cong choiceToℕ gy≡nf-yx ⟩
+                                    choiceToℕ (earlier-new $ resurface (h y) yx<y)
+                                ≡⟨⟩
+                                    NFSToℕ (resurface (h y) yx<y)
+                                ≡⟨ lemma-resurface-getChoice h H yx<y ⟩
+                                    choiceToℕ (getChoiceFromExence (h , H) yx)
+                                ≡⟨⟩
+                                    f yx
+                                ∎
+                                
 
             recursion 
                 : (t : ℕ × ℕ × ℕ) 
                 → ({ s : (ℕ × ℕ × ℕ) } → s <<< t → P s)
                 → P t
-            recursion (y , x , x') IH -- x⊂y x'<x xRx' 
-                = cases y x x' IH (allArgsNormal? (h y)) refl -- x⊂y x'<x xRx' 
+            recursion (y , x , x') IH
+                = cases y x x' IH (allArgsNormal? (h y)) refl
 
 
     -- Variant of above lemma where an NFFun instead of an Exence is given.
