@@ -6,7 +6,7 @@
 --------------------------------------------------------------------------------
 
 open import Data.Nat
-open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ )
+open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ ; _≤?_ )
 open import Data.Bool.Properties using (T-≡)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
@@ -34,6 +34,7 @@ open import Data.Nat.Properties using (
     ; ≤-<-trans
     ; m≤n⇒m<n∨m≡n
     ; n≮n
+    ; ≰⇒>
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -829,10 +830,44 @@ module ReplaceResp (T : ReplaceStruct) where
         → (s : NFRestr n)
         → r ⋖+ s
         → {x x' : ℕ}
+        → x' < x
         → AreRelated s x x'
         → AreRelated r x x'
-    areRelated-in-restriction {m} {n} r s r⋖+s {x} {x'} xSx' with <-cmp x m
-    ... | q = ? -- #TODO: see sheet "Cofix 5"
+    areRelated-in-restriction {m} {n} r s r⋖+s {x} {x'} x'<x xSx' with m ≤? x
+    ... | (yes m≤x) = ans
+        where
+            ans : AreRelated r x x'
+            ans x<m = ⊥-elim $ n≮n m $ ≤-<-trans m≤x x<m
+    ... | (no m≰x) = ans 
+        where
+            m<n : m < n
+            m<n = lemma-⋖+-indices r⋖+s
+            --x<m : x < m
+            --x<m = ≰⇒> m≰x
+            x<n : x < n
+            x<n = <-trans (≰⇒> m≰x) m<n
+            --x'<m : x' < m
+            --x'<m = <-trans x'<x x<m
+            x'<n : x' < n
+            x'<n = <-trans x'<x x<n
+            eq : NFSToℕ (resurface s x<n) ≡ NFSToℕ (resurface s x'<n)
+            eq = cong NFSToℕ $ decEqReflection _≡?_ (resurface s x<n) 
+                                                    (resurface s x'<n) 
+                             $ xSx' x<n x'<n
+
+            ans : AreRelated r x x'
+            ans x<m x'<m =
+                decEqCoReflection _≡?_ (resurface r x<m) (resurface r x'<m)
+                $ NFSToℕ-injective (resurface r x<m) (resurface r x'<m)
+                $ begin 
+                    NFSToℕ (resurface r x<m) 
+                ≡⟨ ? ⟩
+                    NFSToℕ (resurface s x<n) 
+                ≡⟨ eq ⟩
+                    NFSToℕ (resurface s x'<n)  
+                ≡⟨ ? ⟩
+                    NFSToℕ (resurface r x'<m) 
+                ∎
 
     -- The ReplaceRespLocal filter requires that the normal form
     -- of y equals `replace y x x'` in case there exists some x ⊂ y
@@ -915,11 +950,11 @@ module ReplaceResp (T : ReplaceStruct) where
 
                     xR[yw]x' : AreRelated (h yw) x x'
                     xR[yw]x' = areRelated-in-restriction (h yw) (h y) 
-                        (lemma-⋖+-exence h H yw<y) xRx'
+                        (lemma-⋖+-exence h H yw<y) x'<x xRx'
 
                     wR[yx]w' : AreRelated (h yx) w w'
                     wR[yx]w' = areRelated-in-restriction (h yx) (h y) 
-                        (lemma-⋖+-exence h H yx<y) wRw'
+                        (lemma-⋖+-exence h H yx<y) w'<w wRw'
 
                     subcases 
                         : (w < x) ⊎ (w ≡ x × w' < x') ⊎ (w ≡ x × w' ≡ x') 
@@ -943,7 +978,7 @@ module ReplaceResp (T : ReplaceStruct) where
 
                             wR[ywx]w' : AreRelated (h ywx) w w'
                             wR[ywx]w' = areRelated-in-restriction (h ywx) (h y) 
-                                (lemma-⋖+-exence h H ywx<y) wRw'
+                                (lemma-⋖+-exence h H ywx<y) w'<w wRw'
 
                             x≢w' : x ≢ w'
                             x≢w' = λ eq → (n≮n x 
