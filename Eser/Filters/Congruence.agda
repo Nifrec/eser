@@ -1074,6 +1074,7 @@ module ReplaceResp (T : ReplaceStruct) where
                     yw,x,x'<<<y,x,x' : (yw , x , x') <<< (y , x , x')
                     yw,x,x'<<<y,x,x' = first-<-to-<<< yw x x' y x x' yw<y
 
+
                     xR[yw]x' : AreRelated (h yw) x x'
                     xR[yw]x' = areRelated-in-restriction (h yw) (h y) 
                         (lemma-⋖+-exence h H yw<y) xRx'
@@ -1082,6 +1083,8 @@ module ReplaceResp (T : ReplaceStruct) where
                     wR[yx]w' = areRelated-in-restriction (h yx) (h y) 
                         (lemma-⋖+-exence h H yx<y) wRw'
 
+                    todo : ⊥
+                    todo : {! `conclude` is only used in the first case; merge them.
                     -- There are several subcases, but most end by concluding
                     -- in the following way:
                     conclude
@@ -1119,6 +1122,19 @@ module ReplaceResp (T : ReplaceStruct) where
                             x≢w : x ≢ w
                             x≢w refl = n≮n x w<x
 
+                            x⊂yw : x ⊂ yw
+                            x⊂yw = keep T y w w' x w⊂y x⊂y (≢-sym x≢w)
+
+                            ywx<y : ywx < y
+                            ywx<y = <-trans (replace-< T yw x x' x⊂yw x'<x) yw<y
+                    
+                            ywx,w,w'<<<y,x,x' : (ywx , w , w') <<< (y , x , x')
+                            ywx,w,w'<<<y,x,x' = first-<-to-<<< ywx w w' y x x' ywx<y
+
+                            wR[ywx]w' : AreRelated (h ywx) w w'
+                            wR[ywx]w' = areRelated-in-restriction (h ywx) (h y) 
+                                (lemma-⋖+-exence h H ywx<y) wRw'
+
                             x≢w' : x ≢ w'
                             x≢w' = λ eq → (n≮n x 
                                 (<-trans (subst (_< w) (sym eq) w'<w) w<x)) 
@@ -1142,15 +1158,46 @@ module ReplaceResp (T : ReplaceStruct) where
                                          ⟩
                                             f yxw
                                         ∎
-                                        -- #TODO see cofix 5 (frontpage;
-                                        -- backpage says I need to look there)
                                         where
                                             sub-eq : f ywx ≡ f ywxw
                                             sub-eq with w ⊂? ywx
                                             ... | yes w⊂ywx = 
-                                                {! IH ywx,w,w'<<<yw,x,x' w⊂ywx!}
-                                            ... | no w⊄ywx = {! noeff !}
-                    subcases(inj₂ (inj₁ (w≡x , w'<x'))) = ?
+                                                IH ywx,w,w'<<<y,x,x' w⊂ywx w'<w 
+                                                   wR[ywx]w'
+                                            ... | no w⊄ywx = 
+                                                cong f 
+                                                    $ noeff T ywx w w' 
+                                                    $ not-true-to-is-false w⊄ywx
+                    subcases(inj₂ (inj₁ (x≡w@refl , w'<x'))) = 
+                        begin 
+                            f y
+                        ≡⟨ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
+                            f yw
+                        ≡⟨ cong f $ noeff T yw x x' x⊄yw ⟩
+                            f ywx
+                        ≡⟨ cong f $ comm T y x x' w w' x⊂y w⊂y x≢w' w≢x' ⟩
+                            f yxw
+                        ≡⟨ cong f $ sym $ noeff T yx w w' w⊄yx ⟩
+                            f yx
+                        ∎
+                        where
+                            -- Note that x ≡ w in this case!
+                            x≢w' : x ≢ w'
+                            x≢w' refl = n≮n x w'<w
+
+                            w≢x' : w ≢ x'
+                            w≢x' refl = n≮n w x'<x
+
+                            x⊄yw : x ⊄ yw
+                            x⊄yw = complete T y x w' x≢w' x⊂y
+
+                            w⊄yx : w ⊄ yx
+                            w⊄yx = complete T y x x' w≢x' w⊂y
+                        
+                            y,w,w'<<<y,x,x'
+                                : (y , w , w') <<< (y , x , x')
+                            y,w,w'<<<y,x,x' = third-<-to-<<< y x w' x' w'<x'
+
                     subcases(inj₂ (inj₂ (w≡x , w'≡x'))) = ?
 
             recursion 
