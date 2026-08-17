@@ -27,6 +27,7 @@ open import Data.Nat.Properties using
     ; ≤-refl
     ; ≤-trans
     ; n≤1+n
+    ; ≤-<-trans
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -35,6 +36,7 @@ open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma
     ; doubleSubst
     ; m<1+n⇒m<n∨m≡n-when-≡
     ; m<1+n⇒m<n∨m≡n-when-<
+    ; m≤n⇒m<n∨m≡n-when-<
     )
 open import Data.Maybe
 
@@ -594,6 +596,69 @@ lemma-trim'-exence h H n m p =
             ≡⟨⟩
                 h (suc m)
             ∎
+
+-- Trimming an extension of r down to the same x
+-- has the same effect as directly trimming r to x.
+lemma-⋖+-trim-equal
+    : { m n x : ℕ}
+    → {r : NFRestr m}
+    → {s : NFRestr n}
+    → r ⋖+ s
+    → (x≤m : x ≤ m)
+    → (x≤n : x ≤ n)
+    → trim' r x≤m ≡ trim' s x≤n
+lemma-⋖+-trim-equal {m} {suc m} {x} {r} {s} (⋖+-onestep r⋖s) x≤m x≤n = 
+    sym $ 
+    begin 
+        trim' s x≤n
+    ≡⟨⟩
+        trim'-cases s (m≤n⇒m<n∨m≡n x≤n)
+    ≡⟨ cong (trim'-cases s) $ m≤n⇒m<n∨m≡n-when-< x (suc m) x≤n x<n ⟩
+        trim'-cases s (inj₁ x<n)
+    ≡⟨⟩
+        trim s x<n
+    ≡⟨ cong (λ t → trim t x<n) eq ⟩
+        trim (addChoice r c) x<n
+    ≡⟨ lemma-trim-addChoice m x r c x<n x≤m ⟩ 
+        trim' r x≤m
+    ∎
+    where
+        x<n : x < (suc m)
+        x<n = ≤-<-trans x≤m (n<1+n m)
+        c : Choices r
+        c = proj₁ $ ⋖-to-addChoice r⋖s
+        eq : s ≡ addChoice r c
+        eq = proj₂ $ ⋖-to-addChoice r⋖s
+lemma-⋖+-trim-equal {m} n@{suc n'} {x} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) x≤m x≤n = {! !}
+    where
+        x<n' : x < n'
+        x<n' = ≤-<-trans x≤m $ lemma-⋖+-indices r⋖+s
+        x<n : x < n
+        x<n = <-trans x<n' (n<1+n n')
+        --x≤n : x ≤ n
+        --x≤n = ≤-trans (n≤1+n x) x<n -- <⇒≤ x<n
+        x≤n' : x ≤ n'
+        x≤n' = ≤-trans (n≤1+n x) x<n'
+        IH : trim' r x≤m ≡ trim' s x≤n'
+        IH = lemma-⋖+-trim-equal r⋖+s x≤m x≤n'
+        lastStep : trim' s x≤n' ≡ trim' (newNF s) x≤n
+        lastStep = {! sym $ lemma-trim-addChoice n' x s here x<n x≤n' !}
+            --begin 
+            --    trim' s x≤n'
+            --≡⟨⟩
+            --    trim'-cases s (m≤n⇒m<n∨m≡n x≤n)
+            --≡⟨ cong (trim'-cases s) $ m≤n⇒m<n∨m≡n-when-< x n' x≤n' x<n ⟩
+            --    trim'-cases s (inj₁ x<n)
+            --≡⟨⟩
+            --    trim s x<n
+            --≡⟨ cong (λ t → trim t x<n) eq ⟩
+            --    trim (addChoice s here) x<n
+            --≡⟨ lemma-trim-addChoice m x r c x<n x≤m ⟩ 
+            --    trim' r x≤m
+            --∎
+            --sym $ lemma-trim-addChoice n' x s here x<n x≤n'
+
+lemma-⋖+-trim-equal {m} {n} {x} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) x≤m x≤n = {! !}
 
 lemma-trim-⋖
     : {n m : ℕ}
