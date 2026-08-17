@@ -11,7 +11,7 @@ open import Data.Sum
 open import Data.Product
 open import Data.Empty
 open import Relation.Nullary
-open import Relation.Binary
+open import Relation.Binary hiding (Irrelevant)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Data.List
@@ -118,6 +118,17 @@ restIsProofIrrel
     → (a , b) ≡ (a' , b')
 restIsProofIrrel H {a} {a} b b' refl =
     cong (λ b → (a , b)) (H a b b')
+
+irrel-×-closure
+    : {A B : Set}
+    → Irrelevant A
+    → Irrelevant B
+    → Irrelevant (A × B)
+irrel-×-closure {A} {B} ir-A ir-B (a , b) (a' , b') = 
+    lemma (ir-A a a') (ir-B b b')
+    where
+        lemma : {a a' : A} → {b b' : B} → a ≡ a' → b ≡ b' → (a , b) ≡ (a' , b')
+        lemma refl refl = refl
 
 -- If two pairs in dependent sums are equal,
 -- then so are their second projections.
