@@ -246,6 +246,19 @@ lemma-⋖+-exence h H {m} {suc n} m<1+n@(s≤s q) with m<1+n⇒m<n∨m≡n m<1+n
         hm⋖+hn : h m ⋖+ h n
         hm⋖+hn = lemma-⋖+-exence h H m<n
 ... | inj₂ (refl) = ⋖+-onestep (H n)
+
+-- For any `r : NFRestr m` and `s : NFRestr n`, if r ⋖+ s then also m < n.
+lemma-⋖+-indices
+    : {m n : ℕ}
+    → {r : NFRestr m}
+    → {s : NFRestr n}
+    → r ⋖+ s
+    → m < n
+lemma-⋖+-indices {m} {suc m} {r} {s} (⋖+-onestep x) = n<1+n m 
+lemma-⋖+-indices {m} {suc n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) = 
+    <-trans (lemma-⋖+-indices r⋖+s) (n<1+n n)
+lemma-⋖+-indices {m} {suc n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
+    <-trans (lemma-⋖+-indices r⋖+s) (n<1+n n)
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
 --------------------------------------------------------------------------------
