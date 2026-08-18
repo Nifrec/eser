@@ -402,6 +402,27 @@ trim' r m≤n = trim'-cases r (m≤n⇒m<n∨m≡n m≤n)
 trim'-cases r (inj₁ m<n) = trim r m<n
 trim'-cases {n} r {n} (inj₂ refl) = r
 
+-- Given an `r : NFRestr n` and a `m ≤ n`, trim' trims down to m.
+-- If also given a proof `m<n : m < n`, then `trim' r m≤n` 
+-- it has the same effect as `trim r m<n`.
+trim'-to-trim-when-<
+    : {m n : ℕ}
+    → (r : NFRestr n)
+    → (m≤n : m ≤ n)
+    → (m<n : m < n)
+    → trim' r m≤n ≡ trim r m<n
+trim'-to-trim-when-< {m} {n} r m≤n m<n = 
+    begin 
+        trim' r m≤n
+    ≡⟨⟩
+        trim'-cases r (m≤n⇒m<n∨m≡n m≤n)
+    ≡⟨ cong (trim'-cases r) $ m≤n⇒m<n∨m≡n-when-< m n m≤n m<n ⟩
+        trim'-cases r (inj₁ m<n)
+    ≡⟨⟩
+        trim r m<n
+    ∎
+    
+
 getLastChoice
     : {n' : ℕ}
     → (r : NFRestr (suc n'))
@@ -611,11 +632,12 @@ lemma-⋖+-trim-equal {m} {suc m} {x} {r} {s} (⋖+-onestep r⋖s) x≤m x≤n =
     sym $ 
     begin 
         trim' s x≤n
-    ≡⟨⟩
-        trim'-cases s (m≤n⇒m<n∨m≡n x≤n)
-    ≡⟨ cong (trim'-cases s) $ m≤n⇒m<n∨m≡n-when-< x (suc m) x≤n x<n ⟩
-        trim'-cases s (inj₁ x<n)
-    ≡⟨⟩
+    ≡⟨ trim'-to-trim-when-< s x≤n x<n ⟩
+    --≡⟨⟩
+    --    trim'-cases s (m≤n⇒m<n∨m≡n x≤n)
+    --≡⟨ cong (trim'-cases s) $ m≤n⇒m<n∨m≡n-when-< x (suc m) x≤n x<n ⟩
+    --    trim'-cases s (inj₁ x<n)
+    --≡⟨⟩
         trim s x<n
     ≡⟨ cong (λ t → trim t x<n) eq ⟩
         trim (addChoice r c) x<n
