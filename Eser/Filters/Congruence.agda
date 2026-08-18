@@ -868,3 +868,74 @@ module ReplaceResp (T : ReplaceStruct) where
             contra : ⊥
             contra = fy≢fy' fy≡fy'
 
+    ----------------------------------------------------------------------------
+    -- The congruence filter is 'DeadEndFree'; following
+    -- allowed choices will not get stuck.
+    ----------------------------------------------------------------------------
+    -- Strategy: introduce a new normal form when the filters allows it;
+    -- otherwise it only allows one choice, and then we pick that one.
+    --
+    -- Note: when following this strategy from the start,
+    -- then the congruence-constraint will never apply because every argument
+    -- is its own normal form, and the filter will continue to allow introducing
+    -- new normal forms.
+    -- In other words, this strategy encodes the identity relation.
+    -- (The other extreme, relating everything to 0, should also be possible).
+    ----------------------------------------------------------------------------
+    ReplaceRespLocal-DeadEndFree : DeadEndFree ReplaceRespLocal
+    ReplaceRespLocal-DeadEndFree {y} r LocSat = cases (allArgsNormal? r) refl
+        where
+            F = ReplaceRespLocal
+            cases
+                : (p : AllArgsNormal r ⊎ MinNonNormalArg r)
+                → (allArgsNormal? r ≡ p)
+                → Σ[ c ∈ Choices r ] F Allows c In r
+            cases (inj₁ allNormal) p-eq = (here , allowed)
+                where
+                    allowed : F Allows here In r
+                    allowed = 
+                        begin 
+                            F r here
+                        ≡⟨⟩
+                            ReplaceRespLocal-cases r here 
+                                (forgetMinimality $ allArgsNormal? r)
+                        ≡⟨ cong  (λ x → ReplaceRespLocal-cases r here 
+                                (forgetMinimality x)) p-eq ⟩
+                            ReplaceRespLocal-cases r here (inj₁ allNormal)
+                        ≡⟨⟩
+                            true
+                        ∎
+            cases (inj₂ (x , x⊂y , x' , x'<x , xRx' , isMin)) p-eq 
+                = (c , allowed)
+                where
+                    yx : ℕ
+                    yx = replace T y x x'
+
+                    yx<y : yx < y
+                    yx<y = replace-< T y x x' x⊂y x'<x
+
+                    c : Choices r
+                    c = earlier-new $ resurface r yx<y
+
+                    allowed : F Allows c In r
+                    allowed = 
+                        begin 
+                            F r c
+                        ≡⟨⟩
+                            ReplaceRespLocal-cases r c 
+                                (forgetMinimality $ allArgsNormal? r)
+                        ≡⟨ cong  (λ x → ReplaceRespLocal-cases r c 
+                                (forgetMinimality x)) p-eq ⟩
+                            ReplaceRespLocal-cases r c 
+                                (forgetMinimality 
+                                $ inj₂ (x , x⊂y , x' , x'<x , xRx' , isMin))
+                        ≡⟨⟩
+                            ReplaceRespLocal-cases r c 
+                                (inj₂ (x , x' , x⊂y , x'<x , xRx' ))
+                        ≡⟨⟩
+                            does (c ≡? c) 
+                        ≡⟨ decEqCoReflection _≡?_ c c refl ⟩
+                            true
+                        ∎
+                        
+        
