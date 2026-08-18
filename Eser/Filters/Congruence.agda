@@ -815,8 +815,6 @@ module ReplaceResp (T : ReplaceStruct) where
                     f x'
                 ∎
                 
-    --#TODO: maybe move this general lemma to other place?
-    --
     -- If two elements have the same normal form in a NFRestr `s`
     -- then then also do have the same normal form in any restriction
     -- of `s`. More specifically, we use the definition `AreRelated`,
@@ -842,12 +840,8 @@ module ReplaceResp (T : ReplaceStruct) where
         where
             m<n : m < n
             m<n = lemma-⋖+-indices r⋖+s
-            --x<m : x < m
-            --x<m = ≰⇒> m≰x
             x<n : x < n
             x<n = <-trans (≰⇒> m≰x) m<n
-            --x'<m : x' < m
-            --x'<m = <-trans x'<x x<m
             x'<n : x' < n
             x'<n = <-trans x'<x x<n
             eq : NFSToℕ (resurface s x<n) ≡ NFSToℕ (resurface s x'<n)
@@ -859,14 +853,23 @@ module ReplaceResp (T : ReplaceStruct) where
             ans x<m x'<m =
                 decEqCoReflection _≡?_ (resurface r x<m) (resurface r x'<m)
                 $ NFSToℕ-injective (resurface r x<m) (resurface r x'<m)
+                $ just-injective
                 $ begin 
-                    NFSToℕ (resurface r x<m) 
-                ≡⟨ ? ⟩
-                    NFSToℕ (resurface s x<n) 
-                ≡⟨ eq ⟩
-                    NFSToℕ (resurface s x'<n)  
-                ≡⟨ ? ⟩
-                    NFSToℕ (resurface r x'<m) 
+                    (just $ NFSToℕ $ resurface r x<m)
+                ≡⟨ resurface-correctness r x<m x<m ⟩
+                    NFRestrToℕ (trim' r x<m)
+                ≡⟨ cong NFRestrToℕ $ lemma-⋖+-trim'-equal r⋖+s x<m x<n ⟩
+                    NFRestrToℕ (trim' s x<n)
+                ≡⟨ sym $ resurface-correctness s x<n x<n ⟩
+                    (just $ NFSToℕ $ resurface s x<n) 
+                ≡⟨ cong just eq ⟩
+                    (just $ NFSToℕ $ resurface s x'<n)  
+                ≡⟨ resurface-correctness s x'<n x'<n ⟩
+                    NFRestrToℕ (trim' s x'<n)
+                ≡⟨ sym $ cong NFRestrToℕ $ lemma-⋖+-trim'-equal r⋖+s x'<m x'<n ⟩
+                    NFRestrToℕ (trim' r x'<m)
+                ≡⟨ sym $ resurface-correctness r x'<m x'<m ⟩
+                    (just $ NFSToℕ $ resurface r x'<m) 
                 ∎
 
     -- The ReplaceRespLocal filter requires that the normal form
