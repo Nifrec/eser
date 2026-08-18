@@ -620,7 +620,7 @@ lemma-trim'-exence h H n m p =
 
 -- Trimming an extension of r down to the same x
 -- has the same effect as directly trimming r to x.
-lemma-⋖+-trim-equal
+lemma-⋖+-trim'-equal
     : { m n x : ℕ}
     → {r : NFRestr m}
     → {s : NFRestr n}
@@ -628,16 +628,11 @@ lemma-⋖+-trim-equal
     → (x≤m : x ≤ m)
     → (x≤n : x ≤ n)
     → trim' r x≤m ≡ trim' s x≤n
-lemma-⋖+-trim-equal {m} {suc m} {x} {r} {s} (⋖+-onestep r⋖s) x≤m x≤n = 
+lemma-⋖+-trim'-equal {m} {suc m} {x} {r} {s} (⋖+-onestep r⋖s) x≤m x≤n = 
     sym $ 
     begin 
         trim' s x≤n
     ≡⟨ trim'-to-trim-when-< s x≤n x<n ⟩
-    --≡⟨⟩
-    --    trim'-cases s (m≤n⇒m<n∨m≡n x≤n)
-    --≡⟨ cong (trim'-cases s) $ m≤n⇒m<n∨m≡n-when-< x (suc m) x≤n x<n ⟩
-    --    trim'-cases s (inj₁ x<n)
-    --≡⟨⟩
         trim s x<n
     ≡⟨ cong (λ t → trim t x<n) eq ⟩
         trim (addChoice r c) x<n
@@ -651,36 +646,52 @@ lemma-⋖+-trim-equal {m} {suc m} {x} {r} {s} (⋖+-onestep r⋖s) x≤m x≤n =
         c = proj₁ $ ⋖-to-addChoice r⋖s
         eq : s ≡ addChoice r c
         eq = proj₂ $ ⋖-to-addChoice r⋖s
-lemma-⋖+-trim-equal {m} n@{suc n'} {x} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) x≤m x≤n = {! !}
+lemma-⋖+-trim'-equal {m} n@{suc n'} {x} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) 
+                    x≤m x≤n = trans IH lastStep
     where
         x<n' : x < n'
         x<n' = ≤-<-trans x≤m $ lemma-⋖+-indices r⋖+s
         x<n : x < n
         x<n = <-trans x<n' (n<1+n n')
-        --x≤n : x ≤ n
-        --x≤n = ≤-trans (n≤1+n x) x<n -- <⇒≤ x<n
         x≤n' : x ≤ n'
         x≤n' = ≤-trans (n≤1+n x) x<n'
         IH : trim' r x≤m ≡ trim' s x≤n'
-        IH = lemma-⋖+-trim-equal r⋖+s x≤m x≤n'
+        IH = lemma-⋖+-trim'-equal r⋖+s x≤m x≤n'
         lastStep : trim' s x≤n' ≡ trim' (newNF s) x≤n
-        lastStep = {! sym $ lemma-trim-addChoice n' x s here x<n x≤n' !}
-            --begin 
-            --    trim' s x≤n'
-            --≡⟨⟩
-            --    trim'-cases s (m≤n⇒m<n∨m≡n x≤n)
-            --≡⟨ cong (trim'-cases s) $ m≤n⇒m<n∨m≡n-when-< x n' x≤n' x<n ⟩
-            --    trim'-cases s (inj₁ x<n)
-            --≡⟨⟩
-            --    trim s x<n
-            --≡⟨ cong (λ t → trim t x<n) eq ⟩
-            --    trim (addChoice s here) x<n
-            --≡⟨ lemma-trim-addChoice m x r c x<n x≤m ⟩ 
-            --    trim' r x≤m
-            --∎
-            --sym $ lemma-trim-addChoice n' x s here x<n x≤n'
-
-lemma-⋖+-trim-equal {m} {n} {x} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) x≤m x≤n = {! !}
+        lastStep = 
+            begin 
+                trim' s x≤n'
+            ≡⟨ sym $ lemma-trim-addChoice n' x s here x<n x≤n' ⟩
+                trim (addChoice s here) x<n
+            ≡⟨⟩
+                trim (newNF s) x<n
+            ≡⟨ sym $ trim'-to-trim-when-< (newNF s) x≤n x<n ⟩
+                trim' (newNF s) x≤n
+            ∎
+lemma-⋖+-trim'-equal {m} {n@(suc n')} {x} {r} {oldNF s c} 
+                    (⋖+-multistep-oldNF c r⋖+s) x≤m x≤n = trans IH lastStep
+    -- This case is almost the same as the previous case.
+    -- Only `oldNF s c` i.o. `newNF s`.
+    where
+        x<n' : x < n'
+        x<n' = ≤-<-trans x≤m $ lemma-⋖+-indices r⋖+s
+        x<n : x < n
+        x<n = <-trans x<n' (n<1+n n')
+        x≤n' : x ≤ n'
+        x≤n' = ≤-trans (n≤1+n x) x<n'
+        IH : trim' r x≤m ≡ trim' s x≤n'
+        IH = lemma-⋖+-trim'-equal r⋖+s x≤m x≤n'
+        lastStep : trim' s x≤n' ≡ trim' (oldNF s c) x≤n
+        lastStep = 
+            begin 
+                trim' s x≤n'
+            ≡⟨ sym $ lemma-trim-addChoice n' x s (earlier-new c) x<n x≤n' ⟩
+                trim (addChoice s (earlier-new c)) x<n
+            ≡⟨⟩
+                trim (oldNF s c) x<n
+            ≡⟨ sym $ trim'-to-trim-when-< (oldNF s c) x≤n x<n ⟩
+                trim' (oldNF s c) x≤n
+            ∎
 
 lemma-trim-⋖
     : {n m : ℕ}
