@@ -7,8 +7,6 @@
 -- Only for signatures with infinite term algebras (equivalent to ℕ)
 -- (and with at least one multiarty constructor).
 
-{-# OPTIONS --allow-unsolved-metas #-}
-
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ ; _≤?_ )
 open import Data.Bool.Properties using (T-≡)
