@@ -1,0 +1,66 @@
+-- Module      : Eser.SigStream.Terms
+-- Description : Two representations of terms in term algebra over a signature.
+-- Copyright   : (c) Lulof Pirée, 2026
+-- License     : AGPL-v3
+-- Maintainer  : Lulof Pirée
+--------------------------------------------------------------------------------
+-- Two representations of the term of the term algebra over a signature.
+--
+-- (1) 𝐕𝐞𝐜𝐓𝐞𝐫𝐦
+--  Terms represented by the index of the operation in the signature,
+--  and for multiary operations, paired with a vector encoding their arguments,
+--  whose length matches their arity.
+--  The interpretation is as follows: Vec ℕ m gives the indices of the arguments
+--  in an enumeration of all the terms. This interpretation is, of course, 
+--  only useful when given an enumeration of all the terms,
+--  such that the index assigned to a term is greater than the indices
+--  assigned to its arguments.
+-- (2) 𝐍𝐞𝐬𝐭𝐞𝐝𝐓𝐞𝐫𝐦
+--  Terms represented by the index of the operation in the signature,
+--  and for multiary operations, paired with a vector of their ary giving
+--  their arguments also as NestedTerms.
+--
+--  Hence NestedTerms have an inductive structure,
+--  whereas VecTerms don't.
+--------------------------------------------------------------------------------
+
+open import Level hiding (suc)
+open import Data.Nat
+open import Data.Nat.Properties
+open import Data.Sum hiding (map)
+open import Data.Product hiding (map)
+open import Data.Empty
+open import Relation.Nullary
+open import Relation.Binary
+open import Relation.Binary.PropositionalEquality
+open ≡-Reasoning
+open import Data.Vec
+open import Data.List.Membership.Propositional
+open import Data.List renaming (_∷_ to _∷L_) hiding (sum)
+open import Function hiding (_↔_)
+
+open import Eser.Signature.Definitions
+open import Eser.Card
+
+module Eser.SigStream.Terms 
+    {μ' ζ' : ℕ∞} 
+    (S : Signature (suc∞ μ') (suc∞ ζ')) 
+    where
+
+    μ = suc∞ μ'
+    ζ = suc∞ ζ'
+    
+    ar : cardToSet ζ → ℕ
+    ar = arity {μ} {ζ} {S = S}
+
+    data VecTerm : Set where
+        v-nullary : cardToSet μ → VecTerm
+        v-muliary : (c : cardToSet ζ) → Vec ℕ (ar c) → VecTerm
+
+    data NestedTerm : Set where
+        n-nullary : cardToSet μ → NestedTerm
+        n-muliary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
+
+    
+
+
