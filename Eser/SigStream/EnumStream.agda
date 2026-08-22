@@ -22,9 +22,11 @@ open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Function hiding (_↔_)
 open import Codata.Guarded.Stream
+open import Codata.Guarded.Stream.Properties
 
 open import Eser.Aux using (_↔_)
-open import Eser.Equivalences.Notation
+open import Eser.Equivalences.Notation using (_≃_)
+open import Eser.Equivalences.Properties using (mk≃')
 
 module Eser.SigStream.EnumStream where
 
@@ -42,14 +44,80 @@ module Eser.SigStream.EnumStream where
     isEnumStream s = Unique s × Complete s
 
     -- There exists an enumeration stream for A iff A is equivalent to ℕ.
+    -- (Note : this only proves implications in both directions,
+    -- not an equivalence between types. The latter would involve
+    -- proving equalities between streams, which seems problematic).
     theorem-enumStream 
         : {A : Set}
         → (Σ[ s ∈ Stream A ] isEnumStream s) ↔ (A ≃ ℕ)
-    theorem-enumStream {A} = (f , g)
+    theorem-enumStream {A} = (left , right)
         where
-            f : Σ[ s ∈ Stream A ] isEnumStream s → (A ≃ ℕ)
-            f (s , unique , complete) = ?
+            left : Σ[ s ∈ Stream A ] isEnumStream s → (A ≃ ℕ)
+            left (s , unique , complete) = mk≃' φ φ⁻¹ invˡ invʳ
+                where
+                    φ : A → ℕ
+                    φ = proj₁ ∘ complete
 
-            g : (A ≃ ℕ) → Σ[ s ∈ Stream A ] isEnumStream s
-            g = ?
+                    φ⁻¹ : ℕ → A
+                    φ⁻¹ = lookup s
+
+                    invˡ : Inverseˡ _≡_ _≡_ φ φ⁻¹
+                    invˡ {n} refl = unique m n H
+                        where
+                            m : ℕ
+                            m = φ (φ⁻¹ n) 
+                            -- That is: m ≗ proj₁ (complete $ lookup s n)
+
+                            H : lookup s m ≡ lookup s n
+                            H = proj₂ (complete $ lookup s n)
+
+                    invʳ : Inverseʳ _≡_ _≡_ φ φ⁻¹
+                    invʳ {a} {x} refl = 
+                        begin 
+                            φ⁻¹ (φ a)
+                        ≡⟨⟩
+                            lookup s (proj₁ $ complete a)
+                        ≡⟨ proj₂ $ complete a ⟩
+                            a
+                        ∎
+
+
+            right : (A ≃ ℕ) → Σ[ s ∈ Stream A ] isEnumStream s
+            right A≃ℕ = (s , unique , complete)
+                where
+                    open Eser.Equivalences.Notation.EquivShorthands A≃ℕ
+                    s : Stream A
+                    s = tabulate φ⁻¹ 
+
+                    unique : Unique s
+                    unique n m eq =
+                            begin 
+                                n
+                            ≡⟨ sym $ φ∘φ⁻¹≈id n ⟩
+                                φ (φ⁻¹ n)
+                            ≡⟨ sym $ cong φ (lookup-tabulate n φ⁻¹) ⟩
+                                φ (lookup s n)
+                            ≡⟨ cong φ eq ⟩
+                                φ (lookup s m)
+                            ≡⟨ cong φ (lookup-tabulate m φ⁻¹) ⟩
+                                φ (φ⁻¹ m)
+                            ≡⟨ φ∘φ⁻¹≈id m ⟩
+                                m
+                            ∎
+
+                    complete : Complete s
+                    complete a = (φ a , eq)
+                        where
+                            eq : lookup s (φ a) ≡ a
+                            eq = 
+                                begin 
+                                    lookup s (φ a)
+                                ≡⟨⟩
+                                    lookup (tabulate φ⁻¹) (φ a)
+                                ≡⟨ lookup-tabulate (φ a) φ⁻¹ ⟩
+                                    (φ⁻¹ ∘ φ) a
+                                ≡⟨ φ⁻¹∘φ≈id a ⟩
+                                    a
+                                ∎
+                        
 
