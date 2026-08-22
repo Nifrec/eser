@@ -30,37 +30,78 @@ open import Data.Nat.Properties
 open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Empty
+open import Data.Unit
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Data.Vec
-open import Data.List.Membership.Propositional
+open import Data.Vec.Membership.Propositional
 open import Data.List renaming (_∷_ to _∷L_) hiding (sum)
 open import Function hiding (_↔_)
 
 open import Eser.Signature.Definitions
 open import Eser.Card
+open import Eser.Equivalences.Notation using (_≃_)
 
 module Eser.SigStream.Terms 
     {μ' ζ' : ℕ∞} 
     (S : Signature (suc∞ μ') (suc∞ ζ')) 
     where
 
-    μ = suc∞ μ'
-    ζ = suc∞ ζ'
-    
-    ar : cardToSet ζ → ℕ
-    ar = arity {μ} {ζ} {S = S}
+μ = suc∞ μ'
+ζ = suc∞ ζ'
 
-    data VecTerm : Set where
-        v-nullary : cardToSet μ → VecTerm
-        v-muliary : (c : cardToSet ζ) → Vec ℕ (ar c) → VecTerm
+ar : cardToSet ζ → ℕ
+ar = arity {μ} {ζ} {S = S}
 
-    data NestedTerm : Set where
-        n-nullary : cardToSet μ → NestedTerm
-        n-muliary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
+data VecTerm : Set where
+    v-nullary : cardToSet μ → VecTerm
+    v-muliary : (c : cardToSet ζ) → Vec ℕ (ar c) → VecTerm
 
-    
+data NestedTerm : Set where
+    n-nullary : cardToSet μ → NestedTerm
+    n-muliary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
+
+--------------------------------------------------------------------------------
+-- Conditional equivalence VecTerm & NestedTerm
+--
+-- VecTerms and NestedTerms are equivalent given an enumeration
+-- of VecTerm that sends terms to greater index than any of its arguments.
+--------------------------------------------------------------------------------
+
+IsMultiary : VecTerm → Set
+IsMultiary (v-nullary _) = ⊥
+IsMultiary (v-muliary _ _) = ⊤
+
+getArity
+    : {v : VecTerm}
+    → IsMultiary v
+    → ℕ
+getArity {v-muliary c _} tt = ar c
+
+getVector 
+    : {v : VecTerm}
+    → (mv : IsMultiary v)
+    → Vec ℕ (getArity {v} mv)
+getVector {v-muliary _ v} tt = v
+
+MakesArgsSmaller
+    : (f : VecTerm → ℕ)
+    → Set
+MakesArgsSmaller f =
+    (c : cardToSet μ)
+    → (v : VecTerm)
+    → (mv : IsMultiary v)
+    → (i : ℕ)
+    → (i ∈ (getVector {v} mv))
+    → i < f v
+
+
+theorem-VecTerm-NestedTerm-equiv
+    : (e : VecTerm ≃ ℕ)
+    → MakesArgsSmaller (Inverse.to e)
+    → VecTerm ≃ NestedTerm
+theorem-VecTerm-NestedTerm-equiv e H = ?
 
 
