@@ -66,6 +66,17 @@ data NestedTerm : Set where
     n-nullary : cardToSet μ → NestedTerm
     n-multiary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
 
+max : {n : ℕ} → Vec ℕ (suc n) → ℕ
+max {0} (x ∷ []) = x
+max {suc n} (x ∷ xs) = cases (x <? (max xs))
+    where
+        cases : (Dec (x < (max xs))) → ℕ
+        cases (yes _) = max xs
+        cases (no _)  = x
+
+height : NestedTerm → ℕ
+height (n-nullary _) = 0
+height (n-multiary _ v) = suc $ max $ Data.Vec.map height v
 --------------------------------------------------------------------------------
 -- Conditional equivalence VecTerm & NestedTerm
 --
@@ -114,6 +125,8 @@ theorem-ℕ-NestedTerm-equiv e H = mk≃' g f invˡ invʳ
     where
     -- Fuel technique is used, variable b gives the fuel.
     -- This is to make Agda's termination checker happy.
+    -- g' only accepts inputs in ℕ smaller than the fuel.
+    -- f' only accepts NestedTerms whose height is smaller than the fuel.
 
     open Eser.Equivalences.Notation.EquivShorthands e
 
@@ -167,8 +180,12 @@ theorem-ℕ-NestedTerm-equiv e H = mk≃' g f invˡ invʳ
     g : ℕ → NestedTerm
     g n = g' (suc n) n (n<1+n n)
 
-    f : ? → ?
-    f = ?
+    f' : (b : ℕ) → (t : NestedTerm) → (height t < b) → ℕ
+    f' b t p = ?
+
+    f : NestedTerm → ℕ
+    f t = f' (suc (height t)) t (n<1+n $ height t)
+
     invˡ : Inverseˡ _≡_ _≡_ g f
     invˡ {x} {y} refl = ?
     invʳ : Inverseʳ _≡_ _≡_ g f
