@@ -35,14 +35,17 @@ open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
-open import Data.Vec
+-- We want the 'here' of _∈_ not of _[_]=_.
+open import Data.Vec hiding (here ; there) 
 open import Data.Vec.Membership.Propositional
-open import Data.List renaming (_∷_ to _∷L_) hiding (sum)
+open import Data.Vec.Relation.Unary.Any
+open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
 open import Eser.Signature.Definitions
 open import Eser.Card
 open import Eser.Equivalences.Notation using (_≃_)
+open import Eser.Equivalences.Properties using (mk≃')
 
 module Eser.SigStream.Terms 
     {μ' ζ' : ℕ∞} 
@@ -57,11 +60,11 @@ ar = arity {μ} {ζ} {S = S}
 
 data VecTerm : Set where
     v-nullary : cardToSet μ → VecTerm
-    v-muliary : (c : cardToSet ζ) → Vec ℕ (ar c) → VecTerm
+    v-multiary : (c : cardToSet ζ) → Vec ℕ (ar c) → VecTerm
 
 data NestedTerm : Set where
     n-nullary : cardToSet μ → NestedTerm
-    n-muliary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
+    n-multiary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
 
 --------------------------------------------------------------------------------
 -- Conditional equivalence VecTerm & NestedTerm
@@ -72,36 +75,103 @@ data NestedTerm : Set where
 
 IsMultiary : VecTerm → Set
 IsMultiary (v-nullary _) = ⊥
-IsMultiary (v-muliary _ _) = ⊤
+IsMultiary (v-multiary _ _) = ⊤
 
 getArity
     : {v : VecTerm}
     → IsMultiary v
     → ℕ
-getArity {v-muliary c _} tt = ar c
+getArity {v-multiary c _} tt = ar c
 
 getVector 
     : {v : VecTerm}
     → (mv : IsMultiary v)
     → Vec ℕ (getArity {v} mv)
-getVector {v-muliary _ v} tt = v
+getVector {v-multiary _ v} tt = v
 
 MakesArgsSmaller
     : (f : VecTerm → ℕ)
     → Set
 MakesArgsSmaller f =
-    (c : cardToSet μ)
-    → (v : VecTerm)
+      (v : VecTerm)
     → (mv : IsMultiary v)
     → (i : ℕ)
     → (i ∈ (getVector {v} mv))
     → i < f v
 
 
-theorem-VecTerm-NestedTerm-equiv
+--theorem-VecTerm-NestedTerm-equiv
+--    : (e : VecTerm ≃ ℕ)
+--    → MakesArgsSmaller (Inverse.to e)
+--    → VecTerm ≃ NestedTerm
+--theorem-VecTerm-NestedTerm-equiv e H = ?
+
+theorem-ℕ-NestedTerm-equiv
     : (e : VecTerm ≃ ℕ)
     → MakesArgsSmaller (Inverse.to e)
-    → VecTerm ≃ NestedTerm
-theorem-VecTerm-NestedTerm-equiv e H = ?
+    → ℕ ≃ NestedTerm
+theorem-ℕ-NestedTerm-equiv e H = mk≃' g f invˡ invʳ
+    where
+    -- Fuel technique is used, variable b gives the fuel.
+    -- This is to make Agda's termination checker happy.
+
+    open Eser.Equivalences.Notation.EquivShorthands e
+
+    g' : (b n : ℕ) → n < b → NestedTerm
+    g' b 0 0<b = cases (φ⁻¹ 0) refl
+        where
+            cases : (x : VecTerm) → (x ≡ φ⁻¹ 0) → NestedTerm
+            cases (v-nullary c) _ = n-nullary c
+            -- This case is impossible;
+            -- no multiary term can be the φ⁻¹-image of 0.
+            cases x@(v-multiary c (i ∷ is)) p = ⊥-elim $ n≮0 i<0
+                where
+                    i<φt : i < φ x
+                    i<φt = H x tt i (Any.here {x = i} {xs = is} refl)
+
+                    eq : φ x ≡ 0
+                    eq = begin 
+                            φ x
+                        ≡⟨ cong φ p ⟩
+                            φ (φ⁻¹ 0)
+                        ≡⟨ φ∘φ⁻¹≈id 0 ⟩
+                            0
+                        ∎
+
+                    i<0 : i < 0
+                    i<0 = subst (i <_) eq i<φt
+                    
+    g' (suc b) (suc n) 1+n<1+b@(s≤s n<b) = cases (φ⁻¹ (suc n)) refl
+        where
+            cases : (x : VecTerm) → (x ≡ φ⁻¹ (suc n)) → NestedTerm
+            cases (v-nullary c) _ = n-nullary c
+            cases x@(v-multiary c v) p = n-multiary c v'
+                where
+                    eq : φ x ≡ suc n
+                    eq = begin 
+                            φ x
+                        ≡⟨ cong φ p ⟩
+                            φ (φ⁻¹ (suc n))
+                        ≡⟨ φ∘φ⁻¹≈id (suc n) ⟩
+                            suc n
+                        ∎
+                    fun : {i : ℕ} → i ∈ v → NestedTerm
+                    fun {i} i∈v = g' b i i<b
+                        where
+                            i<b : i < b
+                            i<b = s≤s⁻¹ $ ≤-<-trans 
+                                    (subst (i <_) eq (H x tt i i∈v)) 
+                                    1+n<1+b
+                    v' : Vec NestedTerm (length v)
+                    v' = mapWith∈ v fun
+    g : ℕ → NestedTerm
+    g n = g' (suc n) n (n<1+n n)
+
+    f : ? → ?
+    f = ?
+    invˡ : Inverseˡ _≡_ _≡_ g f
+    invˡ {x} {y} refl = ?
+    invʳ : Inverseʳ _≡_ _≡_ g f
+    invʳ {y} {x} refl = ?
 
 
