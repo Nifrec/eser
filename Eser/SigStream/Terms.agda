@@ -15,13 +15,6 @@
 --  only useful when given an enumeration of all the terms,
 --  such that the index assigned to a term is greater than the indices
 --  assigned to its arguments.
--- (2) 𝐍𝐞𝐬𝐭𝐞𝐝𝐓𝐞𝐫𝐦
---  Terms represented by the index of the operation in the signature,
---  and for multiary operations, paired with a vector of their ary giving
---  their arguments also as NestedTerms.
---
---  Hence NestedTerms have an inductive structure,
---  whereas VecTerms don't.
 --------------------------------------------------------------------------------
 
 open import Level hiding (suc)
@@ -42,6 +35,7 @@ open import Data.Vec.Relation.Unary.Any
 open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
+open import Eser.Aux using (S[m∸Sn]≡m∸n)
 open import Eser.Signature.Definitions
 open import Eser.Card
 open import Eser.Equivalences.Notation using (_≃_)
@@ -58,137 +52,145 @@ module Eser.SigStream.Terms
 ar : cardToSet ζ → ℕ
 ar = arity {μ} {ζ} {S = S}
 
-data VecTerm : Set where
-    v-nullary : cardToSet μ → VecTerm
-    v-multiary : (c : cardToSet ζ) → Vec ℕ (ar c) → VecTerm
+data NumTerms : Set where
+    nt-nullary : cardToSet μ → NumTerms
+    nt-multiary : (c : cardToSet ζ) → Vec ℕ (ar c) → NumTerms
 
-data NestedTerm : Set where
-    n-nullary : cardToSet μ → NestedTerm
-    n-multiary : (c : cardToSet ζ) → Vec NestedTerm (ar c) → NestedTerm
+NT = NumTerms
 
-max : {n : ℕ} → Vec ℕ (suc n) → ℕ
-max {0} (x ∷ []) = x
-max {suc n} (x ∷ xs) = cases (x <? (max xs))
-    where
-        cases : (Dec (x < (max xs))) → ℕ
-        cases (yes _) = max xs
-        cases (no _)  = x
+-- Open NumTerms: these don't take a vector of argument,
+-- but arguments one by one. This is more convenient when doing
+-- structural induction, since the termination checker does not
+-- allow recursing on elements of a vector, but does allow recursing
+-- on a single argument.
+-- Index ℕ encodes the number of arguments a term still needs.
+-- Arguments can only be given in order from 'left to right'.
+data ONT : ℕ → Set where
+    ont-nullary : cardToSet μ → ONT 0
+    ont-multiary : (c : cardToSet ζ) → ONT (ar c)
+    ont-app : {n : ℕ} → ONT (suc n) → ℕ → ONT n
 
-height : NestedTerm → ℕ
-height (n-nullary _) = 0
-height (n-multiary _ v) = suc $ max $ Data.Vec.map height v
---------------------------------------------------------------------------------
--- Conditional equivalence VecTerm & NestedTerm
---
--- VecTerms and NestedTerms are equivalent given an enumeration
--- of VecTerm that sends terms to greater index than any of its arguments.
---------------------------------------------------------------------------------
+IsMultiary : NumTerms → Set
+IsMultiary (nt-nullary _) = ⊥
+IsMultiary (nt-multiary _ _) = ⊤
 
-IsMultiary : VecTerm → Set
-IsMultiary (v-nullary _) = ⊥
-IsMultiary (v-multiary _ _) = ⊤
+OIsMultiary : {n : ℕ} → ONT n → Set
+OIsMultiary (ont-nullary _) = ⊥
+OIsMultiary (ont-multiary _) = ⊤
+OIsMultiary (ont-app _ _) = ⊤
 
 getArity
-    : {v : VecTerm}
-    → IsMultiary v
+    : {t : NumTerms}
+    → IsMultiary t
     → ℕ
-getArity {v-multiary c _} tt = ar c
+getArity {nt-multiary c _} tt = ar c
 
 getVector 
-    : {v : VecTerm}
-    → (mv : IsMultiary v)
-    → Vec ℕ (getArity {v} mv)
-getVector {v-multiary _ v} tt = v
+    : {t : NumTerms}
+    → (mv : IsMultiary t)
+    → Vec ℕ (getArity {t} mv)
+getVector {nt-multiary _ t} tt = t
 
 MakesArgsSmaller
-    : (f : VecTerm → ℕ)
+    : (f : NumTerms → ℕ)
     → Set
 MakesArgsSmaller f =
-      (v : VecTerm)
-    → (mv : IsMultiary v)
+      (t : NumTerms)
+    → (mv : IsMultiary t)
     → (i : ℕ)
-    → (i ∈ (getVector {v} mv))
-    → i < f v
+    → (i ∈ (getVector {t} mv))
+    → i < f t
 
+--------------------------------------------------------------------------------
+-- Conversion between vector-of-args and args-one-by-one encodings
+--------------------------------------------------------------------------------
 
---theorem-VecTerm-NestedTerm-equiv
---    : (e : VecTerm ≃ ℕ)
---    → MakesArgsSmaller (Inverse.to e)
---    → VecTerm ≃ NestedTerm
---theorem-VecTerm-NestedTerm-equiv e H = ?
+getOpIdx : {n : ℕ} → (t : ONT n) → {OIsMultiary t} → cardToSet ζ
+getOpIdx {n} (ont-multiary c) = c
+getOpIdx {n} (ont-app (ont-multiary c) _) = c
+getOpIdx {n} (ont-app t@(ont-app _ _) _) = getOpIdx t
 
-theorem-ℕ-NestedTerm-equiv
-    : (e : VecTerm ≃ ℕ)
-    → MakesArgsSmaller (Inverse.to e)
-    → ℕ ≃ NestedTerm
-theorem-ℕ-NestedTerm-equiv e H = mk≃' g f invˡ invʳ
+getOpIdx-lemma 
+    : {n : ℕ} 
+    → (t : ONT (suc n)) 
+    → (a : ℕ)
+    → {p : OIsMultiary t}
+    → getOpIdx (ont-app t a) ≡ getOpIdx t {p}
+getOpIdx-lemma {n} (ont-multiary c) a {p} = refl
+getOpIdx-lemma {n} (ont-app t a') a {p} = refl
+
+--ont-app-isMultiary
+--    : {n : ℕ}
+--    → (t : ONT (suc n))
+--    → (a : ℕ)
+--    → OIsMultiary (ont-app t a)
+--ont-app-isMultiary (ont-multiary c) a = tt
+--ont-app-isMultiary (ont-app t a') a = ont-app-isMultiary t a'
+
+ont-app-isMultiary
+    : {n : ℕ}
+    → (t : ONT (suc n))
+    → OIsMultiary t
+ont-app-isMultiary (ont-multiary c) = tt
+ont-app-isMultiary (ont-app t a) = tt
+
+ont-idx-lemma
+    : {n : ℕ} 
+    → (t : ONT n) 
+    → {p : OIsMultiary t} 
+    → n ≤ (ar $ getOpIdx t {p})
+ont-idx-lemma {n} (ont-multiary c) {p} = ≤-refl
+ont-idx-lemma {n} (ont-app t a) {p} = ≤-trans (n≤1+n n) IH'
     where
-    -- Fuel technique is used, variable b gives the fuel.
-    -- This is to make Agda's termination checker happy.
-    -- g' only accepts inputs in ℕ smaller than the fuel.
-    -- f' only accepts NestedTerms whose height is smaller than the fuel.
+        IH : suc n ≤ (ar $ getOpIdx t {ont-app-isMultiary t})
+        IH = ont-idx-lemma {suc n} t        
+        IH' : suc n ≤ (ar $ getOpIdx (ont-app t a))
+        IH' = subst (λ x → suc n ≤ ar x) (sym $ getOpIdx-lemma t a) IH
 
-    open Eser.Equivalences.Notation.EquivShorthands e
+getVec 
+    : {n : ℕ} 
+    → (t : ONT n) 
+    → {p : OIsMultiary t} 
+    → Vec ℕ ((ar $ getOpIdx t {p}) ∸ n)
+getVec {n} (ont-multiary c) = subst (Vec ℕ) (sym $ n∸n≡0 $ ar c) []
+getVec {n} (ont-app t a) = ans
+    where
+        p : OIsMultiary t
+        p = ont-app-isMultiary t
+        rec : Vec ℕ ((ar $ getOpIdx t {p}) ∸ suc n)
+        rec = getVec t
+        rec' : Vec ℕ (suc $ (ar $ getOpIdx t {p}) ∸ suc n)
+        rec' = a ∷ (getVec t)
+        m : ℕ
+        m = ar $ getOpIdx t {p}
+        m-eq : m ≡ (ar $ getOpIdx (ont-app t a))
+        m-eq = sym $ cong ar $ getOpIdx-lemma t a
+        ans : Vec ℕ ((ar $ getOpIdx (ont-app t a)) ∸ n)
+        ans = subst (Vec ℕ) 
+            (subst (λ x → suc (m ∸ suc n) ≡ x ∸ n) 
+                m-eq (S[m∸Sn]≡m∸n {m} {n} $ ont-idx-lemma t)
+            ) rec'
 
-    g' : (b n : ℕ) → n < b → NestedTerm
-    g' b 0 0<b = cases (φ⁻¹ 0) refl
-        where
-            cases : (x : VecTerm) → (x ≡ φ⁻¹ 0) → NestedTerm
-            cases (v-nullary c) _ = n-nullary c
-            -- This case is impossible;
-            -- no multiary term can be the φ⁻¹-image of 0.
-            cases x@(v-multiary c (i ∷ is)) p = ⊥-elim $ n≮0 i<0
-                where
-                    i<φt : i < φ x
-                    i<φt = H x tt i (Any.here {x = i} {xs = is} refl)
+pile-args
+    : {n : ℕ}
+    → (t : ONT n)
+    → Vec ℕ n
+    → ONT 0
+pile-args-rec
+    : {n m : ℕ}
+    → (t : ONT n)
+    → m ≤ n
+    → Vec ℕ m
+    → ONT (n ∸ m)
+pile-args {n} t v = subst ONT (n∸n≡0 n) $ pile-args-rec {n} {n} t (≤-refl) v
 
-                    eq : φ x ≡ 0
-                    eq = begin 
-                            φ x
-                        ≡⟨ cong φ p ⟩
-                            φ (φ⁻¹ 0)
-                        ≡⟨ φ∘φ⁻¹≈id 0 ⟩
-                            0
-                        ∎
+pile-args-rec {0} {0} t _ [] = t
+pile-args-rec {suc n} {suc m} Sm≤Sn t (a ∷ as) = {! ont-app (pile-args-rec t as) a !}
 
-                    i<0 : i < 0
-                    i<0 = subst (i <_) eq i<φt
-                    
-    g' (suc b) (suc n) 1+n<1+b@(s≤s n<b) = cases (φ⁻¹ (suc n)) refl
-        where
-            cases : (x : VecTerm) → (x ≡ φ⁻¹ (suc n)) → NestedTerm
-            cases (v-nullary c) _ = n-nullary c
-            cases x@(v-multiary c v) p = n-multiary c v'
-                where
-                    eq : φ x ≡ suc n
-                    eq = begin 
-                            φ x
-                        ≡⟨ cong φ p ⟩
-                            φ (φ⁻¹ (suc n))
-                        ≡⟨ φ∘φ⁻¹≈id (suc n) ⟩
-                            suc n
-                        ∎
-                    fun : {i : ℕ} → i ∈ v → NestedTerm
-                    fun {i} i∈v = g' b i i<b
-                        where
-                            i<b : i < b
-                            i<b = s≤s⁻¹ $ ≤-<-trans 
-                                    (subst (i <_) eq (H x tt i i∈v)) 
-                                    1+n<1+b
-                    v' : Vec NestedTerm (length v)
-                    v' = mapWith∈ v fun
-    g : ℕ → NestedTerm
-    g n = g' (suc n) n (n<1+n n)
+k : ONT 0 → NT
+k (ont-nullary c) = nt-nullary c
+k t@(ont-app t' a) = nt-multiary (getOpIdx t) (getVec t)
 
-    f' : (b : ℕ) → (t : NestedTerm) → (height t < b) → ℕ
-    f' b t p = ?
-
-    f : NestedTerm → ℕ
-    f t = f' (suc (height t)) t (n<1+n $ height t)
-
-    invˡ : Inverseˡ _≡_ _≡_ g f
-    invˡ {x} {y} refl = ?
-    invʳ : Inverseʳ _≡_ _≡_ g f
-    invʳ {y} {x} refl = ?
-
-
+w : NT → ONT 0
+w (nt-nullary c) = ont-nullary c
+w (nt-multiary c v) = pile-args (ont-multiary c) v
