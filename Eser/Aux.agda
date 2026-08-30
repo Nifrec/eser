@@ -229,6 +229,19 @@ m<n<1+m→⊥
     → ⊥
 m<n<1+m→⊥ {suc m} {suc n} (s≤s p) (s≤s q) = m<n<1+m→⊥ p q
 
+S[m∸Sn]≡m∸n
+    : {m n : ℕ}
+    → suc n ≤ m
+    → suc (m ∸ suc n) ≡ m ∸ n
+S[m∸Sn]≡m∸n {m} {n} Sn≤m =
+    begin 
+       suc (m ∸ suc n)
+    ≡⟨ sym $ ∸-suc Sn≤m ⟩
+        suc m ∸ suc n
+    ≡⟨⟩
+        m ∸ n 
+    ∎
+    
 
 m∸Sn≤m∸n
     : (n m : ℕ)
