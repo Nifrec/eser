@@ -200,6 +200,35 @@ w (nt-multiary c v) = pile-args (ont-multiary c) v
 --------------------------------------------------------------------------------
 -- k and w are each other's inverse.
 --------------------------------------------------------------------------------
+rm-subst-idx
+    : {n m : ℕ} 
+    → (t : ONT n) 
+    → (eq : n ≡ m)
+    → {p : OIsMultiary t}
+    → {q : OIsMultiary (subst ONT eq t)}
+    → getOpIdx (subst ONT eq t) {q} ≡ getOpIdx t {p}
+rm-subst-idx (ont-multiary _) refl {tt} {tt} = refl
+rm-subst-idx (ont-app _ _) refl {tt} {tt} = refl
+
+-- #TODO: remove below, broken cuz too general levels...
+--rm-subst-f
+--    : {n m : ℕ} 
+--    → (t : ONT n) 
+--    → (eq : n ≡ m)
+--    → {ℓ : Level}
+--    → {A : Set ℓ}
+--    → (f : {n : ℕ} → ONT n → A)
+--    → f (subst ONT eq t) ≡ f t
+--rm-subst-f (ont-multiary _) refl f = refl
+--rm-subst-f (ont-app _ _) refl f = refl
+
+rm-subst-OIsMultiary
+    : {n m : ℕ} 
+    → (t : ONT n) 
+    → (eq : n ≡ m)
+    → OIsMultiary (subst ONT eq t) ≡ OIsMultiary t
+rm-subst-OIsMultiary (ont-multiary _) refl = refl
+rm-subst-OIsMultiary (ont-app _ _) refl = refl
 
 pile-args-rec-isMultiary
     : (c : cardToSet ζ)
@@ -210,14 +239,41 @@ pile-args-rec-isMultiary
 pile-args-rec-isMultiary c ℕ.zero p [] = tt
 pile-args-rec-isMultiary c (suc m) p (x ∷ xs) = tt
 
-lemma-pile-args-rec-idx
+pile-args-isMultiary
+    : (c : cardToSet ζ)
+    → (v : Vec ℕ (ar c))
+    → OIsMultiary (pile-args (ont-multiary c) v)
+pile-args-isMultiary c v = 
+    subst (λ x → x) (sym eq) (pile-args-rec-isMultiary c (ar c) ≤-refl v)
+    where
+        n : ℕ
+        n = ar c
+        t : ONT n
+        t = ont-multiary c
+        eq : OIsMultiary (pile-args (ont-multiary c) v)
+            ≡
+            OIsMultiary (pile-args-rec (ont-multiary c) ≤-refl v)
+        eq = 
+            begin 
+                OIsMultiary (pile-args t v)    
+            ≡⟨⟩
+               OIsMultiary (subst ONT (n∸n≡0 n) $ pile-args-rec {n} {n} t (≤-refl) v) 
+            ≡⟨  rm-subst-OIsMultiary 
+                (pile-args-rec {n} {n} t (≤-refl) v) (n∸n≡0 n) ⟩
+               OIsMultiary (pile-args-rec {n} {n} t (≤-refl) v) 
+            ∎
+            
+
+
+pile-args-rec-idx
     : (c : cardToSet ζ)
     → (m : ℕ)
     → (p : m ≤ ar c)
     → (v : Vec ℕ m)
-    → getOpIdx (pile-args-rec (ont-multiary c) p v) {pile-args-rec-isMultiary c m p v} ≡ c
-lemma-pile-args-rec-idx c ℕ.zero _ [] = refl
-lemma-pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) = 
+    → getOpIdx (pile-args-rec (ont-multiary c) p v) 
+        {pile-args-rec-isMultiary c m p v} ≡ c
+pile-args-rec-idx c ℕ.zero _ [] = refl
+pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) = 
     begin 
        getOpIdx (pile-args-rec (ont-multiary c) Sm≤n (x ∷ xs)) {q}
     ≡⟨⟩
@@ -226,9 +282,9 @@ lemma-pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) =
         getOpIdx (rec') {subst-presv-multiary rec eq {q'} }
     ≡⟨⟩
         getOpIdx (subst ONT eq rec)
-    ≡⟨ rm-subst rec eq ⟩
+    ≡⟨ rm-subst-idx rec eq ⟩
         getOpIdx rec
-    ≡⟨ lemma-pile-args-rec-idx c m m≤n xs ⟩
+    ≡⟨ pile-args-rec-idx c m m≤n xs ⟩
         c
     ∎
         where
@@ -243,15 +299,6 @@ lemma-pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) =
             subst-presv-multiary (ont-multiary _) refl = tt
             subst-presv-multiary (ont-app _ _) refl = tt
 
-            rm-subst 
-                : {n m : ℕ} 
-                → (t : ONT n) 
-                → (eq : n ≡ m)
-                → {p : OIsMultiary t}
-                → {q : OIsMultiary (subst ONT eq t)}
-                → getOpIdx (subst ONT eq t) {q} ≡ getOpIdx t {p}
-            rm-subst (ont-multiary _) refl {tt} {tt} = refl
-            rm-subst (ont-app _ _) refl {tt} {tt} = refl
 
             m≤n : m ≤ ar c
             m≤n = (≤-trans (n≤1+n m) Sm≤n)
@@ -262,8 +309,24 @@ lemma-pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) =
 lemma-pile-args-idx
     : (c : cardToSet ζ)
     → (v : Vec ℕ (ar c))
-    → getOpIdx (pile-args (ont-multiary c) v) ≡ c
-lemma-pile-args-idx c (x ∷ v) = {! !}
+    → getOpIdx (pile-args (ont-multiary c) v) 
+        {pile-args-isMultiary c v}
+        ≡ c
+lemma-pile-args-idx c v = 
+    begin 
+        getOpIdx (pile-args (ont-multiary c) v) 
+    ≡⟨⟩
+        getOpIdx (subst ONT (n∸n≡0 n) $ pile-args-rec {n} {n} t (≤-refl) v)
+    ≡⟨ rm-subst-idx (pile-args-rec {n} {n} t (≤-refl) v) (n∸n≡0 n) ⟩ 
+        getOpIdx (pile-args-rec {n} {n} t (≤-refl) v)
+    ≡⟨  pile-args-rec-idx c (ar c) ≤-refl v ⟩
+        c
+    ∎
+    where
+        n : ℕ
+        n = ar c
+        t : ONT n
+        t = ont-multiary c
 
 
 k∘w≈id : (k ∘ w) ≈ id
