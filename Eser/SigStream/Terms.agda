@@ -227,6 +227,7 @@ rm-subst-OIsMultiary
     → (t : ONT n) 
     → (eq : n ≡ m)
     → OIsMultiary (subst ONT eq t) ≡ OIsMultiary t
+rm-subst-OIsMultiary (ont-nullary _) refl = refl
 rm-subst-OIsMultiary (ont-multiary _) refl = refl
 rm-subst-OIsMultiary (ont-app _ _) refl = refl
 
@@ -306,13 +307,13 @@ pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) =
             q' = pile-args-rec-isMultiary c m m≤n xs 
     
 
-lemma-pile-args-idx
+pile-args-idx
     : (c : cardToSet ζ)
     → (v : Vec ℕ (ar c))
     → getOpIdx (pile-args (ont-multiary c) v) 
         {pile-args-isMultiary c v}
         ≡ c
-lemma-pile-args-idx c v = 
+pile-args-idx c v = 
     begin 
         getOpIdx (pile-args (ont-multiary c) v) 
     ≡⟨⟩
@@ -328,7 +329,30 @@ lemma-pile-args-idx c v =
         t : ONT n
         t = ont-multiary c
 
+--lemma-pile-args-vec
+--    : (c : cardToSet ζ)
+--    → (v : Vec ℕ (ar c))
+--    → getVec (pile-args (ont-multiary c) v) {pile-args-isMultiary c v} ≡ v
+--lemma-pile-args-vec c v = ?
 
 k∘w≈id : (k ∘ w) ≈ id
 k∘w≈id (nt-nullary c) = refl
-k∘w≈id (nt-multiary c v) = {! !}
+k∘w≈id (nt-multiary c v) = 
+    begin 
+        (k ∘ w) (nt-multiary c v) 
+    ≡⟨⟩
+        k (pile-args (ont-multiary c) v)
+    ≡⟨ {! TODO: lemma that k-pile-args always is the nt-multiary case... Maybe prove in general for OIsMultiary inputs? !} ⟩
+        nt-multiary (getOpIdx t) (getVec t) 
+    ≡⟨ cong (λ c → nt-multiary c (getVec t)) 
+        $ pile-args-idx c (getVec t) ⟩
+        nt-multiary c (getVec t) 
+    ≡⟨ ? ⟩
+        nt-multiary c v
+        
+        
+    ∎
+    where
+        t : ONT 0
+        t = pile-args (ont-multiary c) v
+    
