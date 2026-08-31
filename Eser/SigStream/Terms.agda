@@ -4,9 +4,9 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
--- Two representations of the term of the term algebra over a signature.
+-- Different representations of the terms of the term algebra over a signature.
 --
--- (1) 𝐕𝐞𝐜𝐓𝐞𝐫𝐦
+-- (1) 𝐍𝐮𝐦𝐓𝐞𝐫𝐦
 --  Terms represented by the index of the operation in the signature,
 --  and for multiary operations, paired with a vector encoding their arguments,
 --  whose length matches their arity.
@@ -35,6 +35,7 @@ open import Data.Vec.Relation.Unary.Any
 open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
+open import Eser.Stdlib using (∸-suc)
 open import Eser.Aux using (S[m∸Sn]≡m∸n)
 open import Eser.Signature.Definitions
 open import Eser.Card
@@ -45,6 +46,9 @@ module Eser.SigStream.Terms
     {μ' ζ' : ℕ∞} 
     (S : Signature (suc∞ μ') (suc∞ ζ')) 
     where
+
+todo : ?
+todo = {! update docstring above !}
 
 μ = suc∞ μ'
 ζ = suc∞ ζ'
@@ -184,8 +188,14 @@ pile-args-rec
     → ONT (n ∸ m)
 pile-args {n} t v = subst ONT (n∸n≡0 n) $ pile-args-rec {n} {n} t (≤-refl) v
 
-pile-args-rec {0} {0} t _ [] = t
-pile-args-rec {suc n} {suc m} Sm≤Sn t (a ∷ as) = {! ont-app (pile-args-rec t as) a !}
+pile-args-rec {n} {0} t _ [] = t
+pile-args-rec {suc n} {suc m} t Sm≤Sn (a ∷ as) = ont-app rec' a
+    where
+        rec : ONT (suc n ∸ m)
+        rec = pile-args-rec {suc n} {m} t (≤-trans (n≤1+n m) Sm≤Sn) as
+        rec' : ONT (suc (n ∸ m))
+        rec' = subst ONT (∸-suc (s≤s⁻¹ Sm≤Sn)) rec
+        
 
 k : ONT 0 → NT
 k (ont-nullary c) = nt-nullary c
