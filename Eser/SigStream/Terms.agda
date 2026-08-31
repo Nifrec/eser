@@ -36,7 +36,7 @@ open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
 open import Eser.Stdlib using (∸-suc)
-open import Eser.Aux using (S[m∸Sn]≡m∸n)
+open import Eser.Aux using (S[m∸Sn]≡m∸n ; _≈_)
 open import Eser.Signature.Definitions
 open import Eser.Card
 open import Eser.Equivalences.Notation using (_≃_)
@@ -123,14 +123,6 @@ getOpIdx-lemma
 getOpIdx-lemma {n} (ont-multiary c) a {p} = refl
 getOpIdx-lemma {n} (ont-app t a') a {p} = refl
 
---ont-app-isMultiary
---    : {n : ℕ}
---    → (t : ONT (suc n))
---    → (a : ℕ)
---    → OIsMultiary (ont-app t a)
---ont-app-isMultiary (ont-multiary c) a = tt
---ont-app-isMultiary (ont-app t a') a = ont-app-isMultiary t a'
-
 ont-app-isMultiary
     : {n : ℕ}
     → (t : ONT (suc n))
@@ -190,7 +182,7 @@ pile-args {n} t v = subst ONT (n∸n≡0 n) $ pile-args-rec {n} {n} t (≤-refl)
 
 pile-args-rec {n} {0} t _ [] = t
 pile-args-rec {suc n} {suc m} t Sm≤Sn (a ∷ as) = ont-app rec' a
-    where
+    module PileArgsRec where
         rec : ONT (suc n ∸ m)
         rec = pile-args-rec {suc n} {m} t (≤-trans (n≤1+n m) Sm≤Sn) as
         rec' : ONT (suc (n ∸ m))
@@ -204,3 +196,76 @@ k t@(ont-app t' a) = nt-multiary (getOpIdx t) (getVec t)
 w : NT → ONT 0
 w (nt-nullary c) = ont-nullary c
 w (nt-multiary c v) = pile-args (ont-multiary c) v
+
+--------------------------------------------------------------------------------
+-- k and w are each other's inverse.
+--------------------------------------------------------------------------------
+
+pile-args-rec-isMultiary
+    : (c : cardToSet ζ)
+    → (m : ℕ)
+    → (p : m ≤ ar c)
+    → (v : Vec ℕ m)
+    → OIsMultiary (pile-args-rec (ont-multiary c) p v)
+pile-args-rec-isMultiary c ℕ.zero p [] = tt
+pile-args-rec-isMultiary c (suc m) p (x ∷ xs) = tt
+
+lemma-pile-args-rec-idx
+    : (c : cardToSet ζ)
+    → (m : ℕ)
+    → (p : m ≤ ar c)
+    → (v : Vec ℕ m)
+    → getOpIdx (pile-args-rec (ont-multiary c) p v) {pile-args-rec-isMultiary c m p v} ≡ c
+lemma-pile-args-rec-idx c ℕ.zero _ [] = refl
+lemma-pile-args-rec-idx c (suc m) Sm≤n v@(x ∷ xs) = 
+    begin 
+       getOpIdx (pile-args-rec (ont-multiary c) Sm≤n (x ∷ xs)) {q}
+    ≡⟨⟩
+        getOpIdx (ont-app rec' x)
+    ≡⟨ getOpIdx-lemma rec' x ⟩
+        getOpIdx (rec') {subst-presv-multiary rec eq {q'} }
+    ≡⟨⟩
+        getOpIdx (subst ONT eq rec)
+    ≡⟨ rm-subst rec eq ⟩
+        getOpIdx rec
+    ≡⟨ lemma-pile-args-rec-idx c m m≤n xs ⟩
+        c
+    ∎
+        where
+            open PileArgsRec (S c) (m) (ont-multiary c) Sm≤n x xs
+            eq = (∸-suc (s≤s⁻¹ Sm≤n))
+            subst-presv-multiary
+                : {n m : ℕ} 
+                → (t : ONT n) 
+                → (eq : n ≡ m)
+                → {p : OIsMultiary t}
+                → OIsMultiary (subst ONT eq t)
+            subst-presv-multiary (ont-multiary _) refl = tt
+            subst-presv-multiary (ont-app _ _) refl = tt
+
+            rm-subst 
+                : {n m : ℕ} 
+                → (t : ONT n) 
+                → (eq : n ≡ m)
+                → {p : OIsMultiary t}
+                → {q : OIsMultiary (subst ONT eq t)}
+                → getOpIdx (subst ONT eq t) {q} ≡ getOpIdx t {p}
+            rm-subst (ont-multiary _) refl {tt} {tt} = refl
+            rm-subst (ont-app _ _) refl {tt} {tt} = refl
+
+            m≤n : m ≤ ar c
+            m≤n = (≤-trans (n≤1+n m) Sm≤n)
+            q = pile-args-rec-isMultiary c (suc m) Sm≤n v 
+            q' = pile-args-rec-isMultiary c m m≤n xs 
+    
+
+lemma-pile-args-idx
+    : (c : cardToSet ζ)
+    → (v : Vec ℕ (ar c))
+    → getOpIdx (pile-args (ont-multiary c) v) ≡ c
+lemma-pile-args-idx c (x ∷ v) = {! !}
+
+
+k∘w≈id : (k ∘ w) ≈ id
+k∘w≈id (nt-nullary c) = refl
+k∘w≈id (nt-multiary c v) = {! !}
