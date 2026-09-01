@@ -329,11 +329,38 @@ pile-args-idx c v =
         t : ONT n
         t = ont-multiary c
 
---lemma-pile-args-vec
---    : (c : cardToSet ζ)
---    → (v : Vec ℕ (ar c))
---    → getVec (pile-args (ont-multiary c) v) {pile-args-isMultiary c v} ≡ v
---lemma-pile-args-vec c v = ?
+getIdxAndVec 
+    : {n : ℕ} 
+    → (t : ONT n) 
+    → {OIsMultiary t} 
+    →  Σ[ c ∈ cardToSet ζ ] (Vec ℕ (ar c ∸ n))
+getIdxAndVec t {q} = (getOpIdx t {q} , getVec t {q} )
+
+pile-args-vec
+    : (c : cardToSet ζ)
+    → (v : Vec ℕ (ar c))
+    → getIdxAndVec (pile-args (ont-multiary c) v) {pile-args-isMultiary c v}
+        ≡ (c , v)
+pile-args-vec = ?
+
+pile-args-rec-vec
+    : (c : cardToSet ζ)
+    → (m : ℕ)
+    → (p : m ≤ ar c)
+    → (v : Vec ℕ m)
+    → getIdxAndVec (pile-args-rec (ont-multiary c) p v) 
+        {pile-args-rec-isMultiary c m p v}
+        ≡ (c , subst (Vec ℕ) (sym $ m∸[m∸n]≡n {ar c} {m} p) v)
+pile-args-rec-vec c ℕ.zero p [] = rmsubst c {! sym $ m∸[m∸n]≡n {ar c} {0} p !} ?
+    where
+        rmsubst 
+            : (c : cardToSet ζ)
+            → (q : ar c ∸ ar c ≡ 0)
+            → (v : Vec ℕ (ar c ∸ ar c))
+            → (c , v) ≡ (c , subst (Vec ℕ) (sym q) [])
+        rmsubst c p v = refl
+
+pile-args-rec-vec c (suc m) p v = {! !}
 
 k∘w≈id : (k ∘ w) ≈ id
 k∘w≈id (nt-nullary c) = refl
@@ -343,15 +370,29 @@ k∘w≈id (nt-multiary c v) =
     ≡⟨⟩
         k (pile-args (ont-multiary c) v)
     ≡⟨ {! TODO: lemma that k-pile-args always is the nt-multiary case... Maybe prove in general for OIsMultiary inputs? !} ⟩
-        nt-multiary (getOpIdx t) (getVec t) 
-    ≡⟨ doubleCong nt-multiary idx-eq vec-eq ⟩
+        nt-multiary (getOpIdx t {q}) (getVec t) 
+    ≡⟨⟩
+        f (getOpIdx t , getVec t) 
+    ≡⟨ cong f eq ⟩
+        f (c , v)
+    ≡⟨⟩
         nt-multiary c v
     ∎
     where
         t : ONT 0
         t = pile-args (ont-multiary c) v
+        q : OIsMultiary t
+        q = pile-args-isMultiary c v
         idx-eq : (getOpIdx t) ≡ c
         idx-eq = pile-args-idx c v
-        vec-eq : getVec t ≡ v
-        vec-eq = ?
+        A : Set
+        A = Σ[ c ∈ cardToSet ζ ] (Vec ℕ (ar c))
+        f : A → NT
+        f (c , v) = nt-multiary c v
+
+        eq : (getOpIdx t , getVec t) ≡ (c , v)
+        eq = ?
+
+        --vec-eq : getVec t ≡ v
+        --vec-eq = ?
     
