@@ -36,7 +36,7 @@ open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
 open import Eser.Stdlib using (∸-suc)
-open import Eser.Aux using (S[m∸Sn]≡m∸n ; _≈_)
+open import Eser.Aux using (doubleCong ; S[m∸Sn]≡m∸n ; _≈_)
 open import Eser.Signature.Definitions
 open import Eser.Card
 open import Eser.Equivalences.Notation using (_≃_)
@@ -344,15 +344,14 @@ k∘w≈id (nt-multiary c v) =
         k (pile-args (ont-multiary c) v)
     ≡⟨ {! TODO: lemma that k-pile-args always is the nt-multiary case... Maybe prove in general for OIsMultiary inputs? !} ⟩
         nt-multiary (getOpIdx t) (getVec t) 
-    ≡⟨ cong (λ c → nt-multiary c (getVec t)) 
-        $ pile-args-idx c (getVec t) ⟩
-        nt-multiary c (getVec t) 
-    ≡⟨ ? ⟩
+    ≡⟨ doubleCong nt-multiary idx-eq vec-eq ⟩
         nt-multiary c v
-        
-        
     ∎
     where
         t : ONT 0
         t = pile-args (ont-multiary c) v
+        idx-eq : (getOpIdx t) ≡ c
+        idx-eq = pile-args-idx c v
+        vec-eq : getVec t ≡ v
+        vec-eq = ?
     

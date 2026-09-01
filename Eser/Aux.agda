@@ -76,6 +76,16 @@ doubleSubst
     → X a' b'
 doubleSubst X refl refl x = x
 
+doubleCong
+    : {A B : Set}
+    → (X : A → B → Set)
+    → {a a' : A}
+    → {b b' : B} 
+    → (ha : a ≡ a')
+    → (hb : b ≡ b')
+    → X a b ≡ X a' b'
+doubleCong X refl refl = refl
+
 -- Given H : a ≡ a' in A and any `b : B a`,
 -- then (a , b) ≡ (a' , subst B H b).
 -- We cannot prove (a , b) ≡ (a' , b) because the RHS is ill-typed 
