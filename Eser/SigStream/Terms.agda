@@ -329,18 +329,17 @@ pile-args-idx c v =
         t : ONT n
         t = ont-multiary c
 
-getIdxAndVec 
-    : {n : ℕ} 
-    → (t : ONT n) 
-    → {OIsMultiary t} 
-    →  Σ[ c ∈ cardToSet ζ ] (Vec ℕ (ar c ∸ n))
-getIdxAndVec t {q} = (getOpIdx t {q} , getVec t {q} )
+A : Set
+A = Σ[ n ∈ ℕ ](Vec ℕ n)
 
 pile-args-vec
     : (c : cardToSet ζ)
     → (v : Vec ℕ (ar c))
-    → getIdxAndVec (pile-args (ont-multiary c) v) {pile-args-isMultiary c v}
-        ≡ (c , v)
+    → {m : ℕ}
+    → _≡_ {A = A}
+        (ar (getOpIdx (pile-args (ont-multiary c) v) {pile-args-isMultiary c v}) ∸ 0 , 
+             getVec (pile-args (ont-multiary c) v) {pile-args-isMultiary c v})
+        (ar c , v)
 pile-args-vec = ?
 
 pile-args-rec-vec
@@ -348,19 +347,51 @@ pile-args-rec-vec
     → (m : ℕ)
     → (p : m ≤ ar c)
     → (v : Vec ℕ m)
-    → getIdxAndVec (pile-args-rec (ont-multiary c) p v) 
-        {pile-args-rec-isMultiary c m p v}
-        ≡ (c , subst (Vec ℕ) (sym $ m∸[m∸n]≡n {ar c} {m} p) v)
-pile-args-rec-vec c ℕ.zero p [] = rmsubst c {! sym $ m∸[m∸n]≡n {ar c} {0} p !} ?
-    where
-        rmsubst 
-            : (c : cardToSet ζ)
-            → (q : ar c ∸ ar c ≡ 0)
-            → (v : Vec ℕ (ar c ∸ ar c))
-            → (c , v) ≡ (c , subst (Vec ℕ) (sym q) [])
-        rmsubst c p v = refl
-
+    → _≡_ {A = A}
+        (
+            ar (getOpIdx (pile-args-rec (ont-multiary c) p v)
+                {pile-args-rec-isMultiary c m p v})
+            ∸ (ar c ∸ m)
+        , 
+            getVec (pile-args-rec (ont-multiary c) p v) 
+            {pile-args-rec-isMultiary c m p v}
+        )
+        (m , v)
+pile-args-rec-vec c ℕ.zero p [] = {! !}
 pile-args-rec-vec c (suc m) p v = {! !}
+
+--getIdxAndVec 
+--    : {n : ℕ} 
+--    → (t : ONT n) 
+--    → {OIsMultiary t} 
+--    →  Σ[ c ∈ cardToSet ζ ] (Vec ℕ (ar c ∸ n))
+--getIdxAndVec t {q} = (getOpIdx t {q} , getVec t {q} )
+
+--pile-args-vec
+--    : (c : cardToSet ζ)
+--    → (v : Vec ℕ (ar c))
+--    → getIdxAndVec (pile-args (ont-multiary c) v) {pile-args-isMultiary c v}
+--        ≡ (c , v)
+--pile-args-vec = ?
+
+--pile-args-rec-vec
+--    : (c : cardToSet ζ)
+--    → (m : ℕ)
+--    → (p : m ≤ ar c)
+--    → (v : Vec ℕ m)
+--    → getIdxAndVec (pile-args-rec (ont-multiary c) p v) 
+--        {pile-args-rec-isMultiary c m p v}
+--        ≡ (c , subst (Vec ℕ) (sym $ m∸[m∸n]≡n {ar c} {m} p) v)
+--pile-args-rec-vec c ℕ.zero p [] = rmsubst c {! sym $ m∸[m∸n]≡n {ar c} {0} p !} ?
+--    where
+--        rmsubst 
+--            : (c : cardToSet ζ)
+--            → (q : ar c ∸ ar c ≡ 0)
+--            → (v : Vec ℕ (ar c ∸ ar c))
+--            → (c , v) ≡ (c , subst (Vec ℕ) (sym q) [])
+--        rmsubst c p v = refl
+
+--pile-args-rec-vec c (suc m) p v = {! !}
 
 k∘w≈id : (k ∘ w) ≈ id
 k∘w≈id (nt-nullary c) = refl
@@ -385,9 +416,9 @@ k∘w≈id (nt-multiary c v) =
         q = pile-args-isMultiary c v
         idx-eq : (getOpIdx t) ≡ c
         idx-eq = pile-args-idx c v
-        A : Set
-        A = Σ[ c ∈ cardToSet ζ ] (Vec ℕ (ar c))
-        f : A → NT
+        B : Set
+        B = Σ[ c ∈ cardToSet ζ ] (Vec ℕ (ar c))
+        f : B → NT
         f (c , v) = nt-multiary c v
 
         eq : (getOpIdx t , getVec t) ≡ (c , v)
