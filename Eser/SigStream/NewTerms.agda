@@ -32,6 +32,7 @@ open ≡-Reasoning
 open import Data.Vec hiding (here ; there) 
 open import Data.Vec.Membership.Propositional
 open import Data.Vec.Relation.Unary.Any
+open import Data.Vec.Properties
 open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
@@ -160,7 +161,7 @@ appArgs
     → ONT (n ∸ ℓ) (ℓ + m) Multiary
 appArgs {n} {m} {ℕ.zero} t [] ℓ≤n = t
 appArgs {n} {m} {suc ℓ} t (a ∷ as) 1+ℓ≤n = t''
-    where
+    module AppArgs where
         ℓ≤n : ℓ ≤ n
         ℓ≤n = ≤-trans (n≤1+n ℓ) 1+ℓ≤n
         t' : ONT (n ∸ ℓ) (ℓ + m) Multiary
@@ -208,8 +209,6 @@ k∘w≈id (nt-multiary c v) =
         nt-multiary (getOpIdx t) v'
     ≡⟨⟩
         f (getOpIdx t , v')
-        --nt-multiary (getOpIdx $ 
-        --            (subst (Vec ℕ) (getOpIdx-closed t) (getVec t))
     ≡⟨ cong f $ subst-idx-in-pair v' c-eq ⟩
         f (c , subst (Vec ℕ) (cong ar c-eq) v')
     ≡⟨ cong (λ x → f (c , x)) (subst-subst {P = Vec ℕ} (getOpIdx-closed t) 
@@ -223,7 +222,7 @@ k∘w≈id (nt-multiary c v) =
     ≡⟨⟩
         nt-multiary c (subst (Vec ℕ) eq₂ (getVec t')) 
     ≡⟨ cong (λ v → nt-multiary c (subst (Vec ℕ) eq₂ v)) 
-            (getVec-appArgs c v (sym eq₂))  ⟩
+            (getVec-appArgs' c v (sym eq₂))  ⟩
         nt-multiary c (subst (Vec ℕ) eq₂ (subst (Vec ℕ) (sym eq₂) v))
     ≡⟨ cong (nt-multiary c) $ subst-subst-sym eq₂ ⟩
         nt-multiary c v
@@ -263,15 +262,75 @@ k∘w≈id (nt-multiary c v) =
             → (getVec (doubleSubst ONTM eqₙ eqₘ t)) ≡ subst (Vec ℕ) eqₘ (getVec t)
         lemma₂ refl refl t = refl
 
-        getVec-appArgs
+
+        getVec-ignores-n-subst
+            : {n n' m : ℕ}
+            → (t : ONT n m Multiary)
+            → (eq : n ≡ n')
+            → getVec (subst (λ x → ONT x m Multiary) eq t) ≡ getVec t
+        getVec-ignores-n-subst t refl = refl
+
+        getVec-appArgs-toList
+            : (c : cardToSet ζ)
+            → {ℓ : ℕ}
+            → (p : ℓ ≤ ar c)
+            → (v : Vec ℕ ℓ)
+            → (eq : ℓ ≡ ℓ + 0)
+            → toList (getVec (appArgs (ont-multiary c) v p))
+                ≡
+              toList v
+        getVec-appArgs-toList c {ℕ.zero} p [] refl = refl
+        getVec-appArgs-toList c {suc ℓ} p v@(a ∷ as) eq = List-eq
+            where
+                open AppArgs {ar c} {0} (ℓ) (ont-multiary c) a as p 
+                    renaming (eq to eq'' ; t' to t₀)
+                t''' = subst (λ x → ONT x (ℓ + 0) Multiary) eq'' t₀
+
+                List-eq : 
+                    toList (getVec (appArgs (ont-multiary c) v p)) ≡ toList v
+                List-eq =
+                    begin 
+                        toList (getVec (appArgs (ont-multiary c) (a ∷ as) p))
+                    ≡⟨⟩
+                        toList (getVec (ont-app t''' a))
+                    ≡⟨⟩
+                        toList (a ∷ (getVec t'''))
+                    ≡⟨⟩
+                        a Data.List.∷ (toList (getVec t'''))
+                    ≡⟨ cong (λ v → a Data.List.∷ (toList v)) 
+                        $ getVec-ignores-n-subst t₀ eq'' ⟩
+                        a Data.List.∷ (toList (getVec (appArgs (ont-multiary c) as ℓ≤n)))
+                    ≡⟨ cong (a Data.List.∷_) 
+                        $ getVec-appArgs-toList c ℓ≤n as (sym $ +-identityʳ ℓ) ⟩
+                        a Data.List.∷ toList (as)
+                    ≡⟨⟩
+                        toList (a ∷ as)
+                    ∎
+                    
+
+        getVec-appArgs'
             : (c : cardToSet ζ)
             → (v : Vec ℕ (ar c))
             → (eq : ar c ≡ ar c + 0)
             → getVec (appArgs (ont-multiary c) v ≤-refl) 
                 ≡
               subst (Vec ℕ) eq v
-        getVec-appArgs c v eq = ?
-
+        getVec-appArgs' c v eq = H₂
+            where
+                H : toList( getVec (appArgs (ont-multiary c) v ≤-refl))
+                    ≡ 
+                    toList (v)
+                H = getVec-appArgs-toList c ≤-refl v (sym $ +-identityʳ (ar c)) 
+                H₂ : getVec (appArgs (ont-multiary c) v ≤-refl)
+                    ≡ 
+                    subst (Vec ℕ) eq v
+                H₂ = trans  
+                    (sym $ 
+                    toList-injective eq 
+                        v 
+                        (getVec (appArgs (ont-multiary c) v ≤-refl)) (sym H)
+                    )
+                    (sym $ subst-is-cast eq v)
 
     
 
