@@ -97,7 +97,6 @@ data ONT : ℕ → ℕ → Arity → Set where
 ONTM : ℕ → ℕ → Set
 ONTM n m = ONT n m Multiary
 
-
 IsMultiary : NumTerms → Set
 IsMultiary (nt-nullary _) = ⊥
 IsMultiary (nt-multiary _ _) = ⊤
@@ -139,14 +138,6 @@ getOpIdx : {n m : ℕ} → (t : ONT n m Multiary) → cardToSet ζ
 getOpIdx {n} {0} (ont-multiary c) = c
 getOpIdx {n} {suc m} (ont-app t _) = getOpIdx t
 
--- A multiary term that needs 0 more arguments,
--- has already received exactly as many arguments as its arity.
-getOpIdx-closed 
-    : {m : ℕ}
-    → (t : ONT 0 m Multiary)
-    → m ≡ ar (getOpIdx t)
-getOpIdx-closed {m} (ont-app t a) = {! TODO: lemma that ar c ≡ n + m !}
-
 -- The codomain of getOpIdx does not depend on the n and m in `ONT n m
 -- Multiary`, so the output of getOpIdx is not influenced by a subst
 -- on any of these indices.
@@ -165,6 +156,32 @@ getOpIdx-ignores-firstSubst
     → (eq : n ≡ n')
     → getOpIdx (subst (λ n → ONT n m Multiary) eq t) ≡ getOpIdx t
 getOpIdx-ignores-firstSubst t refl = refl
+
+ont-indices-invariant
+    : {n m : ℕ}
+    → (t : ONT n m Multiary)
+    → n + m ≡ ar (getOpIdx t)
+ont-indices-invariant {n} {ℕ.zero} (ont-multiary c) = +-identityʳ (ar c)
+ont-indices-invariant {n} {suc m} (ont-app t a) = sym $ 
+    begin 
+        ar (getOpIdx (ont-app t a))
+    ≡⟨⟩
+        ar (getOpIdx t)
+    ≡⟨ sym $ ont-indices-invariant t ⟩
+        suc n + m
+    ≡⟨⟩
+        suc (n + m)
+    ≡⟨ sym $ +-suc n m ⟩
+        n + suc m
+    ∎
+
+-- A multiary term that needs 0 more arguments,
+-- has already received exactly as many arguments as its arity.
+getOpIdx-closed 
+    : {m : ℕ}
+    → (t : ONT 0 m Multiary)
+    → m ≡ ar (getOpIdx t)
+getOpIdx-closed {m} (ont-app t a) = ont-indices-invariant t 
 
 getVec 
     : {n m : ℕ} 
