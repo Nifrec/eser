@@ -6,7 +6,7 @@
 --------------------------------------------------------------------------------
 -- Different representations of the terms of the term algebra over a signature.
 --
--- (1) 𝐍𝐮𝐦𝐓𝐞𝐫𝐦
+-- (1) 𝐍𝐮𝐦𝐓𝐞𝐫𝐦𝐬 (NT)
 --  Terms represented by the index of the operation in the signature,
 --  and for multiary operations, paired with a vector encoding their arguments,
 --  whose length matches their arity.
@@ -15,6 +15,12 @@
 --  only useful when given an enumeration of all the terms,
 --  such that the index assigned to a term is greater than the indices
 --  assigned to its arguments.
+--
+-- (2) 𝐎𝐍𝐓 ("Open NumTerms")
+--  Same as NumTerms, but now the arguments are not given as a vector,
+--  but one-by-by via a constructor `appArg`.
+--  Terms are indexed by the number of arguments they still need in order
+--  to become closed. See below for more details.
 --------------------------------------------------------------------------------
 
 open import Level hiding (suc)
@@ -47,9 +53,6 @@ module Eser.SigStream.NewTerms
     {μ' ζ' : ℕ∞} 
     (S : Signature (suc∞ μ') (suc∞ ζ')) 
     where
-
-todo : ?
-todo = {! update docstring above, rename from `NewTerms` to `Terms`, etc. !}
 
 μ = suc∞ μ'
 ζ = suc∞ ζ'
@@ -91,11 +94,9 @@ data ONT : ℕ → ℕ → Arity → Set where
     ont-multiary : (c : cardToSet ζ) → ONT (ar c) 0 Multiary
     ont-app : {n m : ℕ} → ONT (suc n) m Multiary → ℕ → ONT n (suc m) Multiary
 
--- #TODO: those things are outdated.
---    OIsMultiary : {n m : ℕ} → ONT n → Set
---    OIsMultiary (ont-nullary _) = ⊥
---    OIsMultiary (ont-multiary _) = ⊤
---    OIsMultiary (ont-app _ _) = ⊤
+ONTM : ℕ → ℕ → Set
+ONTM n m = ONT n m Multiary
+
 
 IsMultiary : NumTerms → Set
 IsMultiary (nt-nullary _) = ⊥
@@ -145,6 +146,25 @@ getOpIdx-closed
     → (t : ONT 0 m Multiary)
     → m ≡ ar (getOpIdx t)
 getOpIdx-closed {m} (ont-app t a) = {! TODO: lemma that ar c ≡ n + m !}
+
+-- The codomain of getOpIdx does not depend on the n and m in `ONT n m
+-- Multiary`, so the output of getOpIdx is not influenced by a subst
+-- on any of these indices.
+getOpIdx-ignores-doubleSubst
+    : {n n' m m' : ℕ}
+    → (t : ONT n m Multiary)
+    → (eqₙ : n ≡ n')
+    → (eqₘ : m ≡ m')
+    → getOpIdx (doubleSubst ONTM eqₙ eqₘ t) ≡ getOpIdx t
+getOpIdx-ignores-doubleSubst t refl refl = refl
+
+-- Same as above, but substituting only the first index.
+getOpIdx-ignores-firstSubst
+    : {n n' m : ℕ}
+    → (t : ONT n m Multiary)
+    → (eq : n ≡ n')
+    → getOpIdx (subst (λ n → ONT n m Multiary) eq t) ≡ getOpIdx t
+getOpIdx-ignores-firstSubst t refl = refl
 
 getVec 
     : {n m : ℕ} 
@@ -197,6 +217,7 @@ w (nt-multiary c v) = (ar c , Multiary , t)
         t : ONT 0 (ar c) Multiary
         t = doubleSubst (λ n m → ONT n m Multiary) eq₁ eq₂ 
             (appArgs (ont-multiary c) v ≤-refl )
+        
 
 k∘w≈id : (k ∘ w) ≈ id
 k∘w≈id (nt-nullary c) = refl
@@ -233,8 +254,43 @@ k∘w≈id (nt-multiary c v) =
         f : Σ[ c ∈ cardToSet ζ ] Vec ℕ (ar c) → NT
         f (c , v) = nt-multiary c v
         t' = appArgs (ont-multiary c) v ≤-refl
+
+        getOpIdx-appArgs
+            : {c : cardToSet ζ}
+            → {ℓ : ℕ}
+            → (p : ℓ ≤ ar c)
+            → (v : Vec ℕ ℓ)
+            → getOpIdx (appArgs (ont-multiary c) v p) ≡ c
+        getOpIdx-appArgs {c} {ℕ.zero} p [] = refl
+        getOpIdx-appArgs {c} {suc ℓ} p (a ∷ as) = 
+            begin 
+                getOpIdx (appArgs (ont-multiary c) (a ∷ as) p)
+            ≡⟨⟩
+                getOpIdx 
+                    (ont-app (subst (λ x → ONT x (ℓ + 0) Multiary) eq₀ t₀) a)
+            ≡⟨⟩
+                getOpIdx (subst (λ x → ONT x (ℓ + 0) Multiary) eq₀ t₀)
+            ≡⟨ getOpIdx-ignores-firstSubst t₀ eq₀ ⟩
+                getOpIdx t₀
+            ≡⟨⟩
+                getOpIdx (appArgs (ont-multiary c) as ℓ≤n)
+            ≡⟨ getOpIdx-appArgs ℓ≤n as ⟩
+               c 
+            ∎
+            where
+                open AppArgs ℓ (ont-multiary c) a as p
+                    renaming (t' to t₀ ; eq to eq₀)
+
         c-eq : getOpIdx t ≡ c
-        c-eq = ?
+        c-eq = 
+            begin 
+                getOpIdx t
+            ≡⟨ getOpIdx-ignores-doubleSubst t' eq₁ eq₂ ⟩
+                getOpIdx t'
+            ≡⟨ getOpIdx-appArgs {c} {ar c} ≤-refl v ⟩
+                c
+            ∎
+            
         subst-idx-in-pair :
             {c c' : cardToSet ζ}
             → (v : Vec ℕ (ar c))
@@ -251,15 +307,14 @@ k∘w≈id (nt-multiary c v) =
             → (subst (Vec ℕ) eq v) ≡ v
         lemma₁ refl v = refl
 
-        ONTM : ℕ → ℕ → Set
-        ONTM n m = ONT n m Multiary
-
         lemma₂
             : {n n' m m' : ℕ}
             → (eqₙ : n ≡ n')
             → (eqₘ : m ≡ m')
             → (t : ONT n m Multiary)
-            → (getVec (doubleSubst ONTM eqₙ eqₘ t)) ≡ subst (Vec ℕ) eqₘ (getVec t)
+            → (getVec (doubleSubst ONTM eqₙ eqₘ t)) 
+                ≡ 
+                subst (Vec ℕ) eqₘ (getVec t)
         lemma₂ refl refl t = refl
 
 
@@ -299,7 +354,8 @@ k∘w≈id (nt-multiary c v) =
                         a Data.List.∷ (toList (getVec t'''))
                     ≡⟨ cong (λ v → a Data.List.∷ (toList v)) 
                         $ getVec-ignores-n-subst t₀ eq'' ⟩
-                        a Data.List.∷ (toList (getVec (appArgs (ont-multiary c) as ℓ≤n)))
+                        a Data.List.∷ (toList (getVec 
+                            (appArgs (ont-multiary c) as ℓ≤n)))
                     ≡⟨ cong (a Data.List.∷_) 
                         $ getVec-appArgs-toList c ℓ≤n as (sym $ +-identityʳ ℓ) ⟩
                         a Data.List.∷ toList (as)
@@ -331,6 +387,8 @@ k∘w≈id (nt-multiary c v) =
                         (getVec (appArgs (ont-multiary c) v ≤-refl)) (sym H)
                     )
                     (sym $ subst-is-cast eq v)
+
+            
 
     
 
