@@ -22,6 +22,7 @@
 --  Terms are indexed by the number of arguments they still need in order
 --  to become closed. See below for more details.
 --------------------------------------------------------------------------------
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Level hiding (suc)
 open import Data.Nat
