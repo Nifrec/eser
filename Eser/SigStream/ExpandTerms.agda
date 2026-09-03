@@ -98,10 +98,6 @@ module _
     -- g acts on the numbers, g' on the operations
     --------------------------------------------------------------------------------
 
-    --_∈∈_ : {n m : ℕ} → {a : Arity} → ℕ → ONT n m a → Set
-    --a ∈∈ ont-nullary _ = ⊥
-    --a ∈∈ ont-multiary c = ⊥
-    --a ∈∈ ont-app t x = (a ≡ x) ⊎ (a ∈∈ t)
     data _∈∈_ : {n m : ℕ} → {a : Arity} → ℕ → ONT n m a → Set where
         ∈∈-here 
             : {n m : ℕ} 
@@ -147,11 +143,6 @@ module _
                     H : ({x : ℕ} → x ∈∈ t → x < b)
                     H {x} x∈∈t = x<b
                         where
-                            --x<ψs : x < ψ s
-                            --x<ψs = lemma-MakesArgsSmallers-∈∈ (ont-app t a) 
-                                
-                            --x<ψψ⁻¹i : x < ψ (ψ⁻¹ i)
-                            --x<ψψ⁻¹i = subst (x <_) (cong ψ eq) x<ψs
                             x<i : x < i
                             x<i = x∈∈s→x<i (∈∈-there x a t x∈∈t)  
                             x<b : x < b
@@ -161,11 +152,7 @@ module _
                     a<i : a < i
                     a<i = x∈∈s→x<i (∈∈-here a a t refl)  
                     a<b : a < b
-                    a<b = 
-                        (≤-trans 
-                            a<i
-                            (s≤s⁻¹ i<1+b)
-                        )
+                    a<b = ≤-trans a<i (s≤s⁻¹ i<1+b)
                     a' : IndTerms 0
                     a' = g b a a<b
              
@@ -180,8 +167,7 @@ module _
 
 
 
-    -- #TODO: prove a MakesArgsSmaller enum implies
-    -- for CONT:
+    -- #TODO: prove a MakesArgsSmaller-enum implies for CONT:
     -- a ∈∈ t -> a < ψ (t)
     -- where ψ ≔ φ ∘ k and φ ≔ Inverse.to e.
 
