@@ -35,6 +35,8 @@ open import Data.Vec.Properties
 open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; length)
 open import Function hiding (_↔_)
 
+open import Induction.WellFounded
+
 open import Eser.Stdlib using (∸-suc)
 open import Eser.Aux using (doubleSubst ; S[m∸Sn]≡m∸n ; _≈_)
 open import Eser.Signature.Definitions hiding (ClosedTerms)
@@ -179,7 +181,7 @@ module _
     -- Same as ∈∈ but then defined on IndTerms instead of ONT.
     -- The variable `m` is only for flexibility,
     -- there are only constructors for m ≔ 0.
-    data _⋤_ : {n m : ℕ} → IndTerms n → IndTerms m → Set where
+    data _⋤_ : {m n : ℕ} → IndTerms m → IndTerms n → Set where
         ⋤-here 
             : {n : ℕ} 
             → (t : IndTerms (suc n)) 
@@ -191,6 +193,62 @@ module _
             → (a x : IndTerms 0) 
             → a ⋤ t
             → a ⋤ (it-app t x)
+
+    -- #TODO: ⋤ is well-founded and admits a rec:
+    AllIndTerms : Set
+    AllIndTerms = Σ[ n ∈ ℕ ] IndTerms n
+
+    _⋤*_ : AllIndTerms → AllIndTerms → Set
+    (m , s) ⋤* (n , t) = s ⋤ t
+
+    _⋤C_ : ClosedTerms → ClosedTerms → Set
+    s ⋤C t = s ⋤ t
+
+    ⋤C→⋤*
+        : {s t : ClosedTerms}
+        → s ⋤C t 
+        → (0 , s) ⋤* (0 , t)
+    ⋤C→⋤* = id
+
+    ⋤*→⋤C
+        : {s t : ClosedTerms}
+        → (0 , s) ⋤* (0 , t)
+        → s ⋤C t 
+    ⋤*→⋤C = id
+
+    ⋤*-WF : WellFounded _⋤*_
+    ⋤*-WF = ?
+
+    ⋤C-WF : WellFounded _⋤C_
+    ⋤C-WF t = acc f
+        where
+            lemma : {s : ClosedTerms} →  Acc _⋤*_ (0 , s) → Acc _⋤C_ s
+            lemma {s} (acc fₛ) = acc {! h !}
+                where
+                    h : {r : ClosedTerms} → r ⋤C s → Acc _⋤C_ r
+                    h {r} r⋤Cs = Acc⋤*R
+                        where
+                            Acc⋤*R : Acc _⋤*_ (0 , r)
+                            Acc⋤*R = fₛ r⋤Cs
+            f : {a : ClosedTerms}
+                → (a ⋤C t)
+                → Acc _⋤C_ a
+            f {a} a⋤Ct = lemma $ acc-inverse (⋤*-WF (0 , t)) (⋤C→⋤* a⋤Ct)
+
+
+
+    ⋤*-rec 
+        : (P : AllIndTerms → Set)
+        → (
+            (nt : AllIndTerms)
+            → ({ms : AllIndTerms} → ms ⋤* nt → P ms)
+            → P nt
+        )
+        → (nt : AllIndTerms)
+        → P nt
+    ⋤*-rec = wfRec 0ℓ
+        where
+            open Induction.WellFounded.All {_<_ = _⋤*_} ⋤*-WF
 
     -- Predicate on an t : ClosedTerms that there exist an input i 
     -- and a fuel b>i such that g(b , i , i<b) ≡ t.
@@ -232,6 +290,16 @@ module _
 
     g*-surj : Surjective _≡_ _≡_ g*
     g*-surj t = ?
+        --where
+        --    wf-rec
+        --        : (
+        --            (nt : AllIndTerms)
+        --            → ({ms : AllIndTerms} → ms ⋤* nt → g⁻¹-ex (proj₂ ms))
+        --            → (g⁻¹-ex (proj₂ nt))
+        --        )
+        --        → (nt : AllIndTerms) → (g⁻¹-ex (proj₂ nt))
+        --    wf-rec =  ⋤*-rec (λ (n , t) → g⁻¹-ex t)
+          
 
     ----------------------------------------------------------------------------
     -- Injectivity of g*
