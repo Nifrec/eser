@@ -8,12 +8,12 @@
 -- of integers representing its arguments.
 -- Given a 'nice' enumeration of NumTerms, we can interpret these integers
 -- as giving the enumeration-indices of subterms and substitute them
--- accordingly.
+-- accordingly. This gives IndTerms: a representation of the term algebra in
+-- which each term has explicit IndTerms as arguments.
+--
 -- 'Nice' means that the enumeration assigns a multiary NumTerm a 
 -- greater number than any of the integers in its vector of arguments
 -- (formalised as `MakesArgsSmaller`).
---
---
 --------------------------------------------------------------------------------
 
 open import Level hiding (suc)
@@ -112,6 +112,9 @@ module _
             → a ∈∈ t
             → a ∈∈ ont-app t x
 
+    -- #TODO: prove a MakesArgsSmaller-enum implies for CONT:
+    -- a ∈∈ t -> a < ψ (t)
+    -- where ψ ≔ φ ∘ k and φ ≔ Inverse.to e.
     lemma-MakesArgsSmallers-∈∈
         : {m x : ℕ}
         → {a : Arity}
@@ -155,7 +158,7 @@ module _
                     a<b = ≤-trans a<i (s≤s⁻¹ i<1+b)
                     a' : IndTerms 0
                     a' = g b a a<b
-             
+
     g' b (ont-multiary c) H = it-multiary c
     g' b (ont-app t a) H = it-app (g' b t H') (g b a a<b)
         where
@@ -164,11 +167,74 @@ module _
             a<b : a < b
             a<b = H (∈∈-here a a t refl)
 
+    -- Variant on g that automatically chooses an appropriate quantity of fuel.
+    -- For this variant we can prove that it is an equivalence.
+    g* : ℕ → ClosedTerms
+    g* i = g (suc i) i (n<1+n i)
+             
+    ----------------------------------------------------------------------------
+    -- Surjectivity of g*
+    ----------------------------------------------------------------------------
+    
+    -- Same as ∈∈ but then defined on IndTerms instead of ONT.
+    -- The variable `m` is only for flexibility,
+    -- there are only constructors for m ≔ 0.
+    data _⋤_ : {n m : ℕ} → IndTerms n → IndTerms m → Set where
+        ⋤-here 
+            : {n : ℕ} 
+            → (t : IndTerms (suc n)) 
+            → (a : IndTerms 0) 
+            → a ⋤ (it-app t a)
+        ⋤-there
+            : {n : ℕ} 
+            → (t : IndTerms (suc n)) 
+            → (a x : IndTerms 0) 
+            → a ⋤ t
+            → a ⋤ (it-app t x)
+
+    -- Predicate on an t : ClosedTerms that there exist an input i 
+    -- and a fuel b>i such that g(b , i , i<b) ≡ t.
+    g⁻¹-ex : ClosedTerms → Set
+    g⁻¹-ex t =  Σ[ b ∈ ℕ ]  Σ[ i ∈ ℕ ] Σ[ i<b ∈ i < b ] (g b i i<b) ≡ t
+
+    -- Predicate on an t : IndTerms (suc n) that there exist inputs
+    -- * Fuel b : ℕ
+    -- * Open number term s : ONT (suc n)
+    -- * Proof H : x ∈∈ s → x < b
+    -- inputs b and H to g' 
+    -- s.t. (g' b s H) ≡ t.
+    g'⁻¹-ex : {n : ℕ} → IndTerms (suc n) → Set
+    g'⁻¹-ex {n} t = 
+        Σ[ b ∈ ℕ ] 
+        Σ[ m ∈ ℕ ]
+        Σ[ s ∈ (ONT (suc n) m Multiary)]
+        Σ[ H ∈ ({x : ℕ} → x ∈∈ s → x < b) ]
+        (g' b s H) ≡ t
+
+    -- g-surj and g'-surj are defined in mutual induction, quite like
+    -- how g and g' are defined in mutual induction themselves.
+    g-surj 
+        : (t : ClosedTerms)
+        → (b : ℕ)
+        → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
+        → g⁻¹-ex t
+    g-surj t b IH = ?
+
+    g'-surj 
+        : {n : ℕ} 
+        → (t : IndTerms (suc n))
+        → (b : ℕ)
+        → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
+        → g'⁻¹-ex t
+    g'-surj {n} t b IH = ?
 
 
 
-    -- #TODO: prove a MakesArgsSmaller-enum implies for CONT:
-    -- a ∈∈ t -> a < ψ (t)
-    -- where ψ ≔ φ ∘ k and φ ≔ Inverse.to e.
+    g*-surj : Surjective _≡_ _≡_ g*
+    g*-surj t = ?
 
-
+    ----------------------------------------------------------------------------
+    -- Injectivity of g*
+    ----------------------------------------------------------------------------
+    g*-inj : Injective _≡_ _≡_ g*
+    g*-inj = ?
