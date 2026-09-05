@@ -262,7 +262,6 @@ module _
     -- how g and g' are defined in mutual induction themselves.
     g-surj 
         : (t : ClosedTerms)
-        --→ (b : ℕ)
         → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
         → g⁻¹-ex t
     g-surj t IH = ?
@@ -270,7 +269,6 @@ module _
     g'-surj 
         : {n : ℕ} 
         → (t : IndTerms (suc n))
-        --→ (b : ℕ)
         → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
         → g'⁻¹-ex t
     g'-surj {n} t IH = ?
@@ -294,13 +292,10 @@ module _
                 → ({a : ClosedTerms} → a ⋤C t → P a)
                 → P t
                 )
-            rec t IH = g-surj t IH' --g-surj b-max b-max-prf 
+            rec t IH = g-surj t IH'
                 where
                     IH' : (a : ClosedTerms) → a ⋤ t → g⁻¹-ex a
                     IH' a a⋤t = IH a⋤t
-                    --b-max : ℕ
-                    --b-max = {! maximum b over all P a over all a ⋤C t !}
-                    --b-max-prf : (a : ClosedTerms) → a ⋤ t → 
             Q : (t : ClosedTerms) → g⁻¹-ex t
             Q = ⋤C-rec P rec
             
