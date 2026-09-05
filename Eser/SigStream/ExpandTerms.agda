@@ -271,7 +271,24 @@ module _
         → (t : IndTerms (suc n))
         → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
         → g'⁻¹-ex t
-    g'-surj {n} t IH = ?
+    g'-surj {n} (mk-multiary-nw c) IH = (0 , 0 , s , H , p)
+        where
+            s : ONT (suc n) 0 Multiary
+            s = ont-multiary c
+            H : {x : ℕ} → x ∈∈ s → x < 0
+            H ()
+            p : g' 0 s H ≡ (mk-multiary-nw c)
+            p = refl
+    g'-surj {n} (it-app t a) IH = {! !}
+        where
+            IH' : (x : ClosedTerms) → x ⋤ t → g⁻¹-ex x
+            IH' x x⋤t = IH x (⋤-there t x a x⋤t)
+            t-rec : g'⁻¹-ex t
+            t-rec = g'-surj t IH'
+            m : ℕ
+            m = proj₁ $ proj₂ t-rec
+            s' : ONT (suc (suc n)) m Multiary
+            s' = proj₁ $ proj₂ $ proj₂ t-rec
 
 
     -- The value of the arguments b and i<b to g do not influence the output,
