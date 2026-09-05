@@ -202,6 +202,9 @@ module _
     (m , s) ⋤* (n , t) = s ⋤ t
 
     _⋤C_ : ClosedTerms → ClosedTerms → Set
+    -- This is judgementally the same definition as: 
+    --      _⋤C_ ≔ _⋤*_ on (λ t → (0 , t)).
+    -- We exploit this judgemental equality in the  ⋤C-WF proof below.
     s ⋤C t = s ⋤ t
 
     ⋤C→⋤*
@@ -219,23 +222,19 @@ module _
     ⋤*-WF : WellFounded _⋤*_
     ⋤*-WF = ?
 
+    open import Relation.Binary.Construct.On 
+        using () 
+        renaming (accessible to on-accessible)
     ⋤C-WF : WellFounded _⋤C_
     ⋤C-WF t = acc f
         where
-            lemma : {s : ClosedTerms} →  Acc _⋤*_ (0 , s) → Acc _⋤C_ s
-            lemma {s} (acc fₛ) = acc {! h !}
-                where
-                    h : {r : ClosedTerms} → r ⋤C s → Acc _⋤C_ r
-                    h {r} r⋤Cs = Acc⋤*R
-                        where
-                            Acc⋤*R : Acc _⋤*_ (0 , r)
-                            Acc⋤*R = fₛ r⋤Cs
             f : {a : ClosedTerms}
                 → (a ⋤C t)
                 → Acc _⋤C_ a
-            f {a} a⋤Ct = lemma $ acc-inverse (⋤*-WF (0 , t)) (⋤C→⋤* a⋤Ct)
-
-
+            f {a} a⋤Ct = on-accessible (λ s → (0 , s)) aAcc
+                where
+                    aAcc : Acc _⋤*_ (0 , a)
+                    aAcc = acc-inverse (⋤*-WF (0 , t)) a⋤Ct
 
     ⋤*-rec 
         : (P : AllIndTerms → Set)
