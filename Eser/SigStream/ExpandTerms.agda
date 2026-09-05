@@ -194,12 +194,28 @@ module _
             → a ⋤ t
             → a ⋤ (it-app t x)
 
-    -- #TODO: ⋤ is well-founded and admits a rec:
     AllIndTerms : Set
     AllIndTerms = Σ[ n ∈ ℕ ] IndTerms n
 
     _⋤*_ : AllIndTerms → AllIndTerms → Set
     (m , s) ⋤* (n , t) = s ⋤ t
+
+    open import Eser.IWellFounded
+    ⋤-IWF : IWellFounded {I = ℕ} {A = IndTerms} _⋤_
+    ⋤-IWF {n} (mk-nullary-nw c) = iacc λ { _ _ () }
+    ⋤-IWF {n} (mk-multiary-nw c) = iacc λ { _ _ () }
+    ⋤-IWF {n} (it-app t a) = iacc f
+        where
+            t-Acc : IAcc _⋤_ (suc n , t)
+            t-Acc = ⋤-IWF t
+            a-Acc : IAcc _⋤_ (0 , a)
+            a-Acc = ⋤-IWF a
+            f : (m : ℕ) (s : IndTerms m) 
+                → s ⋤ it-app t a 
+                → IAcc {A = IndTerms} _⋤_ (m , s)
+            f 0 a (⋤-here t a) = a-Acc
+            f m x (⋤-there t x a p) with t-Acc
+            ... | iacc h = h m x p
 
     _⋤C_ : ClosedTerms → ClosedTerms → Set
     -- This is judgementally the same definition as: 
@@ -207,47 +223,21 @@ module _
     -- We exploit this judgemental equality in the  ⋤C-WF proof below.
     s ⋤C t = s ⋤ t
 
-    ⋤C→⋤*
-        : {s t : ClosedTerms}
-        → s ⋤C t 
-        → (0 , s) ⋤* (0 , t)
-    ⋤C→⋤* = id
-
-    ⋤*→⋤C
-        : {s t : ClosedTerms}
-        → (0 , s) ⋤* (0 , t)
-        → s ⋤C t 
-    ⋤*→⋤C = id
-
-    ⋤*-WF : WellFounded _⋤*_
-    ⋤*-WF = ?
-
-    open import Relation.Binary.Construct.On 
-        using () 
-        renaming (accessible to on-accessible)
     ⋤C-WF : WellFounded _⋤C_
-    ⋤C-WF t = acc f
-        where
-            f : {a : ClosedTerms}
-                → (a ⋤C t)
-                → Acc _⋤C_ a
-            f {a} a⋤Ct = on-accessible (λ s → (0 , s)) aAcc
-                where
-                    aAcc : Acc _⋤*_ (0 , a)
-                    aAcc = acc-inverse (⋤*-WF (0 , t)) a⋤Ct
+    ⋤C-WF = IWF→WF ⋤-IWF 0
 
-    ⋤*-rec 
-        : (P : AllIndTerms → Set)
+    ⋤C-rec 
+        : (P : ClosedTerms → Set)
         → (
-            (nt : AllIndTerms)
-            → ({ms : AllIndTerms} → ms ⋤* nt → P ms)
-            → P nt
+            (t : ClosedTerms)
+            → ({s : ClosedTerms} → s ⋤C t → P s)
+            → P t
         )
-        → (nt : AllIndTerms)
-        → P nt
-    ⋤*-rec = wfRec 0ℓ
+        → (t : ClosedTerms)
+        → P t
+    ⋤C-rec = wfRec 0ℓ
         where
-            open Induction.WellFounded.All {_<_ = _⋤*_} ⋤*-WF
+            open Induction.WellFounded.All {_<_ = _⋤C_} ⋤C-WF
 
     -- Predicate on an t : ClosedTerms that there exist an input i 
     -- and a fuel b>i such that g(b , i , i<b) ≡ t.
@@ -272,32 +262,68 @@ module _
     -- how g and g' are defined in mutual induction themselves.
     g-surj 
         : (t : ClosedTerms)
-        → (b : ℕ)
+        --→ (b : ℕ)
         → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
         → g⁻¹-ex t
-    g-surj t b IH = ?
+    g-surj t IH = ?
 
     g'-surj 
         : {n : ℕ} 
         → (t : IndTerms (suc n))
-        → (b : ℕ)
+        --→ (b : ℕ)
         → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
         → g'⁻¹-ex t
-    g'-surj {n} t b IH = ?
+    g'-surj {n} t IH = ?
 
 
+    -- The value of the arguments b and i<b to g do not influence the output,
+    -- they are just witnesses that these types are inhabited.
+    g-fuel-irrel
+        : (b b' i : ℕ)
+        → (i<b : i < b)
+        → (i<b' : i < b')
+        → g b i i<b ≡ g b' i i<b'
+    g-fuel-irrel = ?
 
     g*-surj : Surjective _≡_ _≡_ g*
-    g*-surj t = ?
-        --where
-        --    wf-rec
-        --        : (
-        --            (nt : AllIndTerms)
-        --            → ({ms : AllIndTerms} → ms ⋤* nt → g⁻¹-ex (proj₂ ms))
-        --            → (g⁻¹-ex (proj₂ nt))
-        --        )
-        --        → (nt : AllIndTerms) → (g⁻¹-ex (proj₂ nt))
-        --    wf-rec =  ⋤*-rec (λ (n , t) → g⁻¹-ex t)
+    g*-surj x = (i , f)
+        where
+            P : ClosedTerms → Set
+            P = g⁻¹-ex 
+            rec : ((t : ClosedTerms)
+                → ({a : ClosedTerms} → a ⋤C t → P a)
+                → P t
+                )
+            rec t IH = g-surj t IH' --g-surj b-max b-max-prf 
+                where
+                    IH' : (a : ClosedTerms) → a ⋤ t → g⁻¹-ex a
+                    IH' a a⋤t = IH a⋤t
+                    --b-max : ℕ
+                    --b-max = {! maximum b over all P a over all a ⋤C t !}
+                    --b-max-prf : (a : ClosedTerms) → a ⋤ t → 
+            Q : (t : ClosedTerms) → g⁻¹-ex t
+            Q = ⋤C-rec P rec
+            
+            b : ℕ
+            b = proj₁ $ Q x
+
+            i : ℕ
+            i = proj₁ $ proj₂ $ Q x
+
+            i<b : i < b
+            i<b = proj₁ $ proj₂ $ proj₂ $ Q x
+
+            f : {j : ℕ} → j ≡ i → g* j ≡ x
+            f {i} refl = 
+                begin 
+                    g* i
+                ≡⟨⟩
+                    g (suc i) i (n<1+n i)
+                ≡⟨ g-fuel-irrel (suc i) b i (n<1+n i) i<b ⟩
+                    g b i i<b
+                ≡⟨ proj₂ $ proj₂ $ proj₂ $ Q x ⟩
+                    x
+                ∎
           
 
     ----------------------------------------------------------------------------
