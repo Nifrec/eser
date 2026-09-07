@@ -16,7 +16,7 @@
 -- (formalised as `MakesArgsSmaller`).
 --------------------------------------------------------------------------------
 
-open import Level hiding (suc)
+open import Level hiding (suc ; _⊔_ )
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum hiding (map)
@@ -163,7 +163,7 @@ module _
 
     g' b (ont-multiary c) H = it-multiary c
     g' b (ont-app t a) H = it-app (g' b t H') (g b a a<b)
-        where
+        module G'-Impl where
             H' : ({x : ℕ} → x ∈∈ t → x < b)
             H' {x} x∈∈t = H (∈∈-there x a t x∈∈t)
             a<b : a < b
@@ -262,14 +262,14 @@ module _
     -- how g and g' are defined in mutual induction themselves.
     g-surj 
         : (t : ClosedTerms)
-        → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
+        → ({a : ClosedTerms} → a ⋤ t → g⁻¹-ex a)
         → g⁻¹-ex t
     g-surj t IH = ?
 
     g'-surj 
         : {n : ℕ} 
         → (t : IndTerms (suc n))
-        → ((a : ClosedTerms) → a ⋤ t → g⁻¹-ex a)
+        → ({a : ClosedTerms} → a ⋤ t → g⁻¹-ex a)
         → g'⁻¹-ex t
     g'-surj {n} (mk-multiary-nw c) IH = (0 , 0 , s , H , p)
         where
@@ -279,16 +279,61 @@ module _
             H ()
             p : g' 0 s H ≡ (mk-multiary-nw c)
             p = refl
-    g'-surj {n} (it-app t a) IH = {! !}
+    g'-surj {n} (it-app t a) IH = (b , suc m , s , H , eq)
         where
-            IH' : (x : ClosedTerms) → x ⋤ t → g⁻¹-ex x
-            IH' x x⋤t = IH x (⋤-there t x a x⋤t)
+            IH' : {x : ClosedTerms} → x ⋤ t → g⁻¹-ex x
+            IH' {x} x⋤t = IH {x} (⋤-there t x a x⋤t)
             t-rec : g'⁻¹-ex t
             t-rec = g'-surj t IH'
+            bₛ : ℕ
+            bₛ = proj₁ t-rec
             m : ℕ
             m = proj₁ $ proj₂ t-rec
             s' : ONT (suc (suc n)) m Multiary
             s' = proj₁ $ proj₂ $ proj₂ t-rec
+            Hₛ : {x : ℕ} → x ∈∈ s' → x < bₛ
+            Hₛ = proj₁ $ proj₂ $ proj₂ $ proj₂ t-rec
+            s-eq : g' bₛ s' Hₛ ≡ t
+            s-eq = proj₂ $ proj₂ $ proj₂ $ proj₂ t-rec
+ 
+
+            IHₐ : {x : ClosedTerms} → x ⋤ a → g⁻¹-ex x
+            IHₐ {x} (⋤-here t a) = {! !}
+            IHₐ {x} (⋤-there t a x₁ p) = {! !}
+            a-rec : g⁻¹-ex a
+            a-rec = g-surj a IHₐ
+            bₐ : ℕ
+            bₐ = proj₁ a-rec
+            a' : ℕ
+            a' = proj₁ $  proj₂ a-rec
+            a<bₐ : a' < bₐ 
+            a<bₐ = proj₁ $ proj₂ $ proj₂ a-rec
+            a-eq : g bₐ a' a<bₐ ≡ a
+            a-eq = proj₂ $ proj₂ $ proj₂ a-rec 
+
+            b : ℕ
+            b = bₛ ⊔ bₐ -- This denotes (max bₛ bₐ)
+            s : ONT (suc n) (suc m) Multiary
+            s = ont-app s' a'
+            H : {x : ℕ} → x ∈∈ s → x < b
+            H {x} p = ?
+
+            open G'-Impl b s' a' H -- Imports H' and a<b from definition g'.
+
+            eq : g' b s H ≡ it-app t a
+            eq =
+                begin 
+                    g' b s H
+                ≡⟨ ? ⟩
+                    it-app (g' b s' H') (g b a' a<b)
+                ≡⟨ {! Irrelevance of bₛ , IH' , bₐ !} ⟩
+                    it-app (g' bₛ s' Hₛ) (g bₐ a' a<bₐ)
+                ≡⟨ {! Equalities obtained via t-rec and a-rec !} ⟩
+                    it-app t a
+                ∎
+                
+
+
 
 
     -- The value of the arguments b and i<b to g do not influence the output,
@@ -311,8 +356,8 @@ module _
                 )
             rec t IH = g-surj t IH'
                 where
-                    IH' : (a : ClosedTerms) → a ⋤ t → g⁻¹-ex a
-                    IH' a a⋤t = IH a⋤t
+                    IH' : {a : ClosedTerms} → a ⋤ t → g⁻¹-ex a
+                    IH' {a} a⋤t = IH a⋤t
             Q : (t : ClosedTerms) → g⁻¹-ex t
             Q = ⋤C-rec P rec
             
