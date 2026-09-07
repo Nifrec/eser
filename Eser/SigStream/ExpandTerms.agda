@@ -135,11 +135,11 @@ module _
         → IndTerms (suc n)
 
     g (suc b) i i<1+b = g-cases (ψ⁻¹ i) refl
-        where
+        module G-Impl where
             g-cases : (t : CONT) → (t ≡ ψ⁻¹ i) → ClosedTerms
             g-cases (ℕ.zero , Nullary , ont-nullary c) _ = it-nullary c
             g-cases s@(suc m , Multiary , ont-app t a) eq = it-app t' a'
-                where
+                module G-Cases where
                     x∈∈s→x<i : {x : ℕ} → x ∈∈ (ont-app t a) → x < i
                     x∈∈s→x<i {x} x∈∈s =  
                         subst (x <_) (trans (cong ψ eq) (ψ∘ψ⁻¹≈id i)) 
@@ -289,6 +289,15 @@ module _
         → g' b t H ≡ g' b' t H'
     g'-fuel-irrel = ?
 
+    --g-cases-cong
+    --    : (b i : ℕ)
+    --    → (i<1+b : i < suc b)
+    --    → (t t' : CONT)
+    --    → (p : t ≡ t')
+    --    → (q : t ≡ ψ⁻¹ i)
+    --    → (q' : t' ≡ ψ⁻¹ i)
+    --    → g-cases b i i<1+b t q ≡ g-cases b i i<i+b t' q'
+    --g-cases-cong _ _ refl refl refl = refl
 
     -- g-surj and g'-surj are defined in mutual induction, quite like
     -- how g and g' are defined in mutual induction themselves.
@@ -296,13 +305,123 @@ module _
         : (t : ClosedTerms)
         → ({a : ClosedTerms} → a ⋤ t → g⁻¹-ex a)
         → g⁻¹-ex t
-    g-surj t IH = ?
-
     g'-surj 
         : {n : ℕ} 
         → (t : IndTerms (suc n))
         → ({a : ClosedTerms} → a ⋤ t → g⁻¹-ex a)
         → g'⁻¹-ex t
+
+    g-surj (mk-nullary-nw c) IH = (suc i , i , n<1+n i , eq)
+        where
+            t : CONT
+            t = (0 , Nullary , ont-nullary c)
+            i : ℕ
+            i = ψ t
+            open G-Impl i i (n<1+n i)
+            g-cases-cong
+                : (t t' : CONT)
+                → (p : t ≡ t')
+                → (q : t ≡ ψ⁻¹ i)
+                → (q' : t' ≡ ψ⁻¹ i)
+                → g-cases t q ≡ g-cases t' q'
+            g-cases-cong _ _ refl refl refl = refl
+
+            eq : g (suc i) i (n<1+n i) ≡ mk-nullary-nw c
+            eq =
+                begin 
+                    g (suc i) i (n<1+n i)
+                ≡⟨⟩
+                    g-cases (ψ⁻¹ i) refl
+                ≡⟨⟩
+                    g-cases (ψ⁻¹ (ψ t)) refl
+                ≡⟨ g-cases-cong (ψ⁻¹ (ψ t)) t (ψ⁻¹∘ψ≈id t) refl 
+                                (sym $ ψ⁻¹∘ψ≈id t) 
+                 ⟩
+                    g-cases t (sym $ ψ⁻¹∘ψ≈id t)
+                ≡⟨⟩
+                    it-nullary c
+                ∎
+    g-surj (it-app t a) IH = (b , i , i<b , eq)
+        where
+
+            IH' : {x : ClosedTerms} → x ⋤ t → g⁻¹-ex x
+            IH' {x} x⋤t = IH {x} (⋤-there-left t x a x⋤t)
+            t-rec : g'⁻¹-ex t
+            t-rec = g'-surj t IH'
+            bₛ : ℕ
+            bₛ = proj₁ t-rec
+            m : ℕ
+            m = proj₁ $ proj₂ t-rec
+            s' : ONT 1 m Multiary
+            s' = proj₁ $ proj₂ $ proj₂ t-rec
+            Hₛ : {x : ℕ} → x ∈∈ s' → x < bₛ
+            Hₛ = proj₁ $ proj₂ $ proj₂ $ proj₂ t-rec
+            s-eq : g' bₛ s' Hₛ ≡ t
+            s-eq = proj₂ $ proj₂ $ proj₂ $ proj₂ t-rec
+
+            IHₐ : {x : ClosedTerms} → x ⋤ a → g⁻¹-ex x
+            IHₐ {x} x⋤a = IH {x} (⋤-there-right t x a x⋤a)
+            a-rec : g⁻¹-ex a
+            a-rec = g-surj a IHₐ
+            bₐ : ℕ
+            bₐ = proj₁ a-rec
+            a' : ℕ
+            a' = proj₁ $  proj₂ a-rec
+            a<bₐ : a' < bₐ 
+            a<bₐ = proj₁ $ proj₂ $ proj₂ a-rec
+            a-eq : g bₐ a' a<bₐ ≡ a
+            a-eq = proj₂ $ proj₂ $ proj₂ a-rec 
+
+            --b : ℕ
+            --b = bₛ ⊔ bₐ -- This denotes (max bₛ bₐ)
+            s : ONT 0 (suc m) Multiary
+            s = ont-app s' a'
+            s* : CONT
+            s* = (suc m , Multiary , s)
+            --H : {x : ℕ} → x ∈∈ s → x < b
+            --H {a'} (∈∈-here a' a' s' refl) = m<n⇒m<o⊔n bₛ a<bₐ 
+            --H {x} (∈∈-there x a' s' x∈∈s) = m<n⇒m<n⊔o bₐ (Hₛ {x} x∈∈s)
+
+            i : ℕ
+            i = ψ s*
+            b : ℕ
+            b = suc i
+            i<b : i < b
+            i<b = n<1+n i
+            open G-Impl i i i<b 
+            -- #EXT: this lemma is duplicate with the previous case.
+            g-cases-cong
+                : (t t' : CONT)
+                → (p : t ≡ t')
+                → (q : t ≡ ψ⁻¹ i)
+                → (q' : t' ≡ ψ⁻¹ i)
+                → g-cases t q ≡ g-cases t' q'
+            g-cases-cong _ _ refl refl refl = refl
+
+            open G-Cases m s' a' (sym $ ψ⁻¹∘ψ≈id s*) hiding (a')
+            eq : g b i i<b ≡ it-app t a
+            eq = 
+                begin 
+                    g b i i<b  
+                ≡⟨⟩
+                    g-cases (ψ⁻¹ i) refl
+                ≡⟨⟩
+                    g-cases ( ψ⁻¹ (ψ s*)) refl
+                ≡⟨ g-cases-cong (ψ⁻¹ (ψ s*)) s* (ψ⁻¹∘ψ≈id s*) refl 
+                                (sym $ ψ⁻¹∘ψ≈id s*) 
+                 ⟩
+                    g-cases s* (sym $ ψ⁻¹∘ψ≈id s*)
+                ≡⟨⟩
+                    it-app (g' b s' H) (g b a' a<b)
+                ≡⟨ doubleCong it-app
+                    (g'-fuel-irrel b bₛ s' H Hₛ)
+                    (g-fuel-irrel b bₐ a' a<b a<bₐ)
+                     ⟩
+                    it-app (g' bₛ s' Hₛ) (g bₐ a' a<bₐ)
+                ≡⟨ doubleCong it-app s-eq a-eq ⟩
+                    it-app t a
+                ∎
+
     g'-surj {n} (mk-multiary-nw c) IH = (0 , 0 , s , H , p)
         where
             s : ONT (suc n) 0 Multiary
@@ -313,6 +432,23 @@ module _
             p = refl
     g'-surj {n} (it-app t a) IH = (b , suc m , s , H , eq)
         where
+            -- #EXT : The next block of definitions is exactly the same
+            -- an in g-surj above. This can probably be refactored.
+            IHₐ : {x : ClosedTerms} → x ⋤ a → g⁻¹-ex x
+            IHₐ {x} x⋤a = IH {x} (⋤-there-right t x a x⋤a)
+            a-rec : g⁻¹-ex a
+            a-rec = g-surj a IHₐ
+            bₐ : ℕ
+            bₐ = proj₁ a-rec
+            a' : ℕ
+            a' = proj₁ $  proj₂ a-rec
+            a<bₐ : a' < bₐ 
+            a<bₐ = proj₁ $ proj₂ $ proj₂ a-rec
+            a-eq : g bₐ a' a<bₐ ≡ a
+            a-eq = proj₂ $ proj₂ $ proj₂ a-rec 
+
+            -- #EXT : similar for the next block,
+            -- except g-surj uses `1` instead of `suc (suc n)`.
             IH' : {x : ClosedTerms} → x ⋤ t → g⁻¹-ex x
             IH' {x} x⋤t = IH {x} (⋤-there-left t x a x⋤t)
             t-rec : g'⁻¹-ex t
@@ -329,18 +465,6 @@ module _
             s-eq = proj₂ $ proj₂ $ proj₂ $ proj₂ t-rec
  
 
-            IHₐ : {x : ClosedTerms} → x ⋤ a → g⁻¹-ex x
-            IHₐ {x} x⋤a = IH {x} (⋤-there-right t x a x⋤a)
-            a-rec : g⁻¹-ex a
-            a-rec = g-surj a IHₐ
-            bₐ : ℕ
-            bₐ = proj₁ a-rec
-            a' : ℕ
-            a' = proj₁ $  proj₂ a-rec
-            a<bₐ : a' < bₐ 
-            a<bₐ = proj₁ $ proj₂ $ proj₂ a-rec
-            a-eq : g bₐ a' a<bₐ ≡ a
-            a-eq = proj₂ $ proj₂ $ proj₂ a-rec 
 
             b : ℕ
             b = bₛ ⊔ bₐ -- This denotes (max bₛ bₐ)
@@ -366,10 +490,6 @@ module _
                 ≡⟨ doubleCong it-app s-eq a-eq ⟩
                     it-app t a
                 ∎
-                
-
-
-
 
     g*-surj : Surjective _≡_ _≡_ g*
     g*-surj x = (i , f)
