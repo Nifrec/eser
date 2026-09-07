@@ -38,7 +38,7 @@ open import Function hiding (_↔_)
 open import Induction.WellFounded
 
 open import Eser.Stdlib using (∸-suc)
-open import Eser.Aux using (doubleSubst ; S[m∸Sn]≡m∸n ; _≈_)
+open import Eser.Aux using (doubleSubst ; doubleCong ; S[m∸Sn]≡m∸n ; _≈_)
 open import Eser.Signature.Definitions hiding (ClosedTerms)
 open import Eser.Card
 open import Eser.Equivalences.Notation using (_≃_)
@@ -271,6 +271,25 @@ module _
         Σ[ H ∈ ({x : ℕ} → x ∈∈ s → x < b) ]
         (g' b s H) ≡ t
 
+    -- The value of the arguments b and i<b to g do not influence the output,
+    -- they are just witnesses that these types are inhabited.
+    g-fuel-irrel
+        : (b b' i : ℕ)
+        → (i<b : i < b)
+        → (i<b' : i < b')
+        → g b i i<b ≡ g b' i i<b'
+    g-fuel-irrel = ?
+
+    -- Analogous for g'.
+    g'-fuel-irrel
+        : (b b' : ℕ)
+        → {n m : ℕ} → {a : Arity} → (t : ONT (suc n) m a)
+        → (H : {x : ℕ} → x ∈∈ t → x < b)
+        → (H' : {x : ℕ} → x ∈∈ t → x < b')
+        → g' b t H ≡ g' b' t H'
+    g'-fuel-irrel = ?
+
+
     -- g-surj and g'-surj are defined in mutual induction, quite like
     -- how g and g' are defined in mutual induction themselves.
     g-surj 
@@ -311,7 +330,7 @@ module _
  
 
             IHₐ : {x : ClosedTerms} → x ⋤ a → g⁻¹-ex x
-            IHₐ {x} p = ?
+            IHₐ {x} x⋤a = IH {x} (⋤-there-right t x a x⋤a)
             a-rec : g⁻¹-ex a
             a-rec = g-surj a IHₐ
             bₐ : ℕ
@@ -328,7 +347,8 @@ module _
             s : ONT (suc n) (suc m) Multiary
             s = ont-app s' a'
             H : {x : ℕ} → x ∈∈ s → x < b
-            H {x} p = ?
+            H {a'} (∈∈-here a' a' s' refl) = m<n⇒m<o⊔n bₛ a<bₐ 
+            H {x} (∈∈-there x a' s' x∈∈s) = m<n⇒m<n⊔o bₐ (Hₛ {x} x∈∈s)
 
             open G'-Impl b s' a' H -- Imports H' and a<b from definition g'.
 
@@ -336,26 +356,20 @@ module _
             eq =
                 begin 
                     g' b s H
-                ≡⟨ ? ⟩
+                ≡⟨⟩
                     it-app (g' b s' H') (g b a' a<b)
-                ≡⟨ {! Irrelevance of bₛ , IH' , bₐ !} ⟩
+                ≡⟨ doubleCong it-app
+                    (g'-fuel-irrel b bₛ s' H' Hₛ)
+                    (g-fuel-irrel b bₐ a' a<b a<bₐ)
+                     ⟩
                     it-app (g' bₛ s' Hₛ) (g bₐ a' a<bₐ)
-                ≡⟨ {! Equalities obtained via t-rec and a-rec !} ⟩
+                ≡⟨ doubleCong it-app s-eq a-eq ⟩
                     it-app t a
                 ∎
                 
 
 
 
-
-    -- The value of the arguments b and i<b to g do not influence the output,
-    -- they are just witnesses that these types are inhabited.
-    g-fuel-irrel
-        : (b b' i : ℕ)
-        → (i<b : i < b)
-        → (i<b' : i < b')
-        → g b i i<b ≡ g b' i i<b'
-    g-fuel-irrel = ?
 
     g*-surj : Surjective _≡_ _≡_ g*
     g*-surj x = (i , f)

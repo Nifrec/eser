@@ -77,8 +77,8 @@ doubleSubst
 doubleSubst X refl refl x = x
 
 doubleCong
-    : {A B : Set}
-    → (X : A → B → Set)
+    : {A B C : Set}
+    → (X : A → B → C)
     → {a a' : A}
     → {b b' : B} 
     → (ha : a ≡ a')
