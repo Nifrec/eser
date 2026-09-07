@@ -178,7 +178,12 @@ module _
     -- Surjectivity of g*
     ----------------------------------------------------------------------------
     
-    -- Same as ∈∈ but then defined on IndTerms instead of ONT.
+    -- Subterm relation for IndTerms.
+    -- Similar to ∈∈ but then defined on IndTerms instead of ONT,
+    -- and subterms can also be from the second argument in the `app`
+    -- constructor (which is, in ONT, a number, but here also an IndType 0
+    -- which can have subtypes itself).
+    --
     -- The variable `m` is only for flexibility,
     -- there are only constructors for m ≔ 0.
     data _⋤_ : {m n : ℕ} → IndTerms m → IndTerms n → Set where
@@ -187,11 +192,17 @@ module _
             → (t : IndTerms (suc n)) 
             → (a : IndTerms 0) 
             → a ⋤ (it-app t a)
-        ⋤-there
+        ⋤-there-left
             : {n : ℕ} 
             → (t : IndTerms (suc n)) 
             → (a x : IndTerms 0) 
             → a ⋤ t
+            → a ⋤ (it-app t x)
+        ⋤-there-right
+            : {n : ℕ} 
+            → (t : IndTerms (suc n)) 
+            → (a x : IndTerms 0) 
+            → a ⋤ x
             → a ⋤ (it-app t x)
 
     AllIndTerms : Set
@@ -214,7 +225,9 @@ module _
                 → s ⋤ it-app t a 
                 → IAcc {A = IndTerms} _⋤_ (m , s)
             f 0 a (⋤-here t a) = a-Acc
-            f m x (⋤-there t x a p) with t-Acc
+            f m x (⋤-there-left t x a p) with t-Acc
+            ... | iacc h = h m x p
+            f m x (⋤-there-right t x a p) with a-Acc
             ... | iacc h = h m x p
 
     _⋤C_ : ClosedTerms → ClosedTerms → Set
@@ -282,7 +295,7 @@ module _
     g'-surj {n} (it-app t a) IH = (b , suc m , s , H , eq)
         where
             IH' : {x : ClosedTerms} → x ⋤ t → g⁻¹-ex x
-            IH' {x} x⋤t = IH {x} (⋤-there t x a x⋤t)
+            IH' {x} x⋤t = IH {x} (⋤-there-left t x a x⋤t)
             t-rec : g'⁻¹-ex t
             t-rec = g'-surj t IH'
             bₛ : ℕ
@@ -298,8 +311,7 @@ module _
  
 
             IHₐ : {x : ClosedTerms} → x ⋤ a → g⁻¹-ex x
-            IHₐ {x} (⋤-here t a) = {! !}
-            IHₐ {x} (⋤-there t a x₁ p) = {! !}
+            IHₐ {x} p = ?
             a-rec : g⁻¹-ex a
             a-rec = g-surj a IHₐ
             bₐ : ℕ
