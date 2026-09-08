@@ -398,7 +398,8 @@ module _
                 → g-cases t q ≡ g-cases t' q'
             g-cases-cong _ _ refl refl refl = refl
 
-            open G-Cases m s' a' (sym $ ψ⁻¹∘ψ≈id s*) hiding (a')
+            open G-Impl.G-Cases i i (n<1+n i) m s' a' (sym $ ψ⁻¹∘ψ≈id s*)
+                using (H ; a<b)
             eq : g b i i<b ≡ it-app t a
             eq = 
                 begin 
@@ -412,10 +413,13 @@ module _
                  ⟩
                     g-cases s* (sym $ ψ⁻¹∘ψ≈id s*)
                 ≡⟨⟩
-                    it-app (g' b s' H) (g b a' a<b)
+                    g-cases (suc m , Multiary , ont-app s' a') 
+                        (sym $ ψ⁻¹∘ψ≈id s*)
+                ≡⟨⟩
+                    it-app (g' i s' H) (g i a' a<b)
                 ≡⟨ doubleCong it-app
-                    (g'-fuel-irrel b bₛ s' H Hₛ)
-                    (g-fuel-irrel b bₐ a' a<b a<bₐ)
+                    (g'-fuel-irrel i bₛ s' H Hₛ)
+                    (g-fuel-irrel i bₐ a' a<b a<bₐ)
                      ⟩
                     it-app (g' bₛ s' Hₛ) (g bₐ a' a<bₐ)
                 ≡⟨ doubleCong it-app s-eq a-eq ⟩
