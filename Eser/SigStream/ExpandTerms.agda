@@ -521,5 +521,228 @@ module _
     ----------------------------------------------------------------------------
     -- Injectivity of g*
     ----------------------------------------------------------------------------
+    -- Prove g and g' are injective, using the same mutual induction
+    -- pattern as g and g' themselves.
+    -- In contract to surjectivity, this proof is not difficult,
+    -- but there are many cases and many equalities to rewrite,
+    -- so the proofs are verbose.
+    ----------------------------------------------------------------------------
+
+    it-nullary-injective :
+        (c c' : cardToSet μ)
+        → it-nullary {S = S} c ≡ it-nullary c'
+        → c ≡ c'
+    it-nullary-injective c c refl = refl
+
+    null-is-not-app
+        : (c : cardToSet μ)
+        → (t : IndTerms 1)
+        → (a : ClosedTerms)
+        → it-nullary c ≡ it-app t a
+        → ⊥
+    null-is-not-app c t a ()
+
+    it-app-inj-left
+        : {n : ℕ}
+        → (t : IndTerms (suc n))
+        → (t' : IndTerms (suc n))
+        → (a a' : ClosedTerms)
+        → it-app t a ≡ it-app t' a'
+        → t ≡ t'
+    it-app-inj-left t t a a refl = refl
+
+    it-app-inj-right
+        : {n : ℕ}
+        → (t : IndTerms (suc n))
+        → (t' : IndTerms (suc n))
+        → (a a' : ClosedTerms)
+        → it-app t a ≡ it-app t' a'
+        → a ≡ a'
+    it-app-inj-right t t a a refl = refl
+
+    g-inj 
+        : (b b' : ℕ) 
+        → (i j : ℕ) 
+        → (p : i < b) 
+        → (p' : j < b')
+        → g b i p ≡ g b' j p' 
+        → i ≡ j
+    g'-inj 
+        : {n : ℕ}
+        → (b b' : ℕ) 
+        → {m : ℕ} → {v : Arity} → (t : ONT (suc n) m v)
+        → {m' : ℕ} → {v' : Arity} → (t' : ONT (suc n) m' v')
+        → (H : {x : ℕ} → x ∈∈ t → x < b)
+        → (H' : {x : ℕ} → x ∈∈ t' → x < b')
+        → g' b t H ≡ g' b' t' H'
+        → (m , v , t) ≡ (m' , v' , t')
+
+    g-inj (suc b) (suc b') i j p p' eq = g-inj-cases (ψ⁻¹ i) (ψ⁻¹ j) refl refl
+        where
+            g-inj-cases 
+                : (t t' : CONT)
+                → (t  ≡ ψ⁻¹ i)
+                → (t' ≡ ψ⁻¹ j)
+                → i ≡ j
+            g-inj-cases (0 , Nullary , ont-nullary c) 
+                        (0 , Nullary , ont-nullary c')
+                        eq-t eq-t' = i≡j
+                        where
+                            open G-Impl b i p
+                            open G-Impl b' j p' renaming (g-cases to g-cases')
+
+                            c≡c' : c ≡ c'
+                            c≡c' = it-nullary-injective c c' $
+                                begin 
+                                    it-nullary c
+                                ≡⟨⟩
+                                    g-cases (0 , Nullary , ont-nullary c) eq-t
+                                ≡⟨ {! g-cases-cong lemma also used in g-surj !} ⟩
+                                    g-cases (ψ⁻¹ i) refl
+                                ≡⟨⟩
+                                    g (suc b) i p
+                                ≡⟨ eq ⟩
+                                    g (suc b') j p'
+                                ≡⟨⟩
+                                    g-cases' (ψ⁻¹ j) refl
+                                ≡⟨ ? ⟩
+                                    g-cases' (0 , Nullary , ont-nullary c') eq-t'
+                                ≡⟨⟩
+                                    it-nullary c'
+                                ∎
+                            i≡j : i ≡ j
+                            i≡j = 
+                                begin 
+                                    i
+                                ≡⟨ sym $ ψ∘ψ⁻¹≈id i ⟩
+                                    ψ (ψ⁻¹ i)
+                                ≡⟨ cong ψ (sym $ eq-t) ⟩
+                                    ψ (0 , Nullary , ont-nullary c)
+                                ≡⟨ cong (λ x → ψ (0 , Nullary , ont-nullary x)) 
+                                        c≡c' ⟩
+                                    ψ (0 , Nullary , ont-nullary c')
+                                ≡⟨ cong ψ (eq-t') ⟩
+                                    ψ (ψ⁻¹ j)
+                                ≡⟨ ψ∘ψ⁻¹≈id j ⟩
+                                    j
+                                ∎
+                                
+            g-inj-cases (0 , Nullary , ont-nullary c) 
+                        (suc m' , Multiary , ont-app t' a')
+                        eq-t eq-t' = ⊥-elim $ null-is-not-app c t'' a'' eq'
+                            where
+                                open G-Impl b i p
+                                open G-Impl b' j p' 
+                                    renaming (g-cases to g-cases')
+                                open G-Impl.G-Cases b' j p' m' t' a' eq-t'
+                                    using ()
+                                    renaming (t' to t'' ; a' to a'')
+                                eq' : it-nullary c ≡ it-app t'' a''
+                                eq' =
+                                    begin 
+                                        it-nullary c
+                                    ≡⟨⟩
+                                        g-cases (0 , Nullary , ont-nullary c) eq-t
+                                    ≡⟨ {! g-cases-cong lemma also used in g-surj !} ⟩
+                                        g-cases (ψ⁻¹ i) refl
+                                    ≡⟨⟩
+                                        g (suc b) i p
+                                    ≡⟨ eq ⟩
+                                        g (suc b') j p'
+                                    ≡⟨⟩
+                                        g-cases' (ψ⁻¹ j) refl
+                                    ≡⟨ ? ⟩
+                                        g-cases' (suc m' , Multiary , ont-app t' a') eq-t'
+                                    ≡⟨⟩
+                                        it-app t'' a''
+                                    ∎
+                                    
+            g-inj-cases (suc m , Multiary , ont-app t a) 
+                        (0 , Nullary , ont-nullary c') 
+                        eq-t eq-t' = {! symmetric with previous case! !}
+            g-inj-cases (suc m , Multiary , ont-app t a) 
+                        (suc m' , Multiary , ont-app t' a') 
+                        eq-t eq-t' = {! !}
+                        where   
+                            -- Get a ≡ a' from recursive call
+                            -- Get t ≡ t' from g'-injectivity. This will also
+                            --  give m ≡ m'
+                            -- Then conclude with a cong of 
+                            --      (m , t , a) ≡ (m' , t' , a')
+                            --      under 
+                            --      (λ m t a → (suc m , Multiary , ont-app t a))
+
+
+                            open G-Impl b i p
+                            open G-Impl b' j p' 
+                                renaming (g-cases to g-cases')
+                            open G-Impl.G-Cases b i p m t a eq-t
+                                using (a<b)
+                                renaming (H to Hᵢ ; t' to tᵢ ; a' to aᵢ)
+                            open G-Impl.G-Cases b' j p' m' t' a' eq-t'
+                                using ()
+                                renaming (H to Hⱼ ; t' to tⱼ ; a' to aⱼ ; a<b to a'<b')
+
+                            q : it-app tᵢ aᵢ ≡ it-app tⱼ aⱼ
+                            q = 
+                                begin 
+                                    it-app tᵢ aᵢ
+                                ≡⟨⟩
+                                    g-cases (suc m , Multiary , ont-app t a) eq-t
+                                ≡⟨ {!  !} ⟩
+                                    g-cases (ψ⁻¹ i) refl
+                                ≡⟨⟩
+                                    g (suc b) i p
+                                ≡⟨ eq ⟩
+                                    g (suc b') j p'
+                                ≡⟨⟩
+                                    g-cases' (ψ⁻¹ j) refl
+                                ≡⟨ {!  !} ⟩
+                                    g-cases' (suc m' , Multiary , ont-app t' a') eq-t'
+                                ≡⟨⟩
+                                    it-app tⱼ aⱼ
+                                ∎
+                                
+                            aᵢ≡aⱼ : aᵢ ≡ aⱼ
+                            aᵢ≡aⱼ = it-app-inj-right tᵢ tⱼ aᵢ aⱼ q
+
+                            tᵢ≡tⱼ : tᵢ ≡ tⱼ
+                            tᵢ≡tⱼ = it-app-inj-left tᵢ tⱼ aᵢ aⱼ q
+
+                            -- This recursive call will satisfy the 
+                            -- termination checker because b and b' 
+                            -- are strict subterms of suc b and suc b'.
+                            a≡a' : a ≡ a'
+                            a≡a' = g-inj b b' a a' a<b a'<b' aᵢ≡aⱼ
+                            mt≡m't' : (m , t) ≡ (m' , t')
+                            mt≡m't' = {! Injectivity of g' !}
+                            i≡j : i ≡ j
+                            i≡j = 
+                                begin 
+                                    i
+                                ≡⟨ sym $ ψ∘ψ⁻¹≈id i ⟩
+                                    ψ (ψ⁻¹ i)
+                                ≡⟨ cong ψ (sym $ eq-t) ⟩
+                                    ψ (suc m , Multiary , ont-app t a)
+                                ≡⟨ doubleCong 
+                                    (λ (m , t) a 
+                                        → ψ (suc m , Multiary , ont-app t a))
+                                    mt≡m't' a≡a'
+                                 ⟩
+                                    ψ (suc m' , Multiary , ont-app t' a')
+                                ≡⟨ cong ψ (eq-t') ⟩
+                                    ψ (ψ⁻¹ j)
+                                ≡⟨ ψ∘ψ⁻¹≈id j ⟩
+                                    j
+                                ∎
+    -- Maybe prove that g' is injective at index 0?
+    g'-inj {n} b b' {0} {Multiary} (ont-multiary c) {0} {Multiary} (t') H H' eq = {! !}
+    g'-inj {n} b b' (ont-app t x) t' H H' eq = {! !}
+
     g*-inj : Injective _≡_ _≡_ g*
-    g*-inj = ?
+    g*-inj {i} {j} eq = g-inj (suc i) (suc j) i j (n<1+n i) (n<1+n j) eq
+        --where
+        --    gi≡gj : g (suc i) i (n<1+n i) ≡ g (suc j) j (n<1+n j)
+        --    gi≡gj = g*i≡g*j
+        --    i≡j : i ≡ j
+        --    i≡j = g-inj (suc i) (suc j) i j (n<1+n i) (n<1+n j) gi≡gj
