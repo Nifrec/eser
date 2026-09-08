@@ -280,7 +280,7 @@ module _
         → g b i i<b ≡ g b' i i<b'
     g-fuel-irrel = ?
 
-    -- Analogous for g'.
+    -- Analogue of previous lemma but for g':
     g'-fuel-irrel
         : (b b' : ℕ)
         → {n m : ℕ} → {a : Arity} → (t : ONT (suc n) m a)
@@ -288,16 +288,6 @@ module _
         → (H' : {x : ℕ} → x ∈∈ t → x < b')
         → g' b t H ≡ g' b' t H'
     g'-fuel-irrel = ?
-
-    --g-cases-cong
-    --    : (b i : ℕ)
-    --    → (i<1+b : i < suc b)
-    --    → (t t' : CONT)
-    --    → (p : t ≡ t')
-    --    → (q : t ≡ ψ⁻¹ i)
-    --    → (q' : t' ≡ ψ⁻¹ i)
-    --    → g-cases b i i<1+b t q ≡ g-cases b i i<i+b t' q'
-    --g-cases-cong _ _ refl refl refl = refl
 
     -- g-surj and g'-surj are defined in mutual induction, quite like
     -- how g and g' are defined in mutual induction themselves.
@@ -343,7 +333,6 @@ module _
                 ∎
     g-surj (it-app t a) IH = (b , i , i<b , eq)
         where
-
             IH' : {x : ClosedTerms} → x ⋤ t → g⁻¹-ex x
             IH' {x} x⋤t = IH {x} (⋤-there-left t x a x⋤t)
             t-rec : g'⁻¹-ex t
@@ -372,15 +361,10 @@ module _
             a-eq : g bₐ a' a<bₐ ≡ a
             a-eq = proj₂ $ proj₂ $ proj₂ a-rec 
 
-            --b : ℕ
-            --b = bₛ ⊔ bₐ -- This denotes (max bₛ bₐ)
             s : ONT 0 (suc m) Multiary
             s = ont-app s' a'
             s* : CONT
             s* = (suc m , Multiary , s)
-            --H : {x : ℕ} → x ∈∈ s → x < b
-            --H {a'} (∈∈-here a' a' s' refl) = m<n⇒m<o⊔n bₛ a<bₐ 
-            --H {x} (∈∈-there x a' s' x∈∈s) = m<n⇒m<n⊔o bₐ (Hₛ {x} x∈∈s)
 
             i : ℕ
             i = ψ s*
@@ -389,6 +373,7 @@ module _
             i<b : i < b
             i<b = n<1+n i
             open G-Impl i i i<b 
+
             -- #EXT: this lemma is duplicate with the previous case.
             g-cases-cong
                 : (t t' : CONT)
