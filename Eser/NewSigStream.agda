@@ -16,8 +16,9 @@ open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning
+--open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Vec
+open import Data.Vec.Functional -- Imports `Vector`, `toVec`, `fromVec` etc.
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
 
@@ -107,7 +108,62 @@ inductiveCase
     → {ζ' : ℕ∞}
     → (S : Signature (suc∞ μ') (suc∞ ζ'))
     → Term {suc∞ μ'} {suc∞ ζ'} S ≃ ℕ
-inductiveCase μ' {ζ'} S = ?
+inductiveCase μ' {ζ'} S = 
+    begin 
+        Term S
+    ≃⟨ {! nulmul lemma !} ⟩
+        FTerm
+    --≃⟨ {! nulmul lemma !} ⟩
+    --    NulTerm S ⊎ MulTerm S
+    ≃⟨ {! sum lemma !} ⟩
+        (^ μ ⊎ ℕ)
+    ≃⟨ {! merge lemma !} ⟩
+        ℕ
+    ∎
+    where
+        --MulTerm : Set
+        --MulTerm = Σ[ c ∈ ^ ζ ] Vec (Term S) (ar c)
+        μ : ℕ∞
+        μ = suc∞ μ'
+        ζ : ℕ∞
+        ζ = suc∞ ζ'
+
+
+        -- Same as Term S, but now the arguments are given
+        -- as a function (Vector A n  ≔ (Fin n → A)),
+        -- for which the termination checker allows to recurse on its elements
+        -- (for a Vec, this is not allowed).
+        data FTerm : Set where
+            f-nul : ^ μ → FTerm
+            f-mul : (c : ^ ζ) → Vector FTerm (ar {μ} S c) → FTerm
+
+        toFun : Term S → FTerm
+        toFun (nullary c) = f-nul c
+        --toFun (multiary c v) = f-mul c (Data.Vec.Functional.map toFun $ fromVec v)
+        toFun (multiary c v) = f-mul c {! g !}
+            where
+                -- # TODO: this doesn't sat the termination checker.
+                -- Possible solutions:
+                -- * Well-founded induction on subterm relation
+                --  (but then toFun becomes black box)
+                -- * Add intermediate "weightedTerms", and use fuel,
+                --  weight of a term is 1 + sum-of-child-weights. 
+                g : Vector FTerm (ar {μ} S c)
+                g i = toFun $ fromVec v i
+        toTerm : FTerm → Term S
+        toTerm (f-nul c) = nullary c
+        toTerm (f-mul c f) = multiary c (toVec g) -- (toVec (Data.Vec.Functional.map toTerm f))
+            where
+                g : Vector (Term S) (ar {μ} S c)
+                g i = toTerm $ f i
+
+        code-f : FTerm → ^ μ ⊎ ℕ
+        code-sum : ^ μ ⊎ ℕ → ℕ
+
+        code-f t = ?
+        code-sum = {! code-sum-lemma !}
+
+    
 
 sigenum
     : {μ ζ : ℕ∞}
