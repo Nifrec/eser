@@ -58,18 +58,6 @@ module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
         nullary : ^ μ → Term
         multiary : (c : ^ ζ) → Vec Term (ar c) → Term
 
-    -- Terms annotated with their height.
-    -- Computing the height on a Term is problematic because the termination
-    -- checker does not allow `map height v` on the vector v or arguments.
-    -- And we want to use heights precisely to have a tool to recurse on the
-    -- arguments! (So we cannot make such a tool in advance because circular...)
-    data HTerm : ℕ → Set where
-        h-nul : ^ μ → HTerm 0
-        h-mul 
-            : (c : ^ ζ) 
-            → (v : Vec (Σ[ h ∈ ℕ ] HTerm h) (ar c)) 
-            → HTerm (suc $ max $ map proj₁ v)
-
 pattern
     finsuc x = fin (suc x)
 
@@ -150,24 +138,18 @@ inductiveCase μ' {ζ'} S =
             f-mul : (c : ^ ζ) → Vector FTerm (ar {μ} S c) → FTerm
 
         toFun : Term S → FTerm
-        toFunFuelled : {b : ℕ} → (t : Term S) → (height t < b) → FTerm
-        toTermFuelled {suc b} t p = ?
+        argVecToFuns : {n : ℕ} → Vec (Term {μ} S) n → Vector FTerm n
+
+        argVecToFuns [] = Data.Vec.Functional.[]
+        argVecToFuns (t ∷ ts) Fin.zero = toFun t 
+        argVecToFuns (t ∷ ts) (Fin.suc i) = argVecToFuns ts i
 
         toFun (nullary c) = f-nul c
-        --toFun (multiary c v) = f-mul c (Data.Vec.Functional.map toFun $ fromVec v)
-        toFun (multiary c v) = f-mul c {! g !}
-            where
-                -- # TODO: this doesn't sat the termination checker.
-                -- Possible solutions:
-                -- * Well-founded induction on subterm relation
-                --  (but then toFun becomes black box)
-                -- * Add intermediate "weightedTerms", and use fuel,
-                --  weight of a term is 1 + sum-of-child-weights. 
-                g : Vector FTerm (ar {μ} S c)
-                g i = toFun $ fromVec v i
+        toFun (multiary c v) = f-mul c (argVecToFuns v)
+
         toTerm : FTerm → Term S
         toTerm (f-nul c) = nullary c
-        toTerm (f-mul c f) = multiary c (toVec g) -- (toVec (Data.Vec.Functional.map toTerm f))
+        toTerm (f-mul c f) = multiary c (toVec g)
             where
                 g : Vector (Term S) (ar {μ} S c)
                 g i = toTerm $ f i
