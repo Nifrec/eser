@@ -29,10 +29,6 @@ open import Eser.Equivalences.Properties
 
 module Eser.NewSigStream where
 
-infix 50 ^_
-^_ : ℕ∞ → Set
-^ c = cardToSet c
-
 -- sigcard μ ζ gives the cardinality of the term algebra
 -- of a Signature μ ζ.
 -- Note that this does not depend on the actual constructors,
@@ -154,12 +150,54 @@ inductiveCase μ' {ζ'} S =
                 g : Vector (Term S) (ar {μ} S c)
                 g i = toTerm $ f i
 
-        code-f : FTerm → ^ μ ⊎ ℕ
-        code-sum : ^ μ ⊎ ℕ → ℕ
+        open import Eser.Coding
+        open Eser.Coding.WithMu μ' hiding (μ)
+        open Eser.Coding.WithZeta ζ' hiding (ζ)
 
-        code-f t = ?
-        code-sum = {! code-sum-lemma !}
+        --code-vec : {n : ℕ} → Vec ℕ (suc n) → ℕ
+        --code-vec {n} v = ?
+        ---- Note: decode-vec uses a different decoding for each length.
+        ---- So one must *explicitly* give the target length as well.
+        --decode-vec : (n : ℕ) → ℕ → Vec ℕ (suc n)
+        --decode-vec n i = ?
 
+        --code-sum : ^ μ ⊎ ℕ → ℕ
+        --code-sum = {! code-sum-lemma !}
+        --decode-sum : ℕ → ^ μ ⊎ ℕ
+        --decode-sum = {!  !}
+
+        ---- #TODO: (de)code pair depends also on ζ
+        ---- If ^ ζ is finite then there are only finitely many indices.
+        ---- Need two lemmas: code ℕ × ℕ and code (Fin n) × ℕ.
+        --code-pair : ^ ζ × ℕ → ℕ
+        --code-pair = ?
+        --decode-pair : ℕ → ^ ζ × ℕ 
+        --decode-pair = ?
+
+        code-fterm : FTerm → ℕ
+        code-fterm (f-nul c) = code-sum (inj₁ c)
+        code-fterm (f-mul c v) = (code-sum ∘ inj₂ ∘ code-pair) (c , v-code)
+            where
+                v' : Vector ℕ (ar {μ} S c)
+                v' i = code-fterm $ v i
+                v-code : ℕ
+                v-code = code-vec (toVec v')
+
+        decode-fterm : ℕ → FTerm
+        decode-fterm i = cases (decode-sum i)
+            where
+                cases : ^ μ ⊎ ℕ → FTerm
+                cases (inj₁ c) = f-nul c
+                cases (inj₂ j) = f-mul c v
+                    where
+                        c = proj₁ $ decode-pair j
+                        v' : Vec ℕ (ar {μ} S c)
+                        v' = decode-vec (S c) $ proj₂ $ decode-pair j
+                        v : Vector FTerm (ar {μ} S c)
+                        -- This probably raises termination issues
+                        v i = decode-fterm $ lookup v' i
+                        
+                
     
 
 sigenum

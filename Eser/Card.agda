@@ -76,6 +76,11 @@ cardToSet : ℕ∞ → Set
 cardToSet (fin 0) = ⊥
 cardToSet (fin (suc n)) = Fin (suc n) -- Fin 0 cannot be constructed!
 cardToSet ∞ = ℕ
+
+infix 50 ^_
+^_ : ℕ∞ → Set
+^ c = cardToSet c
+
  
 -- Get the default < relation on a prefix of ℕ, or on ℕ.
 cardTo< : {n : ℕ∞} → Rel (cardToSet n) 0ℓ
