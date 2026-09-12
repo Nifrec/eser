@@ -17,8 +17,12 @@ open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 --open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
+open import Relation.Unary using (_⊆_)
 open import Data.Vec
 open import Data.Vec.Functional -- Imports `Vector`, `toVec`, `fromVec` etc.
+open import Data.Vec.Membership.Propositional
+open import Data.Vec.Relation.Unary.All as All -- renaming (map to All-map ; lookup to All-lookup)
+open import Data.Vec.Relation.Unary.All.Properties
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
 
@@ -26,6 +30,8 @@ open import Eser.Card
 open import Eser.Signature
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
+open import Eser.Aux using (ℓ<m<1+n→ℓ<n)
+
 
 module Eser.NewSigStream where
 
@@ -47,8 +53,9 @@ sigset : ℕ∞ → ℕ∞ → Set
 sigset μ ζ = ^ (sigcard μ ζ)
 
 module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
-    ar : ^ ζ → ℕ
-    ar c = suc (S c)
+    private
+        ar : ^ ζ → ℕ
+        ar c = suc (S c)
 
     data Term : Set where
         nullary : ^ μ → Term
@@ -123,6 +130,11 @@ inductiveCase μ' {ζ'} S =
         μ = suc∞ μ'
         ζ : ℕ∞
         ζ = suc∞ ζ'
+        ar : ^ ζ → ℕ
+        ar c = suc (S c)
+
+        open import Eser.NatCoding
+        open Eser.NatCoding.WithMuZeta μ' ζ' hiding (μ ; ζ)
 
 
         -- Same as Term S, but now the arguments are given
@@ -131,7 +143,7 @@ inductiveCase μ' {ζ'} S =
         -- (for a Vec, this is not allowed).
         data FTerm : Set where
             f-nul : ^ μ → FTerm
-            f-mul : (c : ^ ζ) → Vector FTerm (ar {μ} S c) → FTerm
+            f-mul : (c : ^ ζ) → Vector FTerm (ar c) → FTerm
 
         toFun : Term S → FTerm
         argVecToFuns : {n : ℕ} → Vec (Term {μ} S) n → Vector FTerm n
@@ -147,12 +159,9 @@ inductiveCase μ' {ζ'} S =
         toTerm (f-nul c) = nullary c
         toTerm (f-mul c f) = multiary c (toVec g)
             where
-                g : Vector (Term S) (ar {μ} S c)
+                g : Vector (Term S) (ar c)
                 g i = toTerm $ f i
 
-        open import Eser.Coding
-        open Eser.Coding.WithMu μ' hiding (μ)
-        open Eser.Coding.WithZeta ζ' hiding (ζ)
 
         --code-vec : {n : ℕ} → Vec ℕ (suc n) → ℕ
         --code-vec {n} v = ?
@@ -173,30 +182,71 @@ inductiveCase μ' {ζ'} S =
         --code-pair = ?
         --decode-pair : ℕ → ^ ζ × ℕ 
         --decode-pair = ?
+        decode-multiary-lemma
+            : (i w y : ℕ)
+            → (c : ^ ζ)
+            → (v : Vec ℕ (ar c))
+            → decode-sum i ≡ inj₂ w
+            → decode-pair w ≡ (c , y)
+            → decode-vec (S c) y ≡ v
+            → All (_< i) v
+        decode-multiary-lemma = ?
 
         code-fterm : FTerm → ℕ
         code-fterm (f-nul c) = code-sum (inj₁ c)
         code-fterm (f-mul c v) = (code-sum ∘ inj₂ ∘ code-pair) (c , v-code)
             where
-                v' : Vector ℕ (ar {μ} S c)
+                v' : Vector ℕ (ar c)
                 v' i = code-fterm $ v i
                 v-code : ℕ
                 v-code = code-vec (toVec v')
 
-        decode-fterm : ℕ → FTerm
-        decode-fterm i = cases (decode-sum i)
+        -- Decoding an ℕ into an FTerm cannot be done by structural recursion;
+        -- we get a number i, and if it encodes a multiary-constructed
+        -- term then we also get a Vec ℕ of arguments (as numbers).
+        -- There is no structural relation between these numbers
+        -- and i. However, we can *prove* that they are all smaller than i,
+        -- which means we can use the fuel technique 
+        -- (or (ℕ, <)-wellfounded-recursion, but the fuel technique makes it
+        -- easier to prove that decode-fterm is inverse to code-fterm).
+        decode-fterm-fuelled : {b i : ℕ} → i < b → FTerm
+        decode-fterm-fuelled {b@(suc b')} {i} i<b = cases (decode-sum i) refl
             where
-                cases : ^ μ ⊎ ℕ → FTerm
-                cases (inj₁ c) = f-nul c
-                cases (inj₂ j) = f-mul c v
+                cases : (j : ^ μ ⊎ ℕ) → (decode-sum i ≡ j) → FTerm
+                cases (inj₁ c) _ = f-nul c
+                cases (inj₂ w) eq = f-mul c v
                     where
-                        c = proj₁ $ decode-pair j
-                        v' : Vec ℕ (ar {μ} S c)
-                        v' = decode-vec (S c) $ proj₂ $ decode-pair j
-                        v : Vector FTerm (ar {μ} S c)
-                        -- This probably raises termination issues
-                        v i = decode-fterm $ lookup v' i
+                        c : ^ ζ
+                        c = proj₁ $ decode-pair w
+                        y : ℕ
+                        y = proj₂ $ decode-pair w
+
+                        v' : Vec ℕ (ar c)
+                        v' = decode-vec (S c) y
+
+                        v'<i : All (_< i) v'
+                        v'<i = decode-multiary-lemma i w y c v' eq refl refl
+
+                        <i⊆<b' : (_< i) ⊆ (_< b')
+                        <i⊆<b' {x} x<i = ℓ<m<1+n→ℓ<n x<i i<b
+
+                        v'<b' : All (_< b') v'
+                        v'<b' = All.map <i⊆<b' v'<i
+
+                        recurse
+                            : {n : ℕ}
+                            → (n ∈ v')
+                            → FTerm
+                        recurse {n} n∈v' = decode-fterm-fuelled {b'} {n} n<b'
+                            where
+                                n<b' : n < b'
+                                n<b' = All.lookup v'<b' n∈v'
+
+                        v : Vector FTerm (ar c)
+                        v = fromVec $ mapWith∈ v' recurse
                         
+        decode-fterm : ℕ → FTerm
+        decode-fterm i = decode-fterm-fuelled {suc i} {i} (n<1+n i)
                 
     
 

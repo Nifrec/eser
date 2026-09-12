@@ -251,6 +251,13 @@ S[m∸Sn]≡m∸n {m} {n} Sn≤m =
     ≡⟨⟩
         m ∸ n 
     ∎
+
+ℓ<m<1+n→ℓ<n 
+    : {ℓ m n : ℕ} 
+    → ℓ < m 
+    → m < suc n 
+    → ℓ < n
+ℓ<m<1+n→ℓ<n {ℓ} {m} {n} ℓ<m m<1+n = <-≤-trans ℓ<m (s≤s⁻¹ m<1+n)
     
 
 m∸Sn≤m∸n

@@ -4,7 +4,8 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
-open import Level hiding (suc)
+{-# OPTIONS --allow-unsolved-metas #-}
+
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum
@@ -23,6 +24,7 @@ open import Eser.Card
 open import Eser.Signature
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
+
 
 module Eser.NatCoding where
 
@@ -115,6 +117,7 @@ module WithMu (μ' : ℕ∞) where
         : (i w : ℕ)
         → decode-sum i ≡ inj₂ w
         → w < i
+    decode-sum-lemma i w eq = ?
 
 module WithZeta (ζ' : ℕ∞) where
     ζ : ℕ∞
@@ -139,10 +142,8 @@ module WithZeta (ζ' : ℕ∞) where
 
 
 module WithMuZeta (μ' ζ' : ℕ∞) where
-    open WithMu μ'
-    open WithZeta ζ'
-
-
+    open WithMu μ' public
+    open WithZeta ζ' public
 
     decode-sum-pair-lemma
         : (i w y : ℕ)
@@ -158,12 +159,3 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
             w<i = decode-sum-lemma i w eq-i
     
     -- #TODO: move to NewSigStream cuz we have no `ar` here...
-    decode-multiary-lemma
-        : (i w y : ℕ)
-        → (c : ^ ζ)
-        → (v : Vec ℕ (ar c))
-        → decode-sum i ≡ inj₂ w
-        → decode-pair w ≡ (c , y)
-        → decode-vec (ar c) y ≡ v
-        → All (_< i) v
-    decode-multiary-lemma = ?
