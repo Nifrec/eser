@@ -255,36 +255,52 @@ inductiveCase μ' {ζ'} S =
             module Decode where
                 cases : (j : ^ μ ⊎ ℕ) → (decode-sum i ≡ j) → T
                 cases (inj₁ c) _ = nullary c
-                cases (inj₂ w) eq = multiary c v
-                    where
+                cases (inj₂ w) eq-i = multiary c (getVec (c , y) refl)
+                    module DecodeCases where
                         c : ^ ζ
                         c = proj₁ $ decode-pair w
                         y : ℕ
                         y = proj₂ $ decode-pair w
 
-                        v' : Vec ℕ (ar c)
-                        v' = decode-vec (S c) y
-
-                        v'<i : All (_< i) v'
-                        v'<i = decode-multiary-lemma i w y c v' eq refl refl
-
-                        <i⊆<b' : (_< i) ⊆ (_< b')
-                        <i⊆<b' {x} x<i = ℓ<m<1+n→ℓ<n x<i i<b
-
-                        v'<b' : All (_< b') v'
-                        v'<b' = All.map <i⊆<b' v'<i
-
-                        recurse
-                            : {n : ℕ}
-                            → (n ∈ v')
-                            → T
-                        recurse {n} n∈v' = decode-term-fuelled {b'} {n} n<b'
+                        getVec 
+                            : (x : ^ ζ × ℕ) 
+                            → (decode-pair w ≡ x) 
+                            → Vec T (ar $ proj₁ x)
+                        getVec (c , y) eq-w = v''
                             where
-                                n<b' : n < b'
-                                n<b' = All.lookup v'<b' n∈v'
+                                v' : Vec ℕ (ar c)
+                                v' = decode-vec (S c) y
 
-                        v : Vec T (ar c)
-                        v = mapWith∈ v' recurse
+                                v'<i : All (_< i) v'
+                                v'<i = decode-multiary-lemma i w y c v' eq-i eq-w refl
+
+                                <i⊆<b' : (_< i) ⊆ (_< b')
+                                <i⊆<b' {x} x<i = ℓ<m<1+n→ℓ<n x<i i<b
+
+                                v'<b' : All (_< b') v'
+                                v'<b' = All.map <i⊆<b' v'<i
+
+                                recurse
+                                    : {n : ℕ}
+                                    → (n ∈ v')
+                                    → T
+                                recurse {n} n∈v' = decode-term-fuelled {b'} {n} n<b'
+                                    where
+                                        n<b' : n < b'
+                                        n<b' = All.lookup v'<b' n∈v'
+
+                                v'' : Vec T (ar c)
+                                v'' = mapWith∈ v' recurse
+
+                -- This is not used to produce output,
+                -- but used in the inversity proofs, 
+                -- which open the `Decode` module.
+                cases-lemma 
+                    : (j j' : ^ μ ⊎ ℕ)
+                    → (p : decode-sum i ≡ j)
+                    → (q : j ≡ j')
+                    → cases j p ≡ cases j' (trans p q)
+                cases-lemma j j' refl refl = refl
                         
         decode-term : ℕ → T
         decode-term i = decode-term-fuelled {suc i} {i} (n<1+n i)
@@ -310,18 +326,57 @@ inductiveCase μ' {ζ'} S =
 
                 open Decode i {i} (n<1+n i)
 
-                cases-lemma 
-                    : (j j' : ^ μ ⊎ ℕ)
-                    → (p : decode-sum i ≡ j)
-                    → (q : j ≡ j')
-                    → cases j p ≡ cases j' (trans p q)
-                cases-lemma j j' refl refl = refl
-
                 eq : decode-sum (code-sum (inj₁ c)) ≡ inj₁ c
-                eq = {! inversity for (de)code-sum.  !}
+                eq = decode-code-sum $ inj₁ c
             
-        decode-code-term (multiary c v) = {! !}
-            
+        decode-code-term (multiary c v) = 
+            ≡begin 
+                dec (enc (multiary c v))
+            ≡⟨⟩
+                (dec $ code-sum $ inj₂ $ code-pair 
+                    (c , code-vec (code-term-vec v)))
+            ≡⟨⟩
+                cases (decode-sum $ code-sum i) refl
+            ≡⟨ cases-lemma (decode-sum (code-sum i)) i refl sum-eq ⟩
+                cases i sum-eq 
+            ≡⟨⟩
+                cases (inj₂ w) sum-eq
+            ≡⟨⟩
+                multiary c' (getVec (c' , y') refl)
+            ≡⟨ cases-output-cong (c' , y') (c , y) refl c'y'≡cy ⟩
+                multiary c (getVec (c , y) (c'y'≡cy))
+            ≡⟨ cong (multiary c) eq-v ⟩
+                multiary c v
+            ≡∎
+            where
+                i : ^ μ ⊎ ℕ
+                i = inj₂ $ code-pair (c , code-vec (code-term-vec v))
+                w : ℕ
+                w = code-pair (c , code-vec (code-term-vec v))
+                y : ℕ
+                y = code-vec (code-term-vec v)
+
+                open Decode (code-sum i) {code-sum i} (n<1+n $ code-sum i)
+
+                sum-eq : (decode-sum $ code-sum i) ≡ i
+                sum-eq = decode-code-sum i
+
+                open DecodeCases w sum-eq renaming (c to c' ; y to y')
+
+                c'y'≡cy : (c' , y') ≡ (c , y)
+                c'y'≡cy = decode-code-pair (c , code-vec (code-term-vec v))
+
+                cases-output-cong
+                    : (x x' : ^ ζ × ℕ)
+                    → (eq-w : decode-pair w ≡ x)
+                    → (eq-x : x ≡ x')
+                    → multiary (proj₁ x) (getVec x eq-w) 
+                    ≡ multiary (proj₁ x') (getVec x' (trans eq-w eq-x))
+                cases-output-cong x x' refl refl = refl
+
+                eq-v : getVec (c , y) (c'y'≡cy) ≡ v
+                eq-v = ?
+
 
 sigenum
     : {μ ζ : ℕ∞}
