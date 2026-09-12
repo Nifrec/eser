@@ -16,12 +16,12 @@ open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
---open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
+open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Relation.Unary using (_⊆_)
 open import Data.Vec
-open import Data.Vec.Functional -- Imports `Vector`, `toVec`, `fromVec` etc.
+open import Data.Vec.Functional hiding (_∷_)
 open import Data.Vec.Membership.Propositional
-open import Data.Vec.Relation.Unary.All as All -- renaming (map to All-map ; lookup to All-lookup)
+open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Vec.Relation.Unary.All.Properties
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
@@ -30,7 +30,7 @@ open import Eser.Card
 open import Eser.Signature
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
-open import Eser.Aux using (ℓ<m<1+n→ℓ<n)
+open import Eser.Aux using (_≈_ ; ℓ<m<1+n→ℓ<n)
 
 
 module Eser.NewSigStream where
@@ -131,6 +131,10 @@ inductiveCase μ' {ζ'} S =
         ar : ^ ζ → ℕ
         ar c = suc (S c)
 
+        T : Set
+        T = Term {μ} S
+        
+
         open import Eser.NatCoding
         open Eser.NatCoding.WithMuZeta μ' ζ' hiding (μ ; ζ)
 
@@ -170,29 +174,88 @@ inductiveCase μ' {ζ'} S =
             → All (_< i) v
         decode-multiary-lemma = ?
 
-        code-fterm : FTerm → ℕ
-        code-fterm (f-nul c) = code-sum (inj₁ c)
-        code-fterm (f-mul c v) = (code-sum ∘ inj₂ ∘ code-pair) (c , v-code)
-            where
-                v' : Vector ℕ (ar c)
-                v' i = code-fterm $ v i
-                v-code : ℕ
-                v-code = code-vec (toVec v')
+        --code-fterm : FTerm → ℕ
+        --code-fterm (f-nul c) = code-sum (inj₁ c)
+        --code-fterm (f-mul c v) = (code-sum ∘ inj₂ ∘ code-pair) (c , v-code)
+        --    where
+        --        v' : Vector ℕ (ar c)
+        --        v' i = code-fterm $ v i
+        --        v-code : ℕ
+        --        v-code = code-vec (toVec v')
 
-        -- Decoding an ℕ into an FTerm cannot be done by structural recursion;
+        ---- Decoding an ℕ into an FTerm cannot be done by structural recursion;
+        ---- we get a number i, and if it encodes a multiary-constructed
+        ---- term then we also get a Vec ℕ of arguments (as numbers).
+        ---- There is no structural relation between these numbers
+        ---- and i. However, we can *prove* that they are all smaller than i,
+        ---- which means we can use the fuel technique 
+        ---- (or (ℕ, <)-wellfounded-recursion, but the fuel technique makes it
+        ---- easier to prove that decode-fterm is inverse to code-fterm).
+        --decode-fterm-fuelled : {b i : ℕ} → i < b → FTerm
+        --decode-fterm-fuelled {b@(suc b')} {i} i<b = cases (decode-sum i) refl
+        --    where
+        --        cases : (j : ^ μ ⊎ ℕ) → (decode-sum i ≡ j) → FTerm
+        --        cases (inj₁ c) _ = f-nul c
+        --        cases (inj₂ w) eq = f-mul c v
+        --            where
+        --                c : ^ ζ
+        --                c = proj₁ $ decode-pair w
+        --                y : ℕ
+        --                y = proj₂ $ decode-pair w
+
+        --                v' : Vec ℕ (ar c)
+        --                v' = decode-vec (S c) y
+
+        --                v'<i : All (_< i) v'
+        --                v'<i = decode-multiary-lemma i w y c v' eq refl refl
+
+        --                <i⊆<b' : (_< i) ⊆ (_< b')
+        --                <i⊆<b' {x} x<i = ℓ<m<1+n→ℓ<n x<i i<b
+
+        --                v'<b' : All (_< b') v'
+        --                v'<b' = All.map <i⊆<b' v'<i
+
+        --                recurse
+        --                    : {n : ℕ}
+        --                    → (n ∈ v')
+        --                    → FTerm
+        --                recurse {n} n∈v' = decode-fterm-fuelled {b'} {n} n<b'
+        --                    where
+        --                        n<b' : n < b'
+        --                        n<b' = All.lookup v'<b' n∈v'
+
+        --                v : Vector FTerm (ar c)
+        --                v = fromVec $ mapWith∈ v' recurse
+                        
+        --decode-fterm : ℕ → FTerm
+        --decode-fterm i = decode-fterm-fuelled {suc i} {i} (n<1+n i)
+                
+    
+        code-term : T → ℕ
+        code-term-vec : {n : ℕ} → Vec T n → Vec ℕ n
+
+        code-term (nullary c) = code-sum (inj₁ c)
+        code-term (multiary c v) = (code-sum ∘ inj₂ ∘ code-pair) 
+            (c , (code-vec ∘ code-term-vec) v)
+
+        code-term-vec {0} [] = Vec.[]
+        code-term-vec {suc n} (t ∷ ts) = (code-term t) ∷ (code-term-vec {n} ts)
+
+
+        -- Decoding an ℕ into a Term cannot be done by structural recursion;
         -- we get a number i, and if it encodes a multiary-constructed
         -- term then we also get a Vec ℕ of arguments (as numbers).
         -- There is no structural relation between these numbers
         -- and i. However, we can *prove* that they are all smaller than i,
         -- which means we can use the fuel technique 
         -- (or (ℕ, <)-wellfounded-recursion, but the fuel technique makes it
-        -- easier to prove that decode-fterm is inverse to code-fterm).
-        decode-fterm-fuelled : {b i : ℕ} → i < b → FTerm
-        decode-fterm-fuelled {b@(suc b')} {i} i<b = cases (decode-sum i) refl
-            where
-                cases : (j : ^ μ ⊎ ℕ) → (decode-sum i ≡ j) → FTerm
-                cases (inj₁ c) _ = f-nul c
-                cases (inj₂ w) eq = f-mul c v
+        -- easier to prove that decode-term is inverse to code-term).
+        decode-term-fuelled : {b i : ℕ} → i < b → T
+        decode-term-fuelled {b@(suc b')} {i} i<b = cases (decode-sum i) refl
+            module Decode where
+                cases : (j : ^ μ ⊎ ℕ) → (decode-sum i ≡ j) → T
+                cases (inj₁ c) _ = nullary c
+                cases (inj₂ w) eq = multiary c v
                     where
                         c : ^ ζ
                         c = proj₁ $ decode-pair w
@@ -214,19 +277,51 @@ inductiveCase μ' {ζ'} S =
                         recurse
                             : {n : ℕ}
                             → (n ∈ v')
-                            → FTerm
-                        recurse {n} n∈v' = decode-fterm-fuelled {b'} {n} n<b'
+                            → T
+                        recurse {n} n∈v' = decode-term-fuelled {b'} {n} n<b'
                             where
                                 n<b' : n < b'
                                 n<b' = All.lookup v'<b' n∈v'
 
-                        v : Vector FTerm (ar c)
-                        v = fromVec $ mapWith∈ v' recurse
+                        v : Vec T (ar c)
+                        v = mapWith∈ v' recurse
                         
-        decode-fterm : ℕ → FTerm
-        decode-fterm i = decode-fterm-fuelled {suc i} {i} (n<1+n i)
-                
-    
+        decode-term : ℕ → T
+        decode-term i = decode-term-fuelled {suc i} {i} (n<1+n i)
+
+        dec = decode-term
+        enc = code-term
+        decode-code-term : decode-term ∘ code-term ≈ id
+        decode-code-term (nullary c) = 
+            ≡begin 
+                dec (enc (nullary c))
+            ≡⟨⟩
+                dec (code-sum (inj₁ c))
+            ≡⟨⟩
+                cases (decode-sum (code-sum (inj₁ c))) refl
+            ≡⟨ cases-lemma  (decode-sum (code-sum (inj₁ c))) (inj₁ c) refl eq ⟩
+                cases (inj₁ c) eq
+            ≡⟨⟩
+                nullary c
+            ≡∎
+            where
+                i : ℕ
+                i = code-sum (inj₁ c)
+
+                open Decode i {i} (n<1+n i)
+
+                cases-lemma 
+                    : (j j' : ^ μ ⊎ ℕ)
+                    → (p : decode-sum i ≡ j)
+                    → (q : j ≡ j')
+                    → cases j p ≡ cases j' (trans p q)
+                cases-lemma j j' refl refl = refl
+
+                eq : decode-sum (code-sum (inj₁ c)) ≡ inj₁ c
+                eq = {! inversity for (de)code-sum.  !}
+            
+        decode-code-term (multiary c v) = {! !}
+            
 
 sigenum
     : {μ ζ : ℕ∞}

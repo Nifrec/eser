@@ -42,6 +42,7 @@ A ↔ B = (A → B) × (B → A)
 -- but may have different implementations.
 -- A more general, but rather overcomplicated and confusing, definition
 -- can be found in the stdlib in Function.Relation.Binary.Setoid.Equality.
+infix -10 _≈_ -- This allows to write `g ∘ f ≈ h`;  _∘_ has precedence 0.
 _≈_ : {A : Set} → {B : A → Set} → Rel ((a : A) → B a) 0ℓ
 _≈_ {A} {B} f g = (a : A) → f a ≡ g a
 
