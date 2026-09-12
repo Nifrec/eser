@@ -267,7 +267,7 @@ inductiveCase μ' {ζ'} S =
                             → (decode-pair w ≡ x) 
                             → Vec T (ar $ proj₁ x)
                         getVec (c , y) eq-w = v''
-                            where
+                            module GetVec where
                                 v' : Vec ℕ (ar c)
                                 v' = decode-vec (S c) y
 
@@ -375,7 +375,25 @@ inductiveCase μ' {ζ'} S =
                 cases-output-cong x x' refl refl = refl
 
                 eq-v : getVec (c , y) (c'y'≡cy) ≡ v
-                eq-v = ?
+                eq-v = 
+                    ≡begin 
+                        getVec (c , y) (c'y'≡cy) 
+                    ≡⟨⟩
+                        mapWith∈ (decode-vec (S c) y) 
+                            (decode-term-fuelled ∘ (All.lookup v'<b'))
+                    ≡⟨ {! decode-code-vec lemma plus that 
+                            `All` proofs transport under eqs of vectors. !} ⟩
+                        mapWith∈ (code-term-vec v)
+                            (decode-term-fuelled ∘ (All.lookup v<b'))
+                    ≡⟨ ? ⟩
+                        v
+                    ≡∎
+                    where
+                        open GetVec c y c'y'≡cy
+
+                        v<b' : All (_< (suc (code-sum i))) (code-term-vec v)
+                        v<b' = ?
+                    
 
 
 sigenum
