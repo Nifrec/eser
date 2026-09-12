@@ -20,6 +20,7 @@ open import Data.Vec.Relation.Unary.All
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
 
+open import Eser.Aux using (_≈_)
 open import Eser.Card
 open import Eser.Signature
 open import Eser.Equivalences.Notation
@@ -36,6 +37,11 @@ code-vec {n} v = ?
 decode-vec : (n : ℕ) → ℕ → Vec ℕ (suc n)
 decode-vec n i = ?
 
+decode-code-vec : {n : ℕ} → (decode-vec n) ∘ code-vec ≈ id
+decode-code-vec = ?
+
+code-decode-vec : {n : ℕ} → code-vec ∘ (decode-vec n) ≈ id
+code-decode-vec = ?
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
@@ -119,6 +125,12 @@ module WithMu (μ' : ℕ∞) where
         → w < i
     decode-sum-lemma i w eq = ?
 
+    decode-code-sum : decode-sum ∘ code-sum ≈ id
+    decode-code-sum = ?
+
+    code-decode-sum : code-sum ∘ decode-sum ≈ id
+    code-decode-sum = ?
+
 module WithZeta (ζ' : ℕ∞) where
     ζ : ℕ∞
     ζ = suc∞ ζ'
@@ -139,6 +151,11 @@ module WithZeta (ζ' : ℕ∞) where
     decode-pair-lemma i y x eq = ?
 
 
+    decode-code-pair : decode-pair ∘ code-pair ≈ id
+    decode-code-pair = ?
+
+    code-decode-pair : code-pair ∘ decode-pair ≈ id
+    code-decode-pair = ?
 
 
 module WithMuZeta (μ' ζ' : ℕ∞) where
@@ -157,5 +174,3 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
             y≤w = decode-pair-lemma w y x eq-w
             w<i : w < i
             w<i = decode-sum-lemma i w eq-i
-    
-    -- #TODO: move to NewSigStream cuz we have no `ar` here...
