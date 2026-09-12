@@ -124,8 +124,6 @@ inductiveCase μ' {ζ'} S =
         ℕ
     ∎
     where
-        --MulTerm : Set
-        --MulTerm = Σ[ c ∈ ^ ζ ] Vec (Term S) (ar c)
         μ : ℕ∞
         μ = suc∞ μ'
         ζ : ℕ∞
@@ -162,26 +160,6 @@ inductiveCase μ' {ζ'} S =
                 g : Vector (Term S) (ar c)
                 g i = toTerm $ f i
 
-
-        --code-vec : {n : ℕ} → Vec ℕ (suc n) → ℕ
-        --code-vec {n} v = ?
-        ---- Note: decode-vec uses a different decoding for each length.
-        ---- So one must *explicitly* give the target length as well.
-        --decode-vec : (n : ℕ) → ℕ → Vec ℕ (suc n)
-        --decode-vec n i = ?
-
-        --code-sum : ^ μ ⊎ ℕ → ℕ
-        --code-sum = {! code-sum-lemma !}
-        --decode-sum : ℕ → ^ μ ⊎ ℕ
-        --decode-sum = {!  !}
-
-        ---- #TODO: (de)code pair depends also on ζ
-        ---- If ^ ζ is finite then there are only finitely many indices.
-        ---- Need two lemmas: code ℕ × ℕ and code (Fin n) × ℕ.
-        --code-pair : ^ ζ × ℕ → ℕ
-        --code-pair = ?
-        --decode-pair : ℕ → ^ ζ × ℕ 
-        --decode-pair = ?
         decode-multiary-lemma
             : (i w y : ℕ)
             → (c : ^ ζ)
