@@ -10,7 +10,7 @@
 open import Level hiding (suc)
 open import Data.Nat
 open import Data.Nat.Properties
-open import Data.Sum
+open import Data.Sum hiding (reduce)
 open import Data.Product
 open import Data.Empty
 open import Relation.Nullary
@@ -281,17 +281,17 @@ inductiveCase μ' {ζ'} S =
                                 v'<b' : All (_< b') v'
                                 v'<b' = All.map <i⊆<b' v'<i
 
-                                recurse
-                                    : {n : ℕ}
-                                    → (n ∈ v')
-                                    → T
-                                recurse {n} n∈v' = decode-term-fuelled {b'} {n} n<b'
-                                    where
-                                        n<b' : n < b'
-                                        n<b' = All.lookup v'<b' n∈v'
+                                --recurse
+                                --    : {n : ℕ}
+                                --    → (n ∈ v')
+                                --    → T
+                                --recurse {n} n∈v' = decode-term-fuelled {b'} {n} n<b'
+                                --    where
+                                --        n<b' : n < b'
+                                --        n<b' = All.lookup v'<b' n∈v'
 
                                 v'' : Vec T (ar c)
-                                v'' = mapWith∈ v' recurse
+                                v'' = reduce decode-term-fuelled v'<b' --mapWith∈ v' recurse
 
                 -- This is not used to produce output,
                 -- but used in the inversity proofs, 
@@ -318,65 +318,75 @@ inductiveCase μ' {ζ'} S =
         dec = decode-term
         enc = code-term
 
-        -- This won't work without funext...
-        All-lookup-lemma
-            : {A : Set}
-            → {m : ℕ}
-            → {P : A → Set}
-            → {as : Vec A m}
-            → {a : A}
-            → (r : P a)
-            → (rs : All P as)
-            → ((All.lookup (r All.∷ rs)) ∘ (Any.there)) ≡ All.lookup rs
-        All-lookup-lemma H = ?
-
         -- Like `encode-term`, we need define one way of the inversity
         -- of decoding-encoding via mutual induction,
         -- in order to avoid termination issues with vectors.
         decode-code-term : decode-term ∘ code-term ≈ id
         dec-enc-vec
             : {m : ℕ}
-            → (v : Vec T m)
+            → {v : Vec T m}
             → {b : ℕ}
-            → (H : All (_< b) (code-term-vec v))
-            → mapWith∈ (code-term-vec v) (decode-term-fuelled ∘ (All.lookup H))
-                ≡ v
-        dec-enc-vec {0} Vec.[] {b} H = refl
-        dec-enc-vec {suc m'} v@(t ∷ ts) {b} H = 
+            → (rs : All (_< b) (code-term-vec v))
+            → reduce decode-term-fuelled rs ≡ v
+        dec-enc-vec {0} {Vec.[]} {b} All.[] = {! !}
+        dec-enc-vec {suc m'} {v@(t ∷ ts)} {b} (r All.∷ rs) = 
             ≡begin 
-                mapWith∈ (code-term-vec v) f
-            ≡⟨⟩ -- Definition `code-term-vec`:
-                mapWith∈ ((code-term t) ∷ code-term-vec ts) f
-            ≡⟨⟩ -- Definition `mapWith∈` (see Data.Vec.Memebership.Setoid):
-                f (Any.here refl) ∷ (mapWith∈ (code-term-vec ts) (f ∘ Any.there) )
+                reduce decode-term-fuelled (r All.∷ rs)
             ≡⟨⟩
-                f (Any.here refl) ∷ ts'
-            ≡⟨⟩ -- Unfold and simplify `f`:
-                decode-term-fuelled x<b ∷ ts'
-            ≡⟨ cong (_∷ ts') $ dec-term-fuel-irrel x<b x<1+x  ⟩
-                decode-term-fuelled x<1+x ∷ ts'
+                decode-term-fuelled r ∷ reduce decode-term-fuelled rs
+            ≡⟨ cong (decode-term-fuelled r ∷_) IH ⟩
+                decode-term-fuelled r ∷ ts
+            ≡⟨ cong (_∷ ts) $ dec-term-fuel-irrel r x<1+x  ⟩
+                decode-term-fuelled x<1+x ∷ ts
             ≡⟨⟩ -- Fold the definition of `decode-term`.
-                dec x ∷ ts'
+                dec x ∷ ts
             ≡⟨⟩
-                dec (enc t) ∷ ts'
-            ≡⟨ cong (_∷ ts') $ decode-code-term t ⟩
-                t ∷ ts'
-            ≡⟨ cong (t ∷_) ts'≡ts ⟩ -- Apply induction hypothesis.
+                dec (enc t) ∷ ts
+            ≡⟨ cong (_∷ ts) $ decode-code-term t ⟩
                 v 
             ≡∎
             where
-                f : {x : ℕ} → x ∈ code-term-vec v → T
-                f = (decode-term-fuelled ∘ (All.lookup H))
-                ts' : Vec T m'
-                ts' = mapWith∈ (code-term-vec ts) (f ∘ Any.there)
-                ts'≡ts : ts' ≡ ts
-                ts'≡ts = ?
+                IH : reduce decode-term-fuelled rs ≡ ts
+                IH = dec-enc-vec rs
                 x : ℕ
                 x = code-term t
-                x<b : x < b
-                x<b = All.lookup H (Any.here refl)
                 x<1+x : x < suc x
                 x<1+x = n<1+n x
+            
+            --≡begin 
+            --    mapWith∈ (code-term-vec v) f
+            --≡⟨⟩ -- Definition `code-term-vec`:
+            --    mapWith∈ ((code-term t) ∷ code-term-vec ts) f
+            --≡⟨⟩ -- Definition `mapWith∈` (see Data.Vec.Memebership.Setoid):
+            --    f (Any.here refl) ∷ (mapWith∈ (code-term-vec ts) (f ∘ Any.there) )
+            --≡⟨⟩
+            --    f (Any.here refl) ∷ ts'
+            --≡⟨⟩ -- Unfold and simplify `f`:
+            --    decode-term-fuelled x<b ∷ ts'
+            --≡⟨ cong (_∷ ts') $ dec-term-fuel-irrel x<b x<1+x  ⟩
+            --    decode-term-fuelled x<1+x ∷ ts'
+            --≡⟨⟩ -- Fold the definition of `decode-term`.
+            --    dec x ∷ ts'
+            --≡⟨⟩
+            --    dec (enc t) ∷ ts'
+            --≡⟨ cong (_∷ ts') $ decode-code-term t ⟩
+            --    t ∷ ts'
+            --≡⟨ cong (t ∷_) ts'≡ts ⟩ -- Apply induction hypothesis.
+            --    v 
+            --≡∎
+            --where
+                --f : {x : ℕ} → x ∈ code-term-vec v → T
+                --f = (decode-term-fuelled ∘ (All.lookup H))
+                --ts' : Vec T m'
+                --ts' = mapWith∈ (code-term-vec ts) (f ∘ Any.there)
+                --ts'≡ts : ts' ≡ ts
+                --ts'≡ts = ?
+                --x : ℕ
+                --x = code-term t
+                --x<b : x < b
+                --x<b = All.lookup H (Any.here refl)
+                --x<1+x : x < suc x
+                --x<1+x = n<1+n x
             
 
         decode-code-term (nullary c) = 
@@ -446,7 +456,7 @@ inductiveCase μ' {ζ'} S =
                 cases-output-cong x x' refl refl = refl
 
                 eq-v : getVec (c , y) (c'y'≡cy) ≡ v
-                eq-v = 
+                eq-v = {!
                     ≡begin 
                         getVec (c , y) (c'y'≡cy) 
                     ≡⟨⟩
@@ -464,6 +474,7 @@ inductiveCase μ' {ζ'} S =
 
                         v<b' : All (_< (suc (code-sum i))) (code-term-vec v)
                         v<b' = ?
+                    !} 
                     
 
 
