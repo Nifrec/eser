@@ -230,11 +230,65 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
         -- `decode-term-fuelled` gives the same output for any given
         -- amount of fuel, provided it is sufficient.
         dec-term-fuel-irrel
-            : {b b' i : ℕ}
+            : {b d i : ℕ}
             → (i<b : i < b)
-            → (i<b' : i < b')
-            → decode-term-fuelled i<b ≡ decode-term-fuelled i<b'
-        dec-term-fuel-irrel = ?
+            → (i<d : i < d)
+            → decode-term-fuelled i<b ≡ decode-term-fuelled i<d
+        dec-term-fuel-irrel {suc b'} {suc d'} {i} i<b i<d = cases (decode-sum i) refl
+            where
+                cases
+                    : (j : ^ μ ⊎ ℕ) 
+                    → decode-sum i ≡ j
+                    → decode-term-fuelled i<b ≡ decode-term-fuelled i<d
+                cases (inj₁ c) _ = ?
+                cases (inj₂ w) eq-i = 
+                    ≡begin 
+                        decode-term-fuelled i<b
+                    ≡⟨⟩
+                        b-cases (decode-sum i) refl
+                    ≡⟨ b-cases-lemma (decode-sum i) (inj₂ w) refl eq-i ⟩
+                        b-cases (inj₂ w) eq-i
+                    ≡⟨⟩
+                        multiary c (reduce dtf Rb)
+                    ≡⟨ cong (multiary c) $ sublemma {ar c} {v = decode-vec (S c) y} Rb Rd ⟩
+                        multiary c (reduce dtf Rb)
+                    ≡⟨⟩
+                        d-cases (inj₂ w) eq-i
+                    ≡⟨ sym $ d-cases-lemma (decode-sum i) (inj₂ w) refl eq-i ⟩
+                        d-cases (decode-sum i) refl
+                    ≡⟨⟩
+                        decode-term-fuelled i<d
+                    ≡∎
+                    where
+                        dtf = decode-term-fuelled
+                        --c : ̂^ ζ
+                        c = proj₁ $ decode-pair w
+                        y = proj₂ $ decode-pair w
+
+                        open Decode b' i<b 
+                            renaming (cases to b-cases 
+                                     ; cases-lemma to b-cases-lemma 
+                                     )
+
+                        open Decode.DecodeCases.GetVec b' i<b w eq-i c y refl
+                            renaming (v'<b' to Rb)
+
+                        open Decode d' i<d
+                            renaming (cases to d-cases 
+                                     ; cases-lemma to d-cases-lemma 
+                                     )
+
+                        open Decode.DecodeCases.GetVec d' i<d w eq-i c y refl
+                            renaming (v'<b' to Rd)
+                        sublemma
+                            : {m : ℕ}
+                            → {v : Vec ℕ m}
+                            → (Rb : All (_< b') v)
+                            → (Rd : All (_< d') v)
+                            → reduce dtf Rb ≡ reduce dtf Rd
+                        sublemma {m} {v} Rb Rd = ?
+                        
+                        
 
         reduce-with-eq
             : {A B : Set}
