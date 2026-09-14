@@ -320,6 +320,10 @@ inductiveCase μ' {ζ'} S =
         dec = decode-term
         enc = code-term
 
+        ------------------------------------------------------------------------
+        -- decode ∘ code  ≈ id
+        ------------------------------------------------------------------------
+
         -- Like `encode-term`, we need define one way of the inversity
         -- of decoding-encoding via mutual induction,
         -- in order to avoid termination issues with vectors.
@@ -441,7 +445,107 @@ inductiveCase μ' {ζ'} S =
                         R' : All (_< b') (code-term-vec v)
                         R' = subst (All (_< b')) v'≡v R
                         
+        ------------------------------------------------------------------------
+        -- code ∘ decode  ≈ id
+        ------------------------------------------------------------------------
                     
+        code-decode-term-fuelled
+            : {b i : ℕ}
+            → i < b
+            → (code-term $ decode-term i) ≡ i
+        code-decode-term-fuelled {suc b'} {i} i<1+b' = 
+            ≡begin 
+                enc (dec i)
+            ≡⟨⟩
+                enc (decode-term-fuelled (n<1+n i))
+            ≡⟨ cong enc (dec-term-fuel-irrel (n<1+n i) i<1+b') ⟩
+                enc (decode-term-fuelled i<1+b')
+            ≡⟨ cases (decode-sum i) refl ⟩
+                i
+            ≡∎
+            where
+                open Decode b' i<1+b' renaming (cases to dec-cases)
+                cases 
+                    : (j : ^ μ ⊎ ℕ) 
+                    → (eq-i : decode-sum i ≡ j) 
+                    → (code-term $ dec-cases j eq-i) ≡ i
+                cases (inj₁ c) eq-i = 
+                    ≡begin 
+                        enc (dec-cases (inj₁ c) eq-i)
+                    ≡⟨⟩
+                        enc (nullary c)
+                    ≡⟨⟩
+                        code-sum (inj₁ c)
+                    ≡⟨ cong code-sum (sym eq-i) ⟩
+                        code-sum (decode-sum i)
+                    ≡⟨ code-decode-sum i ⟩
+                        i
+                    ≡∎
+                    
+                cases (inj₂ w) eq-i =
+                    ≡begin 
+                        enc (dec-cases (inj₂ w) eq-i)
+                    ≡⟨⟩
+                        enc (multiary c (getVec (c , y) refl))
+                    ≡⟨⟩
+                        code-sum (inj₂ (code-pair (c , (code-vec (code-term-vec v)))))
+                    ≡⟨ cong (λ v → code-sum $ inj₂ $ code-pair (c , v)) v-eq ⟩
+                        code-sum (inj₂ (code-pair (decode-pair w)))
+                    ≡⟨ cong (code-sum ∘ inj₂) $ code-decode-pair w ⟩
+                        code-sum (inj₂ w)
+                    ≡⟨ cong code-sum (sym eq-i) ⟩
+                        code-sum (decode-sum i)
+                    ≡⟨ code-decode-sum i ⟩
+                        i
+                    ≡∎
+                    where
+                        open DecodeCases w eq-i
+                        open GetVec c y refl renaming (v'<b' to R)
+                        sublemma
+                            : {m : ℕ}
+                            → {z : Vec ℕ m}
+                            → (R : All (_< b') z)
+                            → code-term-vec (reduce decode-term-fuelled R) ≡ z
+                        sublemma {0} {Vec.[]} All.[] = refl
+                        sublemma {suc m} {x ∷ xs} R@(r All.∷ rs) = 
+                            ≡begin 
+                                code-term-vec (reduce decode-term-fuelled R)
+                            ≡⟨⟩ -- Definition `reduce`
+                                code-term-vec (dtf r ∷ reduce dtf rs)
+                            ≡⟨⟩ -- Definition `code-term-vec`
+                                enc (dtf r) ∷ (code-term-vec $ reduce dtf rs)
+                            ≡⟨ cong (enc (dtf r) ∷_) $ sublemma rs ⟩
+                                enc (dtf r) ∷ xs
+                            ≡⟨ cong (λ u → (enc u) ∷ xs) 
+                                $ dec-term-fuel-irrel r (n<1+n x) ⟩
+                                enc (dtf (n<1+n x)) ∷ xs
+                            ≡⟨⟩
+                                enc (dec x) ∷ xs
+                            -- We can make this recursive call, because b'
+                            -- is a strict subterm of `suc b'`.
+                            ≡⟨ cong (_∷ xs) 
+                                $ code-decode-term-fuelled {b'} {x} r ⟩
+                                x ∷ xs    
+                            ≡∎
+                            where
+                                dtf = decode-term-fuelled
+                        v : Vec T (ar c)
+                        v = getVec (c , y) refl
+                        v-eq : code-vec (code-term-vec v) ≡ y
+                        v-eq =
+                            ≡begin 
+                                code-vec (code-term-vec (getVec (c , y) refl))
+                            ≡⟨⟩
+                                code-vec (code-term-vec 
+                                    (reduce decode-term-fuelled R))
+                            ≡⟨ cong code-vec $ sublemma R ⟩
+                                code-vec (decode-vec (S c) y)
+                            ≡⟨ code-decode-vec {S c} y ⟩
+                                y
+                            ≡∎
+
+        code-decode-term : code-term ∘ decode-term ≈ id
+        code-decode-term i = code-decode-term-fuelled {suc i} {i} (n<1+n i)
 
 
 sigenum
