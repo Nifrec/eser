@@ -313,14 +313,14 @@ inductiveCase μ' {ζ'} S =
         -- of decoding-encoding via mutual induction,
         -- in order to avoid termination issues with vectors.
         decode-code-term : decode-term ∘ code-term ≈ id
-        dec-enc-vec
+        dec-enc-term-vec
             : {m : ℕ}
             → {v : Vec T m}
             → {b : ℕ}
             → (rs : All (_< b) (code-term-vec v))
             → reduce decode-term-fuelled rs ≡ v
-        dec-enc-vec {0} {Vec.[]} {b} All.[] = refl
-        dec-enc-vec {suc m'} {v@(t ∷ ts)} {b} (r All.∷ rs) = 
+        dec-enc-term-vec {0} {Vec.[]} {b} All.[] = refl
+        dec-enc-term-vec {suc m'} {v@(t ∷ ts)} {b} (r All.∷ rs) = 
             ≡begin 
                 reduce decode-term-fuelled (r All.∷ rs)
             ≡⟨⟩
@@ -338,7 +338,7 @@ inductiveCase μ' {ζ'} S =
             ≡∎
             where
                 IH : reduce decode-term-fuelled rs ≡ ts
-                IH = dec-enc-vec rs
+                IH = dec-enc-term-vec rs
                 x : ℕ
                 x = code-term t
                 x<1+x : x < suc x
@@ -411,11 +411,11 @@ inductiveCase μ' {ζ'} S =
                 cases-output-cong x x' refl refl = refl
 
                 eq-v : getVec (c , y) (c'y'≡cy) ≡ v
-                eq-v = {!
+                eq-v = dec-enc-term-vec {!
                     ≡begin 
                         getVec (c , y) (c'y'≡cy) 
                     ≡⟨⟩
-                        mapWith∈ (decode-vec (S c) y) 
+                        reduce v'<b' (c , y) ∈ (decode-vec (S c) y) 
                             (decode-term-fuelled ∘ (All.lookup v'<b'))
                     ≡⟨ {! decode-code-vec lemma plus that 
                             `All` proofs transport under eqs of vectors. !} ⟩
