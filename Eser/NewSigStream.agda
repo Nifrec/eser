@@ -22,6 +22,7 @@ open import Data.Vec
 open import Data.Vec.Functional hiding (_∷_)
 open import Data.Vec.Membership.Propositional
 open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
+open import Data.Vec.Relation.Unary.Any as Any
 open import Data.Vec.Relation.Unary.All.Properties
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
@@ -305,9 +306,79 @@ inductiveCase μ' {ζ'} S =
         decode-term : ℕ → T
         decode-term i = decode-term-fuelled {suc i} {i} (n<1+n i)
 
+        -- `decode-term-fuelled` gives the same output for any given
+        -- amount of fuel, provided it is sufficient.
+        dec-term-fuel-irrel
+            : {b b' i : ℕ}
+            → (i<b : i < b)
+            → (i<b' : i < b')
+            → decode-term-fuelled i<b ≡ decode-term-fuelled i<b'
+        dec-term-fuel-irrel = ?
+
         dec = decode-term
         enc = code-term
+
+        -- This won't work without funext...
+        All-lookup-lemma
+            : {A : Set}
+            → {m : ℕ}
+            → {P : A → Set}
+            → {as : Vec A m}
+            → {a : A}
+            → (r : P a)
+            → (rs : All P as)
+            → ((All.lookup (r All.∷ rs)) ∘ (Any.there)) ≡ All.lookup rs
+        All-lookup-lemma H = ?
+
+        -- Like `encode-term`, we need define one way of the inversity
+        -- of decoding-encoding via mutual induction,
+        -- in order to avoid termination issues with vectors.
         decode-code-term : decode-term ∘ code-term ≈ id
+        dec-enc-vec
+            : {m : ℕ}
+            → (v : Vec T m)
+            → {b : ℕ}
+            → (H : All (_< b) (code-term-vec v))
+            → mapWith∈ (code-term-vec v) (decode-term-fuelled ∘ (All.lookup H))
+                ≡ v
+        dec-enc-vec {0} Vec.[] {b} H = refl
+        dec-enc-vec {suc m'} v@(t ∷ ts) {b} H = 
+            ≡begin 
+                mapWith∈ (code-term-vec v) f
+            ≡⟨⟩ -- Definition `code-term-vec`:
+                mapWith∈ ((code-term t) ∷ code-term-vec ts) f
+            ≡⟨⟩ -- Definition `mapWith∈` (see Data.Vec.Memebership.Setoid):
+                f (Any.here refl) ∷ (mapWith∈ (code-term-vec ts) (f ∘ Any.there) )
+            ≡⟨⟩
+                f (Any.here refl) ∷ ts'
+            ≡⟨⟩ -- Unfold and simplify `f`:
+                decode-term-fuelled x<b ∷ ts'
+            ≡⟨ cong (_∷ ts') $ dec-term-fuel-irrel x<b x<1+x  ⟩
+                decode-term-fuelled x<1+x ∷ ts'
+            ≡⟨⟩ -- Fold the definition of `decode-term`.
+                dec x ∷ ts'
+            ≡⟨⟩
+                dec (enc t) ∷ ts'
+            ≡⟨ cong (_∷ ts') $ decode-code-term t ⟩
+                t ∷ ts'
+            ≡⟨ cong (t ∷_) ts'≡ts ⟩ -- Apply induction hypothesis.
+                v 
+            ≡∎
+            where
+                f : {x : ℕ} → x ∈ code-term-vec v → T
+                f = (decode-term-fuelled ∘ (All.lookup H))
+                ts' : Vec T m'
+                ts' = mapWith∈ (code-term-vec ts) (f ∘ Any.there)
+                ts'≡ts : ts' ≡ ts
+                ts'≡ts = ?
+                x : ℕ
+                x = code-term t
+                x<b : x < b
+                x<b = All.lookup H (Any.here refl)
+                x<1+x : x < suc x
+                x<1+x = n<1+n x
+            
+
         decode-code-term (nullary c) = 
             ≡begin 
                 dec (enc (nullary c))
@@ -385,7 +456,7 @@ inductiveCase μ' {ζ'} S =
                             `All` proofs transport under eqs of vectors. !} ⟩
                         mapWith∈ (code-term-vec v)
                             (decode-term-fuelled ∘ (All.lookup v<b'))
-                    ≡⟨ ? ⟩
+                    ≡⟨ dec-enc-vec v v<b' ⟩
                         v
                     ≡∎
                     where
