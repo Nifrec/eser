@@ -306,6 +306,17 @@ inductiveCase μ' {ζ'} S =
             → decode-term-fuelled i<b ≡ decode-term-fuelled i<b'
         dec-term-fuel-irrel = ?
 
+        reduce-with-eq
+            : {A B : Set}
+            → {P : A → Set}
+            → {m : ℕ}
+            → {v v' : Vec A m}
+            → (eq : v ≡ v')
+            → (f : {a : A} → P a → B)
+            → (R : All P v)
+            → reduce f R ≡ reduce f (subst (All P) eq R)
+        reduce-with-eq refl f R = refl
+
         dec = decode-term
         enc = code-term
 
@@ -411,25 +422,25 @@ inductiveCase μ' {ζ'} S =
                 cases-output-cong x x' refl refl = refl
 
                 eq-v : getVec (c , y) (c'y'≡cy) ≡ v
-                eq-v = dec-enc-term-vec {!
+                eq-v = 
                     ≡begin 
                         getVec (c , y) (c'y'≡cy) 
                     ≡⟨⟩
-                        reduce v'<b' (c , y) ∈ (decode-vec (S c) y) 
-                            (decode-term-fuelled ∘ (All.lookup v'<b'))
-                    ≡⟨ {! decode-code-vec lemma plus that 
-                            `All` proofs transport under eqs of vectors. !} ⟩
-                        mapWith∈ (code-term-vec v)
-                            (decode-term-fuelled ∘ (All.lookup v<b'))
-                    ≡⟨ dec-enc-vec v v<b' ⟩
+                        reduce decode-term-fuelled R
+                    ≡⟨ reduce-with-eq v'≡v decode-term-fuelled R ⟩
+                        reduce decode-term-fuelled R'
+                    ≡⟨ dec-enc-term-vec R' ⟩
                         v
                     ≡∎
                     where
-                        open GetVec c y c'y'≡cy
-
-                        v<b' : All (_< (suc (code-sum i))) (code-term-vec v)
-                        v<b' = ?
-                    !} 
+                        open GetVec c y c'y'≡cy renaming (v'<b' to R)
+                        v'≡v : v' ≡ code-term-vec v
+                        v'≡v = decode-code-vec {S c} (code-term-vec v)
+                        b' : ℕ
+                        b' = code-sum i
+                        R' : All (_< b') (code-term-vec v)
+                        R' = subst (All (_< b')) v'≡v R
+                        
                     
 
 
