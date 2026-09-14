@@ -281,17 +281,8 @@ inductiveCase μ' {ζ'} S =
                                 v'<b' : All (_< b') v'
                                 v'<b' = All.map <i⊆<b' v'<i
 
-                                --recurse
-                                --    : {n : ℕ}
-                                --    → (n ∈ v')
-                                --    → T
-                                --recurse {n} n∈v' = decode-term-fuelled {b'} {n} n<b'
-                                --    where
-                                --        n<b' : n < b'
-                                --        n<b' = All.lookup v'<b' n∈v'
-
                                 v'' : Vec T (ar c)
-                                v'' = reduce decode-term-fuelled v'<b' --mapWith∈ v' recurse
+                                v'' = reduce decode-term-fuelled v'<b'
 
                 -- This is not used to produce output,
                 -- but used in the inversity proofs, 
@@ -328,7 +319,7 @@ inductiveCase μ' {ζ'} S =
             → {b : ℕ}
             → (rs : All (_< b) (code-term-vec v))
             → reduce decode-term-fuelled rs ≡ v
-        dec-enc-vec {0} {Vec.[]} {b} All.[] = {! !}
+        dec-enc-vec {0} {Vec.[]} {b} All.[] = refl
         dec-enc-vec {suc m'} {v@(t ∷ ts)} {b} (r All.∷ rs) = 
             ≡begin 
                 reduce decode-term-fuelled (r All.∷ rs)
@@ -353,42 +344,6 @@ inductiveCase μ' {ζ'} S =
                 x<1+x : x < suc x
                 x<1+x = n<1+n x
             
-            --≡begin 
-            --    mapWith∈ (code-term-vec v) f
-            --≡⟨⟩ -- Definition `code-term-vec`:
-            --    mapWith∈ ((code-term t) ∷ code-term-vec ts) f
-            --≡⟨⟩ -- Definition `mapWith∈` (see Data.Vec.Memebership.Setoid):
-            --    f (Any.here refl) ∷ (mapWith∈ (code-term-vec ts) (f ∘ Any.there) )
-            --≡⟨⟩
-            --    f (Any.here refl) ∷ ts'
-            --≡⟨⟩ -- Unfold and simplify `f`:
-            --    decode-term-fuelled x<b ∷ ts'
-            --≡⟨ cong (_∷ ts') $ dec-term-fuel-irrel x<b x<1+x  ⟩
-            --    decode-term-fuelled x<1+x ∷ ts'
-            --≡⟨⟩ -- Fold the definition of `decode-term`.
-            --    dec x ∷ ts'
-            --≡⟨⟩
-            --    dec (enc t) ∷ ts'
-            --≡⟨ cong (_∷ ts') $ decode-code-term t ⟩
-            --    t ∷ ts'
-            --≡⟨ cong (t ∷_) ts'≡ts ⟩ -- Apply induction hypothesis.
-            --    v 
-            --≡∎
-            --where
-                --f : {x : ℕ} → x ∈ code-term-vec v → T
-                --f = (decode-term-fuelled ∘ (All.lookup H))
-                --ts' : Vec T m'
-                --ts' = mapWith∈ (code-term-vec ts) (f ∘ Any.there)
-                --ts'≡ts : ts' ≡ ts
-                --ts'≡ts = ?
-                --x : ℕ
-                --x = code-term t
-                --x<b : x < b
-                --x<b = All.lookup H (Any.here refl)
-                --x<1+x : x < suc x
-                --x<1+x = n<1+n x
-            
-
         decode-code-term (nullary c) = 
             ≡begin 
                 dec (enc (nullary c))
