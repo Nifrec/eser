@@ -112,18 +112,7 @@ inductiveCase
     → {ζ' : ℕ∞}
     → (S : Signature (suc∞ μ') (suc∞ ζ'))
     → Term {suc∞ μ'} {suc∞ ζ'} S ≃ ℕ
-inductiveCase μ' {ζ'} S = 
-    begin 
-        Term S
-    ≃⟨ {! nulmul lemma !} ⟩
-        FTerm
-    --≃⟨ {! nulmul lemma !} ⟩
-    --    NulTerm S ⊎ MulTerm S
-    ≃⟨ {! sum lemma !} ⟩
-        (^ μ ⊎ ℕ)
-    ≃⟨ {! merge lemma !} ⟩
-        ℕ
-    ∎
+inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
     where
         μ : ℕ∞
         μ = suc∞ μ'
@@ -131,10 +120,8 @@ inductiveCase μ' {ζ'} S =
         ζ = suc∞ ζ'
         ar : ^ ζ → ℕ
         ar c = suc (S c)
-
         T : Set
         T = Term {μ} S
-        
 
         open import Eser.NatCoding
         open Eser.NatCoding.WithMuZeta μ' ζ' hiding (μ ; ζ)
@@ -175,63 +162,6 @@ inductiveCase μ' {ζ'} S =
             → All (_< i) v
         decode-multiary-lemma = ?
 
-        --code-fterm : FTerm → ℕ
-        --code-fterm (f-nul c) = code-sum (inj₁ c)
-        --code-fterm (f-mul c v) = (code-sum ∘ inj₂ ∘ code-pair) (c , v-code)
-        --    where
-        --        v' : Vector ℕ (ar c)
-        --        v' i = code-fterm $ v i
-        --        v-code : ℕ
-        --        v-code = code-vec (toVec v')
-
-        ---- Decoding an ℕ into an FTerm cannot be done by structural recursion;
-        ---- we get a number i, and if it encodes a multiary-constructed
-        ---- term then we also get a Vec ℕ of arguments (as numbers).
-        ---- There is no structural relation between these numbers
-        ---- and i. However, we can *prove* that they are all smaller than i,
-        ---- which means we can use the fuel technique 
-        ---- (or (ℕ, <)-wellfounded-recursion, but the fuel technique makes it
-        ---- easier to prove that decode-fterm is inverse to code-fterm).
-        --decode-fterm-fuelled : {b i : ℕ} → i < b → FTerm
-        --decode-fterm-fuelled {b@(suc b')} {i} i<b = cases (decode-sum i) refl
-        --    where
-        --        cases : (j : ^ μ ⊎ ℕ) → (decode-sum i ≡ j) → FTerm
-        --        cases (inj₁ c) _ = f-nul c
-        --        cases (inj₂ w) eq = f-mul c v
-        --            where
-        --                c : ^ ζ
-        --                c = proj₁ $ decode-pair w
-        --                y : ℕ
-        --                y = proj₂ $ decode-pair w
-
-        --                v' : Vec ℕ (ar c)
-        --                v' = decode-vec (S c) y
-
-        --                v'<i : All (_< i) v'
-        --                v'<i = decode-multiary-lemma i w y c v' eq refl refl
-
-        --                <i⊆<b' : (_< i) ⊆ (_< b')
-        --                <i⊆<b' {x} x<i = ℓ<m<1+n→ℓ<n x<i i<b
-
-        --                v'<b' : All (_< b') v'
-        --                v'<b' = All.map <i⊆<b' v'<i
-
-        --                recurse
-        --                    : {n : ℕ}
-        --                    → (n ∈ v')
-        --                    → FTerm
-        --                recurse {n} n∈v' = decode-fterm-fuelled {b'} {n} n<b'
-        --                    where
-        --                        n<b' : n < b'
-        --                        n<b' = All.lookup v'<b' n∈v'
-
-        --                v : Vector FTerm (ar c)
-        --                v = fromVec $ mapWith∈ v' recurse
-                        
-        --decode-fterm : ℕ → FTerm
-        --decode-fterm i = decode-fterm-fuelled {suc i} {i} (n<1+n i)
-                
-    
         code-term : T → ℕ
         code-term-vec : {n : ℕ} → Vec T n → Vec ℕ n
 
@@ -444,6 +374,9 @@ inductiveCase μ' {ζ'} S =
                         b' = code-sum i
                         R' : All (_< b') (code-term-vec v)
                         R' = subst (All (_< b')) v'≡v R
+
+        invʳ : Inverseʳ _≡_ _≡_ enc dec
+        invʳ {t} refl = decode-code-term t
                         
         ------------------------------------------------------------------------
         -- code ∘ decode  ≈ id
@@ -546,6 +479,10 @@ inductiveCase μ' {ζ'} S =
 
         code-decode-term : code-term ∘ decode-term ≈ id
         code-decode-term i = code-decode-term-fuelled {suc i} {i} (n<1+n i)
+
+        invˡ : Inverseˡ _≡_ _≡_ enc dec
+        invˡ {i} refl = code-decode-term i
+        
 
 
 sigenum
