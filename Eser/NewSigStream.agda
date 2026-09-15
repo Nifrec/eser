@@ -160,7 +160,32 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
             → decode-pair w ≡ (c , y)
             → decode-vec (S c) y ≡ v
             → All (_< i) v
-        decode-multiary-lemma = ?
+        decode-multiary-lemma i w y c v eq-i eq-w eq-y = ans
+            where
+                y<i : y < i
+                y<i = decode-sum-pair-lemma i w y c eq-i eq-w
+                cv<i : code-vec v < i
+                cv<i = subst (_< i) (sym eq) y<i
+                    where
+                        eq : code-vec v ≡ y
+                        eq = 
+                            ≡begin 
+                                code-vec v
+                            ≡⟨ cong code-vec $ sym eq-y ⟩
+                                code-vec (decode-vec (S c) y)
+                            ≡⟨ code-decode-vec y ⟩
+                                y
+                            ≡∎
+                v≤cv : All (_≤ (code-vec v)) v
+                v≤cv = code-vec-lemma v
+
+                ans : All (_< i) v
+                ans = All.map f v≤cv 
+                    where
+                        f : (_≤ (code-vec v)) ⊆ (_< i)
+                        f {x} x≤cv = ≤-<-trans x≤cv cv<i
+                    
+            
 
         code-term : T → ℕ
         code-term-vec : {n : ℕ} → Vec T n → Vec ℕ n

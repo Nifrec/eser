@@ -43,6 +43,14 @@ decode-code-vec = ?
 code-decode-vec : {n : ℕ} → code-vec ∘ (decode-vec n) ≈ id
 code-decode-vec = ?
 
+-- The ℕ-encoding of a vector is at least as great as the maximum of its
+-- elements.
+code-vec-lemma
+    : {m : ℕ}
+    → (v : Vec ℕ (suc m))
+    → All (_≤ (code-vec v)) v
+code-vec-lemma v = ?
+
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
 parity' : (n : ℕ) → Parity n
