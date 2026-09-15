@@ -227,20 +227,47 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
         decode-term : ℕ → T
         decode-term i = decode-term-fuelled {suc i} {i} (n<1+n i)
 
-        -- `decode-term-fuelled` gives the same output for any given
-        -- amount of fuel, provided it is sufficient.
+        -- The function `decode-term-fuelled` gives the same output 
+        -- for any given amount of fuel, provided it is sufficient.
         dec-term-fuel-irrel
             : {b d i : ℕ}
             → (i<b : i < b)
             → (i<d : i < d)
             → decode-term-fuelled i<b ≡ decode-term-fuelled i<d
-        dec-term-fuel-irrel {suc b'} {suc d'} {i} i<b i<d = cases (decode-sum i) refl
+        dec-term-fuel-irrel {suc b'} {suc d'} {i} i<b i<d = 
+            cases (decode-sum i) refl
             where
                 cases
                     : (j : ^ μ ⊎ ℕ) 
                     → decode-sum i ≡ j
                     → decode-term-fuelled i<b ≡ decode-term-fuelled i<d
-                cases (inj₁ c) _ = ?
+                cases (inj₁ c) eq-i =
+                    ≡begin 
+                        decode-term-fuelled i<b
+                    ≡⟨⟩
+                        b-cases (decode-sum i) refl
+                    ≡⟨ b-cases-lemma (decode-sum i) (inj₁ c) refl eq-i ⟩
+                        b-cases (inj₁ c) eq-i
+                    ≡⟨⟩
+                        nullary c
+                    ≡⟨⟩
+                        d-cases (inj₁ c) eq-i
+                    ≡⟨ sym $ d-cases-lemma (decode-sum i) (inj₁ c) refl eq-i ⟩
+                        d-cases (decode-sum i) refl
+                    ≡⟨⟩
+                        decode-term-fuelled i<d
+                    ≡∎
+                    where
+                        open Decode b' i<b 
+                            renaming (cases to b-cases 
+                                     ; cases-lemma to b-cases-lemma 
+                                     )
+
+                        open Decode d' i<d
+                            renaming (cases to d-cases 
+                                     ; cases-lemma to d-cases-lemma 
+                                     )
+                    
                 cases (inj₂ w) eq-i = 
                     ≡begin 
                         decode-term-fuelled i<b
@@ -250,8 +277,10 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
                         b-cases (inj₂ w) eq-i
                     ≡⟨⟩
                         multiary c (reduce dtf Rb)
-                    ≡⟨ cong (multiary c) $ sublemma {ar c} {v = decode-vec (S c) y} Rb Rd ⟩
-                        multiary c (reduce dtf Rb)
+                    ≡⟨ cong (multiary c) $ sublemma {ar c} 
+                        {v = decode-vec (S c) y} Rb Rd 
+                     ⟩
+                        multiary c (reduce dtf Rd)
                     ≡⟨⟩
                         d-cases (inj₂ w) eq-i
                     ≡⟨ sym $ d-cases-lemma (decode-sum i) (inj₂ w) refl eq-i ⟩
@@ -261,7 +290,7 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
                     ≡∎
                     where
                         dtf = decode-term-fuelled
-                        --c : ̂^ ζ
+                        c : ^ ζ
                         c = proj₁ $ decode-pair w
                         y = proj₂ $ decode-pair w
 
@@ -286,9 +315,22 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
                             → (Rb : All (_< b') v)
                             → (Rd : All (_< d') v)
                             → reduce dtf Rb ≡ reduce dtf Rd
-                        sublemma {m} {v} Rb Rd = ?
-                        
-                        
+                        sublemma {0} {Vec.[]} All.[] All.[] = refl
+                        sublemma {suc m} {x ∷ xs} 
+                            (rb All.∷ rbs) (rd All.∷ rds) =
+                            ≡begin 
+                                reduce dtf (rb All.∷ rbs)
+                            ≡⟨⟩
+                                dtf rb ∷ reduce dtf rbs
+                            ≡⟨ cong (dtf rb ∷_) $ sublemma rbs rds ⟩
+                                dtf rb ∷ reduce dtf rds
+                            ≡⟨ cong (_∷ reduce dtf rds)
+                                $ dec-term-fuel-irrel {b'} {d'} {x} rb rd 
+                             ⟩
+                                dtf rd ∷ reduce dtf rds
+                            ≡⟨⟩
+                                reduce dtf (rd All.∷ rds)
+                            ≡∎
 
         reduce-with-eq
             : {A B : Set}
