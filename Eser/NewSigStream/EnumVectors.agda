@@ -4,6 +4,8 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+{-# OPTIONS --termination-depth=2 #-}
+
 open import Level hiding (suc)
 open import Data.Nat
 open import Data.Nat.Properties
