@@ -4,6 +4,13 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+
+-- #EXT: This option is needed for getWVec-complete.
+-- I do not understand why, this function takes two ℕ
+-- arguments, matches them up to a depth of 1,
+-- and makes only recursive calls with exactly one of the two decreased by 1 and
+-- the other unchanged. Refactoring this function can probably alliviate the
+-- need for the termination depth increase.
 {-# OPTIONS --termination-depth=2 #-}
 
 open import Level hiding (suc)
@@ -80,9 +87,6 @@ mapp
     → Σ[ n ∈ ℕ ] Vec A (suc n)
     → Σ[ n ∈ ℕ ] Vec B (suc n)
 mapp {A} {B} f (n , v) = (n , Vec.map f v)
-
---_w∷_ : {m w n : ℕ} → {v : Vec ℕ m} → (weight v ≡ w) → (X : WVec m w n) → WVec m w (suc n)
---_w∷_ {v = v} eq X = (v , eq) Vec.∷ X
 
 -- More notation heavy implementation that comes with proofs that:
 -- * The output is a non-empty list (of length suc n),
@@ -269,6 +273,13 @@ getWVec-complete {suc m} {suc w} (suc x ∷ xs , eq) = (j , outp)
                 (suc x ∷ xs , eq)
             ≡∎
 
+getWVec-unique
+    : {m w : ℕ}
+    → (i j : (Fin $ suc $ proj₁ $ getWVec m w))
+    → Vec.lookup (proj₂ $ getWVec m w) i ≡ Vec.lookup (proj₂ $ getWVec m w) j
+    → i ≡ j
+getWVec-unique = ?
+
 
 -- Simple implementation that does not come with internal correctness proofs.
 enumVecs : (m w : ℕ) → List (Vec ℕ (suc m))
@@ -292,10 +303,47 @@ forgetWeight : {m w : ℕ} → WVec m w → Vec ℕ (suc m)
 forgetWeight (v , eq) = v
 
 vecPart : (m : ℕ) → Partition (Vec ℕ (suc m))
-vecPart m = record { chunks = chunks ; complete = {! !} ; unique = {! !} }
+vecPart m = record { chunks = chunks ; complete = complete ; unique = {! !} }
     where
         chunks : Chunking (Vec ℕ (suc m))
         chunks w = (proj₁ wvecs , Vec.map forgetWeight (proj₂ wvecs))
             where
                 wvecs : Σ[ n ∈ ℕ ] Vec (WVec m w) (suc n)
                 wvecs = getWVec m w
+        complete 
+            : (v : Vec ℕ (suc m))
+            → Σ[ ij ∈ Idx chunks ] (v ≡ chunks !!! ij)
+        complete v = ((w , j) , sym eq)
+            where
+                w : ℕ
+                w = weight v
+                u : WVec m w
+                u = (v , refl)
+                
+                -- Size minus 1 of the chunk containing the vectors of weight w.
+                n : ℕ
+                n = proj₁ $ getWVec m w
+
+                vecs : Vec (WVec m w) (suc n)
+                vecs = proj₂ $ getWVec m w
+
+                j : Fin (suc n)
+                j = proj₁ $ getWVec-complete u
+
+                eq-u : Vec.lookup vecs j ≡ u
+                eq-u = proj₂ $ getWVec-complete u
+
+                eq : chunks !!! (w , j) ≡ v
+                eq =
+                    ≡begin 
+                        chunks !!! (w , j)
+                    ≡⟨⟩
+                        Vec.lookup (Vec.map forgetWeight vecs) j
+                    ≡⟨ lookup-map j forgetWeight vecs ⟩
+                        forgetWeight (Vec.lookup vecs j)
+                    ≡⟨ cong forgetWeight $ eq-u ⟩
+                        forgetWeight u
+                    ≡⟨⟩
+                        v 
+                    ≡∎
+                    
