@@ -10,7 +10,7 @@ open import Data.Nat.Properties
 open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Empty
-open import Data.Fin using (Fin)
+open import Data.Fin using (Fin ; _↑ˡ_ ; _↑ʳ_ )
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -106,9 +106,15 @@ getWVec (suc m) (suc w) =
     +++
     -- Don't drop any more weight here, and move to the next position.
     mapp (0 w∷_) (getWVec m (suc w))
-    where
+    module PosWeightCase where
         incrFirst : {m w : ℕ} → WVec m w → WVec m (suc w)
         incrFirst (x ∷ xs , eq) = ((suc x) ∷ xs , cong suc eq)
+has-weight-irrel 
+    : {m : ℕ}
+    → (w : ℕ)
+    → (v : Vec ℕ m)
+    → Relation.Nullary.Irrelevant (weight v ≡ w)
+has-weight-irrel w v p q = uip p q
 
 getWVec-complete 
     : {m w : ℕ}
@@ -134,7 +140,7 @@ getWVec-complete {ℕ.zero} {w} v@(x ∷ [] , refl) = (Fin.zero , eq)
         irrel 
             : (v : Vec ℕ 1)
             → Relation.Nullary.Irrelevant (weight v ≡ w)
-        irrel x p q = uip p q
+        irrel = has-weight-irrel {1} w
         eq' : (w ∷ []) ≡ (x Vec.∷ [])
         eq' = lemma (w ∷ []) (x Vec.∷ []) (+-identityʳ w)
         eq : (w ∷ [] , +-identityʳ w) ≡ v
@@ -147,7 +153,7 @@ getWVec-complete {suc m} {ℕ.zero} (0 ∷ xs , eq) = (j , outp)
         vecs : Vec (WVec m 0) n
         vecs = proj₂ rec
         IH : Σ[ j ∈ Fin n ] Vec.lookup vecs j ≡ (xs , eq)
-        IH = getWVec-complete (xs , eq)
+        IH = getWVec-complete {m} {0} (xs , eq)
         j : Fin n
         j = proj₁ IH
         outp : Vec.lookup (Vec.map fun vecs) j ≡ (0 ∷ xs , eq)
@@ -161,11 +167,105 @@ getWVec-complete {suc m} {ℕ.zero} (0 ∷ xs , eq) = (j , outp)
             ≡⟨⟩
                 (0 ∷ xs , eq)
             ≡∎
-            
+-- If the first element of v is 0, then v is constructed in the RHS
+-- of the +++ in the (suc m) (suc w) case of getWVec.
+getWVec-complete {suc m} {suc w} (ℕ.zero ∷ xs , eq) = (j , outp)
+    where
+        open PosWeightCase m w
+        rec-l : Σ[ n ∈ ℕ ] Vec (WVec (suc m) w) (suc n)
+        rec-l = getWVec (suc m) w
+        n-l : ℕ
+        n-l = suc $ proj₁ rec-l
+        vecs-l : Vec (WVec (suc m) w) n-l
+        vecs-l = proj₂ rec-l
 
+        rec-r : Σ[ n ∈ ℕ ] Vec (WVec m  (suc w)) (suc n)
+        rec-r = getWVec m (suc w)
+        n-r : ℕ
+        n-r = suc $ proj₁ rec-r
+        vecs-r : Vec (WVec m (suc w)) n-r
+        vecs-r = proj₂ rec-r
 
-getWVec-complete {suc m} {suc w} (ℕ.zero ∷ xs , eq) = {! !}
-getWVec-complete {suc m} {suc w} (suc x ∷ xs , eq) = {! !}
+        IH : Σ[ j' ∈ Fin n-r ] Vec.lookup vecs-r j' ≡ (xs , eq)
+        IH = getWVec-complete {m} {suc w} (xs , eq)
+        j' : Fin n-r
+        j' = proj₁ IH
+        j : Fin (n-l + n-r)
+        j = n-l ↑ʳ j'
+
+        vecs = Vec.map incrFirst vecs-l Vec.++ Vec.map (0 w∷_) vecs-r
+
+        outp : Vec.lookup vecs j ≡ (0 ∷ xs , eq)
+        outp =
+            ≡begin 
+                Vec.lookup vecs j
+            ≡⟨ lookup-++ʳ 
+                (Vec.map incrFirst vecs-l)
+                (Vec.map (0 w∷_) vecs-r)
+                j'
+            ⟩
+                Vec.lookup (Vec.map (0 w∷_) vecs-r) j'
+            ≡⟨ lookup-map j' (0 w∷_) vecs-r  ⟩
+                0 w∷ (Vec.lookup vecs-r j')
+            ≡⟨ cong (0 w∷_) $ proj₂ IH ⟩
+                0 w∷ (xs , eq)
+            ≡⟨⟩
+                (0 ∷ xs , cong (0 +_) eq)
+            ≡⟨ restIsProofIrrel (has-weight-irrel (suc w)) 
+                                (cong (0 +_) eq) eq refl ⟩
+                (0 ∷ xs , eq)
+            ≡∎
+-- If the first element of v is suc x, then v is constructed in the LHS
+-- of the +++ in the (suc m) (suc w) case of getWVec.
+-- #EXT: there is quite some redundancy between this case and the previous case.
+getWVec-complete {suc m} {suc w} (suc x ∷ xs , eq) = (j , outp)
+    where
+        open PosWeightCase m w
+        rec-l : Σ[ n ∈ ℕ ] Vec (WVec (suc m) w) (suc n)
+        rec-l = getWVec (suc m) w
+        n-l : ℕ
+        n-l = suc $ proj₁ rec-l
+        vecs-l : Vec (WVec (suc m) w) n-l
+        vecs-l = proj₂ rec-l
+
+        rec-r : Σ[ n ∈ ℕ ] Vec (WVec m  (suc w)) (suc n)
+        rec-r = getWVec m (suc w)
+        n-r : ℕ
+        n-r = suc $ proj₁ rec-r
+        vecs-r : Vec (WVec m (suc w)) n-r
+        vecs-r = proj₂ rec-r
+
+        eq' : weight (x ∷ xs) ≡ w
+        eq' = suc-injective eq
+        IH : Σ[ j' ∈ Fin n-l ] Vec.lookup vecs-l j' ≡ (x ∷ xs , eq')
+        IH = getWVec-complete {suc m} {w} (x ∷ xs , eq')
+        j' : Fin n-l
+        j' = proj₁ IH
+        j : Fin (n-l + n-r)
+        j = j' ↑ˡ n-r
+
+        vecs = Vec.map incrFirst vecs-l Vec.++ Vec.map (0 w∷_) vecs-r
+
+        outp : Vec.lookup vecs j ≡ (suc x ∷ xs , eq)
+        outp =
+            ≡begin 
+                Vec.lookup vecs j
+            ≡⟨ lookup-++ˡ
+                (Vec.map incrFirst vecs-l)
+                (Vec.map (0 w∷_) vecs-r)
+                j'
+            ⟩
+                Vec.lookup (Vec.map incrFirst vecs-l) j'
+            ≡⟨ lookup-map j' incrFirst vecs-l  ⟩
+                incrFirst (Vec.lookup vecs-l j')
+            ≡⟨ cong incrFirst $ proj₂ IH ⟩
+                incrFirst (x ∷ xs , eq')
+            ≡⟨⟩
+                (suc x ∷ xs , cong suc eq')
+            ≡⟨ restIsProofIrrel (has-weight-irrel (suc w)) 
+                                (cong suc eq') eq refl ⟩
+                (suc x ∷ xs , eq)
+            ≡∎
 
 
 -- Simple implementation that does not come with internal correctness proofs.
