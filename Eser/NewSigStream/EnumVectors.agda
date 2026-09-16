@@ -278,7 +278,18 @@ getWVec-unique
     → (i j : (Fin $ suc $ proj₁ $ getWVec m w))
     → Vec.lookup (proj₂ $ getWVec m w) i ≡ Vec.lookup (proj₂ $ getWVec m w) j
     → i ≡ j
-getWVec-unique = ?
+getWVec-unique {m} {w} i j eq = ?
+    --where
+    --    n : ℕ
+    --    n = suc $ proj₁ $ getWVec m w)
+    --    vecs : Vec (WVec m w) n
+    --    vecs = proj₂ $ getWVecs m w
+    --    v : WVec m w
+    --    v = Vec.lookup vecs i
+    --    v' : WVec m w
+    --    v' = Vec.lookup vecs i
+
+        
 
 
 -- Simple implementation that does not come with internal correctness proofs.
@@ -302,8 +313,17 @@ test = enumVecs 3 3
 forgetWeight : {m w : ℕ} → WVec m w → Vec ℕ (suc m)
 forgetWeight (v , eq) = v
 
+forgetWeight-injective
+    : {m w : ℕ}
+    → (v u : WVec m w)
+    → forgetWeight v ≡ forgetWeight u
+    → v ≡ u
+forgetWeight-injective {m} {w} (v , pv) (v , pu) refl = 
+    restIsProofIrrel (has-weight-irrel w) pv pu refl
+
+
 vecPart : (m : ℕ) → Partition (Vec ℕ (suc m))
-vecPart m = record { chunks = chunks ; complete = complete ; unique = {! !} }
+vecPart m = record { chunks = chunks ; complete = complete ; unique = unique }
     where
         chunks : Chunking (Vec ℕ (suc m))
         chunks w = (proj₁ wvecs , Vec.map forgetWeight (proj₂ wvecs))
@@ -346,4 +366,98 @@ vecPart m = record { chunks = chunks ; complete = complete ; unique = {! !} }
                     ≡⟨⟩
                         v 
                     ≡∎
-                    
+        unique
+            : (wi w'j : Idx chunks)
+            → (chunks !!! wi) ≡ (chunks !!! w'j) 
+            → wi ≡ w'j
+        unique wi@(w , i) w'j@(w' , j) eq = lemma w≡w' i j eq
+            where
+                v' : WVec m w
+                v' = Vec.lookup (proj₂ $ getWVec m w) i
+                v : Vec ℕ (suc m)
+                v = (chunks !!! wi)
+                Hv : proj₁ v' ≡ v
+                Hv = 
+                    ≡begin 
+                        proj₁ v'
+                    ≡⟨⟩
+                        forgetWeight (Vec.lookup (proj₂ $ getWVec m w) i)
+                    ≡⟨ sym $ lookup-map i forgetWeight (proj₂ $ getWVec m w) ⟩
+                        Vec.lookup (Vec.map forgetWeight 
+                                    (proj₂ $ getWVec m w)) i
+                    ≡⟨⟩
+                        chunks !!! wi
+                    ≡∎
+
+                u' : WVec m w'
+                u' = Vec.lookup (proj₂ $ getWVec m w') j
+                u : Vec ℕ (suc m)
+                u = (chunks !!! w'j)
+                Hu : proj₁ u' ≡ u
+                Hu = 
+                    ≡begin 
+                        proj₁ u'
+                    ≡⟨⟩
+                        forgetWeight (Vec.lookup (proj₂ $ getWVec m w') j)
+                    ≡⟨ sym $ lookup-map j forgetWeight (proj₂ $ getWVec m w') ⟩
+                        Vec.lookup (Vec.map forgetWeight 
+                                    (proj₂ $ getWVec m w')) j
+                    ≡⟨⟩
+                        chunks !!! w'j
+                    ≡∎
+
+                w≡w' : w ≡ w'
+                w≡w' = 
+                    ≡begin 
+                        w
+                    ≡⟨ (sym $ proj₂ $ Vec.lookup (proj₂ $ getWVec m w) i) ⟩
+                        weight (proj₁ v')
+                    ≡⟨ cong weight Hv ⟩
+                        weight v
+                    ≡⟨ cong weight eq ⟩
+                        weight u
+                    ≡⟨ cong weight $ sym Hu ⟩
+                        weight (proj₁ u')
+                    ≡⟨ (proj₂ $ Vec.lookup (proj₂ $ getWVec m w') j) ⟩
+                        w'
+                    ≡∎
+                lemma
+                    : {w w' : ℕ}
+                    → w ≡ w'
+                    → (i : SubIdx chunks w)
+                    → (j : SubIdx chunks w')
+                    → chunks !!! (w , i) ≡ chunks !!! (w' , j)
+                    → (w , i) ≡ (w' , j)
+                lemma {w} {w} refl i j eq = cong (w ,_) i≡j
+                    where
+                        x : Vec ℕ (suc m)
+                        x = forgetWeight $ Vec.lookup (proj₂ $ getWVec m w) i
+                        y : Vec ℕ (suc m)
+                        y = forgetWeight $ Vec.lookup (proj₂ $ getWVec m w) j
+                        eq'' : x ≡ y
+                        eq'' =
+                            ≡begin 
+                                forgetWeight 
+                                    (Vec.lookup (proj₂ $ getWVec m w) i)
+                            ≡⟨ sym $ lookup-map i forgetWeight 
+                                                (proj₂ $ getWVec m w) ⟩
+                                Vec.lookup 
+                                (Vec.map forgetWeight $ proj₂ $ getWVec m w) i
+                            ≡⟨ eq ⟩
+                                Vec.lookup 
+                                (Vec.map forgetWeight $ proj₂ $ getWVec m w) j
+                            ≡⟨ lookup-map j forgetWeight 
+                                                (proj₂ $ getWVec m w) ⟩
+                                forgetWeight 
+                                    (Vec.lookup (proj₂ $ getWVec m w) j)
+                            ≡∎
+                            
+                        eq' : Vec.lookup (proj₂ $ getWVec m w) i 
+                              ≡ 
+                              Vec.lookup (proj₂ $ getWVec m w) j
+                        eq' = forgetWeight-injective 
+                                (Vec.lookup (proj₂ $ getWVec m w) i) 
+                                (Vec.lookup (proj₂ $ getWVec m w) j) 
+                                eq''
+                        i≡j : i ≡ j
+                        i≡j = getWVec-unique {m} {w} i j eq'
