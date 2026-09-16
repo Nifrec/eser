@@ -88,6 +88,9 @@ mapp
     → Σ[ n ∈ ℕ ] Vec B (suc n)
 mapp {A} {B} f (n , v) = (n , Vec.map f v)
 
+zero-cons : {m w : ℕ} → (WVec m w) → (WVec (suc m) w)
+zero-cons (v , eq) = (0 ∷ v , eq)
+
 -- More notation heavy implementation that comes with proofs that:
 -- * The output is a non-empty list (of length suc n),
 -- * of non-empty vectors (of length suc m),
@@ -102,10 +105,7 @@ getWVec (suc m) 0 = output
     module ZeroWeightCase where
         rec : Σ[ n ∈ ℕ ] Vec (WVec m 0) (suc n)
         rec = getWVec m 0
-        fun : WVec m 0
-            → WVec (suc m) 0
-        fun (v , eq) = (0 ∷ v , eq)
-        output = mapp fun rec
+        output = mapp zero-cons rec
 getWVec (suc m) (suc w) = 
     -- Add one more weight point to the current position.
     mapp incrFirst (getWVec (suc m) w)
@@ -162,14 +162,14 @@ getWVec-complete {suc m} {ℕ.zero} (0 ∷ xs , eq) = (j , outp)
         IH = getWVec-complete {m} {0} (xs , eq)
         j : Fin n
         j = proj₁ IH
-        outp : Vec.lookup (Vec.map fun vecs) j ≡ (0 ∷ xs , eq)
+        outp : Vec.lookup (Vec.map zero-cons vecs) j ≡ (0 ∷ xs , eq)
         outp =
             ≡begin 
-                Vec.lookup (Vec.map fun vecs) j
-            ≡⟨ lookup-map j fun vecs  ⟩
-                fun (Vec.lookup vecs j)
-            ≡⟨ cong fun $ proj₂ IH ⟩
-                fun (xs , eq)
+                Vec.lookup (Vec.map zero-cons vecs) j
+            ≡⟨ lookup-map j zero-cons vecs  ⟩
+                zero-cons (Vec.lookup vecs j)
+            ≡⟨ cong zero-cons $ proj₂ IH ⟩
+                zero-cons (xs , eq)
             ≡⟨⟩
                 (0 ∷ xs , eq)
             ≡∎
@@ -273,12 +273,45 @@ getWVec-complete {suc m} {suc w} (suc x ∷ xs , eq) = (j , outp)
                 (suc x ∷ xs , eq)
             ≡∎
 
+zero-cons-injective 
+    : {m w : ℕ}
+    → {v v' : WVec m w}
+    → zero-cons v ≡ zero-cons v'
+    → v ≡ v'
+zero-cons-injective {m} {w} {v , eq-v} {v' , eq-v'} eq = 
+    restIsProofIrrel (has-weight-irrel w) eq-v eq-v' v≡v'
+    where
+        v≡v' : v ≡ v'
+        v≡v' = ∷-injectiveʳ (cong proj₁ eq)
+
 getWVec-unique
     : {m w : ℕ}
     → (i j : (Fin $ suc $ proj₁ $ getWVec m w))
     → Vec.lookup (proj₂ $ getWVec m w) i ≡ Vec.lookup (proj₂ $ getWVec m w) j
     → i ≡ j
-getWVec-unique {m} {w} i j eq = ?
+getWVec-unique {ℕ.zero} {w} Fin.zero Fin.zero refl = refl
+getWVec-unique {suc m} {ℕ.zero} i j eq = getWVec-unique {m} {ℕ.zero} i j eq'
+    where
+        n : ℕ
+        n = suc $ proj₁ $ getWVec m 0
+        vecs : Vec (WVec m 0) n
+        vecs = proj₂ $ getWVec m 0
+        eq' : Vec.lookup vecs i 
+              ≡ 
+              Vec.lookup vecs j
+        eq' = zero-cons-injective $
+            ≡begin 
+               zero-cons (Vec.lookup vecs i)
+            ≡⟨ sym $ lookup-map i zero-cons vecs  ⟩
+                Vec.lookup (Vec.map zero-cons vecs) i
+            ≡⟨ eq ⟩
+                Vec.lookup (Vec.map zero-cons vecs) j
+            ≡⟨ lookup-map j zero-cons vecs  ⟩
+              zero-cons (Vec.lookup vecs j)
+            ≡∎
+            
+    
+getWVec-unique {suc m} {suc w} i j eq = {! !}
     --where
     --    n : ℕ
     --    n = suc $ proj₁ $ getWVec m w)
