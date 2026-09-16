@@ -19,7 +19,7 @@ open import Data.Nat.Properties
 open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Empty
-open import Data.Fin using (Fin ; _↑ˡ_ ; _↑ʳ_ )
+open import Data.Fin using (Fin ; _↑ˡ_ ; _↑ʳ_ ; splitAt)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
@@ -91,6 +91,9 @@ mapp {A} {B} f (n , v) = (n , Vec.map f v)
 zero-cons : {m w : ℕ} → (WVec m w) → (WVec (suc m) w)
 zero-cons (v , eq) = (0 ∷ v , eq)
 
+incrFirst : {m w : ℕ} → WVec m w → WVec m (suc w)
+incrFirst (x ∷ xs , eq) = ((suc x) ∷ xs , cong suc eq)
+
 -- More notation heavy implementation that comes with proofs that:
 -- * The output is a non-empty list (of length suc n),
 -- * of non-empty vectors (of length suc m),
@@ -112,9 +115,6 @@ getWVec (suc m) (suc w) =
     +++
     -- Don't drop any more weight here, and move to the next position.
     mapp (0 w∷_) (getWVec m (suc w))
-    module PosWeightCase where
-        incrFirst : {m w : ℕ} → WVec m w → WVec m (suc w)
-        incrFirst (x ∷ xs , eq) = ((suc x) ∷ xs , cong suc eq)
 has-weight-irrel 
     : {m : ℕ}
     → (w : ℕ)
@@ -177,7 +177,6 @@ getWVec-complete {suc m} {ℕ.zero} (0 ∷ xs , eq) = (j , outp)
 -- of the +++ in the (suc m) (suc w) case of getWVec.
 getWVec-complete {suc m} {suc w} (ℕ.zero ∷ xs , eq) = (j , outp)
     where
-        open PosWeightCase m w
         rec-l : Σ[ n ∈ ℕ ] Vec (WVec (suc m) w) (suc n)
         rec-l = getWVec (suc m) w
         n-l : ℕ
@@ -226,7 +225,6 @@ getWVec-complete {suc m} {suc w} (ℕ.zero ∷ xs , eq) = (j , outp)
 -- #EXT: there is quite some redundancy between this case and the previous case.
 getWVec-complete {suc m} {suc w} (suc x ∷ xs , eq) = (j , outp)
     where
-        open PosWeightCase m w
         rec-l : Σ[ n ∈ ℕ ] Vec (WVec (suc m) w) (suc n)
         rec-l = getWVec (suc m) w
         n-l : ℕ
@@ -309,19 +307,126 @@ getWVec-unique {suc m} {ℕ.zero} i j eq = getWVec-unique {m} {ℕ.zero} i j eq'
             ≡⟨ lookup-map j zero-cons vecs  ⟩
               zero-cons (Vec.lookup vecs j)
             ≡∎
-            
-    
 getWVec-unique {suc m} {suc w} i j eq = {! !}
-    --where
-    --    n : ℕ
-    --    n = suc $ proj₁ $ getWVec m w)
-    --    vecs : Vec (WVec m w) n
-    --    vecs = proj₂ $ getWVecs m w
-    --    v : WVec m w
-    --    v = Vec.lookup vecs i
-    --    v' : WVec m w
-    --    v' = Vec.lookup vecs i
+    where
+        n : ℕ
+        n = suc $ proj₁ $ getWVec (suc m) (suc w)
+        vecs : Vec (WVec (suc m) (suc w)) n
+        vecs = proj₂ $ getWVec (suc m) (suc w)
 
+        n-l : ℕ
+        n-l = suc $ proj₁ $ getWVec (suc m) w
+        LHS' : Vec (WVec (suc m) w) n-l
+        LHS' = proj₂ $ getWVec (suc m) w
+        LHS : Vec (WVec (suc m) (suc w)) n-l
+        LHS = Vec.map incrFirst $ LHS'
+
+        n-r : ℕ
+        n-r = suc $ proj₁ $ getWVec m (suc w)
+        RHS' : Vec (WVec m (suc w)) n-r
+        RHS' = proj₂ $ getWVec m (suc w)
+        RHS : Vec (WVec (suc m) (suc w)) n-r
+        RHS = Vec.map (0 w∷_) RHS'
+
+        check : n ≡ n-l + n-r × vecs ≡ LHS Vec.++ RHS
+        check = (refl , refl)
+
+        Hi : Vec.lookup (LHS Vec.++ RHS) i 
+             ≡ 
+             [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l i)
+        Hi = lookup-splitAt n-l LHS RHS i
+
+        Hj : Vec.lookup (LHS Vec.++ RHS) j
+             ≡ 
+             [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l j)
+        Hj = lookup-splitAt n-l LHS RHS j
+
+        incrFirst-firstelem-nonzero
+            : {m w n : ℕ}
+            → (v : WVec m (suc w))
+            → (vecs : Vec (WVec m w) n)
+            → (i : Fin n)
+            → (v ≡ Vec.lookup (Vec.map incrFirst vecs) i)
+            → Vec.head (proj₁ v) ≢ 0
+        incrFirst-firstelem-nonzero v vecs i eq hv≡0 = ?
+            --where
+            --    x : ℕ
+            --    x = Vec.head $ Vec.lookup vecs i
+            --    eq' : suc x ≡ 0
+            --    eq' =
+            --        ≡begin 
+            --            suc (Vec.head (Vec.lookup vecs i) )
+            --        ≡⟨ cong suc $ sym $ lookup-map i incrFirst  ⟩
+            --            suc (Vec.lookup (Vec.incrFirst
+                        
+                        
+            --        ≡⟨  ⟩
+                        
+            --        ≡∎
+        zero-w-cons-firstelem-nonsuc
+            : {m w n x : ℕ}
+            → (v : WVec (suc m) w)
+            → (vecs : Vec (WVec m w) n)
+            → (i : Fin n)
+            → (v ≡ Vec.lookup (Vec.map (0 w∷_) vecs) i)
+            → Vec.head (proj₁ v) ≢ suc x
+        zero-w-cons-firstelem-nonsuc = ?
+                    
+
+        -- The LHS has only elements whose first element is incremented,
+        -- and the RHS has only elements whose first element is 0.
+        -- Clearly no vector can be in both!
+        LHS-RHS-disjointness 
+            : (i : Fin n-l)
+            → (j : Fin n-r)
+            → (v : WVec (suc m) (suc w))
+            → v ≡ Vec.lookup LHS i
+            → v ≡ Vec.lookup RHS j
+            → ⊥
+        LHS-RHS-disjointness i j v@(ℕ.zero ∷ xs , eq) p q = 
+            incrFirst-firstelem-nonzero v LHS' i p refl 
+        LHS-RHS-disjointness i j v@(suc x ∷ xs , eq) p q =
+            zero-w-cons-firstelem-nonsuc v RHS' j q refl 
+
+        cases
+            : ( i' j' : Fin n-l ⊎ Fin n-r )
+            → (i' ≡ Data.Fin.splitAt n-l i)
+            → (j' ≡ Data.Fin.splitAt n-l j)
+            → i ≡ j
+        -- #TODO: Use IH and injectivity of incrFirst.
+        cases (inj₁ i') (inj₁ j') eq-i eq-j = {! !}
+        cases (inj₁ i') (inj₂ j') eq-i eq-j = 
+            ⊥-elim $ LHS-RHS-disjointness i' j' v eq-v-i eq-v-j
+            where
+                v : WVec (suc m) (suc w)
+                v = Vec.lookup LHS i'
+                eq-v-i = refl
+                eq-v-j : v ≡ Vec.lookup RHS j'
+                eq-v-j = 
+                    ≡begin 
+                        v 
+                    ≡⟨⟩
+                        Vec.lookup LHS i'
+                    ≡⟨⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₁ i')
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) eq-i ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l i)
+                    ≡⟨ sym $ Hi ⟩
+                        Vec.lookup (LHS Vec.++ RHS) i
+                    ≡⟨ eq ⟩
+                        Vec.lookup (LHS Vec.++ RHS) j
+                    ≡⟨ Hj ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l j)
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) (sym eq-j) ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₂ j')
+                    ≡⟨⟩
+                        Vec.lookup RHS j'
+                    ≡∎
+        -- #TODO: Same as prev case, but swap roles of i' and j' 
+        cases (inj₂ i') (inj₁ j') eq-i eq-j = {! !}
+        -- #TODO: Use IH and injectivity of (0 w∷_).
+        cases (inj₂ i') (inj₂ j') eq-i eq-j = {! !}
+        
         
 
 
@@ -333,13 +438,13 @@ enumVecs 0 w = Data.List.[ w ∷ [] ]
 enumVecs (suc m) 0 = Data.List.map (0 ∷_) (enumVecs m 0)
 enumVecs (suc m) (suc w) = 
     -- Drop one more weight at the current position.
-    Data.List.map incrFirst (enumVecs (suc m) w)
+    Data.List.map incrFirst' (enumVecs (suc m) w)
     Data.List.++
     -- Don't drop any more weight here, and move to the next position.
     Data.List.map (0 ∷_) (enumVecs m (suc w))
     where
-        incrFirst : {m : ℕ} → Vec ℕ (suc m) → Vec ℕ (suc m)
-        incrFirst (x ∷ xs) = (suc x) ∷ xs
+        incrFirst' : {m : ℕ} → Vec ℕ (suc m) → Vec ℕ (suc m)
+        incrFirst' (x ∷ xs) = (suc x) ∷ xs
 
 test = enumVecs 3 3
 
