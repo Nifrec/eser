@@ -37,32 +37,6 @@ open import Eser.Equivalences.Notation
 
 module Eser.NewSigStream.EnumVectors where
 
-Chunking : (A : Set) → Set
-Chunking A = ℕ → Σ[ m ∈ ℕ ] Vec A (suc m)
-
-SubIdx : {A : Set} → Chunking A → ℕ → Set
-SubIdx f i = Fin (suc $ proj₁ $ f i)
-
-Idx : {A : Set} → Chunking A → Set
-Idx f = Σ[ i ∈ ℕ ] (SubIdx f i)
-
-_!!!_ : {A : Set} → (f : Chunking A) → Idx f → A
-f !!! (i , j) = Vec.lookup (proj₂ $ f i) j
-
-record Partition (A : Set) : Set where
-    field
-        chunks : Chunking A
-        -- Each element occurs in some chunk.
-        complete : (a : A) → Σ[ ij ∈ (Idx chunks) ] a ≡ chunks !!! ij
-        -- Chunks are disjoint and have no duplicates,
-        -- i.e., elements occur in at most one chunk and therein at most once.
-        unique 
-            : (ij hk : Idx chunks) 
-            → (chunks !!! ij) ≡ (chunks !!! hk) 
-            → ij ≡ hk
-
-partitionToEnum : {A : Set} → Partition A → A ≃ ℕ
-partitionToEnum {A} p = ?
 
 -- The weight of a Vec ℕ is the sum of its elements.
 weight : {m : ℕ} → Vec ℕ m → ℕ
