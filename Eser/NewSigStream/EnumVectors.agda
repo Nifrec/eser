@@ -378,36 +378,49 @@ getWVec-unique {suc m} {suc w} i j eq =
         Hj = lookup-splitAt n-l LHS RHS j
 
         incrFirst-firstelem-nonzero
+            : {m w : ℕ}
+            → (v : WVec m w)
+            → Vec.head (proj₁ (incrFirst v)) ≢ 0
+        incrFirst-firstelem-nonzero {m} {w} (x ∷ xs , _) = 1+n≢0 {x}
+
+        incrFirst-firstelem-nonzero'
             : {m w n : ℕ}
             → (v : WVec m (suc w))
             → (vecs : Vec (WVec m w) n)
             → (i : Fin n)
             → (v ≡ Vec.lookup (Vec.map incrFirst vecs) i)
             → Vec.head (proj₁ v) ≢ 0
-        incrFirst-firstelem-nonzero v vecs i eq hv≡0 = ?
-            --where
-            --    x : ℕ
-            --    x = Vec.head $ Vec.lookup vecs i
-            --    eq' : suc x ≡ 0
-            --    eq' =
-            --        ≡begin 
-            --            suc (Vec.head (Vec.lookup vecs i) )
-            --        ≡⟨ cong suc $ sym $ lookup-map i incrFirst  ⟩
-            --            suc (Vec.lookup (Vec.incrFirst
-                        
-                        
-            --        ≡⟨  ⟩
-                        
-            --        ≡∎
+        incrFirst-firstelem-nonzero' v vecs i eq = ans
+            where
+                H : v ≡ incrFirst (Vec.lookup vecs i)
+                H = trans eq $ lookup-map i incrFirst vecs
+                ans = subst 
+                    (λ v → Vec.head (proj₁ v) ≢ 0) 
+                    (sym H)
+                    $ incrFirst-firstelem-nonzero (Vec.lookup vecs i)
+
         zero-w-cons-firstelem-nonsuc
-            : {m w n x : ℕ}
+            : {m w : ℕ}
+            → (v : WVec m w)
+            → (y : ℕ)
+            → Vec.head (proj₁ (0 w∷ v)) ≢ suc y
+        zero-w-cons-firstelem-nonsuc {m} {w} (x ∷ xs , _) y = ≢-sym $ 1+n≢0 {y}
+
+        zero-w-cons-firstelem-nonsuc'
+            : {m w n y : ℕ}
             → (v : WVec (suc m) w)
             → (vecs : Vec (WVec m w) n)
             → (i : Fin n)
             → (v ≡ Vec.lookup (Vec.map (0 w∷_) vecs) i)
-            → Vec.head (proj₁ v) ≢ suc x
-        zero-w-cons-firstelem-nonsuc = ?
-                    
+            → Vec.head (proj₁ v) ≢ suc y
+        zero-w-cons-firstelem-nonsuc' {y = y} v vecs i eq = ans
+            where
+                H : v ≡ 0 w∷ (Vec.lookup vecs i)
+                H = trans eq $ lookup-map i (0 w∷_) vecs
+                ans = subst 
+                    (λ v → Vec.head (proj₁ v) ≢ suc y) 
+                    (sym H)
+                    $ zero-w-cons-firstelem-nonsuc (Vec.lookup vecs i) y
 
         -- The LHS has only elements whose first element is incremented,
         -- and the RHS has only elements whose first element is 0.
@@ -420,9 +433,9 @@ getWVec-unique {suc m} {suc w} i j eq =
             → v ≡ Vec.lookup RHS j
             → ⊥
         LHS-RHS-disjointness i j v@(ℕ.zero ∷ xs , eq) p q = 
-            incrFirst-firstelem-nonzero v LHS' i p refl 
+            incrFirst-firstelem-nonzero' v LHS' i p refl 
         LHS-RHS-disjointness i j v@(suc x ∷ xs , eq) p q =
-            zero-w-cons-firstelem-nonsuc v RHS' j q refl 
+            zero-w-cons-firstelem-nonsuc' v RHS' j q refl 
 
         i'≡j'→i≡j 
             : ( i' j' : Fin n-l ⊎ Fin n-r )
