@@ -409,11 +409,11 @@ n*a+[a+b]≡Sn*a+b n a b =
         (ℕ.suc n) * a + b
     ∎
     
-m<n→Sm>n⊎Sm≡n
+m<n→Sm<n⊎Sm≡n
     : {m n : ℕ}
     → m < n
     → ℕ.suc m < n ⊎ ℕ.suc m ≡ n
-m<n→Sm>n⊎Sm≡n {m} {n} m<n = 
+m<n→Sm<n⊎Sm≡n {m} {n} m<n = 
     let Sm≤n : ℕ.suc m ≤ n
         Sm≤n = m<n
     in
