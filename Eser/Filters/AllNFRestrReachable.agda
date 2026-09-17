@@ -19,6 +19,8 @@
 -- gives the desired NFFun.
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --safe #-}
+
 open import Data.Nat
 open import Data.Empty
 open import Relation.Binary.Definitions

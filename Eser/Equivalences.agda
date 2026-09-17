@@ -6,6 +6,8 @@
 --------------------------------------------------------------------------------
 -- See Eser.Equivalences.Notations for the notation conventions.
 
+{-# OPTIONS --safe #-}
+
 module Eser.Equivalences where
 
 open import Eser.Equivalences.Notation public

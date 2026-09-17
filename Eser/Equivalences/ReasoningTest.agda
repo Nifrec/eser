@@ -4,6 +4,9 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Nat
 open import Data.Sum

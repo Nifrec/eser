@@ -11,6 +11,9 @@
 --
 -- I (Lulof Pirée) do not claim authership of those definitions,
 -- they are from the stdlib!
+
+{-# OPTIONS --safe #-}
+
 open import Relation.Binary.PropositionalEquality.Core as ≡
   using (_≡_; _≢_; refl; sym; trans; cong; cong₂; subst; _≗_)
 open import Axiom.UniquenessOfIdentityProofs using (module Decidable⇒UIP)

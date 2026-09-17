@@ -8,7 +8,8 @@
 -- of this library, now replaced with the `Eser` implementation.
 -- Hence there are a lot of now-unused lemmas.
 
--- TODO: probably not all of these are needed.
+{-# OPTIONS --safe #-}
+
 open import Data.Bool hiding (_≤_; _≤?_)
 open import Data.Empty
 open import Data.Fin hiding (_<_)

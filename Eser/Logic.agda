@@ -4,6 +4,7 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+{-# OPTIONS --safe #-}
 
 module Eser.Logic where
 

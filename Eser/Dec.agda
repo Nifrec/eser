@@ -20,8 +20,9 @@
 -- "yourDecision ≡ yes p" and "yourDecision ≡ no ¬p" that serve as input
 -- to the sublemmas.
 
+{-# OPTIONS --safe #-}
 
--- #TODO: remove unused imports.
+-- #EXT: remove unused imports.
 open import Level
 open import Data.Nat
 open import Data.Nat.Properties

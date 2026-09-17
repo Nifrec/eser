@@ -4,6 +4,9 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties using (¬-not ; not-¬)

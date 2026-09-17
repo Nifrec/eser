@@ -4,6 +4,9 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --safe #-}
+
 -- The conversions RelToFun and FunToRel form an 
 -- isomorphism 'up to proj₁ homotopy'.
 open import Level

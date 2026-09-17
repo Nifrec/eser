@@ -15,6 +15,8 @@
 -- uses _≃_ instead, since  A ↔ B looks more like (A → B) × (B → A);
 -- a much weaker statement!
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties

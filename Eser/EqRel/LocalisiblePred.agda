@@ -11,6 +11,9 @@
 -- uses FunToRel defined in Eser.EqRel.Conversions,
 -- which depends on Eser.EqRel.Definitions.
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties using (¬-not ; not-¬)

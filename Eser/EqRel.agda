@@ -7,6 +7,8 @@
 -- High-level file that exports content of other files.
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --safe #-}
+
 module Eser.EqRel where
 
 open import Eser.EqRel.Definitions public

@@ -8,9 +8,8 @@
 -- implementation of this project.
 -- As a consequence, the extended 'Eser' version contains many unused lemmas.
 
----- TODO: probably not all of these are needed.
---open import Data.Bool hiding (_≤_; _≤?_)
---open import Data.Empty
+{-# OPTIONS --safe #-}
+
 open import Data.Fin hiding (_<_)
 open import Data.Fin.Properties
 open import Data.Nat
