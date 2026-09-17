@@ -19,15 +19,16 @@ open import Data.Nat.Properties
 open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Empty
-open import Data.Fin using (Fin ; _↑ˡ_ ; _↑ʳ_ ; splitAt)
+open import Data.Fin using (Fin ; _↑ˡ_ ; _↑ʳ_ ; splitAt ; join)
+open import Data.Fin.Properties using (join-splitAt)
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
-open import Data.Vec as Vec
+open import Data.Vec as Vec hiding (splitAt)
 open import Data.Vec.Properties
 open import Data.List.Membership.Propositional
-open import Data.List renaming (_∷_ to _∷L_) hiding (sum)
+open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; splitAt)
 open import Function hiding (_↔_)
 
 open import Eser.Logic
@@ -81,6 +82,13 @@ _+++_
     → Σ[ n ∈ ℕ ] Vec A (suc n)
 (n , v) +++ (m , u) = (n + suc m , v Vec.++ u)
 
+has-weight-irrel 
+    : {m : ℕ}
+    → (w : ℕ)
+    → (v : Vec ℕ m)
+    → Relation.Nullary.Irrelevant (weight v ≡ w)
+has-weight-irrel w v p q = uip p q
+
 mapp
     : {A B : Set} 
     → (A → B)
@@ -93,6 +101,22 @@ zero-cons (v , eq) = (0 ∷ v , eq)
 
 incrFirst : {m w : ℕ} → WVec m w → WVec m (suc w)
 incrFirst (x ∷ xs , eq) = ((suc x) ∷ xs , cong suc eq)
+
+incrFirst-injective
+    : {m w : ℕ}
+    → {v u : WVec m w}
+    → (incrFirst v ≡ incrFirst u)
+    → v ≡ u
+incrFirst-injective {m} {w} {x ∷ xs , eq-v} {y ∷ ys , eq-u} eq = ans
+    where
+        x≡y : x ≡ y
+        x≡y = suc-injective $ cong (λ (v , _) → Vec.head v) eq
+        xs≡ys : xs ≡ ys
+        xs≡ys = cong (λ (v , _) → Vec.tail v) eq
+        xxs≡yys : x ∷ xs ≡ y ∷ ys
+        xxs≡yys = cong₂ _∷_ x≡y xs≡ys
+        ans : (x ∷ xs , eq-v) ≡ (y ∷ ys , eq-u)
+        ans = restIsProofIrrel (has-weight-irrel w) eq-v eq-u xxs≡yys
 
 -- More notation heavy implementation that comes with proofs that:
 -- * The output is a non-empty list (of length suc n),
@@ -115,12 +139,6 @@ getWVec (suc m) (suc w) =
     +++
     -- Don't drop any more weight here, and move to the next position.
     mapp (0 w∷_) (getWVec m (suc w))
-has-weight-irrel 
-    : {m : ℕ}
-    → (w : ℕ)
-    → (v : Vec ℕ m)
-    → Relation.Nullary.Irrelevant (weight v ≡ w)
-has-weight-irrel w v p q = uip p q
 
 getWVec-complete 
     : {m w : ℕ}
@@ -307,7 +325,8 @@ getWVec-unique {suc m} {ℕ.zero} i j eq = getWVec-unique {m} {ℕ.zero} i j eq'
             ≡⟨ lookup-map j zero-cons vecs  ⟩
               zero-cons (Vec.lookup vecs j)
             ≡∎
-getWVec-unique {suc m} {suc w} i j eq = {! !}
+getWVec-unique {suc m} {suc w} i j eq = 
+    cases (splitAt n-l i) (splitAt n-l j) refl refl
     where
         n : ℕ
         n = suc $ proj₁ $ getWVec (suc m) (suc w)
@@ -333,12 +352,12 @@ getWVec-unique {suc m} {suc w} i j eq = {! !}
 
         Hi : Vec.lookup (LHS Vec.++ RHS) i 
              ≡ 
-             [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l i)
+             [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l i)
         Hi = lookup-splitAt n-l LHS RHS i
 
         Hj : Vec.lookup (LHS Vec.++ RHS) j
              ≡ 
-             [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l j)
+             [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l j)
         Hj = lookup-splitAt n-l LHS RHS j
 
         incrFirst-firstelem-nonzero
@@ -388,13 +407,74 @@ getWVec-unique {suc m} {suc w} i j eq = {! !}
         LHS-RHS-disjointness i j v@(suc x ∷ xs , eq) p q =
             zero-w-cons-firstelem-nonsuc v RHS' j q refl 
 
+        i'≡j'→i≡j 
+            : ( i' j' : Fin n-l ⊎ Fin n-r )
+            → (i' ≡ splitAt n-l i)
+            → (j' ≡ splitAt n-l j)
+            → i' ≡ j'
+            → i ≡ j
+        i'≡j'→i≡j i' j' eq-i eq-j i'≡j' = 
+            ≡begin 
+                i
+            ≡⟨ sym $ join-splitAt n-l n-r i ⟩
+                join n-l n-r (splitAt n-l i)
+            ≡⟨ cong (join n-l n-r) $ sym eq-i ⟩
+                join n-l n-r i'
+            ≡⟨ cong (join n-l n-r) i'≡j' ⟩
+                join n-l n-r j'
+            ≡⟨ sym $ cong (join n-l n-r) $ sym eq-j ⟩
+                join n-l n-r (splitAt n-l j)
+            ≡⟨ join-splitAt n-l n-r j ⟩
+               j 
+            ≡∎
+            
+
         cases
             : ( i' j' : Fin n-l ⊎ Fin n-r )
-            → (i' ≡ Data.Fin.splitAt n-l i)
-            → (j' ≡ Data.Fin.splitAt n-l j)
+            → (i' ≡ splitAt n-l i)
+            → (j' ≡ splitAt n-l j)
             → i ≡ j
         -- #TODO: Use IH and injectivity of incrFirst.
-        cases (inj₁ i') (inj₁ j') eq-i eq-j = {! !}
+        cases (inj₁ i') (inj₁ j') eq-i eq-j = 
+            i'≡j'→i≡j (inj₁ i') (inj₁ j') eq-i eq-j (cong inj₁ $ IH lookup-eq)
+            where
+                IH : Vec.lookup LHS' i' 
+                     ≡ 
+                     Vec.lookup LHS' j'
+                    → i' ≡ j'
+                IH = getWVec-unique {suc m} {w} i' j'
+                lookup-eq  
+                    : Vec.lookup LHS' i' 
+                     ≡ 
+                     Vec.lookup LHS' j'
+                lookup-eq = incrFirst-injective $ 
+                    ≡begin 
+                      incrFirst (Vec.lookup LHS' i')
+                    ≡⟨ sym $ lookup-map i' incrFirst LHS' ⟩
+                        Vec.lookup (Vec.map incrFirst LHS') i'
+                    ≡⟨⟩
+                        Vec.lookup LHS i'
+                    ≡⟨⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₁ i')
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) eq-i ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l i)
+                    ≡⟨ sym $ Hi ⟩
+                        Vec.lookup (LHS Vec.++ RHS) i
+                    ≡⟨ eq ⟩
+                        Vec.lookup (LHS Vec.++ RHS) j
+                    ≡⟨ Hj ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l j)
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) (sym eq-j) ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₁ j')
+                    ≡⟨⟩
+                        Vec.lookup LHS j'
+                    ≡⟨⟩
+                        Vec.lookup (Vec.map incrFirst LHS') j'
+                    ≡⟨ lookup-map j' incrFirst LHS' ⟩
+                        incrFirst (Vec.lookup LHS' j')
+                    ≡∎
+                    
+
         cases (inj₁ i') (inj₂ j') eq-i eq-j = 
             ⊥-elim $ LHS-RHS-disjointness i' j' v eq-v-i eq-v-j
             where
@@ -410,20 +490,49 @@ getWVec-unique {suc m} {suc w} i j eq = {! !}
                     ≡⟨⟩
                         [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₁ i')
                     ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) eq-i ⟩
-                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l i)
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l i)
                     ≡⟨ sym $ Hi ⟩
                         Vec.lookup (LHS Vec.++ RHS) i
                     ≡⟨ eq ⟩
                         Vec.lookup (LHS Vec.++ RHS) j
                     ≡⟨ Hj ⟩
-                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (Data.Fin.splitAt n-l j)
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l j)
                     ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) (sym eq-j) ⟩
                         [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₂ j')
                     ≡⟨⟩
                         Vec.lookup RHS j'
                     ≡∎
-        -- #TODO: Same as prev case, but swap roles of i' and j' 
-        cases (inj₂ i') (inj₁ j') eq-i eq-j = {! !}
+        -- Same as prev case, but with i' and j', and i and j swapped, and `sym
+        -- eq` instead of `eq`.
+        cases (inj₂ i') (inj₁ j') eq-i eq-j = 
+            ⊥-elim $ LHS-RHS-disjointness j' i' v eq-v-j eq-v-i
+            where
+                v : WVec (suc m) (suc w)
+                v = Vec.lookup LHS j'
+                eq-v-j = refl
+                eq-v-i : v ≡ Vec.lookup RHS i'
+                eq-v-i = 
+                    ≡begin 
+                        v 
+                    ≡⟨⟩
+                        Vec.lookup LHS j'
+                    ≡⟨⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₁ j')
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) eq-j ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ 
+                            (splitAt n-l j)
+                    ≡⟨ sym $ Hj ⟩
+                        Vec.lookup (LHS Vec.++ RHS) j
+                    ≡⟨ sym $ eq ⟩
+                        Vec.lookup (LHS Vec.++ RHS) i
+                    ≡⟨ Hi ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ 
+                            (splitAt n-l i)
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) (sym eq-i) ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₂ i')
+                    ≡⟨⟩
+                        Vec.lookup RHS i'
+                    ≡∎
         -- #TODO: Use IH and injectivity of (0 w∷_).
         cases (inj₂ i') (inj₂ j') eq-i eq-j = {! !}
         
