@@ -118,6 +118,23 @@ incrFirst-injective {m} {w} {x ∷ xs , eq-v} {y ∷ ys , eq-u} eq = ans
         ans : (x ∷ xs , eq-v) ≡ (y ∷ ys , eq-u)
         ans = restIsProofIrrel (has-weight-irrel w) eq-v eq-u xxs≡yys
 
+zero-w-cons-injective
+    : {m w : ℕ}
+    → {v u : WVec m w}
+    → 0 w∷ v ≡ 0 w∷ u
+    → v ≡ u
+zero-w-cons-injective {m} {w} {x ∷ xs , eq-v} {y ∷ ys , eq-u} eq = ans
+    where
+        x≡y : x ≡ y
+        x≡y = cong (λ (v , _) → Vec.head $ Vec.tail v) eq
+        xs≡ys : xs ≡ ys
+        xs≡ys = cong (λ (v , _) → Vec.tail $ Vec.tail v) eq
+        xxs≡yys : x ∷ xs ≡ y ∷ ys
+        xxs≡yys = cong₂ _∷_ x≡y xs≡ys
+        ans : (x ∷ xs , eq-v) ≡ (y ∷ ys , eq-u)
+        ans = restIsProofIrrel (has-weight-irrel w) eq-v eq-u xxs≡yys
+
+
 -- More notation heavy implementation that comes with proofs that:
 -- * The output is a non-empty list (of length suc n),
 -- * of non-empty vectors (of length suc m),
@@ -434,7 +451,7 @@ getWVec-unique {suc m} {suc w} i j eq =
             → (i' ≡ splitAt n-l i)
             → (j' ≡ splitAt n-l j)
             → i ≡ j
-        -- #TODO: Use IH and injectivity of incrFirst.
+        -- First case: follows from IH and injectivity of incrFirst.
         cases (inj₁ i') (inj₁ j') eq-i eq-j = 
             i'≡j'→i≡j (inj₁ i') (inj₁ j') eq-i eq-j (cong inj₁ $ IH lookup-eq)
             where
@@ -473,7 +490,6 @@ getWVec-unique {suc m} {suc w} i j eq =
                     ≡⟨ lookup-map j' incrFirst LHS' ⟩
                         incrFirst (Vec.lookup LHS' j')
                     ≡∎
-                    
 
         cases (inj₁ i') (inj₂ j') eq-i eq-j = 
             ⊥-elim $ LHS-RHS-disjointness i' j' v eq-v-i eq-v-j
@@ -533,8 +549,46 @@ getWVec-unique {suc m} {suc w} i j eq =
                     ≡⟨⟩
                         Vec.lookup RHS i'
                     ≡∎
-        -- #TODO: Use IH and injectivity of (0 w∷_).
-        cases (inj₂ i') (inj₂ j') eq-i eq-j = {! !}
+        -- Last case: similar to first case; use IH and injectivity of (0 w∷_).
+        -- Now we need to use the RHS instead of the LHS.
+        cases (inj₂ i') (inj₂ j') eq-i eq-j =
+            i'≡j'→i≡j (inj₂ i') (inj₂ j') eq-i eq-j (cong inj₂ $ IH lookup-eq)
+            where
+                IH : Vec.lookup RHS' i' 
+                     ≡ 
+                     Vec.lookup RHS' j'
+                    → i' ≡ j'
+                IH = getWVec-unique {m} {suc w} i' j'
+                lookup-eq  
+                    : Vec.lookup RHS' i' 
+                     ≡ 
+                     Vec.lookup RHS' j'
+                lookup-eq = zero-w-cons-injective $ 
+                    ≡begin 
+                      (0 w∷_) (Vec.lookup RHS' i')
+                    ≡⟨ sym $ lookup-map i' (0 w∷_) RHS' ⟩
+                        Vec.lookup (Vec.map (0 w∷_) RHS') i'
+                    ≡⟨⟩
+                        Vec.lookup RHS i'
+                    ≡⟨⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₂ i')
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) eq-i ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l i)
+                    ≡⟨ sym $ Hi ⟩
+                        Vec.lookup (LHS Vec.++ RHS) i
+                    ≡⟨ eq ⟩
+                        Vec.lookup (LHS Vec.++ RHS) j
+                    ≡⟨ Hj ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (splitAt n-l j)
+                    ≡⟨ cong ([ Vec.lookup LHS , Vec.lookup RHS ]′) (sym eq-j) ⟩
+                        [ Vec.lookup LHS , Vec.lookup RHS ]′ (inj₂ j')
+                    ≡⟨⟩
+                        Vec.lookup RHS j'
+                    ≡⟨⟩
+                        Vec.lookup (Vec.map (0 w∷_) RHS') j'
+                    ≡⟨ lookup-map j' (0 w∷_) RHS' ⟩
+                        (0 w∷_) (Vec.lookup RHS' j')
+                    ≡∎
         
         
 
