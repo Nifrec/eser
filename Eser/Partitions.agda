@@ -68,7 +68,7 @@ record Partition (A : Set) : Set where
 
 partitionToEnum : {A : Set} → Partition A → A ≃ ℕ
 partitionToEnum {A} p = mk≃' f f⁻¹ invˡ invʳ
-    where
+    module PartToEnumImpl where
         chunks   : Chunking A
         chunks   = Partition.chunks p
         complete = Partition.complete p
@@ -276,16 +276,36 @@ partitionToEnum {A} p = mk≃' f f⁻¹ invˡ invʳ
                     ≡⟨ +-identityʳ n ⟩
                         n
                     ≡∎
+
+        f-chunks
+            : (i : ℕ)
+            → (j : SubIdx chunks i)
+            → f (chunks !!! (i , j)) ≡ ⨁ i + toℕ j
+        f-chunks i' j' =
+            ≡begin 
+                f a
+            ≡⟨⟩
+                ⨁ i + toℕ j
+            ≡⟨ cong (λ (i , j) → ⨁ i + toℕ j) ij≡i'j' ⟩
+                ⨁ i' + toℕ j'
+            ≡∎
+            where
+                a : A
+                a = chunks !!! (i' , j')
+
+                open FImpl a using (i ; j)
+
+                ij≡i'j' : (i , j) ≡ (i' , j')
+                ij≡i'j' = unique (i , j) (i' , j') (sym $ proj₂ $ complete a)
+            
                     
         invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
         invˡ {n} refl = 
             ≡begin 
                 f (f⁻¹ n)
             ≡⟨⟩
-                f a
-            ≡⟨⟩
-                ⨁ i + toℕ j
-            ≡⟨ cong (λ (i , j) → ⨁ i + toℕ j) ij≡i'j' ⟩
+                f (chunks !!! (i' , j'))
+            ≡⟨ f-chunks i' j' ⟩
                 ⨁ i' + toℕ j'
             ≡⟨ eq ⟩
                 n
@@ -299,13 +319,7 @@ partitionToEnum {A} p = mk≃' f f⁻¹ invˡ invʳ
                 eq : ⨁ i' + toℕ j' ≡ n
                 eq = proj₂ $ proj₂ $ rec-outp
 
-                a : A
-                a = chunks !!! (i' , j')
-
-                open FImpl a using (i ; j)
-
-                ij≡i'j' : (i , j) ≡ (i' , j')
-                ij≡i'j' = unique (i , j) (i' , j') (sym $ proj₂ $ complete a)
+                open FImpl (chunks !!! (i' , j')) using (i ; j)
 
 
             
