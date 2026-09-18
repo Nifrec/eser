@@ -18,6 +18,7 @@ open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Vec
 open import Data.Vec.Relation.Unary.All
+open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
 open import Function.Properties.Inverse hiding (refl ; trans ; sym)
@@ -33,10 +34,12 @@ open import Relation.Binary.PropositionalEquality.Properties
 
 open import Eser.Aux using (_≈_)
 open import Eser.Card
-open import Eser.Signature
+open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 open import Eser.NewSigStream.EnumVectors
+open import Eser.Partitions
+open import Eser.Partitions.Properties
 
 
 module Eser.NatCoding where
@@ -60,12 +63,31 @@ module _ (n : ℕ) where
     code-decode-vec : code-vec ∘ decode-vec ≈ id
     code-decode-vec = inverseˡ⇒strictlyInverseˡ $ Inverse.inverseˡ equiv
 
+    code-vec-weight
+        : (v : Vec ℕ (suc n))
+        → weight v ≤ code-vec v
+    code-vec-weight v = subst (λ v → w ≤ code-vec v) (sym eq) 
+                              $ enc-larger-than-chunkidx (vec-part n) w j
+        where
+            w : ℕ
+            w = weight v
+            j : SubIdx (Partition.chunks (vec-part n)) w
+            j = proj₂ $ proj₁ $ Partition.complete (vec-part n) v
+            chunks : Chunking (Vec ℕ (suc n))
+            chunks = Partition.chunks $ vec-part n
+            eq : v ≡ chunks !!! (w , j)
+            eq = proj₂ $ Partition.complete (vec-part n) v
+
+
     -- The ℕ-encoding of a vector is at least as great as the maximum of its
     -- elements.
     code-vec-lemma
         : (v : Vec ℕ (suc n))
         → All (_≤ (code-vec v)) v
-    code-vec-lemma v = ?
+    code-vec-lemma v = All.map f $ elem-weight v
+        where
+            f : {x : ℕ} → x ≤ weight v → x ≤ code-vec v
+            f {x} x≤w = ≤-trans x≤w $ code-vec-weight v
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)

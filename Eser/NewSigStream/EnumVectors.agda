@@ -29,6 +29,7 @@ open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Vec as Vec hiding (splitAt)
 open import Data.Vec.Properties
+open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.List.Membership.Propositional
 open import Data.List renaming (_∷_ to _∷L_) hiding (sum ; splitAt)
 open import Function hiding (_↔_)
@@ -36,7 +37,7 @@ open import Function hiding (_↔_)
 open import Eser.Logic
 open import Eser.Aux using (restIsProofIrrel ; uip)
 open import Eser.Equivalences.Notation
-open import Eser.NewSigStream.Partitions
+open import Eser.Partitions
 
 module Eser.NewSigStream.EnumVectors where
 
@@ -48,6 +49,26 @@ weight = Vec.sum
 -- Vector of length 1+m that has weight w.
 WVec : ℕ → ℕ → Set
 WVec m w =  Σ[ v ∈ Vec ℕ (suc m) ] weight v ≡ w
+
+elem-weight
+    : {m : ℕ}
+    → (v : Vec ℕ (suc m))
+    → All (_≤ (weight v)) v
+elem-weight (x ∷ []) = x≤w All.∷ All.[]
+    where
+        x≤w : x ≤ (weight (x ∷ []))
+        x≤w = m≤m+n x 0
+elem-weight {suc m} (x ∷ xs) = x≤w All.∷ H
+    where
+        x≤w : x ≤ weight (x ∷ xs)
+        x≤w = m≤m+n x (weight xs)
+        IH : All (_≤ (weight xs)) xs
+        IH = elem-weight xs
+        H : All (_≤ (weight (x ∷ xs))) xs
+        H = All.map f IH
+            where
+                f : {y : ℕ} → y ≤ weight xs → y ≤ weight (x ∷ xs)
+                f {y} y≤wxs = ≤-trans (y≤wxs) (m≤n+m (weight xs) x)
 
 _w∷_ : {m w : ℕ} → (n : ℕ) → (v : WVec m w) → WVec (suc m) (n + w)
 n w∷ (v , eq) = (n Vec.∷ v , cong (n +_) eq)
@@ -755,3 +776,9 @@ vec-part m = record { chunks = chunks ; complete = complete ; unique = unique }
 
 vec-enum : (m : ℕ) → Vec ℕ (suc m) ≃ ℕ
 vec-enum m = partitionToEnum (vec-part m)
+
+vec-chunk-idx-is-weight
+    : {m : ℕ}
+    → (v : Vec ℕ (suc m))
+    → (proj₁ $ proj₁ $ Partition.complete (vec-part m) v) ≡ weight v
+vec-chunk-idx-is-weight v = refl
