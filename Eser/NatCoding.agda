@@ -5,7 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --safe #-}
+--{-# OPTIONS --safe #-}
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
 open import Data.Nat.Properties
@@ -45,23 +46,23 @@ open import Eser.Partitions.Properties
 module Eser.NatCoding where
 
 
-module _ (n : ℕ) where
+module _ {n : ℕ} where
     equiv : Vec ℕ (suc n) ≃ ℕ
     equiv = vec-enum n
 
     code-vec : Vec ℕ (suc n) → ℕ
     code-vec = Inverse.to equiv
 
-    -- Note: decode-vec uses a different decoding for each length.
+    -- Note: decode-vec' uses a different decoding for each length.
     -- So one must *explicitly* give the target length as well.
-    decode-vec : ℕ → Vec ℕ (suc n)
-    decode-vec = Inverse.from equiv
+    decode-vec' : ℕ → Vec ℕ (suc n)
+    decode-vec' = Inverse.from equiv
 
-    decode-code-vec : decode-vec ∘ code-vec ≈ id
+    decode-code-vec : decode-vec' ∘ code-vec ≈ id
     decode-code-vec = inverseʳ⇒strictlyInverseʳ $ Inverse.inverseʳ equiv
 
-    code-decode-vec : code-vec ∘ decode-vec ≈ id
-    code-decode-vec = inverseˡ⇒strictlyInverseˡ $ Inverse.inverseˡ equiv
+    code-decode-vec' : code-vec ∘ decode-vec' ≈ id
+    code-decode-vec' = inverseˡ⇒strictlyInverseˡ $ Inverse.inverseˡ equiv
 
     code-vec-weight
         : (v : Vec ℕ (suc n))
@@ -88,6 +89,12 @@ module _ (n : ℕ) where
         where
             f : {x : ℕ} → x ≤ weight v → x ≤ code-vec v
             f {x} x≤w = ≤-trans x≤w $ code-vec-weight v
+
+-- Variants of above with implicit argument (vector length) made explicit.
+decode-vec : (n : ℕ) → ℕ → Vec ℕ (suc n)
+decode-vec n = decode-vec' {n}
+code-decode-vec : (n : ℕ) → code-vec ∘ (decode-vec n) ≈ id
+code-decode-vec n = code-decode-vec' {n}
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
@@ -122,39 +129,108 @@ parity' (2+ n) = cases (parity' n)
                         1 + suc m + suc m
                     ≡∎
 
+parity-even
+    : (m : ℕ)
+    → (p : m + m ≡ m + m)
+    → parity' (m + m) ≡ inj₁ (m , p)
+parity-even m p with parity' (m + m)
+... | inj₁ (z , m+m≡z+z) = {! get z ≡ m, then rest-is-proof-irrelevant. Also cases instead of `with`!}
+... | inj₂ (z , m+m≡1+z+z) = {! ⊥-elim $ !}
+
+parity-odd
+    : (m : ℕ)
+    → (p : 1 + m + m ≡ 1 + m + m)
+    → parity' (1 + m + m) ≡ inj₂ (m , p)
+parity-odd m p = cases (parity' (1 + m + m))
+    where
+        cases = ?
 
 -- Encode the left ℕ as the even numbers,
 -- and the right ℕ as the odd numbers.
-code-sum-fin : ℕ ⊎ ℕ → ℕ
-code-sum-fin (inj₁ n) = n + n
-code-sum-fin (inj₂ n) = 1 + n + n
+code-sum-inf : ℕ ⊎ ℕ → ℕ
+code-sum-inf (inj₁ n) = n + n
+code-sum-inf (inj₂ n) = 1 + n + n
 
-decode-sum-fin : ℕ → ℕ ⊎ ℕ
-decode-sum-fin n = cases $ parity' n
-    where
+decode-sum-inf : ℕ → ℕ ⊎ ℕ
+decode-sum-inf n = cases $ parity' n
+    module DecSumInfImpl where
         cases : Parity n → ℕ ⊎ ℕ
         cases (inj₁ (m , _)) = inj₁ m
         cases (inj₂ (m , _)) = inj₂ m
 
-equiv-sum-fin : (ℕ ⊎ ℕ) ≃ ℕ
-equiv-sum-fin = mk≃' f f⁻¹ invˡ invʳ
+equiv-sum-inf : (ℕ ⊎ ℕ) ≃ ℕ
+equiv-sum-inf = mk≃' f f⁻¹ invˡ invʳ
     where
     f : ℕ ⊎ ℕ → ℕ
-    f = code-sum-fin
+    f = code-sum-inf
     f⁻¹ : ℕ → ℕ ⊎ ℕ
-    f⁻¹ = decode-sum-fin
+    f⁻¹ = decode-sum-inf
     invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
-    invˡ {x} {y} refl = ?
-    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
-    invʳ {y} {x} refl = ?
+    invˡ {n} refl = cases (parity' n) refl
+        where
+            open DecSumInfImpl n renaming (cases to dec-cases)
 
-decode-vec-lemma
-    : {n : ℕ}
-    → (i : ℕ)
-    → (v : Vec ℕ (suc n))
-    → decode-vec n i ≡ v
-    → All (_≤ i) v
-decode-vec-lemma {n} i v eq = ?
+            cases : (p : Parity n) → (parity' n ≡ p) → f (f⁻¹ n) ≡ n
+            cases (inj₁ (m , n≡m+m)) eq = 
+                ≡begin 
+                    f (f⁻¹ n)
+                ≡⟨⟩
+                    f (dec-cases (parity' n))
+                ≡⟨ cong (f ∘ dec-cases) eq ⟩
+                    f (dec-cases (inj₁ (m , n≡m+m)))
+                ≡⟨⟩
+                    f (inj₁ m)
+                ≡⟨⟩
+                    m + m
+                ≡⟨ sym n≡m+m ⟩
+                    n
+                ≡∎
+                
+            cases (inj₂ (m , n≡1+m+m)) eq =
+                ≡begin 
+                    f (f⁻¹ n)
+                ≡⟨⟩
+                    f (dec-cases (parity' n))
+                ≡⟨ cong (f ∘ dec-cases) eq ⟩
+                    f (dec-cases (inj₂ (m , n≡1+m+m)))
+                ≡⟨⟩
+                    f (inj₂ m)
+                ≡⟨⟩
+                    1 + m + m
+                ≡⟨ sym n≡1+m+m ⟩
+                    n
+                ≡∎
+
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {inj₁ m} refl = 
+        ≡begin 
+            f⁻¹ (f (inj₁ m))
+        ≡⟨⟩
+            f⁻¹ (m + m)
+        ≡⟨⟩
+            dec-cases (parity' (m + m))
+        ≡⟨ cong dec-cases (parity-even m refl) ⟩
+            dec-cases (inj₁ (m , refl))
+        ≡⟨⟩
+            inj₁ m
+        ≡∎
+        where
+            open DecSumInfImpl (m + m) renaming (cases to dec-cases)
+        
+    invʳ {inj₂ m} refl =
+        ≡begin 
+            f⁻¹ (f (inj₂ m))
+        ≡⟨⟩
+            f⁻¹ (1 + m + m)
+        ≡⟨⟩
+            dec-cases (parity' (1 + m + m))
+        ≡⟨ cong dec-cases (parity-odd m refl) ⟩
+            dec-cases (inj₂ (m , refl))
+        ≡⟨⟩
+            inj₂ m
+        ≡∎
+        where
+            open DecSumInfImpl (1 + m + m) renaming (cases to dec-cases)
 
 module WithMu (μ' : ℕ∞) where
     μ : ℕ∞
