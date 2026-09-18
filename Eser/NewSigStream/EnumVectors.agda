@@ -5,6 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --safe #-}
+
 -- #EXT: This option is needed for getWVec-complete.
 -- I do not understand why, this function takes two ℕ
 -- arguments, matches them up to a depth of 1,
@@ -34,6 +36,7 @@ open import Function hiding (_↔_)
 open import Eser.Logic
 open import Eser.Aux using (restIsProofIrrel ; uip)
 open import Eser.Equivalences.Notation
+open import Eser.NewSigStream.Partitions
 
 module Eser.NewSigStream.EnumVectors where
 
@@ -610,8 +613,8 @@ forgetWeight-injective {m} {w} (v , pv) (v , pu) refl =
     restIsProofIrrel (has-weight-irrel w) pv pu refl
 
 
-vecPart : (m : ℕ) → Partition (Vec ℕ (suc m))
-vecPart m = record { chunks = chunks ; complete = complete ; unique = unique }
+vec-part : (m : ℕ) → Partition (Vec ℕ (suc m))
+vec-part m = record { chunks = chunks ; complete = complete ; unique = unique }
     where
         chunks : Chunking (Vec ℕ (suc m))
         chunks w = (proj₁ wvecs , Vec.map forgetWeight (proj₂ wvecs))
@@ -749,3 +752,6 @@ vecPart m = record { chunks = chunks ; complete = complete ; unique = unique }
                                 eq''
                         i≡j : i ≡ j
                         i≡j = getWVec-unique {m} {w} i j eq'
+
+vec-enum : (m : ℕ) → Vec ℕ (suc m) ≃ ℕ
+vec-enum m = partitionToEnum (vec-part m)

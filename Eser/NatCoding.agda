@@ -4,7 +4,8 @@
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
-{-# OPTIONS --allow-unsolved-metas #-}
+
+{-# OPTIONS --safe #-}
 
 open import Data.Nat
 open import Data.Nat.Properties
@@ -19,37 +20,52 @@ open import Data.Vec
 open import Data.Vec.Relation.Unary.All
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
+open import Function.Properties.Inverse hiding (refl ; trans ; sym)
+open import Function.Consequences.Propositional 
+    using (inverseˡ⇒strictlyInverseˡ 
+          ; inverseʳ⇒strictlyInverseʳ
+          )
+open import Relation.Binary.Structures
+open import Relation.Binary.Definitions
+open import Relation.Binary.PropositionalEquality
+open import Relation.Binary.PropositionalEquality.Properties 
+    renaming (setoid to mk-≡-setoid)
 
 open import Eser.Aux using (_≈_)
 open import Eser.Card
 open import Eser.Signature
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
+open import Eser.NewSigStream.EnumVectors
 
 
 module Eser.NatCoding where
 
-code-vec : {n : ℕ} → Vec ℕ (suc n) → ℕ
-code-vec {n} v = ?
 
--- Note: decode-vec uses a different decoding for each length.
--- So one must *explicitly* give the target length as well.
-decode-vec : (n : ℕ) → ℕ → Vec ℕ (suc n)
-decode-vec n i = ?
+module _ (n : ℕ) where
+    equiv : Vec ℕ (suc n) ≃ ℕ
+    equiv = vec-enum n
 
-decode-code-vec : {n : ℕ} → (decode-vec n) ∘ code-vec ≈ id
-decode-code-vec = ?
+    code-vec : Vec ℕ (suc n) → ℕ
+    code-vec = Inverse.to equiv
 
-code-decode-vec : {n : ℕ} → code-vec ∘ (decode-vec n) ≈ id
-code-decode-vec = ?
+    -- Note: decode-vec uses a different decoding for each length.
+    -- So one must *explicitly* give the target length as well.
+    decode-vec : ℕ → Vec ℕ (suc n)
+    decode-vec = Inverse.from equiv
 
--- The ℕ-encoding of a vector is at least as great as the maximum of its
--- elements.
-code-vec-lemma
-    : {m : ℕ}
-    → (v : Vec ℕ (suc m))
-    → All (_≤ (code-vec v)) v
-code-vec-lemma v = ?
+    decode-code-vec : decode-vec ∘ code-vec ≈ id
+    decode-code-vec = inverseʳ⇒strictlyInverseʳ $ Inverse.inverseʳ equiv
+
+    code-decode-vec : code-vec ∘ decode-vec ≈ id
+    code-decode-vec = inverseˡ⇒strictlyInverseˡ $ Inverse.inverseˡ equiv
+
+    -- The ℕ-encoding of a vector is at least as great as the maximum of its
+    -- elements.
+    code-vec-lemma
+        : (v : Vec ℕ (suc n))
+        → All (_≤ (code-vec v)) v
+    code-vec-lemma v = ?
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
