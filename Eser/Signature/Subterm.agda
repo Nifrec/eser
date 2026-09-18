@@ -7,6 +7,9 @@
 -- This file shows that arguments of closed terms, or arguments to argument, or
 -- ..., always come earlier in the enumeration than the big term itself.
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Nat
 open import Data.Nat.Properties

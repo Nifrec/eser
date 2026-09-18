@@ -10,6 +10,7 @@
 -- It is possible that all the results in here are in some abstract/generalised
 -- form in the stdlib, but I haven't been able to find them.
 
+{-# OPTIONS --safe #-}
 
 open import Level
 open import Data.Nat

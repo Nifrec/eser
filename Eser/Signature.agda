@@ -6,6 +6,8 @@
 --------------------------------------------------------------------------------
 -- High-level file that exports definitions and proofs.
 
+{-# OPTIONS --safe #-}
+
 module Eser.Signature where
 
 open import Eser.Signature.Definitions public

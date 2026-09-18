@@ -60,6 +60,8 @@
 --      if ŵ ≥ 1 and none if ŵ ≡ 0, but then x ∈ ⊥ anyway.
 --      Hence the solutions are in bijection to the choice of x ∈ Fin ŵ.
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties

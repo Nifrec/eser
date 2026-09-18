@@ -5,7 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
--- #TODO: remove unused imports
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties

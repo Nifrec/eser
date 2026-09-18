@@ -11,6 +11,8 @@
 -- (and skipping over all intermediate x'' with f(x'') = 0)
 -- is sufficient to establish the equivalence.
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties hiding (<-cmp)

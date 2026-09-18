@@ -6,6 +6,8 @@
 --------------------------------------------------------------------------------
 -- "Enumerable" means "equivalent to ⊥, to Fin z (for some z ∈ ℕ) xor to ℕ"
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties

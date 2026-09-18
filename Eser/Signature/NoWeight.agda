@@ -24,6 +24,8 @@
 -- type!)
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --safe #-}
+
 module Eser.Signature.NoWeight where
     open import Eser.Signature.NoWeight.Definitions public
     open import Eser.Signature.NoWeight.Properties public

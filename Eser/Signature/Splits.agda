@@ -14,6 +14,8 @@
 -- via giveArg is the sum of the number of splits w ↦  (wₐ , wₜ)
 -- multiplied with the size of (OpenTerms wₐ 0) × (OpenTerms wₜ (suc n)).
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties

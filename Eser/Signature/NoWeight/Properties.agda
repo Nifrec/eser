@@ -8,6 +8,8 @@
 -- 1. Decidable equality between open terms.
 -- 2. Equivlance to the weight-annotated representation to open terms.
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties

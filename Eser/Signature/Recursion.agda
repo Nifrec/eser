@@ -12,6 +12,8 @@
 -- #EXT: currently only implemented for signatures with infinitely many terms.
 --       Can be generalised to also allow signatures with finitely many terms.
 
+{-# OPTIONS --safe #-}
+
 open import Level
 open import Data.Bool hiding (_≤_ ; _<_ ; _≤?_)
 open import Data.Bool.Properties
