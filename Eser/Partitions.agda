@@ -1,5 +1,5 @@
--- Module      : Eser.NewSigStream.Partitions
--- Description : COnversion from bijective partitions to enumerations.
+-- Module      : Eser.Partitions
+-- Description : Conversion from bijective partitions to enumerations.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
@@ -39,7 +39,7 @@ open import Eser.Aux using (restIsProofIrrel ; uip ; m<n→Sm<n⊎Sm≡n ; m<m+1
 open import Eser.Equivalences.Notation
 open import Eser.Equivalences.Properties
 
-module Eser.NewSigStream.Partitions where
+module Eser.Partitions where
 
 Chunking : (A : Set) → Set
 Chunking A = ℕ → Σ[ m ∈ ℕ ] Vec A (suc m)
