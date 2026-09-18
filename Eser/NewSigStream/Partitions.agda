@@ -24,7 +24,7 @@ open import Data.Nat.Properties
 open import Data.Sum hiding (map)
 open import Data.Product hiding (map)
 open import Data.Empty
-open import Data.Fin using (Fin ; toℕ)
+open import Data.Fin using (Fin ; toℕ ; fromℕ<)
 open import Data.Fin.Properties
 open import Relation.Nullary
 open import Relation.Binary
@@ -146,6 +146,12 @@ partitionToEnum {A} p = mk≃' f f⁻¹ invˡ invʳ
                         H₁ = subst (n <_) eq H₀
 
 
+        -- Check if a number is the maximum number in a finite set.
+        isMax
+            : {n : ℕ}
+            → (x : Fin (suc n))
+            →  (toℕ x < n) ⊎ (toℕ x ≡ n)
+        isMax x = m<1+n⇒m<n∨m≡n $ toℕ<n x
 
         -- Increment a chunk index, jumping to the next chunk if we are at the
         -- end of the current chunk.
@@ -155,7 +161,47 @@ partitionToEnum {A} p = mk≃' f f⁻¹ invˡ invʳ
             → Σ[ i' ∈ ℕ ] 
               Σ[ j' ∈ SubIdx chunks i' ] 
               suc (⨁ i + toℕ j) ≡ ⨁ i' + toℕ j'
-        increment i j = ?
+        increment i j = cases $ isMax j
+            where
+                n : ℕ
+                n = proj₁ $ chunks i
+                cases 
+                    : (toℕ j < n) ⊎ (toℕ j ≡ n)
+                    → Σ[ i' ∈ ℕ ] 
+                      Σ[ j' ∈ SubIdx chunks i' ] 
+                      suc (⨁ i + toℕ j) ≡ ⨁ i' + toℕ j'
+                cases (inj₁ j<n) = (i , fromℕ< 1+j<1+n , prf)
+                    where
+                        1+j<1+n : suc (toℕ j) < suc n
+                        1+j<1+n = s≤s j<n
+
+                        prf : suc (⨁ i + toℕ j) ≡ ⨁ i + toℕ (fromℕ< 1+j<1+n)
+                        prf = sym $ 
+                            ≡begin 
+                                ⨁ i + toℕ (fromℕ< 1+j<1+n) 
+                            ≡⟨ cong (⨁ i +_) $ toℕ-fromℕ< 1+j<1+n ⟩
+                                ⨁ i + suc (toℕ j)
+                            ≡⟨ +-suc (⨁ i) (toℕ j) ⟩
+                                suc (⨁ i + toℕ j)
+                            ≡∎
+                            
+                cases (inj₂ j≡n) = (suc i , Fin.zero , prf)
+                    where
+                        prf : suc (⨁ i + toℕ j) 
+                              ≡ 
+                              ⨁ (suc i) + toℕ (Fin.zero {suc n})
+                        prf = sym $ 
+                            ≡begin 
+                                ⨁ (suc i) + toℕ (Fin.zero {suc n}) 
+                            ≡⟨⟩
+                                ⨁ i + suc n + 0
+                            ≡⟨ +-identityʳ (⨁ i + suc n) ⟩
+                                ⨁ i + suc n
+                            ≡⟨ cong (λ x → ⨁ i + suc x) $ sym j≡n ⟩
+                                ⨁ i + suc (toℕ j)
+                            ≡⟨ +-suc (⨁ i) (toℕ j) ⟩
+                                suc (⨁ i + toℕ j)
+                            ≡∎
 
         -- Data structure for recursively finding the (n+1)th term of A
         -- in the partition; concat all finite chunks
@@ -273,7 +319,7 @@ partitionToEnum {A} p = mk≃' f f⁻¹ invˡ invʳ
                 chunks !!! (i' , j')
             ≡⟨ cong (chunks !!!_) i'j'≡ij ⟩
                 chunks !!! (i , j)
-            ≡⟨ sym $ proj₂ $ complete a ⟩ -- use completeness proj3
+            ≡⟨ sym $ proj₂ $ complete a ⟩
                 a
             ≡∎
             where
