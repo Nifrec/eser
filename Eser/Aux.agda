@@ -583,6 +583,32 @@ tri-> a b p = tri->-cases a b p (<-cmp a b) refl
                 eq = subst (λ x → <-cmp a b ≡ tri> a≮b a≢b x) 
                            (<-irrelevant b<a p) t₁
 
+<?-≮
+    : {m n : ℕ}
+    → (m≮n : m ≮ n)
+    → (m <? n) ≡ no m≮n
+<?-≮ {m} {n} m≮n = cases (m <? n) refl
+    where
+        cases 
+            : (d : Dec (m < n)) 
+            → ((m <? n) ≡ d) 
+            → (m <? n) ≡ no m≮n
+        cases (yes m<n) _ = ⊥-elim $ m≮n m<n
+        cases (no _) eq = eq
+<?-<
+    : {m n : ℕ}
+    → (m<n : m < n)
+    → (m <? n) ≡ yes m<n
+<?-< {m} {n} m<n = cases (m <? n) refl
+    where
+        cases 
+            : (d : Dec (m < n)) 
+            → ((m <? n) ≡ d) 
+            → (m <? n) ≡ yes m<n
+        cases (yes prf) eq = trans eq (cong yes $ <-irrelevant prf m<n)
+        cases (no m≮n) _ = ⊥-elim $ m≮n m<n
+
+
 --------------------------------------------------------------------------------
 -- Properties of ≡ᵇ used in Eser.EqRel.Conversions
 --------------------------------------------------------------------------------
