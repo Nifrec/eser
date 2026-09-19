@@ -301,6 +301,33 @@ double-eq-single-eq {suc m} {suc n} eq =
         suc (suc (n + n))
     ∎
     
+double-eq-never-odd
+    : { m n : ℕ}
+    → m + m ≡ 1 + n + n
+    → ⊥
+double-eq-never-odd {0} {0} eq = 0≢1+n {0} eq
+double-eq-never-odd {suc m} {0} eq = 1+n≢0 {m + m} $ suc-injective $
+    begin
+        suc (suc (m + m))
+    ≡⟨ cong suc (sym $ +-suc m m)  ⟩
+        suc m + suc m
+    ≡⟨ eq ⟩
+        suc 0
+    ∎
+double-eq-never-odd {0} {suc n} eq = 0≢1+n { suc n + suc n } eq
+double-eq-never-odd {suc m} {suc n} eq = 
+    double-eq-never-odd {m} {n} $ 
+    suc-injective $
+    suc-injective $
+    begin
+        suc (suc (m + m))
+    ≡⟨ cong suc (sym $ +-suc m m)  ⟩
+        suc m + suc m
+    ≡⟨ eq ⟩
+        1 + suc n + suc n
+    ≡⟨ sym $ cong (suc ∘ suc) (sym $ +-suc n n)  ⟩
+        suc (suc (suc n + n))
+    ∎
         
 sumToSub
     : (m n ℓ : ℕ)

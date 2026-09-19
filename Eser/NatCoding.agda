@@ -5,8 +5,7 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
---{-# OPTIONS --safe #-}
-{-# OPTIONS --allow-unsolved-metas #-}
+{-# OPTIONS --safe #-}
 
 open import Data.Nat
 open import Data.Nat.Properties
@@ -33,7 +32,13 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Binary.PropositionalEquality.Properties 
     renaming (setoid to mk-≡-setoid)
 
-open import Eser.Aux using (_≈_)
+open import Eser.Aux using 
+    ( uip 
+    ; _≈_ 
+    ; restIsProofIrrel 
+    ; double-eq-single-eq
+    ; double-eq-never-odd
+    )
 open import Eser.Card
 open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation
@@ -98,6 +103,7 @@ code-decode-vec n = code-decode-vec' {n}
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
+
 parity' : (n : ℕ) → Parity n
 parity' ℕ.zero = inj₁ (0 , refl)
 parity' (suc ℕ.zero) = inj₂ (0 , refl) 
@@ -129,21 +135,77 @@ parity' (2+ n) = cases (parity' n)
                         1 + suc m + suc m
                     ≡∎
 
+is-even-irrel
+    : (n m : ℕ)
+    → Relation.Nullary.Irrelevant (n ≡ m + m)
+is-even-irrel _ _ p q = uip p q
+
 parity-even
     : (m : ℕ)
-    → (p : m + m ≡ m + m)
-    → parity' (m + m) ≡ inj₁ (m , p)
-parity-even m p with parity' (m + m)
-... | inj₁ (z , m+m≡z+z) = {! get z ≡ m, then rest-is-proof-irrelevant. Also cases instead of `with`!}
-... | inj₂ (z , m+m≡1+z+z) = {! ⊥-elim $ !}
+    → (eq : m + m ≡ m + m)
+    → parity' (m + m) ≡ inj₁ (m , eq)
+parity-even m eq = cases (parity' (m + m)) refl
+    where
+        cases 
+            : (p : Parity (m + m))
+            → parity' (m + m) ≡ p
+            → parity' (m + m) ≡ inj₁ (m , eq)
+        cases (inj₁ (z , m+m≡z+z)) eq-p =
+            ≡begin 
+                parity' (m + m)
+            ≡⟨ eq-p ⟩
+                inj₁ (z , m+m≡z+z)
+            ≡⟨ cong inj₁
+                $ restIsProofIrrel 
+                    {A = ℕ}
+                    {B = λ n → m + m ≡ n + n}
+                    (is-even-irrel (m + m)) 
+                    {z} {m}
+                    m+m≡z+z eq z≡m
+            ⟩
+                inj₁ (m , eq)
+            ≡∎
+            where
+                z≡m : z ≡ m
+                z≡m = double-eq-single-eq (sym m+m≡z+z)
+        cases (inj₂ (z , m+m≡1+z+z)) = 
+            ⊥-elim $ double-eq-never-odd {m} {z} m+m≡1+z+z
+is-odd-irrel
+    : (n m : ℕ)
+    → Relation.Nullary.Irrelevant (n ≡ 1 + m + m)
+is-odd-irrel _ _ p q = uip p q
 
 parity-odd
     : (m : ℕ)
-    → (p : 1 + m + m ≡ 1 + m + m)
-    → parity' (1 + m + m) ≡ inj₂ (m , p)
-parity-odd m p = cases (parity' (1 + m + m))
+    → (eq : 1 + m + m ≡ 1 + m + m)
+    → parity' (1 + m + m) ≡ inj₂ (m , eq)
+parity-odd m eq = cases (parity' (1 + m + m)) refl
     where
-        cases = ?
+        cases 
+            : (p : Parity (1 + m + m))
+            → parity' (1 + m + m) ≡ p
+            → parity' (1 + m + m) ≡ inj₂ (m , eq)
+        cases (inj₁ (z , 1+m+m≡z+z)) eq-p =
+            ⊥-elim $ double-eq-never-odd {z} {m} (sym 1+m+m≡z+z)
+        cases (inj₂ (z , 1+m+m≡1+z+z)) eq-p = 
+            ≡begin 
+                parity' (1 + m + m)
+            ≡⟨ eq-p ⟩
+                inj₂ (z , 1+m+m≡1+z+z)
+            ≡⟨ cong inj₂
+                $ restIsProofIrrel 
+                    {A = ℕ}
+                    {B = λ n → 1 + m + m ≡ 1 + n + n}
+                    (is-odd-irrel (1 + m + m)) 
+                    {z} {m}
+                    1+m+m≡1+z+z eq z≡m
+            ⟩
+                inj₂ (m , eq)
+            ≡∎
+            where
+                z≡m : z ≡ m
+                z≡m = double-eq-single-eq (sym $ suc-injective 1+m+m≡1+z+z)
+
 
 -- Encode the left ℕ as the even numbers,
 -- and the right ℕ as the odd numbers.
