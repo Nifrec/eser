@@ -262,7 +262,6 @@ S[m∸Sn]≡m∸n {m} {n} Sn≤m =
     → ℓ < n
 ℓ<m<1+n→ℓ<n {ℓ} {m} {n} ℓ<m m<1+n = <-≤-trans ℓ<m (s≤s⁻¹ m<1+n)
     
-
 m∸Sn≤m∸n
     : (n m : ℕ)
     → m ∸ ℕ.suc n ≤ m ∸ n
@@ -279,6 +278,29 @@ m∸Sn≤m∸n n m =
             ∎
     in
     subst (λ x → x ≤ m ∸ n) H (m∸n≤m (m ∸ n) 1)
+
+double-eq-single-eq
+    : {m n : ℕ}
+    → m + m ≡ n + n
+    → m ≡ n
+double-eq-single-eq {0} {0} eq = refl
+double-eq-single-eq {0} {suc n} ()
+double-eq-single-eq {suc m} {0} ()
+double-eq-single-eq {suc m} {suc n} eq = 
+    cong suc $
+    double-eq-single-eq $
+    suc-injective $ 
+    suc-injective $
+    begin 
+        suc (suc (m + m))
+    ≡⟨ cong suc (sym $ +-suc m m)  ⟩
+        suc m + suc m
+    ≡⟨ eq ⟩
+        suc n + suc n
+    ≡⟨ cong suc (+-suc n n) ⟩
+        suc (suc (n + n))
+    ∎
+    
         
 sumToSub
     : (m n ℓ : ℕ)
