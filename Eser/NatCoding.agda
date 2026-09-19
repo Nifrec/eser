@@ -358,56 +358,47 @@ code-decode-sum-fin {n} x = cases (x <? n) refl
 decode-code-sum-fin
     : {n : ℕ}
     → (decode-sum-fin {n} ∘ code-sum-fin {n} ) ≈ id {A = Fin n ⊎ ℕ}
-decode-code-sum-fin {n} x = cases x
+decode-code-sum-fin {n} (inj₁ x) = 
+    ≡begin 
+        f⁻¹ (f (inj₁ x))
+    ≡⟨⟩
+        f⁻¹ (toℕ x)
+    ≡⟨⟩
+        dec-cases (toℕ x <? n)
+    ≡⟨ cong dec-cases $ <?-< x<n ⟩
+        dec-cases (yes x<n)
+    ≡⟨⟩
+        inj₁ (fromℕ< x<n)
+    ≡⟨ cong inj₁ $ fromℕ<-toℕ x x<n ⟩
+        inj₁ x
+    ≡∎
     where
-        -- Putting the case distinction on x in a subfunction
-        -- instead of in decode-code-sum-fin directly
-        -- prevents duplication of the following lines:
-        -- #EXT: in hindsight, the direct case distinction would have been more
-        -- concise and more readable...
         f = code-sum-fin {n}
         f⁻¹ = decode-sum-fin {n}
+        open DecSumFinImpl {n} (toℕ x) renaming (cases to dec-cases)
+        x<n : toℕ x < n
+        x<n = toℕ<n x
+decode-code-sum-fin {n} (inj₂ x) = 
+    ≡begin 
+        f⁻¹ (f (inj₂ x))
+    ≡⟨⟩
+        f⁻¹ (x + n)
+    ≡⟨⟩
+        dec-cases (x + n <? n)
+    ≡⟨ cong dec-cases $ <?-≮ x+n≮n ⟩
+        dec-cases (no x+n≮n)
+    ≡⟨⟩
+        inj₂ (x + n ∸ n)
+    ≡⟨ cong inj₂ $ m+n∸n≡m x n ⟩
+        inj₂ x
+    ≡∎
+    where
+        f = code-sum-fin {n}
+        f⁻¹ = decode-sum-fin {n}
+        open DecSumFinImpl {n} (x + n) renaming (cases to dec-cases)
+        x+n≮n : x + n ≮ n
+        x+n≮n = m+n≮n x n
 
-        cases 
-            : (x : Fin n ⊎ ℕ)
-            → (f⁻¹ (f x)) ≡ x
-        cases (inj₂ x) = 
-            ≡begin 
-                f⁻¹ (f (inj₂ x))
-            ≡⟨⟩
-                f⁻¹ (x + n)
-            ≡⟨⟩
-                dec-cases (x + n <? n)
-            ≡⟨ cong dec-cases $ <?-≮ x+n≮n ⟩
-                dec-cases (no x+n≮n)
-            ≡⟨⟩
-                inj₂ (x + n ∸ n)
-            ≡⟨ cong inj₂ $ m+n∸n≡m x n ⟩
-                inj₂ x
-            ≡∎
-            where
-                open DecSumFinImpl {n} (x + n) renaming (cases to dec-cases)
-                x+n≮n : x + n ≮ n
-                x+n≮n = m+n≮n x n
-            
-        cases (inj₁ x) = 
-            ≡begin 
-                f⁻¹ (f (inj₁ x))
-            ≡⟨⟩
-                f⁻¹ (toℕ x)
-            ≡⟨⟩
-                dec-cases (toℕ x <? n)
-            ≡⟨ cong dec-cases $ <?-< x<n ⟩
-                dec-cases (yes x<n)
-            ≡⟨⟩
-                inj₁ (fromℕ< x<n)
-            ≡⟨ cong inj₁ $ fromℕ<-toℕ x x<n ⟩
-                inj₁ x
-            ≡∎
-            where
-                open DecSumFinImpl {n} (toℕ x) renaming (cases to dec-cases)
-                x<n : toℕ x < n
-                x<n = toℕ<n x
 
 module WithMu (μ' : ℕ∞) where
     μ : ℕ∞
