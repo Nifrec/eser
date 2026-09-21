@@ -234,6 +234,12 @@ Sn∸n≡1 n =
     ≡⟨⟩
         1
     ∎
+
+-- m ∸ n < m always holds UNLESS m ≡ 0 or n ≡ 0.
+m∸n<m
+    : (m n : ℕ)
+    → suc m ∸ suc n < suc m
+m∸n<m m n = ≤-<-trans (m∸n≤m m n) (n<1+n m)
     
 m<n<1+m→⊥
     : {m n : ℕ}

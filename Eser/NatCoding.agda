@@ -10,6 +10,7 @@
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Sum
+open import Data.Sum.Properties using (inj₂-injective)
 open import Data.Product
 open import Data.Empty
 open import Relation.Nullary
@@ -41,6 +42,8 @@ open import Eser.Aux using
     ; double-eq-never-odd
     ; <?-≮ 
     ; <?-<
+    ; m∸n<m
+    ; doubleSubst
     )
 open import Eser.Card
 open import Eser.Signature.Definitions
@@ -49,6 +52,7 @@ open import Eser.Equivalences.Properties
 open import Eser.NewSigStream.EnumVectors
 open import Eser.Partitions
 open import Eser.Partitions.Properties
+open import Eser.Sum using (sum-disjoined)
 
 
 module Eser.NatCoding where
@@ -399,31 +403,136 @@ decode-code-sum-fin {n} (inj₂ x) =
         x+n≮n : x + n ≮ n
         x+n≮n = m+n≮n x n
 
+code-sum' : {μ : ℕ∞} → ^ (suc∞ μ) ⊎ ℕ → ℕ
+code-sum' {fin n} = code-sum-fin {suc n}
+code-sum' {∞} = code-sum-inf
 
-module WithMu (μ' : ℕ∞) where
+decode-sum' : {μ : ℕ∞} → ℕ → ^ (suc∞ μ) ⊎ ℕ
+decode-sum' {fin n} = decode-sum-fin {suc n}
+decode-sum' {∞} = decode-sum-inf
+
+code-decode-sum'
+    : {μ : ℕ∞}
+    → (code-sum' {μ} ∘ decode-sum' {μ} ) ≈ id
+code-decode-sum' {fin n} = code-decode-sum-fin {suc n}
+code-decode-sum' {∞} = inverseˡ⇒strictlyInverseˡ $ Inverse.inverseˡ equiv-sum-inf
+
+decode-code-sum'
+    : {μ : ℕ∞}
+    → (decode-sum' {μ} ∘ code-sum' {μ} ) ≈ id
+decode-code-sum' {fin n} = decode-code-sum-fin {suc n}
+decode-code-sum' {∞} = inverseʳ⇒strictlyInverseʳ $ Inverse.inverseʳ equiv-sum-inf
+
+decode-sum-lemma'
+    : {μ : ℕ∞}
+    → (x w : ℕ)
+    → decode-sum' {μ} x ≡ inj₂ w
+    → w < x
+decode-sum-lemma' {fin n} (suc x) w eq = cases (suc x <? suc n) refl
+    where
+        open DecSumFinImpl {suc n} (suc x) renaming (cases to dec-cases)
+        cases 
+            : (d : Dec (suc x < suc n)) 
+            → ((suc x <? suc n) ≡ d)
+            → (w < suc x)
+        cases (yes 1+x<1+n) eq-d = 
+            ⊥-elim $
+            sum-disjoined $ 
+            ≡begin 
+                inj₁ (fromℕ< 1+x<1+n)
+            ≡⟨⟩
+                dec-cases (yes 1+x<1+n)
+            ≡⟨ cong dec-cases (sym eq-d) ⟩
+                dec-cases (suc x <? suc n)
+            ≡⟨⟩
+                decode-sum-fin (suc x)
+            ≡⟨ eq ⟩
+                inj₂ w
+            ≡∎
+
+        cases (no 1+x≮1+n) eq-d = subst (_< (suc x)) 1+x∸1+n≡w 1+x∸1+n<1+x
+            where
+                1+x∸1+n<1+x : suc x ∸ suc n < suc x
+                1+x∸1+n<1+x = m∸n<m x n
+                1+x∸1+n≡w : suc x ∸ suc n ≡ w
+                1+x∸1+n≡w = inj₂-injective $
+                    ≡begin 
+                        inj₂ (suc x ∸ suc n)
+                    ≡⟨⟩
+                        dec-cases (no 1+x≮1+n)
+                    ≡⟨ cong dec-cases (sym eq-d) ⟩
+                        dec-cases (suc x <? suc n)
+                    ≡⟨⟩
+                        decode-sum-fin (suc x)
+                    ≡⟨ eq ⟩
+                        inj₂ w
+                    ≡∎
+
+decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
+        where
+            open DecSumInfImpl x renaming (cases to dec-cases)
+            cases 
+                : (p : Parity x) 
+                → (parity' x ≡ p) 
+                → w < x
+            cases (inj₁ (m , x≡m+m)) eq-p = 
+                ⊥-elim $
+                sum-disjoined $ 
+                ≡begin 
+                    inj₁ m
+                ≡⟨⟩
+                    dec-cases (inj₁ (m , x≡m+m))
+                ≡⟨ cong dec-cases (sym eq-p) ⟩
+                    dec-cases (parity' x)
+                ≡⟨⟩
+                    decode-sum-inf x
+                ≡⟨ eq ⟩
+                    inj₂ w
+                ≡∎
+
+            cases (inj₂ (m , x≡1+m+m)) eq-p = 
+                doubleSubst _<_ m≡w (sym x≡1+m+m) m<1+m+m
+                where
+                    m<1+m+m : m < 1 + m + m
+                    m<1+m+m  = <-≤-trans (n<1+n m) (m≤m+n (suc m) m)
+
+                    m≡w : m ≡ w
+                    m≡w = 
+                        inj₂-injective $ 
+                        ≡begin 
+                            inj₂ m
+                        ≡⟨⟩
+                            dec-cases (inj₂ (m , x≡1+m+m))
+                        ≡⟨ cong dec-cases (sym eq-p) ⟩
+                            dec-cases (parity' x)
+                        ≡⟨⟩
+                            decode-sum-inf x
+                        ≡⟨ eq ⟩
+                            inj₂ w
+                        ≡∎
+
+
+-- #EXT: the definitions below are mostly duplicate with the ones above,
+-- the only difference is that they are instantiated for a specific μ or ζ
+-- at import time.
+module WithMuZeta (μ' ζ' : ℕ∞) where
     μ : ℕ∞
     μ = suc∞ μ'
 
-    code-sum : ^ μ ⊎ ℕ → ℕ
-    code-sum = {! code-sum-lemma !}
-    decode-sum : ℕ → ^ μ ⊎ ℕ
-    decode-sum = {!  !}
-
-    decode-sum-lemma
-        : (i w : ℕ)
-        → decode-sum i ≡ inj₂ w
-        → w < i
-    decode-sum-lemma i w eq = ?
-
-    decode-code-sum : decode-sum ∘ code-sum ≈ id
-    decode-code-sum = ?
-
-    code-decode-sum : code-sum ∘ decode-sum ≈ id
-    code-decode-sum = ?
-
-module WithZeta (ζ' : ℕ∞) where
     ζ : ℕ∞
     ζ = suc∞ ζ'
+
+    code-sum : ^ μ ⊎ ℕ → ℕ
+    code-sum = code-sum' {μ'}
+    decode-sum : ℕ → ^ μ ⊎ ℕ
+    decode-sum = decode-sum' {μ'}
+
+    decode-code-sum : decode-sum ∘ code-sum ≈ id
+    decode-code-sum = decode-code-sum' {μ'}
+
+    code-decode-sum : code-sum ∘ decode-sum ≈ id
+    code-decode-sum = code-decode-sum' {μ'}
+
 
     -- #TODO: (de)code pair depends also on ζ
     -- If ^ ζ is finite then there are only finitely many indices.
@@ -433,13 +542,6 @@ module WithZeta (ζ' : ℕ∞) where
     decode-pair : ℕ → ^ ζ × ℕ 
     decode-pair = ?
 
-    decode-pair-lemma
-        : (i y : ℕ)
-        → (x : ^ ζ)
-        → decode-pair i ≡ (x , y)
-        → y ≤ i
-    decode-pair-lemma i y x eq = ?
-
 
     decode-code-pair : decode-pair ∘ code-pair ≈ id
     decode-code-pair = ?
@@ -447,10 +549,18 @@ module WithZeta (ζ' : ℕ∞) where
     code-decode-pair : code-pair ∘ decode-pair ≈ id
     code-decode-pair = ?
 
+    decode-sum-lemma
+        : (i w : ℕ)
+        → decode-sum i ≡ inj₂ w
+        → w < i
+    decode-sum-lemma = decode-sum-lemma' {μ'}
 
-module WithMuZeta (μ' ζ' : ℕ∞) where
-    open WithMu μ' public
-    open WithZeta ζ' public
+    decode-pair-lemma
+        : (i y : ℕ)
+        → (x : ^ ζ)
+        → decode-pair i ≡ (x , y)
+        → y ≤ i
+    decode-pair-lemma i y x eq = ?
 
     decode-sum-pair-lemma
         : (i w y : ℕ)
