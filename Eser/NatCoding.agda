@@ -9,6 +9,8 @@
 
 open import Data.Nat
 open import Data.Nat.Properties
+open import Data.Nat.DivMod
+open DivMod
 open import Data.Sum
 open import Data.Sum.Properties using (inj₂-injective)
 open import Data.Product
@@ -21,7 +23,7 @@ open import Data.Vec
 open import Data.Vec.Relation.Unary.All
 open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Fin using (Fin ; toℕ ; fromℕ<)
-open import Data.Fin.Properties using (toℕ-fromℕ< ; toℕ<n ; fromℕ<-toℕ)
+open import Data.Fin.Properties using (toℕ-fromℕ< ; toℕ<n ; toℕ≤n ; fromℕ<-toℕ)
 open import Function hiding (_↔_)
 --open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open import Function.Consequences.Propositional 
@@ -53,7 +55,7 @@ open import Eser.NewSigStream.EnumVectors
 open import Eser.Partitions
 open import Eser.Partitions.Properties
 open import Eser.Sum using (sum-disjoined)
-
+open import Eser.DivMod using (a<n→y≡[y*n+a]/n)
 
 module Eser.NatCoding where
 
@@ -423,6 +425,7 @@ decode-code-sum'
 decode-code-sum' {fin n} = decode-code-sum-fin {suc n}
 decode-code-sum' {∞} = inverseʳ⇒strictlyInverseʳ $ Inverse.inverseʳ equiv-sum-inf
 
+
 decode-sum-lemma'
     : {μ : ℕ∞}
     → (x w : ℕ)
@@ -511,6 +514,132 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
                             inj₂ w
                         ≡∎
 
+decode-code-sum-inf-equiv : ℕ ⊎ ℕ ≃ ℕ
+decode-code-sum-inf-equiv = ?
+
+--decode-code-pair-fin-equiv : {n : ℕ} → Fin (suc n) × ℕ ≃ ℕ
+--decode-code-pair-fin-equiv {0} = 
+--    begin 
+--        Fin 1 × ℕ 
+--    ≡⟨ ? ⟩
+--        ⊤ × ℕ
+--    ≡⟨ ?   ⟩
+--        ℕ
+--    ∎
+
+code-pair-fin 
+    : {n : ℕ}
+    → Fin (suc n) × ℕ
+    → ℕ
+code-pair-fin {n'} (x , y) = toℕ x + y * (suc n')
+
+decode-pair-fin
+    : {n : ℕ}
+    → ℕ
+    → Fin (suc n) × ℕ
+decode-pair-fin {n'} z = (remainder d , quotient d)
+    where
+        n : ℕ
+        n = suc n'
+        d : DivMod z n
+        d = z divMod n
+
+code-decode-pair-fin
+    : {n : ℕ}
+    → (code-pair-fin {n} ∘ decode-pair-fin {n}) ≈ id {A = ℕ}
+code-decode-pair-fin {n} z = sym $ property (z divMod suc n)
+
+decode-code-pair-fin
+    : {n : ℕ}
+    → (decode-pair-fin {n} ∘ code-pair-fin {n}) ≈ id {A = Fin (suc n) × ℕ}
+decode-code-pair-fin {n'} (x , y) = 
+    ≡begin 
+        dec (enc (x , y))
+    ≡⟨⟩
+        dec (toℕ x + y * n)
+    ≡⟨⟩
+        (remainder d , quotient d)
+    ≡⟨ cong₂ _,_ rd≡x qd≡y ⟩
+        (x , y)
+    ≡∎
+    where
+        dec = decode-pair-fin {n'}
+        enc = code-pair-fin {n'}
+        n : ℕ
+        n = suc n'
+        z : ℕ
+        z = toℕ x + y * n
+
+        d : DivMod (toℕ x + y * n) n
+        d = z divMod n
+
+        x<n : toℕ x < n
+        x<n = toℕ<n x
+
+        eq : z % n ≡ toℕ x
+        eq = 
+            ≡begin 
+                (toℕ x + y * n) % n   
+            ≡⟨ [m+kn]%n≡m%n (toℕ x) y n ⟩
+                toℕ x % n
+            ≡⟨ m≤n⇒m%n≡m (s≤s⁻¹ x<n) ⟩
+                toℕ x
+            ≡∎
+            
+        f :  Σ[ a ∈ ℕ ] a < n → Fin n
+        f (a , a<n) = fromℕ< {a} a<n
+        
+        rd≡x : remainder d ≡ x
+        rd≡x =
+            ≡begin 
+                remainder d
+            ≡⟨⟩
+                (toℕ x + y * n) mod n
+            ≡⟨⟩
+                fromℕ< (m%n<n z n)
+            ≡⟨⟩
+                f (z % n , m%n<n z n)
+            ≡⟨ cong f
+                $ restIsProofIrrel (λ a → <-irrelevant {x = a} {y = n}) 
+                    (m%n<n z n) x<n eq 
+            ⟩
+                f (toℕ x , x<n)
+            ≡⟨⟩
+                fromℕ< x<n
+            ≡⟨ fromℕ<-toℕ x x<n ⟩
+                x
+            ≡∎
+
+        qd≡y : quotient d ≡ y
+        qd≡y = 
+            ≡begin 
+                quotient d
+            ≡⟨⟩
+                z / n
+            ≡⟨⟩
+                (toℕ x + y * n) / n
+            ≡⟨ cong (_/ n) $ +-comm (toℕ x) (y * n) ⟩
+                (y * n + toℕ x) / n
+            ≡⟨ sym $ a<n→y≡[y*n+a]/n y x<n ⟩
+                y
+            ≡∎
+            
+            
+
+    
+--decode-code-pair-fin-equiv {suc (suc n')} = 
+--    let n = suc n' in
+--    begin 
+--        Fin (suc n) × ℕ 
+--    ≡⟨ fin-Σ-takeout-first n (λ _ → ℕ) ⟩
+--        ℕ ⊎ (Fin n × ℕ)
+--    ≡⟨ rewr-≃-under-⊎-right $ decode-code-pair-fin-equiv n   ⟩
+--        ℕ ⊎ ℕ
+--    ≡⟨ decode-code-sum-inf-equiv ⟩
+--        ℕ
+--    ∎
+        
+    
 
 -- #EXT: the definitions below are mostly duplicate with the ones above,
 -- the only difference is that they are instantiated for a specific μ or ζ
