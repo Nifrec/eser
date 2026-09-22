@@ -117,17 +117,14 @@ inductiveCase
     → Term {suc∞ μ'} {suc∞ ζ'} S ≃ ℕ
 inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
     where
-        μ : ℕ∞
-        μ = suc∞ μ'
-        ζ : ℕ∞
-        ζ = suc∞ ζ'
+        open import Eser.NatCoding
+        -- This import also defines μ ≔ suc∞ μ' and ζ := suc∞ ζ'.
+        open Eser.NatCoding.WithMuZeta μ' ζ'
+
         ar : ^ ζ → ℕ
         ar c = suc (S c)
         T : Set
         T = Term {μ} S
-
-        open import Eser.NatCoding
-        open Eser.NatCoding.WithMuZeta μ' ζ' hiding (μ ; ζ)
 
         decode-multiary-lemma
             : (i w y : ℕ)
