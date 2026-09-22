@@ -514,19 +514,6 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
                             inj₂ w
                         ≡∎
 
-decode-code-sum-inf-equiv : ℕ ⊎ ℕ ≃ ℕ
-decode-code-sum-inf-equiv = ?
-
---decode-code-pair-fin-equiv : {n : ℕ} → Fin (suc n) × ℕ ≃ ℕ
---decode-code-pair-fin-equiv {0} = 
---    begin 
---        Fin 1 × ℕ 
---    ≡⟨ ? ⟩
---        ⊤ × ℕ
---    ≡⟨ ?   ⟩
---        ℕ
---    ∎
-
 code-pair-fin 
     : {n : ℕ}
     → Fin (suc n) × ℕ
@@ -624,25 +611,29 @@ decode-code-pair-fin {n'} (x , y) =
                 y
             ≡∎
             
+decode-pair-lemma-fin
+    : {n : ℕ}
+    → (i y : ℕ)
+    → (x : Fin (suc n))
+    → decode-pair-fin i ≡ (x , y)
+    → y ≤ i
+decode-pair-lemma-fin {n'} i y x eq = y≤i
+    where
+        n : ℕ
+        n = suc n'
+        
+        d : DivMod i n
+        d = i divMod n
+
+        qd≤i : quotient d ≤ i
+        qd≤i = m/n≤m i n
+
+        y≤i : y ≤ i
+        y≤i = subst (_≤ i) (cong proj₂ eq) qd≤i
             
 
-    
---decode-code-pair-fin-equiv {suc (suc n')} = 
---    let n = suc n' in
---    begin 
---        Fin (suc n) × ℕ 
---    ≡⟨ fin-Σ-takeout-first n (λ _ → ℕ) ⟩
---        ℕ ⊎ (Fin n × ℕ)
---    ≡⟨ rewr-≃-under-⊎-right $ decode-code-pair-fin-equiv n   ⟩
---        ℕ ⊎ ℕ
---    ≡⟨ decode-code-sum-inf-equiv ⟩
---        ℕ
---    ∎
-        
-    
-
--- #EXT: the definitions below are mostly duplicate with the ones above,
--- the only difference is that they are instantiated for a specific μ or ζ
+-- #EXT: most definitions below are duplicate with the ones above,
+-- the only difference is that they are instantiated for a fixed μ or ζ
 -- at import time.
 module WithMuZeta (μ' ζ' : ℕ∞) where
     μ : ℕ∞
