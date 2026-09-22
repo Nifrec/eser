@@ -29,6 +29,7 @@ open import Data.Nat.Properties using
     ; ≤-refl
     ; ≤-trans
     ; n≤1+n
+    ; ≤-<-trans
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
@@ -37,6 +38,7 @@ open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma
     ; doubleSubst
     ; m<1+n⇒m<n∨m≡n-when-≡
     ; m<1+n⇒m<n∨m≡n-when-<
+    ; m≤n⇒m<n∨m≡n-when-<
     )
 open import Data.Maybe
 
@@ -236,6 +238,31 @@ lemma-⋖+-to-⋖ {n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) =
 lemma-⋖+-to-⋖ {n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
     ⊥-elim $ lemma-⋖+-not-smaller-idx (≤-refl {n}) r⋖+s 
 
+lemma-⋖+-exence
+    : (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → {m n : ℕ}
+    → m < n
+    → h m ⋖+ h n
+lemma-⋖+-exence h H {m} {suc n} m<1+n@(s≤s q) with m<1+n⇒m<n∨m≡n m<1+n
+... | inj₁ (m<n) = ⋖+-multistep-anychoice hm⋖+hn (H n)
+    where
+        hm⋖+hn : h m ⋖+ h n
+        hm⋖+hn = lemma-⋖+-exence h H m<n
+... | inj₂ (refl) = ⋖+-onestep (H n)
+
+-- For any `r : NFRestr m` and `s : NFRestr n`, if r ⋖+ s then also m < n.
+lemma-⋖+-indices
+    : {m n : ℕ}
+    → {r : NFRestr m}
+    → {s : NFRestr n}
+    → r ⋖+ s
+    → m < n
+lemma-⋖+-indices {m} {suc m} {r} {s} (⋖+-onestep x) = n<1+n m 
+lemma-⋖+-indices {m} {suc n} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) = 
+    <-trans (lemma-⋖+-indices r⋖+s) (n<1+n n)
+lemma-⋖+-indices {m} {suc n} {r} {oldNF s c} (⋖+-multistep-oldNF c r⋖+s) =
+    <-trans (lemma-⋖+-indices r⋖+s) (n<1+n n)
 --------------------------------------------------------------------------------
 -- A NFRestr can be trimmed to a sub-NFRestr.
 --------------------------------------------------------------------------------
@@ -376,6 +403,27 @@ trim'-cases
 trim' r m≤n = trim'-cases r (m≤n⇒m<n∨m≡n m≤n)
 trim'-cases r (inj₁ m<n) = trim r m<n
 trim'-cases {n} r {n} (inj₂ refl) = r
+
+-- Given an `r : NFRestr n` and a `m ≤ n`, trim' trims down to m.
+-- If also given a proof `m<n : m < n`, then `trim' r m≤n` 
+-- it has the same effect as `trim r m<n`.
+trim'-to-trim-when-<
+    : {m n : ℕ}
+    → (r : NFRestr n)
+    → (m≤n : m ≤ n)
+    → (m<n : m < n)
+    → trim' r m≤n ≡ trim r m<n
+trim'-to-trim-when-< {m} {n} r m≤n m<n = 
+    begin 
+        trim' r m≤n
+    ≡⟨⟩
+        trim'-cases r (m≤n⇒m<n∨m≡n m≤n)
+    ≡⟨ cong (trim'-cases r) $ m≤n⇒m<n∨m≡n-when-< m n m≤n m<n ⟩
+        trim'-cases r (inj₁ m<n)
+    ≡⟨⟩
+        trim r m<n
+    ∎
+    
 
 getLastChoice
     : {n' : ℕ}
@@ -570,6 +618,81 @@ lemma-trim'-exence h H n m p =
                 h n
             ≡⟨⟩
                 h (suc m)
+            ∎
+
+-- Trimming an extension of r down to the same x
+-- has the same effect as directly trimming r to x.
+lemma-⋖+-trim'-equal
+    : { m n x : ℕ}
+    → {r : NFRestr m}
+    → {s : NFRestr n}
+    → r ⋖+ s
+    → (x≤m : x ≤ m)
+    → (x≤n : x ≤ n)
+    → trim' r x≤m ≡ trim' s x≤n
+lemma-⋖+-trim'-equal {m} {suc m} {x} {r} {s} (⋖+-onestep r⋖s) x≤m x≤n = 
+    sym $ 
+    begin 
+        trim' s x≤n
+    ≡⟨ trim'-to-trim-when-< s x≤n x<n ⟩
+        trim s x<n
+    ≡⟨ cong (λ t → trim t x<n) eq ⟩
+        trim (addChoice r c) x<n
+    ≡⟨ lemma-trim-addChoice m x r c x<n x≤m ⟩ 
+        trim' r x≤m
+    ∎
+    where
+        x<n : x < (suc m)
+        x<n = ≤-<-trans x≤m (n<1+n m)
+        c : Choices r
+        c = proj₁ $ ⋖-to-addChoice r⋖s
+        eq : s ≡ addChoice r c
+        eq = proj₂ $ ⋖-to-addChoice r⋖s
+lemma-⋖+-trim'-equal {m} n@{suc n'} {x} {r} {newNF s} (⋖+-multistep-newNF r⋖+s) 
+                    x≤m x≤n = trans IH lastStep
+    where
+        x<n' : x < n'
+        x<n' = ≤-<-trans x≤m $ lemma-⋖+-indices r⋖+s
+        x<n : x < n
+        x<n = <-trans x<n' (n<1+n n')
+        x≤n' : x ≤ n'
+        x≤n' = ≤-trans (n≤1+n x) x<n'
+        IH : trim' r x≤m ≡ trim' s x≤n'
+        IH = lemma-⋖+-trim'-equal r⋖+s x≤m x≤n'
+        lastStep : trim' s x≤n' ≡ trim' (newNF s) x≤n
+        lastStep = 
+            begin 
+                trim' s x≤n'
+            ≡⟨ sym $ lemma-trim-addChoice n' x s here x<n x≤n' ⟩
+                trim (addChoice s here) x<n
+            ≡⟨⟩
+                trim (newNF s) x<n
+            ≡⟨ sym $ trim'-to-trim-when-< (newNF s) x≤n x<n ⟩
+                trim' (newNF s) x≤n
+            ∎
+lemma-⋖+-trim'-equal {m} {n@(suc n')} {x} {r} {oldNF s c} 
+                    (⋖+-multistep-oldNF c r⋖+s) x≤m x≤n = trans IH lastStep
+    -- This case is almost the same as the previous case.
+    -- Only `oldNF s c` i.o. `newNF s`.
+    where
+        x<n' : x < n'
+        x<n' = ≤-<-trans x≤m $ lemma-⋖+-indices r⋖+s
+        x<n : x < n
+        x<n = <-trans x<n' (n<1+n n')
+        x≤n' : x ≤ n'
+        x≤n' = ≤-trans (n≤1+n x) x<n'
+        IH : trim' r x≤m ≡ trim' s x≤n'
+        IH = lemma-⋖+-trim'-equal r⋖+s x≤m x≤n'
+        lastStep : trim' s x≤n' ≡ trim' (oldNF s c) x≤n
+        lastStep = 
+            begin 
+                trim' s x≤n'
+            ≡⟨ sym $ lemma-trim-addChoice n' x s (earlier-new c) x<n x≤n' ⟩
+                trim (addChoice s (earlier-new c)) x<n
+            ≡⟨⟩
+                trim (oldNF s c) x<n
+            ≡⟨ sym $ trim'-to-trim-when-< (oldNF s c) x≤n x<n ⟩
+                trim' (oldNF s c) x≤n
             ∎
 
 lemma-trim-⋖

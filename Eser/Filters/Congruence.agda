@@ -8,13 +8,15 @@
 {-# OPTIONS --safe #-}
 
 open import Data.Nat
-open import Data.Bool hiding (_<_ ; _≤_)
+open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ ; _≤?_ )
 open import Data.Bool.Properties using (T-≡)
 open import Data.Empty
 open import Relation.Binary.PropositionalEquality
+open import Relation.Binary
 open ≡-Reasoning
 open import Relation.Nullary
-open import Relation.Binary.Definitions using (Decidable ; DecidableEquality)
+open import Relation.Binary.Definitions using (Decidable ; DecidableEquality 
+    ; tri< ; tri≈ ; tri>)
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_ ; id)
@@ -33,11 +35,15 @@ open import Data.Nat.Properties using (
     ; <-≤-trans
     ; ≤-<-trans
     ; m≤n⇒m<n∨m≡n
+    ; n≮n
+    ; ≰⇒>
     )
 
 open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
-open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst)
+open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst ; irrel-×-closure ; uip
+    ; restIsProofIrrel
+    )
 open import Eser.Logic using 
     (true≢false 
     ; ≡→≡ᵇ 
@@ -45,13 +51,17 @@ open import Eser.Logic using
     ; decEqReflection
     ; decEqCoReflection
     ; is-false-to-not-true
+    ; not-true-to-is-false
     )
+open import Eser.NatTriples
 
 open import Eser.Filters.Base
 open import Eser.Filters.Properties
 open import Eser.Filters.Resurface
 open import Eser.Filters.PointwiseProperties
 open import Eser.Filters.Conversions.NFFunToExence
+open import Eser.Filters.ReplaceStructs
+open import Eser.Filters.NormalityInNFRestr
 
 module Eser.Filters.Congruence where
 
@@ -63,13 +73,17 @@ module Eser.Filters.Congruence where
 -- the signature, but it is unpractical to reimplement congruence 
 -- for every signature.
 --
--- So instead we define a generalisation of 'congruence' for any 'ReplaceStruct',
--- which are abstractions capturing only the minimal features of term algebras
--- needed to define congruence.
--- ReplaceStructs are enumerable types together with an
+-- So instead we define 'ReplaceRespecting' as 
+-- a generalisation of 'congruence' for any 'replacement structure'.
+-- Replacement structres are abstractions capturing only the minimal features 
+-- of term algebras needed to define congruence.
+-- They are enumerable types together with an
 -- 'is-argument-of'-relation denoted as _⊂_,
 -- and a replacement operation allowing to swap 'arguments'.
--- We only impose the minimal set of axioms needed to define
+-- We do not explicitly record the enumerable type itself,
+-- but define everything for ℕ; this can easily be carried over via an
+-- equivalence to A if A ≃ ℕ.
+-- Replacement structures only have the minimal set of axioms needed to define
 -- the generalisation of 'congruence', which we call 'ReplaceRespecting'.
 -- Consequently, not all ReplacementStructs correspond to term algebras;
 -- for example, we do not require that replacing an 
@@ -83,8 +97,9 @@ module Eser.Filters.Congruence where
 -- so w.l.o.g. we omit the bijection T ≃ ℕ and just work directly on ℕ.
 --
 -- Concretely, we will do the following:
--- 𝟏. Define ReplaceStructs.
--- 𝟐. Define two notions of ReplaceRespecting (parametrised by a ReplaceStruct).
+-- 𝟏. Define ReplaceStructs (see module Eser.Filters.ReplaceStructs).
+-- 𝟐. Define two notions of 'ReplaceRespecting' 
+--   (parametrised by a ReplaceStruct).
 --   Recall that decidable equivalence relations correspond
 --   to normalisation functions ℕ → ℕ, which correspond to extension-sequences
 --   (Exences). We can define predicates globally on equivalence relations,
@@ -102,61 +117,22 @@ module Eser.Filters.Congruence where
 -- (from the modules in `Eser.Signature`, using the `Signatures` and
 -- `ClosedTerms' of the `Eser` library):
 -- 𝟒. Show that the closed terms over any Signature from a ReplaceStruct.
--- 𝟓. Define the traditional notion of 'congruence' (as a predicate
---  on relations).
+--   (see module Filters.ReplaceStruct.ForSignature).
+-- 𝟓. Define the traditional notion of 'congruence' 
+--   (as a predicate on relations).
+--   (see module Filters.ReplaceStruct.ForSignature).
 -- 𝟔. Show that a relation satisfies this notion of congruence
---  if and only if it satisfies the (global notion) of 'ReplaceRespecting'.
+--   if and only if it satisfies the (global notion) of 'ReplaceRespecting'.
+--   (see module Filters.Congruence.ForSignature).
 --------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- 𝟏. Replacement Structures
---------------------------------------------------------------------------------
--- Terse encoding of an enumerable type A with a 'is-argument-of'
--- relation _⊂_. We omit the bijection A ≃ ℕ and work on ℕ directly.
--- Arguments must be smaller in the enumertion than the term containing them.
--- There is a `replace` operation such that `replace y x x'`
--- represents the term `y` with argument `x` substituted by `x'`.
--- We abstract from most implementation details of `replace`,
--- and do not even distinguish between replacing a 
--- single or all occurrences of `x`.
--- Replacing an argument by a smaller one must result
--- in a term that is overall smaller.
---
--- Implementation note
--- I first used the following fields:
---      _⊂_ : ℕ → ℕ → Set
---      ⊂-dec : Decidable _⊂_
--- but then a `ReplaceStruct` becomes a Set₁, and I feared this may become an
--- annoyance further down the road.
-
-record ReplaceStruct : Set where
-    field
-        _is-arg-of_ : ℕ → ℕ → Bool
-        ⊂-resp-< : (y x : ℕ) → x is-arg-of y ≡ true → x < y
-        replace : ℕ → ℕ → ℕ → ℕ
-        replace-< 
-            : (y x x' : ℕ) 
-            → (x is-arg-of y ≡ true) 
-            → (x' < x) 
-            → (replace y x x' < y)
-open ReplaceStruct
-
 
 --------------------------------------------------------------------------------
 -- 𝟐. Predicate 'ReplaceResp'
 --------------------------------------------------------------------------------
 module ReplaceResp (T : ReplaceStruct) where
-    _⊂_ : ℕ → ℕ → Set
-    _⊂_ n m = (_is-arg-of_ T) n m ≡ true
-
-    _⊂?_ : (n m : ℕ) → Dec (n ⊂ m)
-    n ⊂? m = ⊂?-cases (_is-arg-of_ T n m) refl
-        where
-            ⊂?-cases : (b : Bool) → (_is-arg-of_ T n m ≡ b) → Dec (n ⊂ m)
-            ⊂?-cases true p = true because ofʸ p
-            ⊂?-cases false p = false because ofⁿ 
-                (is-false-to-not-true ((T is-arg-of n) m) p)
-
+    open ReplaceStructLemmas T
+    open ReplaceStruct
+    open NormalityForReplStruct T
 
     ----------------------------------------------------------------------------
     -- 𝟐.𝟏. Global version
@@ -183,247 +159,6 @@ module ReplaceResp (T : ReplaceStruct) where
     ----------------------------------------------------------------------------
     -- 𝟐.𝟐. Local version
     ----------------------------------------------------------------------------
-
-    -- An NFRestr n encodes an equivalence relation restricted
-    -- to domain {0, ..., n-1}. So on this domain we can use it as a relation.
-    -- Implementation note: this is not in `Eser.Filters.Base`
-    -- nor in `Eser.Filter.Properties` because it depends
-    -- on `Eser.Filter.Resurface`, which in turn depends
-    -- on Base and Properties.
-    NFRestrRel 
-        : {n : ℕ}
-        → (r : NFRestr n)
-        → {x x' : ℕ}
-        → x < n
-        → x' < n
-        → Bool
-    NFRestrRel {n} r x<n x'<n = does (resurface r x<n ≡? resurface r x'<n)
-
-    AreRelated : {n : ℕ} → (r : NFRestr n) → ℕ → ℕ → Set
-    AreRelated {n} r x x' = (p : x < n) → (q : x' < n) → NFRestrRel r p q ≡ true
-
-    areRelated? 
-        : {y : ℕ} 
-        → (r : NFRestr y) 
-        → (x x' : ℕ) 
-        → (x < y) 
-        → (x' < y) 
-        → Dec (AreRelated r x x')
-    areRelated? {y} r x x' x<y x'<y with (resurface r x<y ≡? resurface r x'<y)
-    ... | yes eq = yes (λ (a : x < y) (b : x' < y) → 
-        let x<y≡a : x<y ≡ a 
-            x<y≡a = <-irrelevant x<y a
-        in
-        let x'<y≡b : x'<y ≡ b 
-            x'<y≡b = <-irrelevant x'<y b
-        in
-        doubleSubst (λ a b 
-            → does (resurface r a ≡? resurface r b) ≡ true) x<y≡a x'<y≡b 
-            $ decEqCoReflection _≡?_ (resurface r x<y) (resurface r x'<y) eq
-        )
-    ... | no  ¬eq = no (λ q → ¬eq 
-        (decEqReflection _≡?_ (resurface r x<y) (resurface r x'<y) 
-         $ q x<y x'<y))
-
-    -- Check if the normal form of a number is equal to itself.
-    IsNormal
-        : {x y : ℕ}
-        → (r : NFRestr y)
-        → x < y
-        → Set
-    IsNormal {x} {y} r x<y = ¬ (Σ[ x' ∈ ℕ ] (x' < x) × (AreRelated r x x'))
-
-    isNormal?
-        : {x y : ℕ}
-        → (r : NFRestr y)
-        → (x<y : x < y)
-        → IsNormal r x<y ⊎ Σ[ x' ∈ ℕ ] (x' < x) × AreRelated r x x'
-    isNormal? {x} {y} r x<y = isNormal?-rec x ≤-refl
-        where
-            OutType : ℕ → Set
-            OutType w = 
-                  ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
-                  ⊎ 
-                  Σ[ x' ∈ ℕ ] (x' < x) × AreRelated r x x'
-            isNormal?-rec
-                : (w : ℕ)
-                → (w ≤ x)
-                → OutType w
-            isNormal?-rec 0 0≤x = inj₁ g
-                where
-                    0<y : 0 < y
-                    0<y = ≤-<-trans 0≤x x<y
-
-                    g : ¬ (Σ[ x' ∈ ℕ ] (x' < 0) × AreRelated r x x') 
-                    g (x' , x'<0 , xR0) = ⊥-elim $ n≮0 x'<0
-
-            isNormal?-rec w@(suc w') w≤x = 
-                cases (isNormal?-rec w' (≤-trans (n≤1+n w') w≤x)) 
-                      (areRelated? r x w' x<y (<-trans w'<x x<y) )
-                where
-                    w'<x : w' < x
-                    w'<x = <-≤-trans (n<1+n w') w≤x
-                    cases 
-                        : (p : OutType w')
-                        → (Dec (AreRelated r x w'))
-                        → OutType w
-                    cases (inj₂ p) wR?x = inj₂ p
-                    cases (inj₁ _) (yes w'Rx) = inj₂ (w' , w'<x , w'Rx)
-                    cases (inj₁ p) (no ¬w'Rx) = inj₁ g
-                        where
-                            g : ¬ (Σ[ x' ∈ ℕ ] (x' < w) × AreRelated r x x') 
-                            g (x' , x'<w , x'Rx) with (m≤n⇒m<n∨m≡n (s≤s⁻¹ x'<w))
-                            ... | inj₁ (x'<w') = p (x' , x'<w' , x'Rx)
-                            ... | inj₂ refl  = ¬w'Rx x'Rx
-    
-    -- Predicate that no argument of y is related (according to r)
-    -- to a smaller term.
-    AllArgsNormal
-        : {y : ℕ}
-        → (r : NFRestr y)
-        → Set
-    AllArgsNormal {y} r
-        = (x : ℕ) 
-        → (x ⊂ y)
-        → ¬ (Σ[ x' ∈ ℕ ] 
-                (x' < x)
-                × 
-                (AreRelated r x x')
-            )
-    -- Note: p and q are proof-irrelevant, and are already implied
-    -- by x ⊂ y and (via transitivity) x' < x.
-    -- However, giving them as arguments is more convenient than
-    -- fixing defaults and having to use `subst`.
-    
-    -- Proof-relevant predicate that y has an argument x
-    -- that is (according to r) related to x' with x' < x.
-    NonNormalArg
-        : {y : ℕ}
-        → (r : NFRestr y)
-        → Set
-    NonNormalArg {y} r =
-        Σ[ x ∈ ℕ ] Σ[ x' ∈ ℕ ] (x ⊂ y) × (x' < x) × (AreRelated r x x')
-
-    AllSmallerNormal : {y : ℕ} → (r : NFRestr y) → ℕ → Set
-    AllSmallerNormal {y} r x = 
-        ((z : ℕ) 
-                → (z ≤ x) 
-                → (z⊂y : z ⊂ y) 
-                → IsNormal r (⊂-resp-< T y z z⊂y) 
-          )
-    
-    -- Auxiliary function of allArgsNormal? below.
-    allArgsNormal?Rec
-        : (x y : ℕ)
-        → (r : NFRestr y)
-        → (x < y)
-        → AllSmallerNormal r x ⊎ NonNormalArg r
-    allArgsNormal?Rec 0 y r x<y = inj₁ p
-        where
-            p   : (z : ℕ) 
-                → z ≤ 0 
-                → (z⊂y : z ⊂ y) 
-                → IsNormal r (⊂-resp-< T y z z⊂y)
-            p z z≤0 z⊂y (x' , x'<z , zRx') = ⊥-elim $ n≮0 (<-≤-trans x'<z z≤0)
-    allArgsNormal?Rec x@(suc x') y r x<y = allArgsNormal?Rec-cases 
-       (allArgsNormal?Rec x' y r x'<y) refl (x ⊂? y)
-        where
-            x'<y : x' < y
-            x'<y = <-trans (n<1+n x') x<y
-            allArgsNormal?Rec-cases
-                : (p : AllSmallerNormal r x' ⊎ NonNormalArg r)
-                → (p ≡ allArgsNormal?Rec x' y r x'<y)
-                → (Dec (x ⊂ y))
-                → AllSmallerNormal r x ⊎ NonNormalArg r
-            allArgsNormal?Rec-cases-x⊂y 
-                : (p : AllSmallerNormal r x')
-                → x ⊂ y
-                → AllSmallerNormal r x ⊎ NonNormalArg r
-
-            allArgsNormal?Rec-cases (inj₂ nonNormal) p-eq _ = inj₂ nonNormal
-            allArgsNormal?Rec-cases (inj₁ p') p-eq (yes x⊂y) = 
-                allArgsNormal?Rec-cases-x⊂y p' x⊂y
-            allArgsNormal?Rec-cases (inj₁ p') p-eq (no x⊄y) = inj₁ g
-                where
-                    g : AllSmallerNormal r x
-                    g z z≤x z⊂y with (m≤n⇒m<n∨m≡n z≤x)
-                    ... | inj₂ (z≡x) = ⊥-elim $ x⊄y (subst (_⊂ y) z≡x z⊂y )
-                    ... | inj₁ (z<x) = k
-                        where
-                            z<y : z < y
-                            z<y = ⊂-resp-< T y z z⊂y
-
-                            k : IsNormal r z<y
-                            k = p' z (s≤s⁻¹ z<x) z⊂y
-            allArgsNormal?Rec-cases-x⊂y allSmallerNorm x⊂y with isNormal? r x<y
-            ... | inj₁ isNormal = inj₁ g
-                where
-                    g : AllSmallerNormal r x
-                    g z z≤x z⊂y with (m≤n⇒m<n∨m≡n z≤x)
-                    ... | inj₂ (refl) = isNormal
-                    ... | inj₁ (z<x) = allSmallerNorm z (s≤s⁻¹ z<x) z⊂y
-            ... | inj₂ (x'' , x''<x , xRx'')  
-                = inj₂ (x , x'' , x⊂y , x''<x , xRx'')
-
-    -- Test if some argument of y has a normal form (accoding to r)
-    -- not equal to itself.
-    -- Implementation: just brute force check all x < y by induction.
-    allArgsNormal?
-        : {y : ℕ}
-        → (r : NFRestr y)
-        → AllArgsNormal r ⊎ NonNormalArg r
-    allArgsNormal? {0} r = inj₁ ans
-        where
-            ans : (x : ℕ) → (x ⊂ 0)
-                → ¬ (Σ[ x' ∈ ℕ ] 
-                     (x' < x)
-                     ×
-                     (AreRelated r x x')
-                    )
-            ans x x⊂0 = ⊥-elim $ n≮0 (⊂-resp-< T 0 x x⊂0)
-    allArgsNormal? y@{suc y'} r with allArgsNormal?Rec y' (suc y') r (n<1+n y')
-    ... | inj₁ allSmallerNormal = inj₁ ans
-        where
-            ans : (x : ℕ) → (x⊂y : x ⊂ y) → IsNormal r (⊂-resp-< T y x x⊂y)
-            ans x x⊂y (x' , x'<x , xRx') = 
-                allSmallerNormal x (s≤s⁻¹ $ ⊂-resp-< T y x x⊂y) 
-                                 x⊂y (x' , x'<x , xRx')
-    ... | inj₂ p = inj₂ p
-
-
-    -- Given evidence of a non-normal argument, we know the output of
-    -- `allArgsNormal?`.
-    lemma-allArgsNormal?-NonNormal
-        : {y : ℕ}
-        → (r : NFRestr y)
-        → {x x' : ℕ}
-        → (x⊂y : x ⊂ y)
-        → (x'<x : x' < x)
-        → (xRx' : AreRelated r x x')
-        → Σ[ nonNormalArg ∈ NonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
-    lemma-allArgsNormal?-NonNormal {y} r {x} {x'} x⊂y x'<x xRx' = 
-        cases (allArgsNormal? r) refl
-        where   
-            cases
-                : (p : AllArgsNormal r ⊎ NonNormalArg r)
-                → (p ≡ allArgsNormal? r)
-                → Σ[ nonNormalArg ∈ NonNormalArg r ] allArgsNormal? r ≡ inj₂ nonNormalArg
-            cases (inj₁ p) p-eq = ? 
-            cases (inj₂ p) p-eq = {! p , sym p-eq !}
-                -- use `sym p` and substitute proof-irrelevant stuff
-                -- No wait, that might now work, because the witness x
-                -- may be different. The lemma should be changed,
-                -- to any genereric ` ≡ inj₂ nonNormalArg`, 
-                -- but does that break anything?
-                --
-                -- No, it is only used in K' below, which ignores the data of
-                -- the proof anyway.
-                -- Fix: let this proof output an unknown `nonNormalArg`
-                -- and in that proof with K', also catch this nonNormalArg
-                -- and use it in the proof.
-        
-
-    -- 𝟐.𝟐. Local version.
     -- When needing to filter out the allowed equivalence classes for `y`,
     -- it checks whether `y` contains an argument x 'not in normal form',
     -- which in this abstract context is defined as 'related to a smaller term
@@ -444,7 +179,7 @@ module ReplaceResp (T : ReplaceStruct) where
     -- Some argument of y can be 'normalised'. The equivalence class
     -- of y must equal the equivalence class of 
     -- y-but-with-this-argument-normalised.
-    ReplaceRespLocal-cases {y} r c (inj₂ (x , x' , x⊂y , x'<x , x'∼x)) =
+    ReplaceRespLocal-cases {y} r c (inj₂ (x , x' , x⊂y  , x'<x , xRx')) =
         does (c ≡? y'-nf)
         where
             y' : ℕ
@@ -455,138 +190,9 @@ module ReplaceResp (T : ReplaceStruct) where
             y'-nf : Choices r
             y'-nf = earlier-new $ resurface r y'<y
 
-    ReplaceRespLocal {y} r c = ReplaceRespLocal-cases {y} r c (allArgsNormal? r)
+    ReplaceRespLocal {y} r c = 
+        ReplaceRespLocal-cases {y} r c (forgetMinimality $ allArgsNormal? r)
     
-    -- If known that `y` has a non-normal argument,
-    -- then we know the output of ReplaceRespLocal:
-    -- the only allowed choice for the nf of y is
-    -- the nf of replace y x x'.
-    lemma-ReplaceRespLocal-NonNormalArg-Exence
-        : {y x x' : ℕ}
-        → (h : (n : ℕ) → NFRestr n)
-        → (H : (n : ℕ) → h n ⋖ h (suc n))
-        → x ⊂ y
-        → x' < x
-        → (p : (replace T y x x') < y)
-        → AreRelated (h y) x x'
-        → Exence-sats ReplaceRespLocal (h , H)
-        → getChoiceFromExence (h , H) y ≡ (earlier-new $ resurface (h y) p)
-    lemma-ReplaceRespLocal-NonNormalArg-Exence {y} {x} {x'} h H x⊂y x'<x y'<y 
-                                               xRx' LocSat 
-                                               = decEqReflection _≡?_ LHS RHS K'
-        where
-            LHS : Choices (h y)
-            LHS = getChoiceFromExence (h , H) y
-
-            RHS : Choices (h y)
-            RHS = earlier-new $ resurface (h y) y'<y
-
-            F : Filter
-            F = ReplaceRespLocal
-
-            K : F (h y) LHS ≡ true
-            K = LocSat y
-
-            y' : ℕ
-            y' = replace T y x x'
-
-            y'<y-alt : y' < y
-            y'<y-alt = replace-< T y x x' x⊂y x'<x
-
-            
-            y'<y-alt≡y'<y : y'<y-alt ≡ y'<y
-            y'<y-alt≡y'<y = <-irrelevant y'<y-alt y'<y
-
-            -- Compute definition of F, after forcing the output of
-            -- the call to `allArgsNormal?`.
-            K' : does (LHS ≡? RHS) ≡ true
-            K' = sym $
-                --let isNonNormal = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
-                let (w , w' , w⊂y , w'<w , wRw') = (proj₁ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx')
-                in
-                begin 
-                    true 
-                ≡⟨ sym K ⟩
-                    F (h y) LHS
-                ≡⟨⟩
-                    ReplaceRespLocal-cases (h y) LHS (allArgsNormal? (h y))
-                ≡⟨ cong (ReplaceRespLocal-cases (h y) LHS) 
-                   $ proj₂ $ lemma-allArgsNormal?-NonNormal (h y) x⊂y x'<x xRx' ⟩ 
-                    --ReplaceRespLocal-cases (h y) LHS (inj₂ (w , w' , w⊂y , w'<w , wRw'))
-                    ReplaceRespLocal-cases (h y) LHS (inj₂ (w , w' , w⊂y , w'<w , wRw'))
-                    -- (inj₂ (x , x' , x⊂y , x'<x , xRx'))
-                    -- #TODO : need to match isNonNormal deeper.
-                    -- #TODO: problem: y' does depend on x, not on w.
-                    -- This won't work.
-                    -- ReplaceRespLocal does call areRelated?,
-                    -- and the output of ReplaceRespLocal is all we have.
-                    -- 2 options:
-                    -- - Somehow get a contradiction when unequal
-                    -- - Make `allArgsNormal` come with a proof of being the
-                    -- smallest counterexample.
-                ≡⟨⟩ -- Definition ReplaceRespLocal-cases.
-                    does (LHS ≡? (earlier-new $ resurface (h y) y'<y-alt))
-                    -- Now substitute the proof-irrelevant proof that
-                    -- y' < y by the one given.
-                ≡⟨ cong (λ p → does (LHS ≡? (earlier-new $ resurface (h y) p)))
-                        y'<y-alt≡y'<y ⟩
-                    does (LHS ≡? RHS)
-                ∎
-    -- Variant of the above lemma in special case where the Exence
-    -- is a restrict+-ed normalisation function f.
-    -- It carries the result back from an equality on used extension choices
-    -- in restrictions of f to an equality on inputs to f.
-    -- Implementation note: we don't take an argument z
-    -- of type `z : NonNormalArg {y} r` because the output type depends on
-    -- the data within z, namely x and x'.
-    lemma-ReplaceRespLocal-NonNormalArg-NFFun
-        : {y x x' : ℕ}
-        → x ⊂ y
-        → x' < x
-        → (f' : NFFun)
-        → AreRelated (restrict f' y) x x'
-        → NFFun-sats ReplaceRespLocal f'
-        → (proj₁ f' y) ≡ (proj₁ f' (replace T y x x'))
-    lemma-ReplaceRespLocal-NonNormalArg-NFFun {y} {x} {x'} x⊂y x'<x 
-                                        f'@(f , f-leq , f-fix) xRx' LocSat =
-        begin 
-            f y    
-        ≡⟨⟩
-            proj₁ f' y
-        ≡⟨ sym $ theo-combine∘restrict+ f' y ⟩
-            (proj₁ ∘ combine ∘ restrict+) f' y
-        ≡⟨⟩ -- Unfold definition of `combine`:
-            (choiceToℕ ∘ (getChoiceFromExence $ restrict+ f')) y
-        -- #TODO: some lemma with r := restrict f' y and E = restrict+ f'
-        ≡⟨ cong choiceToℕ forcedChoice ⟩
-            choiceToℕ (earlier-new $ resurface (restrict f' y) y'<y)
-        ≡⟨⟩ -- Maybe we don't need this step.
-            NFSToℕ (resurface (restrict f' y) y'<y)
-        ≡⟨ lemma-resurface-getChoice h H y'<y ⟩
-            (choiceToℕ ∘ (getChoiceFromExence $ restrict+ f')) y'
-        ≡⟨⟩ -- Fold definition `combine`.
-            (proj₁ ∘ combine ∘ restrict+) f' y'
-        ≡⟨ theo-combine∘restrict+ f' y' ⟩
-            proj₁ f' y'
-        ≡⟨⟩
-            f y' 
-        ∎
-        where
-            y' : ℕ
-            y' = replace T y x x'
-
-            y'<y : y' < y
-            y'<y = replace-< T y x x' x⊂y x'<x
-
-            h = proj₁ $ restrict+ f'
-            H = proj₂ $ restrict+ f'
-
-            forcedChoice : getChoiceFromExence (restrict+ f') y 
-                           ≡ 
-                           (earlier-new $ resurface (restrict f' y) y'<y)
-            forcedChoice = lemma-ReplaceRespLocal-NonNormalArg-Exence
-                h H x⊂y x'<x y'<y xRx' LocSat
-        
         
     ----------------------------------------------------------------------------
     -- 𝟑. Correspondence Global and Local definition
@@ -669,7 +275,403 @@ module ReplaceResp (T : ReplaceStruct) where
                     f x'
                 ∎
                 
+    -- If two elements have the same normal form in a NFRestr `s`
+    -- then then also do have the same normal form in any restriction
+    -- of `s`. More specifically, we use the definition `AreRelated`,
+    -- which ensures they are still related even when not an element
+    -- of the NFRestr 
+    -- (i.e., when one of the two elements is at least as great as the
+    -- index of the NFRestr).
+    areRelated-in-restriction
+        : {m n : ℕ}
+        → (r : NFRestr m)
+        → (s : NFRestr n)
+        → r ⋖+ s
+        → {x x' : ℕ}
+        → x' < x
+        → AreRelated s x x'
+        → AreRelated r x x'
+    areRelated-in-restriction {m} {n} r s r⋖+s {x} {x'} x'<x xSx' with m ≤? x
+    ... | (yes m≤x) = ans
+        where
+            ans : AreRelated r x x'
+            ans x<m = ⊥-elim $ n≮n m $ ≤-<-trans m≤x x<m
+    ... | (no m≰x) = ans 
+        where
+            m<n : m < n
+            m<n = lemma-⋖+-indices r⋖+s
+            x<n : x < n
+            x<n = <-trans (≰⇒> m≰x) m<n
+            x'<n : x' < n
+            x'<n = <-trans x'<x x<n
+            eq : NFSToℕ (resurface s x<n) ≡ NFSToℕ (resurface s x'<n)
+            eq = cong NFSToℕ $ decEqReflection _≡?_ (resurface s x<n) 
+                                                    (resurface s x'<n) 
+                             $ xSx' x<n x'<n
 
+            ans : AreRelated r x x'
+            ans x<m x'<m =
+                decEqCoReflection _≡?_ (resurface r x<m) (resurface r x'<m)
+                $ NFSToℕ-injective (resurface r x<m) (resurface r x'<m)
+                $ just-injective
+                $ begin 
+                    (just $ NFSToℕ $ resurface r x<m)
+                ≡⟨ resurface-correctness r x<m x<m ⟩
+                    NFRestrToℕ (trim' r x<m)
+                ≡⟨ cong NFRestrToℕ $ lemma-⋖+-trim'-equal r⋖+s x<m x<n ⟩
+                    NFRestrToℕ (trim' s x<n)
+                ≡⟨ sym $ resurface-correctness s x<n x<n ⟩
+                    (just $ NFSToℕ $ resurface s x<n) 
+                ≡⟨ cong just eq ⟩
+                    (just $ NFSToℕ $ resurface s x'<n)  
+                ≡⟨ resurface-correctness s x'<n x'<n ⟩
+                    NFRestrToℕ (trim' s x'<n)
+                ≡⟨ sym $ cong NFRestrToℕ $ lemma-⋖+-trim'-equal r⋖+s x'<m x'<n ⟩
+                    NFRestrToℕ (trim' r x'<m)
+                ≡⟨ sym $ resurface-correctness r x'<m x'<m ⟩
+                    (just $ NFSToℕ $ resurface r x'<m) 
+                ∎
+
+    -- The ReplaceRespLocal filter requires that the normal form
+    -- of y equals `replace y x x'` in case there exists some x ⊂ y
+    -- that is related to some x' < x.
+    -- But multiple such replacement pairs (x , x') may exist,
+    -- and the filter only explicitly states the constraint for the
+    -- lexicographically least (x , x').
+    -- However, it indirectly inductively follows that the filter requires
+    -- y to be related to `replace y w w'` for ANY replacement pair (w , w'),
+    -- (provided that the NFRestr so far satisfies the filter at every point).
+    ReplaceRespLocal-anyreplacement
+        : {y : ℕ}
+        → (h : (n : ℕ) → NFRestr n)
+        → (H : (n : ℕ) → h n ⋖ h (ℕ.suc n))
+        → Exence-sats ReplaceRespLocal (h , H)
+        → {x x' : ℕ}
+        → x ⊂ y
+        → x' < x
+        → AreRelated (h y) x x'
+        → choiceToℕ (getChoiceFromExence (h , H) y)
+          ≡ 
+          choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+
+    ReplaceRespLocal-anyreplacement {y*} h H LocSat {x*} {x*'} =
+        <<<-rec P recursion (y* , x* , x*')
+        where
+            f : ℕ → ℕ
+            -- Same as: f  ≔ proj₁ (combine (h , H))
+            f n = choiceToℕ (getChoiceFromExence (h , H) n) 
+
+            Goal : ℕ → ℕ → ℕ → Set
+            Goal y x x' = choiceToℕ (getChoiceFromExence (h , H) y) 
+                   ≡ 
+                   choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+
+            P : (ℕ × ℕ × ℕ) → Set
+            P (y , z , z') = 
+                  z ⊂ y
+                → z' < z
+                → AreRelated (h y) z z'
+                → Goal y z z'
+
+            cases 
+                : (y x x' : ℕ)
+                → ({ s : (ℕ × ℕ × ℕ) } → s <<< (y , x , x') → P s)
+                → (p : AllArgsNormal (h y) ⊎ MinNonNormalArg (h y)) 
+                → (p ≡ allArgsNormal? (h y)) 
+                → P (y , x  , x')
+
+            cases y x x' IH (inj₁ allNormal) p-eq x⊂y x'<x xRx' = 
+                ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
+            cases y x x' IH 
+                  (inj₂ (w , w⊂y , w' , w'<w , wRw' , isMin)) p-eq 
+                  x⊂y x'<x xRx' 
+                  = subcases (isMin x x' x⊂y x'<x xRx')
+                  where
+
+                    yx  : ℕ
+                    yx  = replace T y x x'
+                    yxw : ℕ
+                    yxw = replace T yx w w'
+                    yw  : ℕ
+                    yw  = replace T y w w'
+                    ywx : ℕ
+                    ywx = replace T yw x x'
+                    ywxw : ℕ
+                    ywxw = replace T ywx w w'
+
+                    yx<y : yx < y
+                    yx<y = replace-< T y x x' x⊂y x'<x
+                    yw<y : yw < y
+                    yw<y = replace-< T y w w' w⊂y w'<w
+
+                    yx,w,w'<<<y,x,x' : (yx , w , w') <<< (y , x , x')
+                    yx,w,w'<<<y,x,x' = first-<-to-<<< yx w w' y x x' yx<y
+                    
+                    yw,x,x'<<<y,x,x' : (yw , x , x') <<< (y , x , x')
+                    yw,x,x'<<<y,x,x' = first-<-to-<<< yw x x' y x x' yw<y
+
+
+                    xR[yw]x' : AreRelated (h yw) x x'
+                    xR[yw]x' = areRelated-in-restriction (h yw) (h y) 
+                        (lemma-⋖+-exence h H yw<y) x'<x xRx'
+
+                    wR[yx]w' : AreRelated (h yx) w w'
+                    wR[yx]w' = areRelated-in-restriction (h yx) (h y) 
+                        (lemma-⋖+-exence h H yx<y) w'<w wRw'
+
+                    subcases 
+                        : (w < x) ⊎ (w ≡ x × w' < x') ⊎ (w ≡ x × w' ≡ x') 
+                        → Goal y x x'
+                    subcases (inj₁ w<x) = ans 
+                        where
+                            y,w,w'<<<y,x,x' : (y , w , w') <<< (y , x , x')
+                            y,w,w'<<<y,x,x' = second-<-to-<<< y w w' x x' w<x
+                            
+                            x≢w : x ≢ w
+                            x≢w refl = n≮n x w<x
+
+                            x⊂yw : x ⊂ yw
+                            x⊂yw = keep T y w w' x w⊂y x⊂y (≢-sym x≢w)
+
+                            ywx<y : ywx < y
+                            ywx<y = <-trans (replace-< T yw x x' x⊂yw x'<x) yw<y
+                    
+                            ywx,w,w'<<<y,x,x' : (ywx , w , w') <<< (y , x , x')
+                            ywx,w,w'<<<y,x,x' = first-<-to-<<< ywx w w' y x x' ywx<y
+
+                            wR[ywx]w' : AreRelated (h ywx) w w'
+                            wR[ywx]w' = areRelated-in-restriction (h ywx) (h y) 
+                                (lemma-⋖+-exence h H ywx<y) w'<w wRw'
+
+                            x≢w' : x ≢ w'
+                            x≢w' = λ eq → (n≮n x 
+                                (<-trans (subst (_< w) (sym eq) w'<w) w<x)) 
+
+                            fyxw≡fywx : f yxw ≡ f ywx
+                            fyxw≡fywx = subsubcases (w ≟ x')
+                                where
+                                    subsubcases : Dec (w ≡ x') → f yxw ≡ f ywx
+                                    subsubcases (no w≢x') = cong f $ sym $ 
+                                        comm T y x x' w w' x⊂y w⊂y 
+                                            x≢w'
+                                            w≢x'
+                                    subsubcases (yes refl) = 
+                                        sym $ 
+                                        begin 
+                                            f ywx
+                                        ≡⟨ sub-eq ⟩
+                                            f ywxw
+                                        ≡⟨ cong f $ lemma-replace-wxw y w w'
+                                           x x' (≢-sym x≢w') 
+                                         ⟩
+                                            f yxw
+                                        ∎
+                                        where
+                                            sub-eq : f ywx ≡ f ywxw
+                                            sub-eq with w ⊂? ywx
+                                            ... | yes w⊂ywx = 
+                                                IH ywx,w,w'<<<y,x,x' w⊂ywx w'<w 
+                                                   wR[ywx]w'
+                                            ... | no w⊄ywx = 
+                                                cong f 
+                                                    $ noeff T ywx w w' 
+                                                    $ not-true-to-is-false w⊄ywx
+                            w⊂yx : w ⊂ yx
+                            w⊂yx = keep T y x x' w x⊂y w⊂y x≢w
+
+                            ans : Goal y x x'
+                            ans = sym $
+                                begin 
+                                    f yx 
+                                ≡⟨ IH yx,w,w'<<<y,x,x' w⊂yx w'<w wR[yx]w' ⟩
+                                    f yxw
+                                ≡⟨ fyxw≡fywx ⟩
+                                    f ywx
+                                ≡⟨ sym $ IH yw,x,x'<<<y,x,x' x⊂yw x'<x xR[yw]x' ⟩
+                                    f yw
+                                ≡⟨ sym $ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
+                                    f y
+                                ∎
+                    subcases(inj₂ (inj₁ (x≡w@refl , w'<x'))) = 
+                        begin 
+                            f y
+                        ≡⟨ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
+                            f yw
+                        ≡⟨ cong f $ noeff T yw x x' x⊄yw ⟩
+                            f ywx
+                        ≡⟨ cong f $ comm T y x x' w w' x⊂y w⊂y x≢w' w≢x' ⟩
+                            f yxw
+                        ≡⟨ cong f $ sym $ noeff T yx w w' w⊄yx ⟩
+                            f yx
+                        ∎
+                        where
+                            -- Note that x ≡ w in this case!
+                            x≢w' : x ≢ w'
+                            x≢w' refl = n≮n x w'<w
+
+                            w≢x' : w ≢ x'
+                            w≢x' refl = n≮n w x'<x
+
+                            x⊄yw : x ⊄ yw
+                            x⊄yw = complete T y x w' x≢w' x⊂y
+
+                            w⊄yx : w ⊄ yx
+                            w⊄yx = complete T y x x' w≢x' w⊂y
+                        
+                            y,w,w'<<<y,x,x'
+                                : (y , w , w') <<< (y , x , x')
+                            y,w,w'<<<y,x,x' = third-<-to-<<< y x w' x' w'<x'
+
+                    subcases(inj₂ (inj₂ (refl , refl))) = fy≡fyw
+                        where
+                            nf-yx : Choices (h y)
+                            nf-yx = earlier-new $ resurface (h y) yx<y
+
+                            -- This is the choice that the ReplaceRespLocal
+                            -- filter enforces equality to. 
+                            nf-yw : Choices (h y)
+                            nf-yw = earlier-new $ resurface (h y) yw<y
+
+                            eq : yx ≡ yw
+                            eq = refl
+
+                            ⊂-<-irrel : (y z z' : ℕ) 
+                                → Relation.Nullary.Irrelevant ((z ⊂ y) × (z' < z))
+                            ⊂-<-irrel y z z' = irrel-×-closure 
+                                (⊂-irrelevant {z} {y}) 
+                                (<-irrelevant {z'} {z})
+
+
+                            A : Set
+                            A = Σ[ t ∈ ℕ × ℕ ] 
+                                (proj₁ t ⊂ y) × (proj₂ t < proj₁ t)
+
+                            tuplesEq : _≡_ {A = A} ((w , w') , w⊂y , w'<w)
+                                                   ((x , x') , x⊂y , x'<x)
+                            tuplesEq = restIsProofIrrel {A = ℕ × ℕ} 
+                                {B = λ (z , z') → (z ⊂ y) × (z' < z)}
+                                (λ (z , z') → ⊂-<-irrel y z z')
+                                (w⊂y , w'<w)
+                                (x⊂y , x'<x)
+                                refl
+
+                            nf-yw≡nf-yx : nf-yw ≡ nf-yx
+                            nf-yw≡nf-yx = 
+                                begin 
+                                nf-yw
+                                ≡⟨⟩
+                                    (earlier-new $ resurface (h y)
+                                        $ replace-< T y w w' w⊂y w'<w )
+                                ≡⟨⟩
+                                    auxfun ((w , w') , w⊂y , w'<w)
+                                ≡⟨ cong auxfun tuplesEq ⟩
+                                    auxfun ((x , x') , x⊂y , x'<x)
+                                ≡⟨⟩
+                                    (earlier-new $ resurface (h y)
+                                        $ replace-< T y x x' x⊂y x'<x )
+                                ≡⟨⟩
+                                    nf-yx
+                                ∎
+                                where
+                                    auxfun : A → Choices (h y)
+                                    auxfun ((z , z') , z⊂y , z'<z)
+                                        = earlier-new 
+                                            $ resurface (h y)
+                                            $ replace-< T y z z' z⊂y z'<z
+                                        
+                                
+                                                   
+
+
+                            g : (n : ℕ) → Choices (h n)
+                            g = getChoiceFromExence (h , H)
+
+                            gy≡nf-yx : g y ≡ nf-yx
+                            gy≡nf-yx = decEqReflection _≡?_ (g y) nf-yx $
+                                sym $
+                                begin 
+                                    true
+                                ≡⟨ sym $ LocSat y ⟩
+                                    ReplaceRespLocal (h y) (g y)
+                                ≡⟨⟩
+                                    ReplaceRespLocal-cases (h y) (g y) 
+                                        (forgetMinimality 
+                                        $ allArgsNormal? (h y))
+                                ≡⟨ cong (λ t → ReplaceRespLocal-cases (h y) (g y) 
+                                        (forgetMinimality t )) (sym p-eq) ⟩
+                                    ReplaceRespLocal-cases (h y) (g y) 
+                                        (forgetMinimality 
+                                        $ (inj₂ (w , w⊂y , w' , w'<w , wRw' , isMin)))
+                                ≡⟨⟩
+                                    ReplaceRespLocal-cases (h y) (g y) 
+                                        (inj₂ (w , w' , w⊂y , w'<w , wRw'))
+                                ≡⟨⟩
+                                    does (g y ≡? nf-yw)
+                                ≡⟨ cong (λ v → does (g y ≡? v)) nf-yw≡nf-yx ⟩
+                                    does (g y ≡? nf-yx)
+                                ∎
+
+                            fy≡fyw : f y ≡ f yw
+                            fy≡fyw =
+                                begin 
+                                    f y
+                                ≡⟨⟩
+                                    choiceToℕ (getChoiceFromExence (h , H) y)
+                                ≡⟨ cong choiceToℕ gy≡nf-yx ⟩
+                                    choiceToℕ (earlier-new $ resurface (h y) yx<y)
+                                ≡⟨⟩
+                                    NFSToℕ (resurface (h y) yx<y)
+                                ≡⟨ lemma-resurface-getChoice h H yx<y ⟩
+                                    choiceToℕ (getChoiceFromExence (h , H) yx)
+                                ≡⟨⟩
+                                    f yx
+                                ∎
+                                
+
+            recursion 
+                : (t : ℕ × ℕ × ℕ) 
+                → ({ s : (ℕ × ℕ × ℕ) } → s <<< t → P s)
+                → P t
+            recursion (y , x , x') IH
+                = cases y x x' IH (allArgsNormal? (h y)) refl
+
+
+    -- Variant of above lemma where an NFFun instead of an Exence is given.
+    ReplaceRespLocal-anyreplacement-NFFun
+        : {y : ℕ}
+        → (f' : NFFun)
+        → NFFun-sats ReplaceRespLocal f'
+        → {x x' : ℕ}
+        → x ⊂ y
+        → x' < x
+        → (proj₁ $ FunToRel f') x x' ≡ true
+        → proj₁ f' y
+          ≡ 
+          proj₁ f' (replace T y x x')
+    ReplaceRespLocal-anyreplacement-NFFun {y} f' LocSat {x} {x'} x⊂y x'<x xRx'  
+        = ans
+        where
+            areRelated : AreRelated (restrict f' y) x x'
+            areRelated = lemma-FunToRel-AreRelated f' x x' xRx' y
+            f = proj₁ f'
+            h = proj₁ (restrict+ f')
+            H = proj₂ (restrict+ f')
+            almost : choiceToℕ (getChoiceFromExence (h , H) y)
+                     ≡ 
+                     choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+            almost = ReplaceRespLocal-anyreplacement h H LocSat {x} {x'} x⊂y 
+                                                     x'<x areRelated
+            ans =
+                begin 
+                    f y
+                ≡⟨ sym $ theo-combine∘restrict+ f' y ⟩
+                    choiceToℕ (getChoiceFromExence (h , H) y)
+                ≡⟨ almost ⟩
+                    choiceToℕ (getChoiceFromExence (h , H) (replace T y x x'))
+                ≡⟨ theo-combine∘restrict+ f' (replace T y x x') ⟩
+                    f (replace T y x x')
+                ∎
+                
     ----------------------------------------------------------------------------
     -- Main theorems
     ----------------------------------------------------------------------------
@@ -691,7 +693,7 @@ module ReplaceResp (T : ReplaceStruct) where
     theo-ReplaceResp-left-cases
         : (f' : NFFun)
         → (y : ℕ)
-        → (p : AllArgsNormal (restrict f' y) ⊎ NonNormalArg (restrict f' y))
+        → (p : AllArgsNormal (restrict f' y) ⊎ MinNonNormalArg (restrict f' y))
         → p ≡ allArgsNormal? (restrict f' y)
         → ReplaceRespGlobal (FunToRel f') 
         → ReplaceRespLocal Allows (getChoiceFromExence (restrict+ f') y) 
@@ -709,22 +711,24 @@ module ReplaceResp (T : ReplaceStruct) where
         begin 
             ReplaceRespLocal r c
         ≡⟨⟩ -- Definition ReplaceRespLocal
-            ReplaceRespLocal-cases r c (allArgsNormal? r)
-        ≡⟨ cong (ReplaceRespLocal-cases r c) (sym p≡allArgsNormal?) ⟩
+            ReplaceRespLocal-cases r c (forgetMinimality $ allArgsNormal? r)
+        ≡⟨ cong (ReplaceRespLocal-cases r c) 
+            (cong forgetMinimality $ sym p≡allArgsNormal?) ⟩
             ReplaceRespLocal-cases r c (inj₁ normal)
         ≡⟨⟩
             true
         ∎
         
     theo-ReplaceResp-left-cases f'@(f , f-leq , f-fix) y 
-                                (inj₂ p@(x , x' , x⊂y , x'<x , xRx')) 
+                                (inj₂ p@(x , x⊂y , x' , x'<x , xRx' , isMin)) 
                                 p≡allArgsNormal? G =
         begin 
             ReplaceRespLocal r c
         ≡⟨⟩
-            ReplaceRespLocal-cases r c (allArgsNormal? r)
-        ≡⟨ cong (ReplaceRespLocal-cases r c) (sym p≡allArgsNormal?) ⟩
-            ReplaceRespLocal-cases r c (inj₂ p)
+            ReplaceRespLocal-cases r c (forgetMinimality $ allArgsNormal? r)
+        ≡⟨ cong (ReplaceRespLocal-cases r c) 
+            (cong forgetMinimality $ sym p≡allArgsNormal?) ⟩
+            ReplaceRespLocal-cases r c ((forgetMinimality $ inj₂ p))
         ≡⟨⟩
             does (c ≡? y'-nf)
         ≡⟨ decEqCoReflection _≡?_ c y'-nf choice-eq ⟩
@@ -849,9 +853,11 @@ module ReplaceResp (T : ReplaceStruct) where
             fy≢fy' fy≡fy' = true≢false $ trans (sym $ ≡→≡ᵇ (f y) (f y') fy≡fy') p
 
             fy≡fy' : f y ≡ f y'
-            fy≡fy' = lemma-ReplaceRespLocal-NonNormalArg-NFFun x⊂y x'<x f' 
-                                                               xRx'-alt LocSat
-
+            fy≡fy' = ReplaceRespLocal-anyreplacement-NFFun f'
+                                                     LocSat
+                                                     x⊂y
+                                                     x'<x
+                                                     xRx'
 
             -- By definition of ReplaceRespLocal-cases,
             -- the following is only possible if fy-as-choice
@@ -864,103 +870,74 @@ module ReplaceResp (T : ReplaceStruct) where
             contra : ⊥
             contra = fy≢fy' fy≡fy'
 
---------------------------------------------------------------------------------
--- 𝟒. Signatures give ReplaceStructs
---------------------------------------------------------------------------------
-open import Eser.Signature.Definitions
-open import Eser.Signature.MainTheorem
-open import Eser.Card
-open import Eser.Equivalences
-open import Eser.Equivalences.Notation
-
-module ForSignature {μ : ℕ∞} {ζ : ℕ∞} (S : Signature (suc∞ μ) (suc∞ ζ)) where
-    -- Implementation note: we are using the version with weight annotations
-    -- because this will make it much easier to prove how replacement of an
-    -- argument by a smaller argument leads to a smaller term.
-    C = ClosedTerms {suc∞ μ} {suc∞ ζ} S
-    OT = OpenTerms {suc∞ μ} {suc∞ ζ} S
-
-    -- Is-an-argument-of-relation.
-    -- Not to be confused with the 'subterm' relation in Eser.Signature.Subterm.
-    -- The latter relation is transitive and also relates
-    -- t to `giveArg t a`, while t is not an argument.
-    data _⋤_ : {n n' w w' : ℕ} → OT w n → OT w' n' → Set where
-        here 
-            : {n wₜ wₐ : ℕ} 
-            → (t : OT wₜ (ℕ.suc n)) 
-            → (a : OT wₐ 0) 
-            → a ⋤ giveArg t a
-        earlier 
-            : {n wₜ wₐ wₐ' : ℕ} 
-            → (t : OT wₜ (ℕ.suc n)) 
-            → (a : OT wₐ 0) 
-            → (a' : OT wₐ' 0) 
-            → a ⋤ t
-            → a ⋤ giveArg t a'
-
-    -- Replacement of arguments defined on Open Terms.
-    -- The enumeration bijection will allow to lift this from OT to ℕ.
-    OT-replace 
-        : {n wₜ wₐ wₐ' : ℕ} 
-        → (t : OT wₜ n) 
-        → (a : OT wₐ 0) 
-        → (a' : OT wₐ' 0) 
-        → a ⋤ t 
-        --^ Implies wₜ > wₐ, so wₜ ∸ wₐ will be nonzero.
-        --  Can be proven using `subterm-smaller-weight` in Signature.Subterm.
-        → Σ[ w' ∈ ℕ ] Σ[ t' ∈ OT w' n ] (a' ⋤ t) × (w' ≡ (wₜ + wₐ') ∸ wₐ)
-    OT-replace t a a' = ?
-
-    𝕋 : Set
-    𝕋 = AllTerms {suc∞ μ} {suc∞ ζ} S
-
-    𝕋≃ℕ = infTermAlgEnum {μ} {ζ} S
-    --open EquivShorthandsForEnumSet 𝕋≃ℕ
-    φ : 𝕋 → ℕ
-    φ = ≃-to 𝕋≃ℕ
-    φ⁻¹ : ℕ → 𝕋
-    φ⁻¹ = ≃-from 𝕋≃ℕ
-    φ∘φ⁻¹≈id : (φ ∘ φ⁻¹) ≈ id
-    φ∘φ⁻¹≈id = ≃-toFrom 𝕋≃ℕ
-    φ⁻¹∘φ≈id : (φ⁻¹ ∘ φ) ≈ id
-    φ⁻¹∘φ≈id = ≃-fromTo 𝕋≃ℕ
-
-    -- #TODO: if `a` doesn't occur in t then return t unchanged.
-    -- So add a case distinction!
-    sig-replace : ℕ → ℕ → ℕ → ℕ
-    sig-replace t a a' = 
-        let (w' , t' , _) = OT-replace (proj₂ $ φ⁻¹ t) (proj₂ $ φ⁻¹ a) 
-                                       (proj₂ $ φ⁻¹ a') ?
-        in
-        φ (w' , t')
-
-    -- Extract underlying replacement structure from a Signature.
-    toReplaceStruct : ReplaceStruct
-    toReplaceStruct ._is-arg-of_ = {! !}
-    toReplaceStruct .⊂-resp-< = {! !}
-    toReplaceStruct .replace = {! !}
-    toReplaceStruct .replace-< = {! !}
-
     ----------------------------------------------------------------------------
-    -- 𝟓. Familiar definition of congruence
+    -- The congruence filter is 'DeadEndFree'; following
+    -- allowed choices will not get stuck.
     ----------------------------------------------------------------------------
-    -- Is-an-argument-of-relation, lifted to ℕ via the bijection φ : 𝕋 ≃ ℕ.
-    _⋤ℕ_ : ℕ → ℕ → Set
-    t ⋤ℕ a = (proj₂ $ φ⁻¹ t) ⋤ (proj₂ $ φ⁻¹ a)
+    -- Strategy: introduce a new normal form when the filters allows it;
+    -- otherwise it only allows one choice, and then we pick that one.
+    --
+    -- Note: when following this strategy from the start,
+    -- then the congruence-constraint will never apply because every argument
+    -- is its own normal form, and the filter will continue to allow introducing
+    -- new normal forms.
+    -- In other words, this strategy encodes the identity relation.
+    -- (The other extreme, relating everything to 0, should also be possible).
+    ----------------------------------------------------------------------------
+    ReplaceRespLocal-DeadEndFree : DeadEndFree ReplaceRespLocal
+    ReplaceRespLocal-DeadEndFree {y} r LocSat = cases (allArgsNormal? r) refl
+        where
+            F = ReplaceRespLocal
+            cases
+                : (p : AllArgsNormal r ⊎ MinNonNormalArg r)
+                → (allArgsNormal? r ≡ p)
+                → Σ[ c ∈ Choices r ] F Allows c In r
+            cases (inj₁ allNormal) p-eq = (here , allowed)
+                where
+                    allowed : F Allows here In r
+                    allowed = 
+                        begin 
+                            F r here
+                        ≡⟨⟩
+                            ReplaceRespLocal-cases r here 
+                                (forgetMinimality $ allArgsNormal? r)
+                        ≡⟨ cong  (λ x → ReplaceRespLocal-cases r here 
+                                (forgetMinimality x)) p-eq ⟩
+                            ReplaceRespLocal-cases r here (inj₁ allNormal)
+                        ≡⟨⟩
+                            true
+                        ∎
+            cases (inj₂ (x , x⊂y , x' , x'<x , xRx' , isMin)) p-eq 
+                = (c , allowed)
+                where
+                    yx : ℕ
+                    yx = replace T y x x'
 
-    IsCongruence : DecEquiv → Set
-    IsCongruence R'@(R , is-equiv-rel) 
-        = (t : ℕ)                         --^ For all closed terms t ...
-        → (a : ℕ) → (a ⋤ℕ t)              --^ ... and all arguments a of t
-        → (a' : ℕ)                        --^ ... and all alternatives a'
-        → R a a' ≡ true                   --^     that are related to a
-        → R t (sig-replace t a a') ≡ true --^ t and t[a'/a] must be related.
-            
-    ----------------------------------------------------------------------------
-    -- 𝟔. ReplaceResp specialises to IsCongruence for Signatures
-    ----------------------------------------------------------------------------
-    open ReplaceResp toReplaceStruct
-    theo-ReplaceResp-is-IsCongr
-        : (R : DecEquiv)
-        → ReplaceRespGlobal R ↔ IsCongruence R
-    theo-ReplaceResp-is-IsCongr R = ?
+                    yx<y : yx < y
+                    yx<y = replace-< T y x x' x⊂y x'<x
+
+                    c : Choices r
+                    c = earlier-new $ resurface r yx<y
+
+                    allowed : F Allows c In r
+                    allowed = 
+                        begin 
+                            F r c
+                        ≡⟨⟩
+                            ReplaceRespLocal-cases r c 
+                                (forgetMinimality $ allArgsNormal? r)
+                        ≡⟨ cong  (λ x → ReplaceRespLocal-cases r c 
+                                (forgetMinimality x)) p-eq ⟩
+                            ReplaceRespLocal-cases r c 
+                                (forgetMinimality 
+                                $ inj₂ (x , x⊂y , x' , x'<x , xRx' , isMin))
+                        ≡⟨⟩
+                            ReplaceRespLocal-cases r c 
+                                (inj₂ (x , x' , x⊂y , x'<x , xRx' ))
+                        ≡⟨⟩
+                            does (c ≡? c) 
+                        ≡⟨ decEqCoReflection _≡?_ c c refl ⟩
+                            true
+                        ∎
+                        
+        

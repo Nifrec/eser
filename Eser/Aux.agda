@@ -13,7 +13,7 @@ open import Data.Sum
 open import Data.Product
 open import Data.Empty
 open import Relation.Nullary
-open import Relation.Binary
+open import Relation.Binary hiding (Irrelevant)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Data.List
@@ -131,6 +131,17 @@ restIsProofIrrel
     → (a , b) ≡ (a' , b')
 restIsProofIrrel H {a} {a} b b' refl =
     cong (λ b → (a , b)) (H a b b')
+
+irrel-×-closure
+    : {A B : Set}
+    → Irrelevant A
+    → Irrelevant B
+    → Irrelevant (A × B)
+irrel-×-closure {A} {B} ir-A ir-B (a , b) (a' , b') = 
+    lemma (ir-A a a') (ir-B b b')
+    where
+        lemma : {a a' : A} → {b b' : B} → a ≡ a' → b ≡ b' → (a , b) ≡ (a' , b')
+        lemma refl refl = refl
 
 -- If two pairs in dependent sums are equal,
 -- then so are their second projections.
@@ -533,6 +544,25 @@ m<1+n⇒m<n∨m≡n-when-< m n p q =
     m<1+n⇒m<n∨m≡n-when-<-cases m n p q (inj₁ m<n) p₁ = 
         subst (λ x →  (m<1+n⇒m<n∨m≡n p) ≡ inj₁ x) (<-irrelevant m<n q) p₁
     m<1+n⇒m<n∨m≡n-when-<-cases m n p q (inj₂ refl) p₁ = ⊥-elim $ n≮n m q
+
+m≤n⇒m<n∨m≡n-when-<
+    : (m n : ℕ)
+    → (p : m ≤ n)
+    → (q : m < n)
+    → (m≤n⇒m<n∨m≡n p) ≡ inj₁ q
+m≤n⇒m<n∨m≡n-when-< m n p q = 
+    m≤n⇒m<n∨m≡n-when-<-cases m n p q (m≤n⇒m<n∨m≡n p) refl
+    where
+    m≤n⇒m<n∨m≡n-when-<-cases
+        : (m n : ℕ)
+        → (p : m ≤ n)
+        → (q : m < n)
+        → (p₀ : m < n ⊎ m ≡ n)
+        → (p₁ : (m≤n⇒m<n∨m≡n p) ≡ p₀)
+        → (m≤n⇒m<n∨m≡n p) ≡ inj₁ q
+    m≤n⇒m<n∨m≡n-when-<-cases m n p q (inj₁ m<n) p₁ = 
+        subst (λ x →  (m≤n⇒m<n∨m≡n p) ≡ inj₁ x) (<-irrelevant m<n q) p₁
+    m≤n⇒m<n∨m≡n-when-<-cases m n p q (inj₂ refl) p₁ = ⊥-elim $ n≮n m q
 
 -- Given a ≡ b, we know that `<-cmp a b` must output something
 -- of the form `tri≈ _ a≡b _`.
