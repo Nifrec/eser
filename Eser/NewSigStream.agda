@@ -24,8 +24,6 @@ open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Relation.Unary using (_⊆_)
 open import Data.Vec
-open import Data.Vec.Functional hiding (_∷_)
-open import Data.Vec.Membership.Propositional
 open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Vec.Relation.Unary.Any as Any
 open import Data.Vec.Relation.Unary.All.Properties
