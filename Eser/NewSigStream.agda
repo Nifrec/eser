@@ -8,7 +8,7 @@
 -- Signatures.
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --safe #-}
+{-# OPTIONS --safe  --lossy-unification #-}
 
 open import Level hiding (suc)
 open import Data.Nat
