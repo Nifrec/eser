@@ -7,6 +7,9 @@
 -- Simplified version of the new enumeration algorithm for term algebras of
 -- Signatures.
 --------------------------------------------------------------------------------
+
+{-# OPTIONS --safe #-}
+
 open import Level hiding (suc)
 open import Data.Nat
 open import Data.Nat.Properties
@@ -126,32 +129,6 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
         open import Eser.NatCoding
         open Eser.NatCoding.WithMuZeta μ' ζ' hiding (μ ; ζ)
 
-
-        -- Same as Term S, but now the arguments are given
-        -- as a function (Vector A n  ≔ (Fin n → A)),
-        -- for which the termination checker allows to recurse on its elements
-        -- (for a Vec, this is not allowed).
-        data FTerm : Set where
-            f-nul : ^ μ → FTerm
-            f-mul : (c : ^ ζ) → Vector FTerm (ar c) → FTerm
-
-        toFun : Term S → FTerm
-        argVecToFuns : {n : ℕ} → Vec (Term {μ} S) n → Vector FTerm n
-
-        argVecToFuns [] = Data.Vec.Functional.[]
-        argVecToFuns (t ∷ ts) Fin.zero = toFun t 
-        argVecToFuns (t ∷ ts) (Fin.suc i) = argVecToFuns ts i
-
-        toFun (nullary c) = f-nul c
-        toFun (multiary c v) = f-mul c (argVecToFuns v)
-
-        toTerm : FTerm → Term S
-        toTerm (f-nul c) = nullary c
-        toTerm (f-mul c f) = multiary c (toVec g)
-            where
-                g : Vector (Term S) (ar c)
-                g i = toTerm $ f i
-
         decode-multiary-lemma
             : (i w y : ℕ)
             → (c : ^ ζ)
@@ -173,7 +150,7 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
                                 code-vec v
                             ≡⟨ cong code-vec $ sym eq-y ⟩
                                 code-vec (decode-vec (S c) y)
-                            ≡⟨ code-decode-vec y ⟩
+                            ≡⟨ code-decode-vec (S c) y ⟩
                                 y
                             ≡∎
                 v≤cv : All (_≤ (code-vec v)) v
@@ -184,7 +161,6 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
                     where
                         f : (_≤ (code-vec v)) ⊆ (_< i)
                         f {x} x≤cv = ≤-<-trans x≤cv cv<i
-                    
             
 
         code-term : T → ℕ
@@ -594,7 +570,7 @@ inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
                                     (reduce decode-term-fuelled R))
                             ≡⟨ cong code-vec $ sublemma R ⟩
                                 code-vec (decode-vec (S c) y)
-                            ≡⟨ code-decode-vec {S c} y ⟩
+                            ≡⟨ code-decode-vec (S c) y ⟩
                                 y
                             ≡∎
 
