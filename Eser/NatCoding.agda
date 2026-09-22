@@ -25,16 +25,11 @@ open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Fin using (Fin ; toℕ ; fromℕ<)
 open import Data.Fin.Properties using (toℕ-fromℕ< ; toℕ<n ; toℕ≤n ; fromℕ<-toℕ)
 open import Function hiding (_↔_)
---open import Function.Properties.Inverse hiding (refl ; trans ; sym)
 open import Function.Consequences.Propositional 
     using (inverseˡ⇒strictlyInverseˡ 
           ; inverseʳ⇒strictlyInverseʳ
           )
---open import Relation.Binary.Structures
---open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
-open import Relation.Binary.PropositionalEquality.Properties 
-    renaming (setoid to mk-≡-setoid)
 
 open import Eser.Aux using 
     ( uip 
@@ -722,9 +717,35 @@ decode-pair-lemma-inf i y x eq =
             → (All (_≤ i) v)
             → y ≤ i
         sublemma (x ∷ y ∷ []) refl (px All.∷ py All.∷ All.[]) = py
-        
-        
 
+code-pair' : {ζ' : ℕ∞} → ^ (suc∞ ζ') × ℕ → ℕ
+code-pair' {fin n'} = code-pair-fin {n'}
+code-pair' {∞} = code-pair-inf
+        
+decode-pair' : {ζ' : ℕ∞} → ℕ → ^ (suc∞ ζ') × ℕ
+decode-pair' {fin n'} = decode-pair-fin {n'}
+decode-pair' {∞} = decode-pair-inf
+
+decode-code-pair'
+    : {ζ' : ℕ∞}
+    → (decode-pair' ∘ code-pair') ≈ id {A = ^ (suc∞ ζ') × ℕ}
+decode-code-pair' {fin n'} = decode-code-pair-fin {n'}
+decode-code-pair' {∞} = decode-code-pair-inf
+
+code-decode-pair'
+    : {ζ' : ℕ∞}
+    → (code-pair' ∘ decode-pair' {ζ'}) ≈ id {A = ℕ}
+code-decode-pair' {fin n'} = code-decode-pair-fin {n'}
+code-decode-pair' {∞} = code-decode-pair-inf
+
+decode-pair-lemma'
+    : {ζ' : ℕ∞}
+    → (i y : ℕ)
+    → (x : ^ (suc∞ ζ'))
+    → decode-pair' {ζ'} i ≡ (x , y)
+    → y ≤ i
+decode-pair-lemma' {fin n'} = decode-pair-lemma-fin {n'}
+decode-pair-lemma' {∞} = decode-pair-lemma-inf
 
 -- #EXT: most definitions below are duplicate with the ones above,
 -- the only difference is that they are instantiated for a fixed μ or ζ
@@ -748,20 +769,17 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
     code-decode-sum = code-decode-sum' {μ'}
 
 
-    -- #TODO: (de)code pair depends also on ζ
-    -- If ^ ζ is finite then there are only finitely many indices.
-    -- Need two lemmas: code ℕ × ℕ and code (Fin n) × ℕ.
     code-pair : ^ ζ × ℕ → ℕ
-    code-pair = ?
+    code-pair = code-pair' {ζ'}
     decode-pair : ℕ → ^ ζ × ℕ 
-    decode-pair = ?
+    decode-pair = decode-pair' {ζ'}
 
 
     decode-code-pair : decode-pair ∘ code-pair ≈ id
-    decode-code-pair = ?
+    decode-code-pair = decode-code-pair' {ζ'}
 
     code-decode-pair : code-pair ∘ decode-pair ≈ id
-    code-decode-pair = ?
+    code-decode-pair = code-decode-pair' {ζ'}
 
     decode-sum-lemma
         : (i w : ℕ)
@@ -774,7 +792,7 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
         → (x : ^ ζ)
         → decode-pair i ≡ (x , y)
         → y ≤ i
-    decode-pair-lemma i y x eq = ?
+    decode-pair-lemma = decode-pair-lemma' {ζ'}
 
     decode-sum-pair-lemma
         : (i w y : ℕ)
