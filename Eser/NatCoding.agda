@@ -103,12 +103,31 @@ module _ {n : ℕ} where
         where
             f : {x : ℕ} → x ≤ weight v → x ≤ code-vec v
             f {x} x≤w = ≤-trans x≤w $ code-vec-weight v
+                
 
 -- Variants of above with implicit argument (vector length) made explicit.
 decode-vec : (n : ℕ) → ℕ → Vec ℕ (suc n)
 decode-vec n = decode-vec' {n}
 code-decode-vec : (n : ℕ) → code-vec ∘ (decode-vec n) ≈ id
 code-decode-vec n = code-decode-vec' {n}
+
+decode-vec-lemma
+    : (n i : ℕ)
+    → (v : Vec ℕ (suc n))
+    → (v ≡ decode-vec n i)
+    → All (_≤ i) v
+decode-vec-lemma n i v eq 
+    = subst (λ x → All (_≤ x) v) cvv≡i (code-vec-lemma {n} v)
+    where
+        cvv≡i : code-vec v ≡ i
+        cvv≡i = 
+            ≡begin 
+                code-vec v
+            ≡⟨ cong code-vec eq  ⟩
+                code-vec (decode-vec n i)
+            ≡⟨ code-decode-vec n i ⟩
+                i
+            ≡∎
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
@@ -631,6 +650,81 @@ decode-pair-lemma-fin {n'} i y x eq = y≤i
         y≤i : y ≤ i
         y≤i = subst (_≤ i) (cong proj₂ eq) qd≤i
             
+toVec : ℕ × ℕ → Vec ℕ 2
+toVec (x , y) = x ∷ y ∷ []
+toPair : Vec ℕ 2 → ℕ × ℕ
+toPair (x ∷ y ∷ []) = (x , y)
+
+toVec-toPair : (toVec ∘ toPair) ≈ id {A = Vec ℕ 2}
+toVec-toPair (x ∷ y ∷ []) = refl
+toPair-toVec : (toPair ∘ toVec) ≈ id {A = ℕ × ℕ}
+toPair-toVec (x , y) = refl
+
+pairs≃vecs : ℕ × ℕ ≃ Vec ℕ 2
+pairs≃vecs = mk≃' f f⁻¹ invˡ invʳ
+    where
+    f : ℕ × ℕ  → Vec ℕ 2
+    f = toVec
+    f⁻¹ : Vec ℕ 2 → ℕ × ℕ 
+    f⁻¹ = toPair
+    invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
+    invˡ {x ∷ y ∷ []} refl = refl
+    invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
+    invʳ {(x , y)} refl = refl
+
+code-pair-inf : ℕ × ℕ → ℕ
+code-pair-inf = code-vec ∘ toVec 
+decode-pair-inf : ℕ → ℕ × ℕ
+decode-pair-inf = toPair ∘ (decode-vec 1)
+
+decode-code-pair-inf : (decode-pair-inf ∘ code-pair-inf) ≈ id {A = ℕ × ℕ}
+decode-code-pair-inf p =
+    ≡begin 
+        dec (enc p) 
+    ≡⟨⟩
+        (toPair ∘ (decode-vec 1) ∘ code-vec ∘ toVec) p
+    ≡⟨ cong toPair $ decode-code-vec (toVec p) ⟩
+        (toPair ∘ toVec) p
+    ≡⟨ toPair-toVec p ⟩
+        p
+    ≡∎
+    where
+        dec = decode-pair-inf
+        enc = code-pair-inf
+    
+code-decode-pair-inf : (code-pair-inf ∘ decode-pair-inf) ≈ id {A = ℕ}
+code-decode-pair-inf i =
+    ≡begin 
+        enc (dec i)
+    ≡⟨⟩
+        (code-vec ∘ toVec ∘ toPair ∘ (decode-vec 1)) i
+    ≡⟨ cong code-vec $ toVec-toPair (decode-vec 1 i) ⟩
+        (code-vec ∘ (decode-vec 1)) i
+    ≡⟨ code-decode-vec 1 i ⟩
+        i    
+    ≡∎
+    where
+        dec = decode-pair-inf
+        enc = code-pair-inf
+    
+decode-pair-lemma-inf
+    : (i y x : ℕ)
+    → decode-pair-inf i ≡ (x , y)
+    → y ≤ i
+decode-pair-lemma-inf i y x eq = 
+    sublemma v eq (decode-vec-lemma 1 i v refl)
+    where
+        v : Vec ℕ 2
+        v = decode-vec 1 i
+        sublemma 
+            : (v : Vec ℕ 2) 
+            → (toPair v ≡ (x , y)) 
+            → (All (_≤ i) v)
+            → y ≤ i
+        sublemma (x ∷ y ∷ []) refl (px All.∷ py All.∷ All.[]) = py
+        
+        
+
 
 -- #EXT: most definitions below are duplicate with the ones above,
 -- the only difference is that they are instantiated for a fixed μ or ζ
