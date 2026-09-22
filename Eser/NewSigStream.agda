@@ -1,4 +1,4 @@
--- Module      : Eser.Signature.NewSigStream
+-- Module      : Eser.NewSigStream
 -- Description : New enumeration algorithm -- simplified implementation
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
@@ -8,6 +8,8 @@
 -- Signatures.
 --------------------------------------------------------------------------------
 
+-- Lossy unification makes a huge difference in how long it takes
+-- to type-check this file.
 {-# OPTIONS --safe  --lossy-unification #-}
 
 open import Level hiding (suc)
