@@ -56,6 +56,14 @@ sigcard μ ζ = ∞
 sigset : ℕ∞ → ℕ∞ → Set
 sigset μ ζ = ^ (sigcard μ ζ)
 
+sigset-suc∞ 
+    : (μ' ζ' : ℕ∞) 
+    → sigset (suc∞ μ') (suc∞ ζ') ≡ ℕ
+sigset-suc∞ (fin _) (fin _) = refl
+sigset-suc∞ (fin _) ∞ = refl
+sigset-suc∞ ∞ (fin _) = refl
+sigset-suc∞ ∞ ∞ = refl
+
 module _ {μ ζ : ℕ∞} (S : Signature μ ζ) where
     private
         ar : ^ ζ → ℕ
