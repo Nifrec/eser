@@ -85,9 +85,12 @@ module Eser.Filters.ReplaceStructs where
 record ReplaceStruct : Set where
     field
         _is-arg-of_ : ℕ → ℕ → Bool
+
         -- Arguments are always smaller than the while construction.
         ⊂-resp-< : (y x : ℕ) → x is-arg-of y ≡ true → x < y
+
         replace : ℕ → ℕ → ℕ → ℕ
+
         -- Replacing an argument by a smaller alternative reduces
         -- the size of the whole construction.
         replace-< 
@@ -95,6 +98,7 @@ record ReplaceStruct : Set where
             → (x is-arg-of y ≡ true) 
             → (x' < x) 
             → (replace y x x' < y)
+
         -- Replacing one argument keeps the other arguments in place.
         keep 
             : (y x x' z : ℕ) 
@@ -103,13 +107,14 @@ record ReplaceStruct : Set where
             → (x ≢ z)
             → (z is-arg-of (replace y x x') ≡ true)
         
-        -- Negative analog of keep : when replacing x, and x'≢z,
+        -- Negative analog of keep : when replacing x with x', and x'≢z,
         -- then z does not become an argument.
         nospawn 
             : (y x x' z : ℕ) 
             → (z is-arg-of y ≡ false) 
             → (x' ≢ z)
             → (z is-arg-of (replace y x x') ≡ false)
+
         -- When performing two non-overlapping replacements
         -- (the replacement of one is not the replacecant of the other),
         -- their order does not matter.

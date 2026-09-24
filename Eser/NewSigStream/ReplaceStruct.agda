@@ -37,7 +37,7 @@ open import Function hiding (_↔_)
 
 open import Eser.Logic using (≡true→T)
 open import Eser.Card
-open import Eser.Signature
+open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
 --open import Eser.Equivalences.Properties
 --open import Eser.Aux using (_≈_ ; ℓ<m<1+n→ℓ<n)
@@ -45,6 +45,7 @@ open import Eser.NewSigStream
 open import Eser.Filters.ReplaceStructs
 open import Eser.NatCoding
 open import Eser.Vec
+open import Eser.NewSigStream.EnumVectors
 
 
 module Eser.NewSigStream.ReplaceStruct 
@@ -230,6 +231,135 @@ replace-T (multiary c v) t t' = multiary c (replace-all _≡T?_ v t t')
  
 replace : ℕ → ℕ → ℕ → ℕ
 replace y x x' = φ $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')
+
+--------------------------------------------------------------------------------
+-- replace-< 
+--------------------------------------------------------------------------------
+-- Replacing an argument x with an argument x'
+-- s.t. x comes earlier in the enumeration than x',
+-- leads to a term that comes earlier in the enumeration than the original term.
+
+todo : ⊥
+todo = {! Move the lemmas below to appropriate files !}
+
+code-term-vec-replace-all
+    : {n : ℕ}
+    → (v : Vec T n)
+    → (t t' : T)
+    → code-term-vec (replace-all _≡T?_ v t t')
+      ≡
+      replace-all _≟_ (code-term-vec v) (φ t) (φ t')
+code-term-vec-replace-all = ? -- Induction on v?
+
+replace-all-weight-<
+    : {n : ℕ}
+    → {v : Vec ℕ n}
+    → {x' x : ℕ}
+    → x ∈ v
+    → x' < x
+    → weight (replace-all _≟_ v x x') < weight v
+replace-all-weight-< = ? -- induction on `x∈v`?
+
+code-vec-weight-<
+    : {n : ℕ}
+    → (v' v : Vec ℕ (suc n))
+    → weight v' < weight v
+    → code-vec v' < code-vec v
+code-vec-weight-< = ? -- Induction on v?
+
+code-pair-< 
+    : (c : ^ ζ)
+    → {x' x : ℕ} 
+    → x' < x 
+    → code-pair (c , x') < code-pair (c , x)
+code-pair-< = ? -- Probably use the lemma for code-vec-<
+
+code-sum-< : {w' w : ℕ} → w' < w → code-sum (inj₂ w') < code-sum (inj₂ w)
+code-sum-< = ?
+
+replace-T-<
+    : (s t t' : T)
+    → t ∈∈ s
+    → φ t' < φ t
+    → φ (replace-T s t t') < φ s
+replace-T-< s@(multiary c v) t t' t∈v t'<t = H₀
+    where
+        v' : Vec T (ar c)
+        v' = replace-all _≡T?_ v t t'
+
+        φt∈codev : φ t ∈ code-term-vec v
+        φt∈codev = code-term-vec-membership t∈v
+
+        H₄ : code-term-vec v' ≡ replace-all _≟_ (code-term-vec v) (φ t) (φ t')
+        H₄ = code-term-vec-replace-all v t t'
+
+        H₃ : weight (code-term-vec v') < weight (code-term-vec v)
+        H₃ = subst (λ u → weight u < weight (code-term-vec v)) (sym H₄)
+            $ replace-all-weight-< φt∈codev t'<t 
+
+        H₂ : code-vec (code-term-vec v') < code-vec (code-term-vec v)
+        H₂ = code-vec-weight-< (code-term-vec v') (code-term-vec v) H₃
+
+        H₁ : code-pair (c , code-vec (code-term-vec v'))
+             <                                           
+             code-pair (c , code-vec (code-term-vec v))
+        H₁ = code-pair-< c H₂
+
+        H₀ : code-sum (inj₂ $ code-pair (c , code-vec (code-term-vec v')))
+             <
+             code-sum (inj₂ $ code-pair (c , code-vec (code-term-vec v)))
+        H₀ = code-sum-< H₁
+
+replace-<
+    : (y x x' : ℕ)
+    → x ⊂ y
+    → x' < x
+    → replace y x x' < y
+replace-< y x x' x⊂y x'<x = 
+    begin-strict
+        replace y x x'
+    ≡⟨ sym $ φ∘φ⁻¹≈id $ replace y x x' ⟩
+        φ (φ⁻¹ (replace y x x'))
+    ≡⟨⟩
+        φ (φ⁻¹ (φ (replace-T s t t')))
+    ≡⟨ cong φ $ φ⁻¹∘φ≈id $ replace-T s t t'  ⟩
+        φ (replace-T s t t')
+    <⟨ replace-T-< s t t' t∈∈s φt'<φt ⟩
+        φ s
+    ≡⟨ φ∘φ⁻¹≈id y ⟩
+        y
+    ∎
+    where
+        open ≤-Reasoning
+        s : T
+        s = φ⁻¹ y
+        t : T
+        t = φ⁻¹ x
+        t' : T
+        t' = φ⁻¹ x'
+
+        t∈∈s : t ∈∈ s
+        t∈∈s = toWitness $ ≡true→T x⊂y
+
+        φt'<φt : φ t' < φ t
+        φt'<φt =
+            begin-strict
+                φ t' 
+            ≡⟨⟩
+                φ (φ⁻¹ x')
+            ≡⟨ φ∘φ⁻¹≈id x' ⟩
+                x'
+            <⟨ x'<x ⟩
+                x
+            ≡⟨ sym $ φ∘φ⁻¹≈id x ⟩
+                φ (φ⁻¹ x)
+            ≡⟨⟩
+                φ t
+            ∎
+            
+
+    
+
 
 
 sig-to-replacestruct : ReplaceStruct
