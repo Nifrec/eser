@@ -44,6 +44,7 @@ open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
 open import Eser.NewSigStream
 open import Eser.Filters.ReplaceStructs
 open import Eser.NatCoding
+open import Eser.Vec
 
 
 module Eser.NewSigStream.ReplaceStruct 
@@ -225,15 +226,17 @@ arg-encode-lemma {t} {s@(multiary c v)} t∈∈s =
 -- The operation has no effect if t is not an argument of s.
 replace-T : T → T → T → T
 replace-T (nullary c) t t' = nullary c
-replace-T (multiary c v) t t' = ?
+replace-T (multiary c v) t t' = multiary c (replace-all _≡T?_ v t t')
  
+replace : ℕ → ℕ → ℕ → ℕ
+replace y x x' = φ $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')
 
 
 sig-to-replacestruct : ReplaceStruct
 sig-to-replacestruct = record 
     { _is-arg-of_ = _is-arg-of_
     ; ⊂-resp-< = ⊂-resp-< 
-    ; replace = {! !} 
+    ; replace = replace
     ; replace-< = {! !} 
     ; keep = {! !} 
     ; nospawn = {! !} 

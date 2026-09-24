@@ -25,14 +25,15 @@ open import Function hiding (_↔_)
 
 module Eser.Vec where
 
-replace : {A : Set}
+-- Replace all occurrences of one element in a vector by another element.
+replace-all : {A : Set}
     → (_≡?_ : DecidableEquality A)
     → {n : ℕ}
     → (v : Vec A n)
     → A -- Element to replace all occurrences of.
     → A -- Replacement.
     → Vec A n
-replace {A} _≡?_ v a b = map f v
+replace-all {A} _≡?_ v a b = map f v
     where
         f : A → A
         f x = cases (x ≡? a)
