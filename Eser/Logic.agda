@@ -12,6 +12,7 @@ open import Data.Sum
 open import Relation.Nullary
 open import Data.Empty
 open import Data.Bool
+open import Data.Bool.Properties
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
@@ -165,3 +166,12 @@ module _ where
         → b ≡ false
     not-true-to-is-false {false} ¬True = refl
     not-true-to-is-false {true} ¬True = ⊥-elim $ ¬True refl
+
+--------------------------------------------------------------------------------
+-- Conversions between `T x` and `x ≡ true`.
+--------------------------------------------------------------------------------
+T→≡true : {b : Bool} → T b → b ≡ true
+T→≡true = Function.Equivalence.to T-≡
+
+≡true→T : {b : Bool} → b ≡ true → T b
+≡true→T = Function.Equivalence.from T-≡

@@ -124,7 +124,7 @@ inductiveCase
     → (S : Signature (suc∞ μ') (suc∞ ζ'))
     → Term {suc∞ μ'} {suc∞ ζ'} S ≃ ℕ
 inductiveCase μ' {ζ'} S = mk≃' enc dec invˡ invʳ
-    where
+    module InductiveCaseImpl where
         open import Eser.NatCoding
         -- This import also defines μ ≔ suc∞ μ' and ζ := suc∞ ζ'.
         open Eser.NatCoding.WithMuZeta μ' ζ'

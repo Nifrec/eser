@@ -20,7 +20,6 @@ open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Vec
-open import Data.Vec.Relation.Unary.All
 open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Fin using (Fin ; toℕ ; fromℕ<)
 open import Data.Fin.Properties using (toℕ-fromℕ< ; toℕ<n ; toℕ≤n ; fromℕ<-toℕ)
@@ -787,12 +786,25 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
         → w < i
     decode-sum-lemma = decode-sum-lemma' {μ'}
 
+    code-sum-lemma
+        : (w : ℕ)
+        → w < code-sum (inj₂ w)
+    code-sum-lemma w = 
+        decode-sum-lemma (code-sum (inj₂ w)) w (decode-code-sum (inj₂ w))
+
     decode-pair-lemma
         : (i y : ℕ)
         → (x : ^ ζ)
         → decode-pair i ≡ (x , y)
         → y ≤ i
     decode-pair-lemma = decode-pair-lemma' {ζ'}
+
+    code-pair-lemma
+        : (y : ℕ)
+        → (x : ^ ζ)
+        → y ≤ code-pair (x , y)
+    code-pair-lemma y x = 
+        decode-pair-lemma (code-pair (x , y)) y x (decode-code-pair (x , y))
 
     decode-sum-pair-lemma
         : (i w y : ℕ)
