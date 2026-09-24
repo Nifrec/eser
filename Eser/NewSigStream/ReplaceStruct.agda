@@ -218,7 +218,15 @@ arg-encode-lemma {t} {s@(multiary c v)} t∈∈s =
         t∈∈s : t ∈∈ s
         t∈∈s = toWitness $ ≡true→T x⊂y
     
-    
+--------------------------------------------------------------------------------
+-- Replace operation for Terms: replace ALL occurrences of an argument.
+--------------------------------------------------------------------------------
+-- replace-T s t t' returns s with ALL arguments equal to t replaced by t'.
+-- The operation has no effect if t is not an argument of s.
+replace-T : T → T → T → T
+replace-T (nullary c) t t' = nullary c
+replace-T (multiary c v) t t' = ?
+ 
 
 
 sig-to-replacestruct : ReplaceStruct
