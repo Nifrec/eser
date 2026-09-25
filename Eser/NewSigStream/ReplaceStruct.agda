@@ -134,7 +134,7 @@ multiary c v ≡T? multiary c' v'  = cases (cardToDecidableEq ζ c c')
 (t ∷ ts) ≡vT? (s ∷ ss) = cases (t ≡T? s) (ts ≡vT? ss)
     where
         cases : (Dec (t ≡ s)) → (Dec (ts ≡ ss)) → (Dec (t ∷ ts ≡ s ∷ ss))
-        cases (no t≢s) (yes ts≡ss) = no (λ eq → t≢s $ cong head eq)
+        cases (no t≢s) _ = no (λ eq → t≢s $ cong head eq)
         cases (yes t≡s) (yes ts≡ss) = yes $ cong₂ (_∷_) t≡s ts≡ss
         cases (yes t≡s) (no ts≢ss)  = no (λ eq → ts≢ss $ cong tail eq)
 
