@@ -17,10 +17,11 @@ open import Data.Bool using (Bool ; true) renaming (T to IsTrue)
 open import Data.Nat
 open import Data.Nat.Properties
 --open ≤-Reasoning renaming (begin-equation to ≡begin)
-open import Data.Sum hiding (reduce)
-open import Data.Product
+open import Data.Sum hiding (reduce ; map)
+open import Data.Product hiding (map)
 open import Data.Empty
 open import Relation.Nullary
+open import Relation.Nullary.Decidable hiding (map)
 open import Relation.Binary
 open import Relation.Binary.Definitions
 open import Relation.Binary.PropositionalEquality
@@ -28,9 +29,9 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Unary using (_⊆_)
 open import Data.Vec
 open import Data.Vec.Membership.Propositional
-open import Data.Vec.Relation.Unary.All as All hiding (_∷_ ; head ; tail)
+open import Data.Vec.Relation.Unary.All as All hiding (_∷_ ; head ; tail ; map)
 --open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
-open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail)
+open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail ; map)
 --open import Data.Vec.Relation.Unary.All.Properties
 open import Data.Fin using (Fin)
 open import Function hiding (_↔_)
@@ -249,7 +250,70 @@ code-term-vec-replace-all
     → code-term-vec (replace-all _≡T?_ v t t')
       ≡
       replace-all _≟_ (code-term-vec v) (φ t) (φ t')
-code-term-vec-replace-all = ? -- Induction on v?
+code-term-vec-replace-all [] t t' = refl
+code-term-vec-replace-all {suc n'} v@(x ∷ xs) t t' = cases (x ≡T? t) refl
+    where
+        open ≡-Reasoning
+        cases 
+            : (d : Dec (x ≡ t)) 
+            → (x ≡T? t ≡ d)
+            → code-term-vec (replace-all _≡T?_ v t t')
+              ≡
+              replace-all _≟_ (code-term-vec v) (φ t) (φ t')
+        cases (yes x≡t) eq = 
+            begin 
+                code-term-vec (replace-all _≡T?_ (x ∷ xs) t t')
+            ≡⟨⟩ -- Def replace-all
+                code-term-vec (map match-term (x ∷ xs))
+            ≡⟨⟩ -- Def map
+                code-term-vec (match-term x ∷ map match-term xs)
+            ≡⟨⟩ -- Def match-term (from ReplaceAllImpl)
+                code-term-vec ( term-cases (x ≡T? t) ∷ map match-term xs)
+            ≡⟨ cong (λ d → code-term-vec (term-cases d ∷ map match-term xs)) eq   
+             ⟩
+                code-term-vec (term-cases (yes x≡t) ∷ map match-term xs)
+            ≡⟨⟩
+                code-term-vec (t' ∷ map match-term xs)
+            ≡⟨⟩
+                (code-term t') ∷ code-term-vec (replace-all _≡T?_ xs t t')
+            ≡⟨ cong (code-term t' ∷_) $ code-term-vec-replace-all xs t t' ⟩
+                (φ t') ∷ replace-all _≟_ (code-term-vec xs) (φ t) (φ t')
+            ≡⟨⟩
+                (φ t') ∷ ys
+            ≡⟨⟩
+                num-cases (yes φx≡φt) ∷ ys
+            ≡⟨ cong (λ d → num-cases d ∷ ys) 
+                (sym $ dec-yes-irr (φ x ≟ φ t) ≡-irrelevant φx≡φt) ⟩
+                num-cases (φ x ≟ φ t) ∷ ys
+            ≡⟨⟩
+                match-num (φ x) ∷ ys
+            ≡⟨⟩
+                match-num (φ x) ∷ (map match-num (code-term-vec xs))
+            ≡⟨⟩
+                map match-num (φ x ∷ code-term-vec xs)
+            ≡⟨⟩
+                map match-num (code-term-vec (x ∷  xs))
+            ≡⟨⟩
+                replace-all _≟_ (code-term-vec v) (φ t) (φ t')
+            ∎
+            -- We need to open the implementation of `replace-all`
+            -- both for replacing Terms and for replacing ℕs.
+            where 
+            ys : Vec ℕ n'
+            ys = replace-all _≟_ (code-term-vec xs) (φ t) (φ t')
+            φx≡φt : φ x ≡ φ t
+            φx≡φt = cong φ x≡t
+
+            open ReplaceAllImpl _≡T?_ v t t' 
+                renaming (replace-if-matches to match-term)
+            open ReplaceAllImpl.Cases _≡T?_ v t t' x 
+                renaming (cases to term-cases)
+            open ReplaceAllImpl _≟_ (code-term-vec v) (φ t) (φ t')
+                renaming (replace-if-matches to match-num)
+            open ReplaceAllImpl.Cases _≟_ (code-term-vec v) (φ t) (φ t') (φ x) 
+                renaming (cases to num-cases)
+
+        cases (no x≢t) = ?
 
 replace-all-weight-<
     : {n : ℕ}

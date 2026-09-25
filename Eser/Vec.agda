@@ -33,12 +33,12 @@ replace-all : {A : Set}
     → A -- Element to replace all occurrences of.
     → A -- Replacement.
     → Vec A n
-replace-all {A} _≡?_ v a b = map f v
-    where
-        f : A → A
-        f x = cases (x ≡? a)
-            where
+replace-all {A} _≡?_ v a b = map replace-if-matches v
+    module ReplaceAllImpl where
+        replace-if-matches : A → A
+        replace-if-matches x = cases (x ≡? a)
+            module Cases where
                 cases : (Dec (x ≡ a)) → A
-                cases (yes refl) = b
+                cases (yes _) = b
                 cases (no _) = x
 
