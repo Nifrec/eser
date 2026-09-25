@@ -486,12 +486,39 @@ code-vec-weight-< {n} v' v w'<w =
         i≡w : i ≡ w
         i≡w = vec-chunk-idx-is-weight v
 
+code-pair-inf-< 
+    : (c : ℕ)
+    → {x' x : ℕ} 
+    → x' < x 
+    → code-pair-inf (c , x') < code-pair-inf (c , x)
+code-pair-inf-< c {x'} {x} x'<x = 
+    begin-strict 
+        code-pair-inf (c , x')
+    ≡⟨⟩
+        code-vec (toVec (c , x'))
+    <⟨ code-vec-weight-< (c ∷ x' ∷ []) (c ∷ x ∷ []) w'<w ⟩
+        code-vec (toVec (c , x))
+    ≡⟨⟩
+        code-pair-inf (c , x)
+    ∎
+    where
+        open ≤-Reasoning
+        w : ℕ
+        w = weight (c ∷ x ∷ [])
+        w' : ℕ
+        w' = weight (c ∷ x' ∷ [])
+        w'<w : w' < w
+        w'<w = ?
+    
 code-pair-< 
-    : (c : ^ ζ)
+    : {ζ' : ℕ∞}
+    → (c : ^ (suc∞ ζ'))
     → {x' x : ℕ} 
     → x' < x 
     → code-pair (c , x') < code-pair (c , x)
-code-pair-< = ? -- Probably use the lemma for code-vec-<
+code-pair-< {fin n} = {! code-pair-fin-< !}
+code-pair-< {∞} = code-pair-inf-<
+
 
 code-sum-< : {w' w : ℕ} → w' < w → code-sum (inj₂ w') < code-sum (inj₂ w)
 code-sum-< = ?
