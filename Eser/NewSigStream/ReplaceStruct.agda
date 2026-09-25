@@ -33,7 +33,7 @@ open import Data.Vec.Relation.Unary.All as All hiding (_∷_ ; head ; tail ; map
 --open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail ; map)
 --open import Data.Vec.Relation.Unary.All.Properties
-open import Data.Fin using (Fin)
+open import Data.Fin using (Fin ; toℕ)
 open import Function hiding (_↔_)
 
 open import Eser.Logic using (≡true→T)
@@ -47,6 +47,7 @@ open import Eser.Filters.ReplaceStructs
 open import Eser.NatCoding
 open import Eser.Vec
 open import Eser.NewSigStream.EnumVectors
+open import Eser.Partitions
 
 
 module Eser.NewSigStream.ReplaceStruct 
@@ -444,7 +445,46 @@ code-vec-weight-<
     → (v' v : Vec ℕ (suc n))
     → weight v' < weight v
     → code-vec v' < code-vec v
-code-vec-weight-< = ? -- Induction on v?
+code-vec-weight-< {n} v' v w'<w = 
+    begin-strict
+        code-vec v'
+    ≡⟨⟩
+       ⨁ i' + toℕ j'
+    ≡⟨ cong (λ x → ⨁ x + toℕ j') i'≡w' ⟩
+       ⨁ w' + toℕ j'
+    <⟨ step-in-chunk j' w'<w  ⟩
+       ⨁ w 
+    ≡⟨ cong ⨁ (sym i≡w) ⟩
+        ⨁ i
+    ≤⟨ m≤m+n (⨁ i) (toℕ j) ⟩
+       ⨁ i + toℕ j  
+    ≡⟨⟩
+        code-vec v
+    ∎
+    where
+        part : Partition (Vec ℕ (suc n))
+        part = vec-part n
+
+        open PartToEnumImpl part
+        open ≤-Reasoning
+
+        w' : ℕ
+        w' = weight v'
+        i' : ℕ
+        i' = proj₁ $ proj₁ $ Partition.complete part v'
+        j' : SubIdx (Partition.chunks part) i'
+        j' = proj₂ $ proj₁ $ Partition.complete part v'
+        i'≡w' : i' ≡ w'
+        i'≡w' = vec-chunk-idx-is-weight v'
+
+        w : ℕ
+        w = weight v
+        i : ℕ
+        i = proj₁ $ proj₁ $ Partition.complete part v
+        j : SubIdx (Partition.chunks part) i
+        j = proj₂ $ proj₁ $ Partition.complete part v
+        i≡w : i ≡ w
+        i≡w = vec-chunk-idx-is-weight v
 
 code-pair-< 
     : (c : ^ ζ)
