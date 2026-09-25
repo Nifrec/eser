@@ -348,8 +348,6 @@ code-term-vec-replace-all {suc n'} v@(x ∷ xs) t t' =
                                 t
                             ∎
                             
-
-
 replace-all-weight-<
     : {n : ℕ}
     → {v : Vec ℕ n}
@@ -357,7 +355,89 @@ replace-all-weight-<
     → x ∈ v
     → x' < x
     → weight (replace-all _≟_ v x x') < weight v
-replace-all-weight-< = ? -- induction on `x∈v`?
+replace-all-weight-< {suc n'} {x ∷ ys} {x'} {x} (here refl) x'<x = 
+    begin-strict
+        weight (replace-all _≟_ (x ∷ ys) x x')  
+    ≡⟨⟩
+        replace-if-matches x + weight (replace-all _≟_ ys x x')  
+    ≡⟨⟩
+        repl-cases (x ≟ x) + weight (replace-all _≟_ ys x x')  
+    ≡⟨ cong (λ d → repl-cases d + weight (replace-all _≟_ ys x x'))
+        (dec-yes-irr (x ≟ x) ≡-irrelevant refl)
+     ⟩
+        repl-cases (yes refl) + weight (replace-all _≟_ ys x x')  
+    ≡⟨⟩
+        x' + weight (replace-all _≟_ ys x x')  
+    ≤⟨ +-monoʳ-≤ x' (rec (x ∈? ys)) ⟩
+        x' + weight ys
+    <⟨ +-monoˡ-< (weight ys) x'<x ⟩
+        x + weight ys
+    ≡⟨⟩
+        weight (x ∷ ys)
+    ∎
+    where
+        open ≤-Reasoning
+        open ReplaceAllImpl _≟_ (x ∷ ys) x x'
+        open ReplaceAllImpl.Cases _≟_ (x ∷ ys) x x' x 
+            renaming (cases to repl-cases)
+        open import Data.Vec.Membership.DecPropositional {A = ℕ} (_≟_) 
+            hiding (_∈_)
+        rec : (Dec (x ∈ ys)) → weight (replace-all _≟_ ys x x') ≤ weight ys
+        rec (yes x∈ys) = (<⇒≤ $ replace-all-weight-< x∈ys x'<x)
+        rec (no x∈ys) =
+            begin 
+                weight (replace-all _≟_ ys x x')
+            ≡⟨ cong weight $ replace-all-not-member _≟_ ys x x' x∈ys ⟩
+                 weight ys
+            ≤⟨ ≤-refl ⟩
+                 weight ys
+            ∎
+replace-all-weight-< {suc n'} {y ∷ ys} {x'} {x} (there x∈ys) x'<x =
+    begin-strict
+        weight (replace-all _≟_ (y ∷ ys) x x')  
+    ≡⟨⟩
+        replace-if-matches y + weight (replace-all _≟_ ys x x')  
+    ≡⟨⟩
+        u + weight (replace-all _≟_ ys x x')  
+    <⟨ +-monoʳ-< u $ replace-all-weight-< {n'} {ys} {x'} {x} x∈ys x'<x ⟩
+        u + weight ys
+    ≤⟨ +-monoˡ-≤ (weight ys) (u≤y (y ≟ x) refl) ⟩
+        y + weight ys
+    ≡⟨⟩
+        weight (y ∷ ys)
+    ∎
+    where
+        open ≤-Reasoning
+        open ReplaceAllImpl _≟_ (x ∷ ys) x x'
+        open ReplaceAllImpl.Cases _≟_ (x ∷ ys) x x' y
+        u : ℕ
+        u = replace-if-matches y
+        u≤y : (d : Dec (y ≡ x)) → (d ≡ (y ≟ x)) → u ≤ y
+        u≤y (yes y≡x) eq = 
+            begin 
+                replace-if-matches y
+            ≡⟨⟩
+                cases (y ≟ x)
+            ≡⟨ cong cases (sym eq) ⟩
+                cases (yes y≡x)
+            ≡⟨⟩
+                x'
+            ≤⟨ <⇒≤ x'<x ⟩
+                x
+            ≡⟨ sym y≡x ⟩
+                y
+            ∎
+        u≤y (no y≢x) eq =
+            begin 
+                replace-if-matches y
+            ≡⟨⟩
+                cases (y ≟ x)
+            ≡⟨ cong cases (sym eq) ⟩
+                cases (no y≢x)
+            ≡⟨⟩
+                y
+            ∎
+    
 
 code-vec-weight-<
     : {n : ℕ}
