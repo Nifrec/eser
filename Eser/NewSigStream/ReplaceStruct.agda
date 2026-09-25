@@ -251,69 +251,71 @@ code-term-vec-replace-all
       ≡
       replace-all _≟_ (code-term-vec v) (φ t) (φ t')
 code-term-vec-replace-all [] t t' = refl
-code-term-vec-replace-all {suc n'} v@(x ∷ xs) t t' = cases (x ≡T? t) refl
+code-term-vec-replace-all {suc n'} v@(x ∷ xs) t t' = 
+    begin 
+        code-term-vec (replace-all _≡T?_ (x ∷ xs) t t')
+    ≡⟨⟩ -- Def replace-all
+        code-term-vec (map match-term (x ∷ xs))
+    ≡⟨⟩ -- Def map
+        code-term-vec (match-term x ∷ map match-term xs)
+    ≡⟨⟩
+        code-term (match-term x) ∷ code-term-vec (map match-term xs)
+    ≡⟨ cong (_∷ code-term-vec (map match-term xs)) $ lemma (x ≡T? t) refl ⟩
+        match-num (code-term x) ∷ code-term-vec (map match-term xs)
+    ≡⟨⟩
+        match-num (code-term x) ∷ code-term-vec (replace-all _≡T?_ xs t t')
+    ≡⟨ cong (match-num (code-term x) ∷_) $ code-term-vec-replace-all xs t t' ⟩
+        match-num (φ x) ∷ replace-all _≟_ (code-term-vec xs) (φ t) (φ t')
+    ≡⟨⟩
+        match-num (φ x) ∷ (map match-num (code-term-vec xs))
+    ≡⟨⟩
+        map match-num (φ x ∷ code-term-vec xs)
+    ≡⟨⟩
+        map match-num (code-term-vec (x ∷  xs))
+    ≡⟨⟩
+        replace-all _≟_ (code-term-vec v) (φ t) (φ t')
+    ∎
     where
         open ≡-Reasoning
-        cases 
+        ys : Vec ℕ n'
+        ys = replace-all _≟_ (code-term-vec xs) (φ t) (φ t')
+
+        open ReplaceAllImpl _≡T?_ v t t' 
+            renaming (replace-if-matches to match-term)
+        open ReplaceAllImpl.Cases _≡T?_ v t t' x 
+            renaming (cases to term-cases)
+        open ReplaceAllImpl _≟_ (code-term-vec v) (φ t) (φ t')
+            renaming (replace-if-matches to match-num)
+        open ReplaceAllImpl.Cases _≟_ (code-term-vec v) (φ t) (φ t') (φ x) 
+            renaming (cases to num-cases)
+        lemma 
             : (d : Dec (x ≡ t)) 
             → (x ≡T? t ≡ d)
-            → code-term-vec (replace-all _≡T?_ v t t')
-              ≡
-              replace-all _≟_ (code-term-vec v) (φ t) (φ t')
-        cases (yes x≡t) eq = 
+            → code-term (match-term x) ≡ match-num (φ x)
+        lemma (yes x≡t) eq = 
             begin 
-                code-term-vec (replace-all _≡T?_ (x ∷ xs) t t')
-            ≡⟨⟩ -- Def replace-all
-                code-term-vec (map match-term (x ∷ xs))
-            ≡⟨⟩ -- Def map
-                code-term-vec (match-term x ∷ map match-term xs)
-            ≡⟨⟩ -- Def match-term (from ReplaceAllImpl)
-                code-term-vec ( term-cases (x ≡T? t) ∷ map match-term xs)
-            ≡⟨ cong (λ d → code-term-vec (term-cases d ∷ map match-term xs)) eq   
+                code-term (match-term x) 
+            ≡⟨⟩
+                φ (term-cases (x ≡T? t))
+            ≡⟨ cong (φ ∘ term-cases) eq  ⟩
+                φ (term-cases (yes x≡t))
+            ≡⟨⟩
+                φ t'
+            ≡⟨⟩
+                num-cases (yes φx≡φt)
+            ≡⟨ cong num-cases (sym $ dec-yes-irr (φ x ≟ φ t) ≡-irrelevant φx≡φt)
              ⟩
-                code-term-vec (term-cases (yes x≡t) ∷ map match-term xs)
+                num-cases (φ x ≟ φ t)
             ≡⟨⟩
-                code-term-vec (t' ∷ map match-term xs)
+                match-num (φ x)
             ≡⟨⟩
-                (code-term t') ∷ code-term-vec (replace-all _≡T?_ xs t t')
-            ≡⟨ cong (code-term t' ∷_) $ code-term-vec-replace-all xs t t' ⟩
-                (φ t') ∷ replace-all _≟_ (code-term-vec xs) (φ t) (φ t')
-            ≡⟨⟩
-                (φ t') ∷ ys
-            ≡⟨⟩
-                num-cases (yes φx≡φt) ∷ ys
-            ≡⟨ cong (λ d → num-cases d ∷ ys) 
-                (sym $ dec-yes-irr (φ x ≟ φ t) ≡-irrelevant φx≡φt) ⟩
-                num-cases (φ x ≟ φ t) ∷ ys
-            ≡⟨⟩
-                match-num (φ x) ∷ ys
-            ≡⟨⟩
-                match-num (φ x) ∷ (map match-num (code-term-vec xs))
-            ≡⟨⟩
-                map match-num (φ x ∷ code-term-vec xs)
-            ≡⟨⟩
-                map match-num (code-term-vec (x ∷  xs))
-            ≡⟨⟩
-                replace-all _≟_ (code-term-vec v) (φ t) (φ t')
+                match-num (code-term x)
             ∎
-            -- We need to open the implementation of `replace-all`
-            -- both for replacing Terms and for replacing ℕs.
-            where 
-            ys : Vec ℕ n'
-            ys = replace-all _≟_ (code-term-vec xs) (φ t) (φ t')
-            φx≡φt : φ x ≡ φ t
-            φx≡φt = cong φ x≡t
+            where
+                φx≡φt : φ x ≡ φ t
+                φx≡φt = cong φ x≡t
+        lemma (no x≢t) eq = ?
 
-            open ReplaceAllImpl _≡T?_ v t t' 
-                renaming (replace-if-matches to match-term)
-            open ReplaceAllImpl.Cases _≡T?_ v t t' x 
-                renaming (cases to term-cases)
-            open ReplaceAllImpl _≟_ (code-term-vec v) (φ t) (φ t')
-                renaming (replace-if-matches to match-num)
-            open ReplaceAllImpl.Cases _≟_ (code-term-vec v) (φ t) (φ t') (φ x) 
-                renaming (cases to num-cases)
-
-        cases (no x≢t) = ?
 
 replace-all-weight-<
     : {n : ℕ}
