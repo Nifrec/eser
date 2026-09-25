@@ -314,7 +314,40 @@ code-term-vec-replace-all {suc n'} v@(x ∷ xs) t t' =
             where
                 φx≡φt : φ x ≡ φ t
                 φx≡φt = cong φ x≡t
-        lemma (no x≢t) eq = ?
+        lemma (no x≢t) eq =
+            begin 
+                code-term (match-term x) 
+            ≡⟨⟩
+                φ (term-cases (x ≡T? t))
+            ≡⟨ cong (φ ∘ term-cases) eq  ⟩
+                φ (term-cases (no x≢t))
+            ≡⟨⟩
+                φ x
+            ≡⟨⟩
+                num-cases (no φx≢φt)
+            ≡⟨ cong num-cases (sym $ dec-no (φ x ≟ φ t) φx≢φt) ⟩
+                num-cases (φ x ≟ φ t)
+            ≡⟨⟩
+                match-num (φ x)
+            ≡⟨⟩
+                match-num (code-term x)
+            ∎
+            where
+                φx≢φt : φ x ≢ φ t
+                φx≢φt φx≡φt = x≢t x≡t
+                    where
+                        x≡t : x ≡ t
+                        x≡t =  
+                            begin 
+                                x
+                            ≡⟨ sym $ φ⁻¹∘φ≈id x ⟩
+                               φ⁻¹ (φ x)
+                            ≡⟨ cong φ⁻¹ φx≡φt ⟩
+                               φ⁻¹ (φ t)
+                            ≡⟨ φ⁻¹∘φ≈id t ⟩
+                                t
+                            ∎
+                            
 
 
 replace-all-weight-<
