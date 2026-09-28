@@ -439,9 +439,6 @@ replace-all-weight-< {suc n'} {y ∷ ys} {x'} {x} (there x∈ys) x'<x =
                 y
             ∎
 
-code-sum-< : {w' w : ℕ} → w' < w → code-sum (inj₂ w') < code-sum (inj₂ w)
-code-sum-< = ?
-
 replace-T-<
     : (s t t' : T)
     → t ∈∈ s

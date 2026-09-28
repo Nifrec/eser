@@ -586,6 +586,26 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
                             inj₂ w
                         ∎
 
+code-sum-fin-< 
+    : {n w' w : ℕ} 
+    → w' < w 
+    → code-sum-fin {n} (inj₂ w') < code-sum-fin {n} (inj₂ w)
+code-sum-fin-< {n} {w'} {w} w'<w = +-monoˡ-< n w'<w
+
+code-sum-inf-< 
+    : {w' w : ℕ} 
+    → w' < w 
+    → code-sum-inf (inj₂ w') < code-sum-inf (inj₂ w)
+code-sum-inf-< {w'} {w} w'<w = +-monoʳ-< 1 $ +-mono-< w'<w w'<w
+
+code-sum-<' 
+    : {μ' : ℕ∞}
+    → {w' w : ℕ} 
+    → w' < w 
+    → code-sum' {μ'} (inj₂ w') < code-sum' {μ'} (inj₂ w)
+code-sum-<' {fin n'} = code-sum-fin-< {suc n'}
+code-sum-<' {∞} = code-sum-inf-<
+
 code-pair-fin 
     : {n : ℕ}
     → Fin (suc n) × ℕ
@@ -923,6 +943,9 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
     code-sum-lemma w = 
         decode-sum-lemma (code-sum (inj₂ w)) w (decode-code-sum (inj₂ w))
 
+    code-sum-< : {w' w : ℕ} → w' < w → code-sum (inj₂ w') < code-sum (inj₂ w)
+    code-sum-< = code-sum-<' {μ'}
+
     decode-pair-lemma
         : (i y : ℕ)
         → (x : ^ ζ)
@@ -942,7 +965,7 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
         → {x' x : ℕ} 
         → x' < x 
         → code-pair (c , x') < code-pair (c , x)
-    code-pair-< c x'<x = code-pair-<' {ζ'} c x'<x
+    code-pair-< = code-pair-<' {ζ'}
 
     decode-sum-pair-lemma
         : (i w y : ℕ)
