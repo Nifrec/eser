@@ -36,7 +36,7 @@ open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail ; map)
 open import Data.Fin using (Fin ; toℕ)
 open import Function hiding (_↔_)
 
-open import Eser.Logic using (≡true→T)
+open import Eser.Logic using (≡true→T ; isYes-elim-true ; isYes-intro-true )
 open import Eser.Card
 open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
@@ -427,8 +427,47 @@ replace-< y x x' x⊂y x'<x =
             ∎
             
 
-    
+--------------------------------------------------------------------------------
+-- keep
+--------------------------------------------------------------------------------
 
+keep-T
+    : {s t t' r : T}
+    → r ∈∈ s
+    → t ≢ r
+    → r ∈∈ (replace-T s t t')
+keep-T {multiary c v} {t} {t'} {r} r∈v t≢r = 
+    replace-all-keep _≡T?_ v t t' r r∈v t≢r
+
+keep
+    : (y x x' z : ℕ)
+    → z ⊂ y
+    → x ≢ z
+    → z ⊂ (replace y x x')
+keep y x x' z z⊂y x≢z = isYes-intro-true ans (φ⁻¹ z ∈∈? φ⁻¹ y')
+    where
+        import Eser.Equivalences.Properties
+        open  Eser.Equivalences.Properties.NeqCong enum
+        open ≡-Reasoning
+        y' : ℕ
+        y' = replace y x x'
+        ans' : φ⁻¹ z ∈∈ (replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x'))
+        ans' = keep-T ( isYes-elim-true {a? = (φ⁻¹ z) ∈∈? (φ⁻¹ y)} z⊂y) 
+            (≢-cong-from x≢z)
+        eq : replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x') ≡ φ⁻¹ y'
+        eq =
+            begin 
+                replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')
+            ≡⟨ sym $ φ⁻¹∘φ≈id $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')  ⟩
+                (φ⁻¹ $ φ $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x'))
+            ≡⟨⟩
+                φ⁻¹ (replace y x x')
+            ≡⟨⟩
+                φ⁻¹ y'
+            ∎
+            
+        ans : φ⁻¹ z ∈∈ φ⁻¹ y'
+        ans = subst ( φ⁻¹ z ∈∈_) eq ans'
 
 
 sig-to-replacestruct : ReplaceStruct
@@ -437,7 +476,7 @@ sig-to-replacestruct = record
     ; ⊂-resp-< = ⊂-resp-< 
     ; replace = replace
     ; replace-< = replace-<
-    ; keep = {! !} 
+    ; keep = keep
     ; nospawn = {! !} 
     ; comm = {! !} 
     ; noeff = {! !} 

@@ -175,3 +175,37 @@ T→≡true = Function.Equivalence.to T-≡
 
 ≡true→T : {b : Bool} → b ≡ true → T b
 ≡true→T = Function.Equivalence.from T-≡
+
+--------------------------------------------------------------------------------
+-- Conversion from isYes to a proof
+--------------------------------------------------------------------------------
+
+isYes-elim-true
+    : {A : Set}
+    → {a? : Dec A}
+    → isYes a? ≡ true
+    → A
+isYes-elim-true {A} {yes a} eq = a
+
+isYes-elim-false
+    : {A : Set}
+    → {a? : Dec A}
+    → isYes a? ≡ false
+    → ¬ A
+isYes-elim-false {A} {no ¬a} eq = ¬a
+
+isYes-intro-true
+    : {A : Set}
+    → A
+    → (a? : Dec A)
+    → isYes a? ≡ true
+isYes-intro-true {A} a (no ¬a) = ⊥-elim $ ¬a a
+isYes-intro-true {A} a (yes _) = refl
+
+isYes-intro-false
+    : {A : Set}
+    → ¬ A
+    → (a? : Dec A)
+    → isYes a? ≡ false
+isYes-intro-false {A} ¬a (no _) = refl
+isYes-intro-false {A} ¬a (yes a) = ⊥-elim $ ¬a a
