@@ -81,6 +81,35 @@ replace-all-not-member _≡?_ (y ∷ ys) x x' x∉v =
         x∉ys : x ∉ ys
         x∉ys = x∉v ∘ Any.there
 
+-- Replacing an other element of v than z ∈ v, keeps z in the output.
+replace-all-keep
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → (v : Vec A n)
+    → (x x' z : A)
+    → z ∈ v
+    → x ≢ z
+    → z ∈ replace-all _≡?_ v x x'
+replace-all-keep _≡?_ v@(z ∷ ys) x x' z (Any.here refl) x≢z = Any.here (sym eq)
+    where
+        open ≡-Reasoning
+        open ReplaceAllImpl _≡?_ v x x'
+        open ReplaceAllImpl.Cases _≡?_ v x x' z
+        eq : replace-if-matches z ≡ z
+        eq =
+            begin 
+                replace-if-matches z
+            ≡⟨⟩
+                cases (z ≡? x)
+            ≡⟨ cong cases $ dec-no (z ≡? x) $ ≢-sym x≢z ⟩
+                cases (no $ ≢-sym x≢z)
+            ≡⟨⟩
+                z
+            ∎
+replace-all-keep _≡?_ (y ∷ ys) x x' z (Any.there z∈ys) x≢z = 
+    Any.there $ replace-all-keep _≡?_ ys x x' z z∈ys x≢z
+
 
 replace-all-weight-<
     : {n : ℕ}
