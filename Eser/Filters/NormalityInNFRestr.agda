@@ -23,6 +23,8 @@
 -- Also versions with 'Min': these come with the minimum witness of being
 -- non-normal (being 'normalisible') or the minimum normalisible argument.
 
+{-# OPTIONS --safe #-}
+
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ ; _≤?_ )
 open import Data.Bool.Properties using (T-≡)
