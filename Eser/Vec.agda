@@ -110,6 +110,61 @@ replace-all-keep _≡?_ v@(z ∷ ys) x x' z (Any.here refl) x≢z = Any.here (sy
 replace-all-keep _≡?_ (y ∷ ys) x x' z (Any.there z∈ys) x≢z = 
     Any.there $ replace-all-keep _≡?_ ys x x' z z∈ys x≢z
 
+-- Replacing an element of v by x' does not introduce any other element than x'.
+replace-all-nospawn
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → (v : Vec A n)
+    → (x x' z : A)
+    → z ∉ v
+    → x' ≢ z
+    → z ∉ replace-all _≡?_ v x x'
+replace-all-nospawn _≡?_ v@(y ∷ ys) x x' z z∉v x'≢z (Any.here eq) = 
+    cases (y ≡? x) refl
+    where
+        open ≡-Reasoning
+        open ReplaceAllImpl _≡?_ v x x'
+        open ReplaceAllImpl.Cases _≡?_ v x x' y renaming (cases to repl-cases)
+
+        cases : (d : Dec (y ≡ x)) → (d ≡ (y ≡? x)) → ⊥
+        cases (yes y≡x) eq-d = x'≢z $
+            begin 
+                x'
+            ≡⟨⟩
+                repl-cases (yes y≡x)
+            ≡⟨ cong repl-cases eq-d ⟩
+                repl-cases (y ≡? x)
+            ≡⟨⟩
+                replace-if-matches y
+            ≡⟨ sym eq ⟩
+                z
+            ∎
+        cases (no y≢x) eq-d = z∉v $ Any.here z≡y
+            where
+                z≡y : z ≡ y
+                z≡y = 
+                    begin 
+                        z
+                    ≡⟨ eq ⟩
+                        replace-if-matches y
+                    ≡⟨⟩
+                        repl-cases (y ≡? x)
+                    ≡⟨ cong repl-cases $ sym eq-d ⟩
+                        repl-cases (no y≢x)
+                    ≡⟨⟩
+                        y
+                    ∎
+replace-all-nospawn _≡?_ {suc n'} v@(y ∷ ys) x x' z z∉v x'≢z (Any.there z∈v' ) = 
+    z∉v' z∈v'
+    where
+        z∉ys : z ∉ ys
+        z∉ys = z∉v ∘ Any.there
+
+        z∉v' : z ∉ replace-all _≡?_ ys x x'
+        z∉v' = replace-all-nospawn _≡?_ {n'} ys x x' z z∉ys x'≢z 
+
+
 
 replace-all-weight-<
     : {n : ℕ}
