@@ -431,7 +431,7 @@ module ReplaceResp (T : ReplaceStruct) where
                             x≢w refl = n≮n x w<x
 
                             x⊂yw : x ⊂ yw
-                            x⊂yw = keep T y w w' x w⊂y x⊂y (≢-sym x≢w)
+                            x⊂yw = keep T y w w' x x⊂y (≢-sym x≢w)
 
                             ywx<y : ywx < y
                             ywx<y = <-trans (replace-< T yw x x' x⊂yw x'<x) yw<y
@@ -477,7 +477,7 @@ module ReplaceResp (T : ReplaceStruct) where
                                                     $ noeff T ywx w w' 
                                                     $ not-true-to-is-false w⊄ywx
                             w⊂yx : w ⊂ yx
-                            w⊂yx = keep T y x x' w x⊂y w⊂y x≢w
+                            w⊂yx = keep T y x x' w w⊂y x≢w
 
                             ans : Goal y x x'
                             ans = sym $

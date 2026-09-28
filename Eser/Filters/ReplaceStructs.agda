@@ -5,6 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
+{-# OPTIONS --safe #-}
+
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_ ; _≟_ ; _≤?_ )
 open import Data.Bool.Properties using (T-≡)
@@ -102,7 +104,6 @@ record ReplaceStruct : Set where
         -- Replacing one argument keeps the other arguments in place.
         keep 
             : (y x x' z : ℕ) 
-            → (x is-arg-of y ≡ true) 
             → (z is-arg-of y ≡ true) 
             → (x ≢ z)
             → (z is-arg-of (replace y x x') ≡ true)
