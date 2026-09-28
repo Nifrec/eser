@@ -13,7 +13,7 @@
 --------------------------------------------------------------------------------
 
 open import Level hiding (suc)
-open import Data.Bool using (Bool ; true) renaming (T to IsTrue)
+open import Data.Bool using (Bool ; true ; false)
 open import Data.Nat
 open import Data.Nat.Properties
 --open ≤-Reasoning renaming (begin-equation to ≡begin)
@@ -36,7 +36,7 @@ open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail ; map)
 open import Data.Fin using (Fin ; toℕ)
 open import Function hiding (_↔_)
 
-open import Eser.Logic using (≡true→T ; isYes-elim-true ; isYes-intro-true )
+open import Eser.Logic using (≡true→T ; isYes-elim-true ; isYes-intro-true ; false≢true )
 open import Eser.Card
 open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
@@ -150,6 +150,9 @@ x is-arg-of y = isYes $ (φ⁻¹ x) ∈∈? (φ⁻¹ y)
 
 _⊂_ : ℕ → ℕ → Set
 x ⊂ y = x is-arg-of y ≡ true
+
+_⊄_ : ℕ → ℕ → Set
+x ⊄ y = x is-arg-of y ≡ false
 
 --------------------------------------------------------------------------------
 -- ⊂-resp-< : the is-arg-of relation respects < on the encoding
@@ -427,6 +430,21 @@ replace-< y x x' x⊂y x'<x =
             ∎
             
 
+
+replace-T-replace
+    : (y x x' : ℕ)
+    → replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x') ≡ φ⁻¹ (replace y x x')
+replace-T-replace y x x' =
+    begin 
+        replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')
+    ≡⟨ sym $ φ⁻¹∘φ≈id $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')  ⟩
+        (φ⁻¹ $ φ $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x'))
+    ≡⟨⟩
+        φ⁻¹ (replace y x x')
+    ∎
+    where
+        open ≡-Reasoning
+    
 --------------------------------------------------------------------------------
 -- keep
 --------------------------------------------------------------------------------
@@ -455,19 +473,54 @@ keep y x x' z z⊂y x≢z = isYes-intro-true ans (φ⁻¹ z ∈∈? φ⁻¹ y')
         ans' = keep-T ( isYes-elim-true {a? = (φ⁻¹ z) ∈∈? (φ⁻¹ y)} z⊂y) 
             (≢-cong-from x≢z)
         eq : replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x') ≡ φ⁻¹ y'
-        eq =
-            begin 
-                replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')
-            ≡⟨ sym $ φ⁻¹∘φ≈id $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x')  ⟩
-                (φ⁻¹ $ φ $ replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x'))
-            ≡⟨⟩
-                φ⁻¹ (replace y x x')
-            ≡⟨⟩
-                φ⁻¹ y'
-            ∎
+        eq = replace-T-replace y x x'
             
         ans : φ⁻¹ z ∈∈ φ⁻¹ y'
         ans = subst ( φ⁻¹ z ∈∈_) eq ans'
+
+--------------------------------------------------------------------------------
+-- nospawn
+--------------------------------------------------------------------------------
+nospawn-T
+    : {s t t' r : T}
+    → ¬ (r ∈∈ s)
+    → t' ≢ r
+    → ¬ (r ∈∈ (replace-T s t t'))
+nospawn-T {nullary c} {t} {t'} {r} r∈v t≢r ()
+nospawn-T {multiary c v} {t} {t'} {r} r∈v t≢r = 
+    replace-all-nospawn _≡T?_ v t t' r r∈v t≢r
+
+nospawn
+    : (y x x' z : ℕ)
+    → z ⊄ y
+    → x' ≢ z
+    → z ⊄ (replace y x x')
+nospawn y x x' z z⊄y x'≢z = ?
+    -- The goal unfolds to 
+    --      z is-arg-of (replace y x x') ≡ false
+    where
+        import Eser.Equivalences.Properties
+        open Eser.Equivalences.Properties.NeqCong enum
+        y' : ℕ
+        y' = replace y x x'
+        eq-y' : replace-T (φ⁻¹ y) (φ⁻¹ x) (φ⁻¹ x') ≡ φ⁻¹ y'
+        eq-y' = replace-T-replace y x x'
+        cases : (b : Bool) → (z is-arg-of y' ≡ b) → z ⊄ y'
+        cases false eq-b = eq-b
+        cases true eq-b =  ⊥-elim $ ¬H H
+            where
+                K : ¬ (φ⁻¹ z ∈∈ φ⁻¹ y)
+                K p = false≢true $ trans (sym z⊄y)
+                                         (isYes-intro-true p (φ⁻¹ z ∈∈? φ⁻¹ y))
+                H : φ⁻¹ z ∈∈ φ⁻¹ y'
+                H = isYes-elim-true { a? = ((φ⁻¹ z) ∈∈? (φ⁻¹ y')) } eq-b
+                ¬H : ¬ (φ⁻¹ z ∈∈ φ⁻¹ y')
+                ¬H = subst (λ s → ¬ (φ⁻¹ z ∈∈ s)) eq-y' 
+                    (nospawn-T K (≢-cong-from x'≢z))
+
+--------------------------------------------------------------------------------
+-- Putting it all together in one ReplaceStruct
+--------------------------------------------------------------------------------
 
 
 sig-to-replacestruct : ReplaceStruct
@@ -477,7 +530,7 @@ sig-to-replacestruct = record
     ; replace = replace
     ; replace-< = replace-<
     ; keep = keep
-    ; nospawn = {! !} 
+    ; nospawn = nospawn
     ; comm = {! !} 
     ; noeff = {! !} 
     ; halfcut = {! !} 

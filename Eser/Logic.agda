@@ -56,6 +56,9 @@ implCongrRight (inj₂ y) f = inj₂ (f y)
 true≢false : true ≢ false
 true≢false ()
 
+false≢true : false ≢ true
+false≢true ()
+
 -- If A ∧ B is true then both A and B are true.
 ∧-elim-left
     : (a b : Bool)
