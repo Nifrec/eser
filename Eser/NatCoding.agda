@@ -18,7 +18,7 @@ open import Data.Empty
 open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
+--open ≡-Reasoning renaming (begin_ to ≡begin_ ; _∎ to _≡∎)
 open import Data.Vec
 open import Data.Vec.Relation.Unary.All as All hiding (_∷_)
 open import Data.Fin using (Fin ; toℕ ; fromℕ<)
@@ -43,7 +43,7 @@ open import Eser.Aux using
     )
 open import Eser.Card
 open import Eser.Signature.Definitions
-open import Eser.Equivalences.Notation
+open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
 open import Eser.Equivalences.Properties
 open import Eser.NewSigStream.EnumVectors
 open import Eser.Partitions
@@ -113,15 +113,63 @@ decode-vec-lemma
 decode-vec-lemma n i v eq 
     = subst (λ x → All (_≤ x) v) cvv≡i (code-vec-lemma {n} v)
     where
+        open ≡-Reasoning
         cvv≡i : code-vec v ≡ i
         cvv≡i = 
-            ≡begin 
+            begin 
                 code-vec v
             ≡⟨ cong code-vec eq  ⟩
                 code-vec (decode-vec n i)
             ≡⟨ code-decode-vec n i ⟩
                 i
-            ≡∎
+            ∎
+
+code-vec-weight-<
+    : {n : ℕ}
+    → (v' v : Vec ℕ (suc n))
+    → weight v' < weight v
+    → code-vec v' < code-vec v
+code-vec-weight-< {n} v' v w'<w = 
+    begin-strict
+        code-vec v'
+    ≡⟨⟩
+       ⨁ i' + toℕ j'
+    ≡⟨ cong (λ x → ⨁ x + toℕ j') i'≡w' ⟩
+       ⨁ w' + toℕ j'
+    <⟨ step-in-chunk j' w'<w  ⟩
+       ⨁ w 
+    ≡⟨ cong ⨁ (sym i≡w) ⟩
+        ⨁ i
+    ≤⟨ m≤m+n (⨁ i) (toℕ j) ⟩
+       ⨁ i + toℕ j  
+    ≡⟨⟩
+        code-vec v
+    ∎
+    where
+        part : Partition (Vec ℕ (suc n))
+        part = vec-part n
+
+        open PartToEnumImpl part
+        open ≤-Reasoning
+
+        w' : ℕ
+        w' = weight v'
+        i' : ℕ
+        i' = proj₁ $ proj₁ $ Partition.complete part v'
+        j' : SubIdx (Partition.chunks part) i'
+        j' = proj₂ $ proj₁ $ Partition.complete part v'
+        i'≡w' : i' ≡ w'
+        i'≡w' = vec-chunk-idx-is-weight v'
+
+        w : ℕ
+        w = weight v
+        i : ℕ
+        i = proj₁ $ proj₁ $ Partition.complete part v
+        j : SubIdx (Partition.chunks part) i
+        j = proj₂ $ proj₁ $ Partition.complete part v
+        i≡w : i ≡ w
+        i≡w = vec-chunk-idx-is-weight v
+
 
 Parity : ℕ → Set
 Parity n = (Σ[ m ∈ ℕ ] n ≡ m + m) ⊎ (Σ[ m ∈ ℕ ] n ≡ 1 + m + m)
@@ -131,23 +179,24 @@ parity' ℕ.zero = inj₁ (0 , refl)
 parity' (suc ℕ.zero) = inj₂ (0 , refl) 
 parity' (2+ n) = cases (parity' n)
     where
+        open ≡-Reasoning
         cases : Parity n → Parity (2+ n)
         cases (inj₁ (m , eq)) = inj₁ (suc m , eq')
             where
                 eq' : 2+ n ≡ suc m + suc m
                 eq' = 
-                    ≡begin 
+                    begin 
                         2+ n
                     ≡⟨ cong 2+ eq ⟩
                         2+ (m + m)
                     ≡⟨ cong suc (sym $ +-suc m m) ⟩
                         suc m + suc m
-                    ≡∎
+                    ∎
         cases (inj₂ (m , eq)) = inj₂ (suc m , eq')
             where
                 eq' : 2+ n ≡ 1 + suc m + suc m
                 eq' = 
-                    ≡begin 
+                    begin 
                         2+ n
                     ≡⟨ cong 2+ eq ⟩
                         2+ (1 + m + m)
@@ -155,7 +204,7 @@ parity' (2+ n) = cases (parity' n)
                         2+ m + suc m
                     ≡⟨⟩
                         1 + suc m + suc m
-                    ≡∎
+                    ∎
 
 is-even-irrel
     : (n m : ℕ)
@@ -168,12 +217,13 @@ parity-even
     → parity' (m + m) ≡ inj₁ (m , eq)
 parity-even m eq = cases (parity' (m + m)) refl
     where
+        open ≡-Reasoning
         cases 
             : (p : Parity (m + m))
             → parity' (m + m) ≡ p
             → parity' (m + m) ≡ inj₁ (m , eq)
         cases (inj₁ (z , m+m≡z+z)) eq-p =
-            ≡begin 
+            begin 
                 parity' (m + m)
             ≡⟨ eq-p ⟩
                 inj₁ (z , m+m≡z+z)
@@ -186,7 +236,7 @@ parity-even m eq = cases (parity' (m + m)) refl
                     m+m≡z+z eq z≡m
             ⟩
                 inj₁ (m , eq)
-            ≡∎
+            ∎
             where
                 z≡m : z ≡ m
                 z≡m = double-eq-single-eq (sym m+m≡z+z)
@@ -203,6 +253,7 @@ parity-odd
     → parity' (1 + m + m) ≡ inj₂ (m , eq)
 parity-odd m eq = cases (parity' (1 + m + m)) refl
     where
+        open ≡-Reasoning
         cases 
             : (p : Parity (1 + m + m))
             → parity' (1 + m + m) ≡ p
@@ -210,7 +261,7 @@ parity-odd m eq = cases (parity' (1 + m + m)) refl
         cases (inj₁ (z , 1+m+m≡z+z)) eq-p =
             ⊥-elim $ double-eq-never-odd {z} {m} (sym 1+m+m≡z+z)
         cases (inj₂ (z , 1+m+m≡1+z+z)) eq-p = 
-            ≡begin 
+            begin 
                 parity' (1 + m + m)
             ≡⟨ eq-p ⟩
                 inj₂ (z , 1+m+m≡1+z+z)
@@ -223,7 +274,7 @@ parity-odd m eq = cases (parity' (1 + m + m)) refl
                     1+m+m≡1+z+z eq z≡m
             ⟩
                 inj₂ (m , eq)
-            ≡∎
+            ∎
             where
                 z≡m : z ≡ m
                 z≡m = double-eq-single-eq (sym $ suc-injective 1+m+m≡1+z+z)
@@ -252,11 +303,12 @@ equiv-sum-inf = mk≃' f f⁻¹ invˡ invʳ
     invˡ : Inverseˡ _≡_ _≡_ f f⁻¹
     invˡ {n} refl = cases (parity' n) refl
         where
+            open ≡-Reasoning
             open DecSumInfImpl n renaming (cases to dec-cases)
 
             cases : (p : Parity n) → (parity' n ≡ p) → f (f⁻¹ n) ≡ n
             cases (inj₁ (m , n≡m+m)) eq = 
-                ≡begin 
+                begin 
                     f (f⁻¹ n)
                 ≡⟨⟩
                     f (dec-cases (parity' n))
@@ -268,10 +320,10 @@ equiv-sum-inf = mk≃' f f⁻¹ invˡ invʳ
                     m + m
                 ≡⟨ sym n≡m+m ⟩
                     n
-                ≡∎
+                ∎
                 
             cases (inj₂ (m , n≡1+m+m)) eq =
-                ≡begin 
+                begin 
                     f (f⁻¹ n)
                 ≡⟨⟩
                     f (dec-cases (parity' n))
@@ -283,11 +335,11 @@ equiv-sum-inf = mk≃' f f⁻¹ invˡ invʳ
                     1 + m + m
                 ≡⟨ sym n≡1+m+m ⟩
                     n
-                ≡∎
+                ∎
 
     invʳ : Inverseʳ _≡_ _≡_ f f⁻¹
     invʳ {inj₁ m} refl = 
-        ≡begin 
+        begin 
             f⁻¹ (f (inj₁ m))
         ≡⟨⟩
             f⁻¹ (m + m)
@@ -297,12 +349,13 @@ equiv-sum-inf = mk≃' f f⁻¹ invˡ invʳ
             dec-cases (inj₁ (m , refl))
         ≡⟨⟩
             inj₁ m
-        ≡∎
+        ∎
         where
+            open ≡-Reasoning
             open DecSumInfImpl (m + m) renaming (cases to dec-cases)
         
     invʳ {inj₂ m} refl =
-        ≡begin 
+        begin 
             f⁻¹ (f (inj₂ m))
         ≡⟨⟩
             f⁻¹ (1 + m + m)
@@ -312,8 +365,9 @@ equiv-sum-inf = mk≃' f f⁻¹ invˡ invʳ
             dec-cases (inj₂ (m , refl))
         ≡⟨⟩
             inj₂ m
-        ≡∎
+        ∎
         where
+            open ≡-Reasoning
             open DecSumInfImpl (1 + m + m) renaming (cases to dec-cases)
 
 code-sum-fin
@@ -338,6 +392,7 @@ code-decode-sum-fin
     → (code-sum-fin {n} ∘ decode-sum-fin {n} ) ≈ id {A = ℕ}
 code-decode-sum-fin {n} x = cases (x <? n) refl
     where
+        open ≡-Reasoning
         open DecSumFinImpl {n} x renaming (cases to dec-cases)
         f = code-sum-fin {n}
         f⁻¹ = decode-sum-fin {n}
@@ -346,7 +401,7 @@ code-decode-sum-fin {n} x = cases (x <? n) refl
             → ((x <? n) ≡ d)
             → (f (f⁻¹ x)) ≡ x
         cases (yes x<n) eq = 
-            ≡begin 
+            begin 
                 f (f⁻¹ x)
             ≡⟨⟩
                 f (dec-cases (x <? n))
@@ -358,9 +413,9 @@ code-decode-sum-fin {n} x = cases (x <? n) refl
                 toℕ (fromℕ< x<n)
             ≡⟨ toℕ-fromℕ< x<n ⟩
                 x
-            ≡∎
+            ∎
         cases (no x≮n) eq = 
-            ≡begin 
+            begin 
                 f (f⁻¹ x)
             ≡⟨⟩
                 f (dec-cases (x <? n))
@@ -372,13 +427,13 @@ code-decode-sum-fin {n} x = cases (x <? n) refl
                 (x ∸ n) + n
             ≡⟨ m∸n+n≡m $ ≮⇒≥ x≮n ⟩
                 x
-            ≡∎
+            ∎
 
 decode-code-sum-fin
     : {n : ℕ}
     → (decode-sum-fin {n} ∘ code-sum-fin {n} ) ≈ id {A = Fin n ⊎ ℕ}
 decode-code-sum-fin {n} (inj₁ x) = 
-    ≡begin 
+    begin 
         f⁻¹ (f (inj₁ x))
     ≡⟨⟩
         f⁻¹ (toℕ x)
@@ -390,15 +445,16 @@ decode-code-sum-fin {n} (inj₁ x) =
         inj₁ (fromℕ< x<n)
     ≡⟨ cong inj₁ $ fromℕ<-toℕ x x<n ⟩
         inj₁ x
-    ≡∎
+    ∎
     where
+        open ≡-Reasoning
         f = code-sum-fin {n}
         f⁻¹ = decode-sum-fin {n}
         open DecSumFinImpl {n} (toℕ x) renaming (cases to dec-cases)
         x<n : toℕ x < n
         x<n = toℕ<n x
 decode-code-sum-fin {n} (inj₂ x) = 
-    ≡begin 
+    begin 
         f⁻¹ (f (inj₂ x))
     ≡⟨⟩
         f⁻¹ (x + n)
@@ -410,8 +466,9 @@ decode-code-sum-fin {n} (inj₂ x) =
         inj₂ (x + n ∸ n)
     ≡⟨ cong inj₂ $ m+n∸n≡m x n ⟩
         inj₂ x
-    ≡∎
+    ∎
     where
+        open ≡-Reasoning
         f = code-sum-fin {n}
         f⁻¹ = decode-sum-fin {n}
         open DecSumFinImpl {n} (x + n) renaming (cases to dec-cases)
@@ -446,6 +503,7 @@ decode-sum-lemma'
     → w < x
 decode-sum-lemma' {fin n} (suc x) w eq = cases (suc x <? suc n) refl
     where
+        open ≡-Reasoning
         open DecSumFinImpl {suc n} (suc x) renaming (cases to dec-cases)
         cases 
             : (d : Dec (suc x < suc n)) 
@@ -454,7 +512,7 @@ decode-sum-lemma' {fin n} (suc x) w eq = cases (suc x <? suc n) refl
         cases (yes 1+x<1+n) eq-d = 
             ⊥-elim $
             sum-disjoined $ 
-            ≡begin 
+            begin 
                 inj₁ (fromℕ< 1+x<1+n)
             ≡⟨⟩
                 dec-cases (yes 1+x<1+n)
@@ -464,7 +522,7 @@ decode-sum-lemma' {fin n} (suc x) w eq = cases (suc x <? suc n) refl
                 decode-sum-fin (suc x)
             ≡⟨ eq ⟩
                 inj₂ w
-            ≡∎
+            ∎
 
         cases (no 1+x≮1+n) eq-d = subst (_< (suc x)) 1+x∸1+n≡w 1+x∸1+n<1+x
             where
@@ -472,7 +530,7 @@ decode-sum-lemma' {fin n} (suc x) w eq = cases (suc x <? suc n) refl
                 1+x∸1+n<1+x = m∸n<m x n
                 1+x∸1+n≡w : suc x ∸ suc n ≡ w
                 1+x∸1+n≡w = inj₂-injective $
-                    ≡begin 
+                    begin 
                         inj₂ (suc x ∸ suc n)
                     ≡⟨⟩
                         dec-cases (no 1+x≮1+n)
@@ -482,10 +540,11 @@ decode-sum-lemma' {fin n} (suc x) w eq = cases (suc x <? suc n) refl
                         decode-sum-fin (suc x)
                     ≡⟨ eq ⟩
                         inj₂ w
-                    ≡∎
+                    ∎
 
 decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
         where
+            open ≡-Reasoning
             open DecSumInfImpl x renaming (cases to dec-cases)
             cases 
                 : (p : Parity x) 
@@ -494,7 +553,7 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
             cases (inj₁ (m , x≡m+m)) eq-p = 
                 ⊥-elim $
                 sum-disjoined $ 
-                ≡begin 
+                begin 
                     inj₁ m
                 ≡⟨⟩
                     dec-cases (inj₁ (m , x≡m+m))
@@ -504,7 +563,7 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
                     decode-sum-inf x
                 ≡⟨ eq ⟩
                     inj₂ w
-                ≡∎
+                ∎
 
             cases (inj₂ (m , x≡1+m+m)) eq-p = 
                 doubleSubst _<_ m≡w (sym x≡1+m+m) m<1+m+m
@@ -515,7 +574,7 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
                     m≡w : m ≡ w
                     m≡w = 
                         inj₂-injective $ 
-                        ≡begin 
+                        begin 
                             inj₂ m
                         ≡⟨⟩
                             dec-cases (inj₂ (m , x≡1+m+m))
@@ -525,7 +584,7 @@ decode-sum-lemma' {∞} x w eq = cases (parity' x) refl
                             decode-sum-inf x
                         ≡⟨ eq ⟩
                             inj₂ w
-                        ≡∎
+                        ∎
 
 code-pair-fin 
     : {n : ℕ}
@@ -553,7 +612,7 @@ decode-code-pair-fin
     : {n : ℕ}
     → (decode-pair-fin {n} ∘ code-pair-fin {n}) ≈ id {A = Fin (suc n) × ℕ}
 decode-code-pair-fin {n'} (x , y) = 
-    ≡begin 
+    begin 
         dec (enc (x , y))
     ≡⟨⟩
         dec (toℕ x + y * n)
@@ -561,8 +620,9 @@ decode-code-pair-fin {n'} (x , y) =
         (remainder d , quotient d)
     ≡⟨ cong₂ _,_ rd≡x qd≡y ⟩
         (x , y)
-    ≡∎
+    ∎
     where
+        open ≡-Reasoning
         dec = decode-pair-fin {n'}
         enc = code-pair-fin {n'}
         n : ℕ
@@ -578,20 +638,20 @@ decode-code-pair-fin {n'} (x , y) =
 
         eq : z % n ≡ toℕ x
         eq = 
-            ≡begin 
+            begin 
                 (toℕ x + y * n) % n   
             ≡⟨ [m+kn]%n≡m%n (toℕ x) y n ⟩
                 toℕ x % n
             ≡⟨ m≤n⇒m%n≡m (s≤s⁻¹ x<n) ⟩
                 toℕ x
-            ≡∎
+            ∎
             
         f :  Σ[ a ∈ ℕ ] a < n → Fin n
         f (a , a<n) = fromℕ< {a} a<n
         
         rd≡x : remainder d ≡ x
         rd≡x =
-            ≡begin 
+            begin 
                 remainder d
             ≡⟨⟩
                 (toℕ x + y * n) mod n
@@ -608,11 +668,11 @@ decode-code-pair-fin {n'} (x , y) =
                 fromℕ< x<n
             ≡⟨ fromℕ<-toℕ x x<n ⟩
                 x
-            ≡∎
+            ∎
 
         qd≡y : quotient d ≡ y
         qd≡y = 
-            ≡begin 
+            begin 
                 quotient d
             ≡⟨⟩
                 z / n
@@ -622,7 +682,7 @@ decode-code-pair-fin {n'} (x , y) =
                 (y * n + toℕ x) / n
             ≡⟨ sym $ a<n→y≡[y*n+a]/n y x<n ⟩
                 y
-            ≡∎
+            ∎
             
 decode-pair-lemma-fin
     : {n : ℕ}
@@ -673,7 +733,7 @@ decode-pair-inf = toPair ∘ (decode-vec 1)
 
 decode-code-pair-inf : (decode-pair-inf ∘ code-pair-inf) ≈ id {A = ℕ × ℕ}
 decode-code-pair-inf p =
-    ≡begin 
+    begin 
         dec (enc p) 
     ≡⟨⟩
         (toPair ∘ (decode-vec 1) ∘ code-vec ∘ toVec) p
@@ -681,14 +741,15 @@ decode-code-pair-inf p =
         (toPair ∘ toVec) p
     ≡⟨ toPair-toVec p ⟩
         p
-    ≡∎
+    ∎
     where
+        open ≡-Reasoning
         dec = decode-pair-inf
         enc = code-pair-inf
     
 code-decode-pair-inf : (code-pair-inf ∘ decode-pair-inf) ≈ id {A = ℕ}
 code-decode-pair-inf i =
-    ≡begin 
+    begin 
         enc (dec i)
     ≡⟨⟩
         (code-vec ∘ toVec ∘ toPair ∘ (decode-vec 1)) i
@@ -696,8 +757,9 @@ code-decode-pair-inf i =
         (code-vec ∘ (decode-vec 1)) i
     ≡⟨ code-decode-vec 1 i ⟩
         i    
-    ≡∎
+    ∎
     where
+        open ≡-Reasoning
         dec = decode-pair-inf
         enc = code-pair-inf
     
@@ -745,6 +807,75 @@ decode-pair-lemma'
     → y ≤ i
 decode-pair-lemma' {fin n'} = decode-pair-lemma-fin {n'}
 decode-pair-lemma' {∞} = decode-pair-lemma-inf
+
+code-pair-inf-< 
+    : (c : ℕ)
+    → {x' x : ℕ} 
+    → x' < x 
+    → code-pair-inf (c , x') < code-pair-inf (c , x)
+code-pair-inf-< c {x'} {x} x'<x = 
+    begin-strict 
+        code-pair-inf (c , x')
+    ≡⟨⟩
+        code-vec (toVec (c , x'))
+    <⟨ code-vec-weight-< (c ∷ x' ∷ []) (c ∷ x ∷ []) w'<w ⟩
+        code-vec (toVec (c , x))
+    ≡⟨⟩
+        code-pair-inf (c , x)
+    ∎
+    where
+        open ≤-Reasoning
+        w : ℕ
+        w = weight (c ∷ x ∷ [])
+        w' : ℕ
+        w' = weight (c ∷ x' ∷ [])
+        check : w ≡ c + (x + 0)
+        check = refl
+        w'<w : w' < w
+        w'<w = 
+            begin-strict
+                w'
+            ≡⟨⟩
+                c + (x' + 0)
+            ≡⟨ cong (c +_) $ +-identityʳ x' ⟩ 
+                c + x'
+            <⟨ +-monoʳ-< c x'<x ⟩
+                c + x
+            ≡⟨ cong (c +_) $ sym $ +-identityʳ x ⟩
+                c + (x + 0)
+            ≡⟨⟩
+                w
+            ∎
+
+code-pair-fin-< 
+    : {n : ℕ}
+    → (c : Fin (suc n))
+    → {x' x : ℕ} 
+    → x' < x 
+    → code-pair-fin (c , x') < code-pair-fin (c , x)
+code-pair-fin-< {n'} c {x'} {x} x'<x = 
+    begin-strict
+        code-pair-fin (c , x')
+    ≡⟨⟩
+        toℕ c + x' * (suc n')
+    <⟨ +-monoʳ-< (toℕ c) (x'*n<x*n) ⟩
+        toℕ c + x * (suc n')
+    ≡⟨⟩
+        code-pair-fin (c , x)
+    ∎
+    where
+        open ≤-Reasoning
+        x'*n<x*n : x' * (suc n') < x * (suc n')
+        x'*n<x*n = *-monoˡ-< (suc n') x'<x
+
+code-pair-<' 
+    : {ζ' : ℕ∞}
+    → (c : ^ (suc∞ ζ'))
+    → {x' x : ℕ} 
+    → x' < x 
+    → code-pair' (c , x') < code-pair' (c , x)
+code-pair-<' {fin n} = code-pair-fin-<
+code-pair-<' {∞} = code-pair-inf-<
 
 -- #EXT: most definitions below are duplicate with the ones above,
 -- the only difference is that they are instantiated for a fixed μ or ζ
@@ -805,6 +936,13 @@ module WithMuZeta (μ' ζ' : ℕ∞) where
         → y ≤ code-pair (x , y)
     code-pair-lemma y x = 
         decode-pair-lemma (code-pair (x , y)) y x (decode-code-pair (x , y))
+
+    code-pair-<
+        : (c : ^ ζ)
+        → {x' x : ℕ} 
+        → x' < x 
+        → code-pair (c , x') < code-pair (c , x)
+    code-pair-< c x'<x = code-pair-<' {ζ'} c x'<x
 
     decode-sum-pair-lemma
         : (i w y : ℕ)
