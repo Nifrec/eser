@@ -517,6 +517,26 @@ nospawn y x x' z z⊄y x'≢z = ?
                 ¬H : ¬ (φ⁻¹ z ∈∈ φ⁻¹ y')
                 ¬H = subst (λ s → ¬ (φ⁻¹ z ∈∈ s)) eq-y' 
                     (nospawn-T K (≢-cong-from x'≢z))
+--------------------------------------------------------------------------------
+-- comm
+--------------------------------------------------------------------------------
+
+comm-T
+    : (s t t' r r' : T) 
+    → (t ∈∈ s) 
+    → (r ∈∈ s) 
+    → (t ≢ r')
+    → (r ≢ t')
+    → (replace (replace s r r') t t') ≡ (replace (replace s t t') r r')
+comm-T (multiary c v) t t' r r' -- t∈v r∈v t≢r' 
+    = replace-all-comm
+comm
+    : (y x x' z z' : ℕ) 
+    → (x ⊂ y) 
+    → (z ⊂ y) 
+    → (x ≢ z')
+    → (z ≢ x')
+    → (replace (replace y z z') x x') ≡ (replace (replace y x x') z z')
 
 --------------------------------------------------------------------------------
 -- Putting it all together in one ReplaceStruct

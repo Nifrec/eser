@@ -164,6 +164,49 @@ replace-all-nospawn _≡?_ {suc n'} v@(y ∷ ys) x x' z z∉v x'≢z (Any.there 
         z∉v' : z ∉ replace-all _≡?_ ys x x'
         z∉v' = replace-all-nospawn _≡?_ {n'} ys x x' z z∉ys x'≢z 
 
+replace-all-comm
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → (v : Vec A n)
+    → {x x' z z' : A}
+    → (x ≢ z)
+    → (x ≢ z')
+    → (z ≢ x')
+    → replace-all _≡?_ (replace-all _≡?_ v z z') x x'
+      ≡
+      replace-all _≡?_ (replace-all _≡?_ v x x') z z'
+replace-all-comm _≡?_ [] {x} {x'} {z} {z'} x≢z x≢z' z≢x' = refl
+replace-all-comm {A} _≡?_ {suc n} v@(y ∷ ys) {x} {x'} {z} {z'} x≢z x≢z' z≢x' =
+    begin 
+        replace-all _≡?_ (replace-all _≡?_ (y ∷ ys) z z') x x'
+    ≡⟨⟩
+        replace-all _≡?_ (repl-zz'-cases (y ≡? z) refl ∷ ys[z'/z] ) x x'
+    ≡⟨⟩
+        replace-all _≡?_ (y' ∷ ys[z'/z] ) x x'
+    ≡⟨⟩
+        repl-xx'-cases (y' ≡? x) refl ∷ ys[z'/z][x'/x]
+    ≡⟨ ? ⟩
+      replace-all _≡?_ (replace-all _≡?_ v x x') z z'
+    ∎
+    where
+        open ≡-Reasoning
+        open ReplaceAllImpl.Cases _≡?_ v z z' y renaming (cases to repl-zz'-cases)
+        y' : A
+        y' = repl-zz'-cases (y ≡? z) refl
+        v[z'/z] : Vec A (suc n)
+        v[z'/z] = replace-all _≡?_ (y ∷ ys) z z'
+        open ReplaceAllImpl.Cases _≡?_ v[z'/z] x x' 
+            (repl-zz'-cases (y ≡? z) refl) renaming (cases to repl-xx'-cases)
+
+        ys[z'/z] : Vec A n
+        ys[z'/z] = replace-all _≡?_ ys z z'
+
+        ys[z'/z][x'/x] : Vec A n
+        ys[z'/z][x'/x] = replace-all _≡?_ ys[z'/z] x x'
+    
+
+    
 
 
 replace-all-weight-<
