@@ -380,8 +380,11 @@ module ReplaceResp (T : ReplaceStruct) where
                 → (p ≡ allArgsNormal? (h y)) 
                 → P (y , x  , x')
 
+            -- Case 1 : all args to y are normal and the filter does not fire.
             cases y x x' IH (inj₁ allNormal) p-eq x⊂y x'<x xRx' = 
                 ⊥-elim $ allNormal x x⊂y (x' , x'<x , xRx')
+            -- Case 2 : some arg to y is not normal and the extensions are
+            -- restricted to a single choice.
             cases y x x' IH 
                   (inj₂ (w , w⊂y , w' , w'<w , wRw' , isMin)) p-eq 
                   x⊂y x'<x xRx' 
@@ -452,9 +455,7 @@ module ReplaceResp (T : ReplaceStruct) where
                                 where
                                     subsubcases : Dec (w ≡ x') → f yxw ≡ f ywx
                                     subsubcases (no w≢x') = cong f $ sym $ 
-                                        comm T y x x' w w' x⊂y w⊂y 
-                                            x≢w'
-                                            w≢x'
+                                        comm y x x' w w' x≢w x≢w' w≢x'
                                     subsubcases (yes refl) = 
                                         sym $ 
                                         begin 
@@ -462,7 +463,7 @@ module ReplaceResp (T : ReplaceStruct) where
                                         ≡⟨ sub-eq ⟩
                                             f ywxw
                                         ≡⟨ cong f $ lemma-replace-wxw y w w'
-                                           x x' (≢-sym x≢w') 
+                                           x x' x≢w (≢-sym x≢w') 
                                          ⟩
                                             f yxw
                                         ∎
@@ -492,31 +493,100 @@ module ReplaceResp (T : ReplaceStruct) where
                                 ≡⟨ sym $ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
                                     f y
                                 ∎
+                    -- #EXT: this case broke after changes in the definition
+                    -- of ReplaceStruct, and was fixed later, hence the
+                    -- notation being inconsistent with the other cases.
                     subcases(inj₂ (inj₁ (x≡w@refl , w'<x'))) = 
                         begin 
                             f y
-                        ≡⟨ IH y,w,w'<<<y,x,x' w⊂y w'<w wRw' ⟩
-                            f yw
-                        ≡⟨ cong f $ noeff T yw x x' x⊄yw ⟩
-                            f ywx
-                        ≡⟨ cong f $ comm T y x x' w w' x⊂y w⊂y x≢w' w≢x' ⟩
-                            f yxw
-                        ≡⟨ cong f $ sym $ noeff T yx w w' w⊄yx ⟩
+                        ≡⟨ IH y,w,w'<<<y,x,x' x⊂y w'<w wRw' ⟩
+                            f y[w'/x]
+                        ≡⟨ sym $ subeq (x' ⊂? y[w'/x]) ⟩
+                            f y[w'/x][w'/x']
+                        ≡⟨ cong f $ sym $ halfcut T y x w' x' ⟩
+                            f y[x'/x][w'/x']
+                        ≡⟨ sym $ IH y[x'/x],x',w'<<<y,x,x' 
+                            x'⊂y[x'/x] w'<x' x'R'w' ⟩
                             f yx
                         ∎
                         where
-                            -- Note that x ≡ w in this case!
-                            x≢w' : x ≢ w'
-                            x≢w' refl = n≮n x w'<w
+                            -- Note that x ≗ w holds judgementally in this case!
+                            -- (because we matches it with refl).
+                            -- So w' < x is w' < w etc.
+                            y[x'/x] : ℕ
+                            y[x'/x] = rep y x x'
+                            y[w'/x] : ℕ
+                            y[w'/x] = rep y x w'
+                            y[w'/x][w'/x'] : ℕ
+                            y[w'/x][w'/x'] = rep (rep y x w') x' w'
+                            y[x'/x][w'/x'] : ℕ
+                            y[x'/x][w'/x'] = rep (rep y x x') x' w'
+                            
+                            y[x'/x]<y : y[x'/x] < y
+                            y[x'/x]<y = replace-< T y x x' x⊂y x'<x
 
-                            w≢x' : w ≢ x'
-                            w≢x' refl = n≮n w x'<x
+                            y[x'/x],x',w'<<<y,x,x' 
+                                : (y[x'/x] , x' , w') <<< (y , x , x')
+                            y[x'/x],x',w'<<<y,x,x' = 
+                                first-<-to-<<< y[x'/x] x' w' y x x' y[x'/x]<y
 
-                            x⊄yw : x ⊄ yw
-                            x⊄yw = complete T y x w' x≢w' x⊂y
+                            x'⊂y[x'/x] : x' ⊂ y[x'/x]
+                            x'⊂y[x'/x] = eff T y x x' x⊂y
 
-                            w⊄yx : w ⊄ yx
-                            w⊄yx = complete T y x x' w≢x' w⊂y
+                            _R_ : ℕ → ℕ → Set
+                            a R b = AreRelated (h y) a b
+
+                            _R'_ : ℕ → ℕ → Set
+                            a R' b = AreRelated (h y[x'/x]) a b
+
+                            x'Rw' : AreRelated (h y) x' w'
+                            x'Rw' = 
+                                areRelated-trans (h y) 
+                                (⊂-resp-< T y x x⊂y)
+                                (areRelated-sym (h y) xRx')
+                                wRw'
+
+                            x'R'w' : AreRelated (h y[x'/x]) x' w'
+                            x'R'w' = areRelated-in-restriction 
+                                (h y[x'/x]) (h y) 
+                                (lemma-⋖+-exence h H y[x'/x]<y) 
+                                w'<x'
+                                x'Rw'
+
+
+                            y[w'/x]<y : y[w'/x] < y
+                            y[w'/x]<y = replace-< T y x w' x⊂y w'<w
+
+                            y[w'/x],x,w'<<<y,x,x'
+                                : (y[w'/x] , x , w') <<< ( y , x , x')
+                            y[w'/x],x,w'<<<y,x,x'
+                                = first-<-to-<<< y[w'/x] x w' y x x' y[w'/x]<y
+
+
+                            y[w'/x],x',w'<<<y,x,x'
+                                : (y[w'/x] , x' , w') <<< (y , x , x')
+                            y[w'/x],x',w'<<<y,x,x' = 
+                                first-<-to-<<< y[w'/x] x' w' y x x' y[w'/x]<y
+
+                            x'R''w' : AreRelated (h y[w'/x]) x' w'
+                            x'R''w' = areRelated-in-restriction 
+                                (h y[w'/x]) (h y) 
+                                (lemma-⋖+-exence h H y[w'/x]<y) 
+                                w'<x'
+                                x'Rw'
+                            subeq 
+                                : (Dec (x' ⊂ y[w'/x]))
+                                → f y[w'/x][w'/x'] ≡ f y[w'/x]
+                            subeq (yes x'⊂y[w'/x]) = 
+                                begin 
+                                   f y[w'/x][w'/x'] 
+                                ≡⟨ sym $ IH (y[w'/x],x',w'<<<y,x,x')
+                                    x'⊂y[w'/x] w'<x' x'R''w' ⟩ 
+                                   f y[w'/x]
+                                    
+                                ∎
+                            subeq (no x'⊄y[w'/x]) = 
+                               cong f $ sym $ noeff T y[w'/x] x' w' (# x'⊄y[w'/x])
                         
                             y,w,w'<<<y,x,x'
                                 : (y , w , w') <<< (y , x , x')
@@ -558,7 +628,7 @@ module ReplaceResp (T : ReplaceStruct) where
                             nf-yw≡nf-yx : nf-yw ≡ nf-yx
                             nf-yw≡nf-yx = 
                                 begin 
-                                nf-yw
+                                    nf-yw
                                 ≡⟨⟩
                                     (earlier-new $ resurface (h y)
                                         $ replace-< T y w w' w⊂y w'<w )

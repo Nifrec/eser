@@ -100,6 +100,44 @@ NFRestrRel {n} r x<n x'<n = does (resurface r x<n ≡? resurface r x'<n)
 AreRelated : {n : ℕ} → (r : NFRestr n) → ℕ → ℕ → Set
 AreRelated {n} r x x' = (p : x < n) → (q : x' < n) → NFRestrRel r p q ≡ true
 
+areRelated-sym
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {x y : ℕ}
+    → AreRelated r x y
+    → AreRelated r y x
+areRelated-sym r {x} {y} H p q = 
+    decEqCoReflection _≡?_ a b $ sym $ decEqReflection _≡?_ b a $ H q p
+    where
+        a = resurface r p 
+        b = resurface r q
+        
+
+areRelated-trans 
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {x y z : ℕ}
+    → y < n
+    → AreRelated r x y
+    → AreRelated r y z
+    → AreRelated r x z
+areRelated-trans r {x} {y} {z} y<n xRy yRz x<n z<n =
+    decEqCoReflection _≡?_ a c $
+    begin 
+        a 
+    ≡⟨ decEqReflection _≡?_ a b $ xRy x<n y<n ⟩
+        b
+    ≡⟨ decEqReflection _≡?_ b c $ yRz y<n z<n ⟩
+        c
+    ∎
+    
+    where
+        a = resurface r x<n
+        b = resurface r y<n
+        c = resurface r z<n
+        
+
+
 areRelated? 
     : {y : ℕ} 
     → (r : NFRestr y) 
