@@ -495,8 +495,8 @@ nospawn
     → z ⊄ y
     → x' ≢ z
     → z ⊄ (replace y x x')
-nospawn y x x' z z⊄y x'≢z = ?
-    -- The goal unfolds to 
+nospawn y x x' z z⊄y x'≢z = cases (z is-arg-of y') refl
+    -- The goal unfolds to:
     --      z is-arg-of (replace y x x') ≡ false
     where
         import Eser.Equivalences.Properties
@@ -523,8 +523,6 @@ nospawn y x x' z z⊄y x'≢z = ?
 
 halfcomm-T
     : (s t t' r r' : T) 
-    --→ (t ∈∈ s) 
-    --→ (r ∈∈ s) 
     → (t ≢ r)
     → (t ≢ r')
     → (r ≢ t')
