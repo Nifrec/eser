@@ -521,22 +521,52 @@ nospawn y x x' z z⊄y x'≢z = ?
 -- comm
 --------------------------------------------------------------------------------
 
-comm-T
+halfcomm-T
     : (s t t' r r' : T) 
-    → (t ∈∈ s) 
-    → (r ∈∈ s) 
+    --→ (t ∈∈ s) 
+    --→ (r ∈∈ s) 
+    → (t ≢ r)
     → (t ≢ r')
     → (r ≢ t')
-    → (replace (replace s r r') t t') ≡ (replace (replace s t t') r r')
-comm-T (multiary c v) t t' r r' -- t∈v r∈v t≢r' 
-    = replace-all-comm
-comm
+    → (replace-T (replace-T s r r') t t') ≡ (replace-T (replace-T s t t') r r')
+halfcomm-T (nullary c) t t' r r' t≢r t≢r' r≢t' = refl
+halfcomm-T (multiary c v) t t' r r' t≢r t≢r' r≢t'
+    = cong (multiary c) $ replace-all-comm _≡T?_ v t≢r t≢r' r≢t'
+
+halfcomm
     : (y x x' z z' : ℕ) 
     → (x ⊂ y) 
     → (z ⊂ y) 
+    → (x ≢ z)
     → (x ≢ z')
     → (z ≢ x')
     → (replace (replace y z z') x x') ≡ (replace (replace y x x') z z')
+halfcomm y x x' z z' _ _ x≢z x≢z' z≢x' =
+    cong φ $
+    begin 
+        replace-T (φ⁻¹ (replace y z z')) (φ⁻¹ x) (φ⁻¹ x')
+    ≡⟨ cong (λ u → replace-T u t t') $ sym $ replace-T-replace y z z' ⟩
+        replace-T (replace-T s r r') t t'
+    ≡⟨ halfcomm-T s t t' r r' t≢r t≢r' r≢t' ⟩
+        replace-T (replace-T s t t') r r'
+    ≡⟨ cong (λ u → replace-T u r r') $ replace-T-replace y x x' ⟩
+        replace-T (φ⁻¹ (replace y x x')) (φ⁻¹ z) (φ⁻¹ z')
+    ∎
+    where
+        open ≡-Reasoning
+        import Eser.Equivalences.Properties
+        open Eser.Equivalences.Properties.NeqCong enum
+        t = φ⁻¹ x
+        t' = φ⁻¹ x'
+        r = φ⁻¹ z
+        r' = φ⁻¹ z'
+        s = φ⁻¹ y
+        t≢r : t ≢ r
+        t≢r = ≢-cong-from x≢z
+        t≢r' : t ≢ r'
+        t≢r' = ≢-cong-from x≢z'
+        r≢t' : r ≢ t'
+        r≢t' = ≢-cong-from z≢x'
 
 --------------------------------------------------------------------------------
 -- Putting it all together in one ReplaceStruct
@@ -551,8 +581,9 @@ sig-to-replacestruct = record
     ; replace-< = replace-<
     ; keep = keep
     ; nospawn = nospawn
-    ; comm = {! !} 
+    ; halfcomm = halfcomm
     ; noeff = {! !} 
+    ; eff = {!  !}
     ; halfcut = {! !} 
     ; id-rep = {! !} 
     ; complete = {! !} 
