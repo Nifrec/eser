@@ -179,6 +179,12 @@ T→≡true = Function.Equivalence.to T-≡
 ≡true→T : {b : Bool} → b ≡ true → T b
 ≡true→T = Function.Equivalence.from T-≡
 
+T∘not→≡false : {b : Bool} → T (not b) → b ≡ false
+T∘not→≡false {b} Tnb = not-injective (Function.Equivalence.to T-≡ Tnb)
+
+≡false→T∘not : {b : Bool} → b ≡ false → T (not b)
+≡false→T∘not eq = Function.Equivalence.from T-≡ (cong not eq)
+
 --------------------------------------------------------------------------------
 -- Conversion from isYes to a proof
 --------------------------------------------------------------------------------

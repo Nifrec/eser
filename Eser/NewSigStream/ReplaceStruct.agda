@@ -36,7 +36,7 @@ open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail ; map)
 open import Data.Fin using (Fin ; toℕ)
 open import Function hiding (_↔_)
 
-open import Eser.Logic using (≡true→T ; isYes-elim-true ; isYes-intro-true ; false≢true )
+open import Eser.Logic using (≡true→T ; ≡false→T∘not ; isYes-elim-true ; isYes-intro-true ; false≢true )
 open import Eser.Card
 open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
@@ -154,6 +154,17 @@ x ⊂ y = x is-arg-of y ≡ true
 _⊄_ : ℕ → ℕ → Set
 x ⊄ y = x is-arg-of y ≡ false
 
+⊂→∈∈
+    : {x y : ℕ}
+    → x ⊂ y
+    → φ⁻¹ x ∈∈ φ⁻¹ y
+⊂→∈∈ = toWitness ∘ ≡true→T
+
+⊄→¬∈∈
+    : {x y : ℕ}
+    → x ⊄ y
+    → ¬ (φ⁻¹ x ∈∈ φ⁻¹ y)
+⊄→¬∈∈ = toWitnessFalse ∘ ≡false→T∘not
 --------------------------------------------------------------------------------
 -- ⊂-resp-< : the is-arg-of relation respects < on the encoding
 --------------------------------------------------------------------------------
@@ -223,7 +234,7 @@ arg-encode-lemma {t} {s@(multiary c v)} t∈∈s =
         s : T
         s = φ⁻¹ y
         t∈∈s : t ∈∈ s
-        t∈∈s = toWitness $ ≡true→T x⊂y
+        t∈∈s = ⊂→∈∈ x⊂y
     
 --------------------------------------------------------------------------------
 -- Replace operation for Terms: replace ALL occurrences of an argument.
@@ -411,7 +422,7 @@ replace-< y x x' x⊂y x'<x =
         t' = φ⁻¹ x'
 
         t∈∈s : t ∈∈ s
-        t∈∈s = toWitness $ ≡true→T x⊂y
+        t∈∈s = ⊂→∈∈ x⊂y
 
         φt'<φt : φ t' < φ t
         φt'<φt =
@@ -567,6 +578,84 @@ halfcomm y x x' z z' _ _ x≢z x≢z' z≢x' =
         r≢t' = ≢-cong-from z≢x'
 
 --------------------------------------------------------------------------------
+-- noeff
+--------------------------------------------------------------------------------
+
+noeff-T
+    : (s t t' : T) 
+    → ¬ (t ∈∈ s) 
+    → s ≡ replace-T s t t'
+noeff-T (nullary c) _ _ _ = refl
+noeff-T (multiary c v) t t' ¬t∈v = 
+      sym 
+    $ cong (multiary c) 
+    $ replace-all-not-member _≡T?_ v t t' ¬t∈v
+
+noeff
+    : (y x x' : ℕ) 
+    → (x is-arg-of y ≡ false) 
+    → y ≡ replace y x x'
+noeff y x x' x⊄y = 
+    sym $
+    begin 
+        replace y x x'
+    ≡⟨⟩
+        φ (replace-T s t t')
+    ≡⟨ cong φ $ sym $ noeff-T s t t' ¬t∈∈s ⟩
+        φ s
+    ≡⟨ φ∘φ⁻¹≈id y ⟩
+        y
+    ∎
+    where
+        open ≡-Reasoning
+        s : T
+        s = φ⁻¹ y
+        t : T
+        t = φ⁻¹ x
+        t' : T
+        t' = φ⁻¹ x'
+        ¬t∈∈s : ¬ (t ∈∈ s)
+        ¬t∈∈s = ⊄→¬∈∈ x⊄y
+
+--------------------------------------------------------------------------------
+-- eff
+--------------------------------------------------------------------------------
+
+eff
+    : (y x x' : ℕ)
+    → (x is-arg-of y ≡ true)
+    → x' is-arg-of (replace y x x') ≡ true
+eff = ?
+
+--------------------------------------------------------------------------------
+-- halfcut
+--------------------------------------------------------------------------------
+
+halfcut
+    : (y x z a : ℕ)
+    → replace (replace y x a) a z ≡ replace (replace y x z) a z
+halfcut = ?
+
+--------------------------------------------------------------------------------
+-- id-rep (identity replacement)
+--------------------------------------------------------------------------------
+
+id-rep
+    : (y x : ℕ)
+    → replace y x x ≡ y
+id-rep = ?
+--------------------------------------------------------------------------------
+-- complete
+--------------------------------------------------------------------------------
+
+complete
+    : (y x x' : ℕ)
+    → x ≢ x'
+    → (x is-arg-of y ≡ true) 
+    → (x is-arg-of (replace y x x')) ≡ false
+complete = ?
+
+--------------------------------------------------------------------------------
 -- Putting it all together in one ReplaceStruct
 --------------------------------------------------------------------------------
 
@@ -580,7 +669,7 @@ sig-to-replacestruct = record
     ; keep = keep
     ; nospawn = nospawn
     ; halfcomm = halfcomm
-    ; noeff = {! !} 
+    ; noeff = noeff
     ; eff = {!  !}
     ; halfcut = {! !} 
     ; id-rep = {! !} 
