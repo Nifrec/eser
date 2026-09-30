@@ -36,7 +36,14 @@ open import Data.Vec.Relation.Unary.Any as Any hiding (head ; tail ; map)
 open import Data.Fin using (Fin ; toℕ)
 open import Function hiding (_↔_)
 
-open import Eser.Logic using (≡true→T ; ≡false→T∘not ; isYes-elim-true ; isYes-intro-true ; false≢true )
+open import Eser.Logic using 
+    ( ≡true→T 
+    ; T→≡true
+    ; ≡false→T∘not 
+    ; isYes-elim-true 
+    ; isYes-intro-true 
+    ; false≢true 
+    )
 open import Eser.Card
 open import Eser.Signature.Definitions
 open import Eser.Equivalences.Notation hiding (begin_ ; _∎)
@@ -165,6 +172,12 @@ x ⊄ y = x is-arg-of y ≡ false
     → x ⊄ y
     → ¬ (φ⁻¹ x ∈∈ φ⁻¹ y)
 ⊄→¬∈∈ = toWitnessFalse ∘ ≡false→T∘not
+
+∈∈→⊂
+    : {x y : ℕ}
+    → φ⁻¹ x ∈∈ φ⁻¹ y
+    → x ⊂ y
+∈∈→⊂ = T→≡true ∘ fromWitness
 --------------------------------------------------------------------------------
 -- ⊂-resp-< : the is-arg-of relation respects < on the encoding
 --------------------------------------------------------------------------------
@@ -621,11 +634,34 @@ noeff y x x' x⊄y =
 -- eff
 --------------------------------------------------------------------------------
 
+eff-T
+    : (s t t' : T)
+    → t ∈∈ s
+    → t' ∈∈ (replace-T s t t')
+eff-T (multiary c v) t t' t∈v = replace-all-effect _≡T?_ t' t∈v
+
 eff
     : (y x x' : ℕ)
     → (x is-arg-of y ≡ true)
     → x' is-arg-of (replace y x x') ≡ true
-eff = ?
+eff y x x' x⊂y = ∈∈→⊂ t'∈∈s'
+    where
+        open ≡-Reasoning
+        s : T
+        s = φ⁻¹ y
+        t : T
+        t = φ⁻¹ x
+        t' : T
+        t' = φ⁻¹ x'
+        s' : T
+        s' = replace-T s t t'
+        t∈∈s : t ∈∈ s
+        t∈∈s = ⊂→∈∈ x⊂y
+        t'∈∈s' : t' ∈∈ φ⁻¹ (replace y x x')
+        t'∈∈s' = subst (t' ∈∈_) (replace-T-replace y x x')
+            $ eff-T s t t' t∈∈s
+
+    
 
 --------------------------------------------------------------------------------
 -- halfcut

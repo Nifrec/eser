@@ -330,6 +330,21 @@ replace-all-comm {A} _≡?_ {suc n} v@(y ∷ ys) {x} {x'} {z} {z'} x≢z x≢z' 
         firstel-eq : LHS-firstel ≡ RHS-firstel
         firstel-eq = cases (y ≡? z) (y ≡? x)
 
+-- When replacing x by x' in a vector v, and x ∈ v, then the resulting
+-- vector contains x'.
+replace-all-effect
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → {v : Vec A n}
+    → {x : A}
+    → (x' : A)
+    → x ∈ v
+    → x ∈ replace-all _≡?_ v x x'
+replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.here x≡y) = {! !}
+    -- #TODO: return Any.here (eq that first el is forced to be repl by x')
+replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.there x∈v) = {! !}
+
 replace-all-weight-<
     : {n : ℕ}
     → {v : Vec ℕ n}
