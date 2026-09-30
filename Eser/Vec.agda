@@ -181,33 +181,154 @@ replace-all-comm {A} _≡?_ {suc n} v@(y ∷ ys) {x} {x'} {z} {z'} x≢z x≢z' 
     begin 
         replace-all _≡?_ (replace-all _≡?_ (y ∷ ys) z z') x x'
     ≡⟨⟩
-        replace-all _≡?_ (repl-zz'-cases (y ≡? z) refl ∷ ys[z'/z] ) x x'
+        replace-all _≡?_ (fzz' (y ≡? z) ∷ ys[z'/z] ) x x'
     ≡⟨⟩
-        replace-all _≡?_ (y' ∷ ys[z'/z] ) x x'
+        LHS-firstel ∷ ys[z'/z][x'/x]
+    ≡⟨ cong (_∷ ys[z'/z][x'/x]) firstel-eq ⟩
+        RHS-firstel ∷ ys[z'/z][x'/x]
+    ≡⟨ cong (RHS-firstel ∷_) IH ⟩
+        RHS-firstel ∷ ys[x'/x][z'/z]
     ≡⟨⟩
-        repl-xx'-cases (y' ≡? x) refl ∷ ys[z'/z][x'/x]
-    ≡⟨ ? ⟩
       replace-all _≡?_ (replace-all _≡?_ v x x') z z'
     ∎
     where
+        -- A is hSet-truncated, i.e., a ≡ b is Irrelevant for all a, b : A,
+        -- because A has decidable equality. 
+        -- Irrelevance could also have been proven
+        -- with the UIP, since we are not using Cubical compatibility.
+        import Axiom.UniquenessOfIdentityProofs
+        open Axiom.UniquenessOfIdentityProofs.Decidable⇒UIP _≡?_
+            renaming (≡-irrelevant to ≡-irr)
+
         open ≡-Reasoning
-        open ReplaceAllImpl.Cases _≡?_ v z z' y renaming (cases to repl-zz'-cases)
+        open ReplaceAllImpl.Cases _≡?_ v z z' y renaming (cases to fzz')
+        open ReplaceAllImpl.Cases _≡?_ v x x' y renaming (cases to fxx')
         y' : A
-        y' = repl-zz'-cases (y ≡? z) refl
+        y' = fzz' (y ≡? z)
+
         v[z'/z] : Vec A (suc n)
         v[z'/z] = replace-all _≡?_ (y ∷ ys) z z'
-        open ReplaceAllImpl.Cases _≡?_ v[z'/z] x x' 
-            (repl-zz'-cases (y ≡? z) refl) renaming (cases to repl-xx'-cases)
+
+        -- We can't hardcode `a` to be `fzz' (y ≡? z)`,
+        -- because then rewriting the latter's argument to `yes y≡z` or `no y≢z`
+        -- results in ill-typed input,
+        -- since `yes y≡z` is not judgementally equal to `fzz' (y ≡? z)`.
+        fzz'xx' : {a : A} → (Dec (a ≡ x)) → A
+        fzz'xx' {a} = cases
+            where
+                open ReplaceAllImpl.Cases _≡?_ v[z'/z] x x' a
+
+        v[x'/x] : Vec A (suc n)
+        v[x'/x] = replace-all _≡?_ (y ∷ ys) x x'
+
+        -- Same subtlety as with fzz'xx'.
+        fxx'zz' : {a : A} → (Dec (a ≡ z)) → A
+        fxx'zz' {a} = cases
+            where
+                open ReplaceAllImpl.Cases _≡?_ v[x'/x] z z' a
 
         ys[z'/z] : Vec A n
         ys[z'/z] = replace-all _≡?_ ys z z'
 
         ys[z'/z][x'/x] : Vec A n
         ys[z'/z][x'/x] = replace-all _≡?_ ys[z'/z] x x'
-    
 
+        ys[x'/x] : Vec A n
+        ys[x'/x] = replace-all _≡?_ ys x x'
     
+        ys[x'/x][z'/z] : Vec A n
+        ys[x'/x][z'/z] = replace-all _≡?_ ys[x'/x] z z'
 
+        IH : ys[z'/z][x'/x] ≡ ys[x'/x][z'/z]
+        IH = replace-all-comm _≡?_ ys x≢z x≢z' z≢x'
+
+        LHS-firstel : A
+        LHS-firstel = fzz'xx' ((fzz' (y ≡? z)) ≡? x)
+
+        RHS-firstel : A
+        RHS-firstel = fxx'zz' ((fxx' (y ≡? x)) ≡? z)
+
+        cases : (Dec (y ≡ z)) → (Dec (y ≡ x)) → LHS-firstel ≡ RHS-firstel
+        cases (yes y≡z) (yes y≡x) = ⊥-elim $ x≢z $ trans (sym y≡x) y≡z
+        cases (yes y≡z) (no y≢x) =
+            begin 
+                LHS-firstel
+            ≡⟨⟩
+                fzz'xx' ((fzz' (y ≡? z)) ≡? x)
+            ≡⟨ cong (λ d → fzz'xx' ((fzz' d) ≡? x)) 
+               $ dec-yes-irr (y ≡? z) ≡-irr y≡z
+             ⟩
+                fzz'xx' ((fzz' (yes y≡z)) ≡? x)
+            ≡⟨⟩
+                fzz'xx' (z' ≡? x)
+            ≡⟨ cong fzz'xx' $ dec-no (z' ≡? x) $ ≢-sym x≢z' ⟩
+                fzz'xx' (no $ ≢-sym x≢z')
+            ≡⟨⟩
+                z'
+            ≡⟨⟩
+                fxx'zz' (yes y≡z)
+            ≡⟨ cong fxx'zz' $ sym $ dec-yes-irr (y ≡? z) ≡-irr y≡z ⟩
+                fxx'zz' (y ≡? z)
+            ≡⟨⟩
+                fxx'zz' ((fxx' (no y≢x)) ≡? z)
+            ≡⟨ cong (λ d → fxx'zz' (fxx' d ≡? z)) $ sym $ dec-no (y ≡? x) y≢x ⟩
+                fxx'zz' ((fxx' (y ≡? x)) ≡? z)
+            ≡⟨⟩
+                RHS-firstel
+            ∎
+        cases (no y≢z) (yes y≡x) =
+            begin 
+                LHS-firstel
+            ≡⟨⟩
+                fzz'xx' ((fzz' (y ≡? z)) ≡? x)
+            ≡⟨ cong (λ d → fzz'xx' ((fzz' d) ≡? x)) $ dec-no (y ≡? z) y≢z ⟩
+                fzz'xx' ((fzz' (no y≢z)) ≡? x)
+            ≡⟨⟩
+                fzz'xx' (y ≡? x)
+            ≡⟨ cong fzz'xx' $ dec-yes-irr (y ≡? x) ≡-irr y≡x ⟩
+                fzz'xx' (yes y≡x)
+            ≡⟨⟩
+                x'
+            ≡⟨⟩
+                fxx'zz' (no $ ≢-sym z≢x')
+            ≡⟨ cong fxx'zz' $ sym $ dec-no (x' ≡? z) $ ≢-sym z≢x' ⟩
+                fxx'zz' (x' ≡? z)
+            ≡⟨⟩
+                fxx'zz' ((fxx' (yes y≡x)) ≡? z)
+            ≡⟨ cong (λ d → fxx'zz' (fxx' d ≡? z)) 
+                $ sym $ dec-yes-irr (y ≡? x) ≡-irr y≡x 
+             ⟩
+                fxx'zz' ((fxx' (y ≡? x)) ≡? z)
+            ≡⟨⟩
+                RHS-firstel
+            ∎
+        cases (no y≢z) (no y≢x) =
+            begin 
+                LHS-firstel
+            ≡⟨⟩
+                fzz'xx' ((fzz' (y ≡? z)) ≡? x)
+            ≡⟨ cong (λ d → fzz'xx' ((fzz' d) ≡? x)) $ dec-no (y ≡? z) y≢z ⟩
+                fzz'xx' ((fzz' (no y≢z)) ≡? x)
+            ≡⟨⟩
+                fzz'xx' (y ≡? x)
+            ≡⟨ cong fzz'xx' $ dec-no (y ≡? x) y≢x ⟩
+                fzz'xx' (no y≢x)
+            ≡⟨⟩
+                y
+            ≡⟨⟩
+                fxx'zz' (no y≢z)
+            ≡⟨ cong fxx'zz' $ sym $ dec-no (y ≡? z) y≢z ⟩
+                fxx'zz' (y ≡? z)
+            ≡⟨⟩
+                fxx'zz' ((fxx' (no y≢x)) ≡? z)
+            ≡⟨ cong (λ d → fxx'zz' (fxx' d ≡? z)) $ sym $ dec-no (y ≡? x) y≢x ⟩
+                fxx'zz' ((fxx' (y ≡? x)) ≡? z)
+            ≡⟨⟩
+                RHS-firstel
+            ∎
+
+        firstel-eq : LHS-firstel ≡ RHS-firstel
+        firstel-eq = cases (y ≡? z) (y ≡? x)
 
 replace-all-weight-<
     : {n : ℕ}
