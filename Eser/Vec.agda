@@ -29,6 +29,26 @@ open import Eser.NewSigStream.EnumVectors using (weight)
 
 module Eser.Vec where
 
+--------------------------------------------------------------------------------
+-- Negative membership
+--------------------------------------------------------------------------------
+-- If x does not equal the head of a vector, and does not occur in its tail,
+-- then x doesn't occur in the entire vector.
+∉-cons
+    : {A : Set}
+    → {n : ℕ}
+    → {ys : Vec A n}
+    → {x y : A}
+    → x ∉ ys
+    → x ≢ y
+    → x ∉ (y ∷ ys)
+∉-cons {A} {n} {ys} {x} {y} x∉ys x≢y (here x≡y) = x≢y x≡y
+∉-cons {A} {n} {ys} {x} {y} x∉ys x≢y (there x∈ys) = x∉ys x∈ys
+
+--------------------------------------------------------------------------------
+-- replace-all
+--------------------------------------------------------------------------------
+
 -- Replace all occurrences of one element in a vector by another element.
 replace-all 
     : {A : Set}
@@ -567,6 +587,62 @@ replace-all-id _≡?_ v@(y ∷ ys) x = cases (y ≡? x) refl
             ≡⟨⟩
                 y ∷ ys
             ∎
+
+-- Replace-all replace ALL occurrences of an element, so none will remain after
+-- the replacement (unless the replacement equals the replacant).
+replace-all-complete
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → {v : Vec A n}
+    → {x x' : A}
+    → x ≢ x'
+    → x ∈ v
+    → x ∉ replace-all _≡?_ v x x'
+replace-all-complete {A} _≡?_ {suc n} {v@(y ∷ ys)} {x} {x'} x≢x' x∈v x∈v' = 
+    cases x∈v' (y ≡? x) refl (x ∈? ys)
+    where
+        open import Data.Vec.Membership.DecPropositional _≡?_ using (_∈?_)
+        open ≡-Reasoning
+        open ReplaceAllImpl.Cases _≡?_ (y ∷ ys) x x' y
+            renaming (cases to repl-cases)
+
+        v' : Vec A (suc n)
+        v' = replace-all _≡?_ v x x'
+
+        cases 
+            : (x ∈ v') 
+            → (d : Dec (y ≡ x)) 
+            → ((y ≡? x) ≡ d) 
+            → Dec (x ∈ ys)
+            → ⊥
+        cases (Any.here eq) (yes y≡x) eq-d _ = 
+            x≢x' $ 
+            begin 
+                x 
+            ≡⟨ eq ⟩
+                repl-cases (y ≡? x)
+            ≡⟨ cong repl-cases eq-d ⟩
+                repl-cases (yes y≡x)
+            ≡⟨⟩
+                x'
+            ∎
+        cases (Any.here eq) (no y≢x) eq-d _ = 
+            y≢x $ sym $
+            begin 
+                x 
+            ≡⟨ eq ⟩
+                repl-cases (y ≡? x)
+            ≡⟨ cong repl-cases eq-d ⟩
+                repl-cases (no y≢x)
+            ≡⟨⟩
+                y
+            ∎
+            
+        cases (Any.there p) _ _ (no x∉ys) = 
+            replace-all-nospawn _≡?_ ys x x' x x∉ys (≢-sym x≢x') p
+        cases (Any.there p) _ _ (yes x∈ys) = 
+            replace-all-complete _≡?_ x≢x' x∈ys p
     
     
 replace-all-weight-<

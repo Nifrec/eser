@@ -40,6 +40,7 @@ open import Eser.Logic using
     ( ≡true→T 
     ; T→≡true
     ; ≡false→T∘not 
+    ; T∘not→≡false
     ; isYes-elim-true 
     ; isYes-intro-true 
     ; false≢true 
@@ -178,6 +179,12 @@ x ⊄ y = x is-arg-of y ≡ false
     → φ⁻¹ x ∈∈ φ⁻¹ y
     → x ⊂ y
 ∈∈→⊂ = T→≡true ∘ fromWitness
+
+¬∈∈→⊄
+    : {x y : ℕ}
+    → ¬ (φ⁻¹ x ∈∈ φ⁻¹ y)
+    → x ⊄ y
+¬∈∈→⊄ = T∘not→≡false ∘ fromWitnessFalse
 --------------------------------------------------------------------------------
 -- ⊂-resp-< : the is-arg-of relation respects < on the encoding
 --------------------------------------------------------------------------------
@@ -728,12 +735,29 @@ id-rep y x =
 -- complete
 --------------------------------------------------------------------------------
 
+complete-T
+    : (s t t' : T)
+    → t ≢ t'
+    → t ∈∈ s
+    → ¬ (t ∈∈ replace-T s t t')
+complete-T (multiary c v) t t' t≢t' t∈v = replace-all-complete _≡T?_ t≢t' t∈v
+
 complete
     : (y x x' : ℕ)
     → x ≢ x'
-    → (x is-arg-of y ≡ true) 
-    → (x is-arg-of (replace y x x')) ≡ false
-complete = ?
+    → x ⊂ y 
+    → x ⊄ replace y x x'
+complete y x x' x≢x' x⊂y = ¬∈∈→⊄ H'
+    where
+        import Eser.Equivalences.Properties
+        open Eser.Equivalences.Properties.NeqCong enum
+        s = φ⁻¹ y
+        t = φ⁻¹ x
+        t' = φ⁻¹ x'
+        H : ¬ (t ∈∈ replace-T s t t')
+        H = complete-T s t t' (≢-cong-from x≢x') (⊂→∈∈ x⊂y)
+        H' : ¬ (t ∈∈ (φ⁻¹ $ φ $ replace-T s t t'))
+        H' = subst (λ u → ¬ (t ∈∈ u)) (sym $ φ⁻¹∘φ≈id $ replace-T s t t') H
 
 --------------------------------------------------------------------------------
 -- Putting it all together in one ReplaceStruct
@@ -753,5 +777,5 @@ sig-to-replacestruct = record
     ; eff = eff
     ; halfcut = halfcut
     ; id-rep = id-rep
-    ; complete = {! !} 
+    ; complete = complete
     }
