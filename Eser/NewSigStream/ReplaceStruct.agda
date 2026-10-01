@@ -704,7 +704,7 @@ id-rep-T
     : (s t : T)
     → replace-T s t t ≡ s
 id-rep-T (nullary c) _ = refl
-id-rep-T (multiary c v) t = cong (multiary c) $ replace-all-id v t
+id-rep-T (multiary c v) t = cong (multiary c) $ replace-all-id _≡T?_ v t
 
 id-rep
     : (y x : ℕ)
@@ -752,6 +752,6 @@ sig-to-replacestruct = record
     ; noeff = noeff
     ; eff = eff
     ; halfcut = halfcut
-    ; id-rep = {! !} 
+    ; id-rep = id-rep
     ; complete = {! !} 
     }

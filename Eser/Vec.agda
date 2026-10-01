@@ -533,16 +533,40 @@ replace-all-id
     → (x : A)
     → replace-all _≡?_ v x x ≡ v
 replace-all-id _ [] _ = refl
-replace-all-id _≡?_ v@(y ∷ ys) x =
-    -- TODO: need top-lvl case distinction on y ≡? x.
-    begin 
-        replace-all _≡?_ v x x
-    ≡⟨⟩
-        repl-cases (y ≡? x) ∷ replace-all _≡?_ ys x x
-    ≡⟨  ⟩
-        
-        
-    ∎
+replace-all-id _≡?_ v@(y ∷ ys) x = cases (y ≡? x) refl
+    where
+        open ReplaceAllImpl.Cases _≡?_ v x x y renaming (cases to repl-cases)
+        open ≡-Reasoning
+        cases 
+            : (d : Dec (y ≡ x)) 
+            → ((y ≡? x) ≡ d) 
+            → replace-all _≡?_ v x x ≡ v
+        cases (yes y≡x) eq-d = 
+            begin 
+                replace-all _≡?_ v x x
+            ≡⟨⟩
+                repl-cases (y ≡? x) ∷ replace-all _≡?_ ys x x
+            ≡⟨ cong (repl-cases (y ≡? x) ∷_) $ replace-all-id _≡?_ ys x ⟩
+                repl-cases (y ≡? x) ∷ ys
+            ≡⟨ cong (λ d → repl-cases d ∷ ys) eq-d  ⟩
+                repl-cases (yes y≡x) ∷ ys
+            ≡⟨⟩
+                x ∷ ys
+            ≡⟨ cong (_∷ ys) $ sym y≡x ⟩
+                y ∷ ys
+            ∎
+        cases (no y≢x) eq-d = 
+            begin 
+                replace-all _≡?_ v x x
+            ≡⟨⟩
+                repl-cases (y ≡? x) ∷ replace-all _≡?_ ys x x
+            ≡⟨ cong (repl-cases (y ≡? x) ∷_) $ replace-all-id _≡?_ ys x ⟩
+                repl-cases (y ≡? x) ∷ ys
+            ≡⟨ cong (λ d → repl-cases d ∷ ys) eq-d  ⟩
+                repl-cases (no y≢x) ∷ ys
+            ≡⟨⟩
+                y ∷ ys
+            ∎
     
     
 replace-all-weight-<
