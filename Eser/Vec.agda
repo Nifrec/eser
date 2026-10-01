@@ -340,10 +340,18 @@ replace-all-effect
     → {x : A}
     → (x' : A)
     → x ∈ v
-    → x ∈ replace-all _≡?_ v x x'
-replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.here x≡y) = {! !}
-    -- #TODO: return Any.here (eq that first el is forced to be repl by x')
-replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.there x∈v) = {! !}
+    → x' ∈ replace-all _≡?_ v x x'
+replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.here x≡y) = Any.here eq
+    where
+        import Axiom.UniquenessOfIdentityProofs
+        open Axiom.UniquenessOfIdentityProofs.Decidable⇒UIP _≡?_
+            renaming (≡-irrelevant to ≡-irr)
+        open ReplaceAllImpl.Cases _≡?_ (y ∷ ys) x x' y
+        eq : x' ≡ cases (y ≡? x)
+        eq = sym $ cong cases $ dec-yes-irr (y ≡? x) ≡-irr (sym x≡y)
+            
+replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.there x∈ys) =
+    Any.there $ replace-all-effect _≡?_ x' x∈ys
 
 replace-all-weight-<
     : {n : ℕ}
