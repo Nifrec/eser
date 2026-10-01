@@ -691,8 +691,6 @@ halfcut y x z a =
     ∎
     where
         open ≡-Reasoning
-        import Eser.Equivalences.Properties
-        open Eser.Equivalences.Properties.NeqCong enum
         s = φ⁻¹ y
         t = φ⁻¹ x
         r = φ⁻¹ z
@@ -702,10 +700,30 @@ halfcut y x z a =
 -- id-rep (identity replacement)
 --------------------------------------------------------------------------------
 
+id-rep-T
+    : (s t : T)
+    → replace-T s t t ≡ s
+id-rep-T (nullary c) _ = refl
+id-rep-T (multiary c v) t = cong (multiary c) $ replace-all-id v t
+
 id-rep
     : (y x : ℕ)
     → replace y x x ≡ y
-id-rep = ?
+id-rep y x = 
+    begin 
+        replace y x x
+    ≡⟨⟩
+        φ (replace-T s t t)
+    ≡⟨ cong φ $ id-rep-T s t ⟩
+        φ s
+    ≡⟨ φ∘φ⁻¹≈id y ⟩
+        y
+    ∎
+    where
+        open ≡-Reasoning
+        s = φ⁻¹ y
+        t = φ⁻¹ x
+    
 --------------------------------------------------------------------------------
 -- complete
 --------------------------------------------------------------------------------

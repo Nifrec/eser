@@ -524,6 +524,26 @@ replace-all-halfcut {A} _≡?_ {suc n} v@(y ∷ ys) x z a =
         firstel-eq : LHS-firstel ≡ RHS-firstel
         firstel-eq = cases (y ≡? x) (y ≡? a)
         
+-- Replacing an element by itself has no effect.
+replace-all-id
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → (v : Vec A n)
+    → (x : A)
+    → replace-all _≡?_ v x x ≡ v
+replace-all-id _ [] _ = refl
+replace-all-id _≡?_ v@(y ∷ ys) x =
+    -- TODO: need top-lvl case distinction on y ≡? x.
+    begin 
+        replace-all _≡?_ v x x
+    ≡⟨⟩
+        repl-cases (y ≡? x) ∷ replace-all _≡?_ ys x x
+    ≡⟨  ⟩
+        
+        
+    ∎
+    
     
 replace-all-weight-<
     : {n : ℕ}
