@@ -47,6 +47,19 @@ replace-all {A} _≡?_ v a b = map replace-if-matches v
                 cases (yes _) = b
                 cases (no _) = x
 
+-- When replacing x' by x' if x' ≡ x, and not replacing it if x' ≢ x, 
+-- the output is always x', regardless of whether x and x' are equal.
+replace-all-cases-doesn't-matter
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → (v : Vec A n)
+    → (x x' : A)
+    → (d : Dec (x' ≡ x))
+    → ReplaceAllImpl.Cases.cases _≡?_ v x x' x' d ≡ x'
+replace-all-cases-doesn't-matter _≡?_ v x x' (yes x'≡x) = refl
+replace-all-cases-doesn't-matter _≡?_ v x x' (no x'≢x) = refl
+
 replace-all-not-member
     : {A : Set}
     → (_≡?_ : DecidableEquality A)
@@ -203,8 +216,6 @@ replace-all-comm {A} _≡?_ {suc n} v@(y ∷ ys) {x} {x'} {z} {z'} x≢z x≢z' 
         open ≡-Reasoning
         open ReplaceAllImpl.Cases _≡?_ v z z' y renaming (cases to fzz')
         open ReplaceAllImpl.Cases _≡?_ v x x' y renaming (cases to fxx')
-        y' : A
-        y' = fzz' (y ≡? z)
 
         v[z'/z] : Vec A (suc n)
         v[z'/z] = replace-all _≡?_ (y ∷ ys) z z'
@@ -349,10 +360,171 @@ replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.here x≡y) = Any.here 
         open ReplaceAllImpl.Cases _≡?_ (y ∷ ys) x x' y
         eq : x' ≡ cases (y ≡? x)
         eq = sym $ cong cases $ dec-yes-irr (y ≡? x) ≡-irr (sym x≡y)
-            
 replace-all-effect _≡?_ {v = y ∷ ys} {x = x} x' (Any.there x∈ys) =
     Any.there $ replace-all-effect _≡?_ x' x∈ys
 
+replace-all-halfcut
+    : {A : Set}
+    → (_≡?_ : DecidableEquality A)
+    → {n : ℕ}
+    → (v : Vec A n)
+    → (x z a : A)
+    → replace-all _≡?_ (replace-all _≡?_ v x a) a z
+      ≡
+      replace-all _≡?_ (replace-all _≡?_ v x z) a z
+replace-all-halfcut _≡?_ [] x z a = refl
+replace-all-halfcut {A} _≡?_ {suc n} v@(y ∷ ys) x z a = 
+    begin 
+        replace-all _≡?_ (replace-all _≡?_ (y ∷ ys) x a) a z
+    ≡⟨⟩
+        replace-all _≡?_ (fxa (y ≡? x) ∷ ys[a/x] ) a z
+    ≡⟨⟩
+        LHS-firstel ∷ ys[a/x][z/a]
+    ≡⟨ cong (_∷ ys[a/x][z/a]) firstel-eq ⟩
+        RHS-firstel ∷ ys[a/x][z/a]
+    ≡⟨ cong (RHS-firstel ∷_) IH ⟩
+        RHS-firstel ∷ ys[z/x][z/a]
+    ≡⟨⟩
+      replace-all _≡?_ (replace-all _≡?_ v x z) a z
+    ∎
+    -- Proof is similar to replace-all-comm.
+    where
+        import Axiom.UniquenessOfIdentityProofs
+        open Axiom.UniquenessOfIdentityProofs.Decidable⇒UIP _≡?_
+            renaming (≡-irrelevant to ≡-irr)
+
+        open ≡-Reasoning
+        open ReplaceAllImpl.Cases _≡?_ v x a y renaming (cases to fxa)
+        open ReplaceAllImpl.Cases _≡?_ v x z y renaming (cases to fxz)
+
+        v[a/x] : Vec A (suc n)
+        v[a/x] = replace-all _≡?_ (y ∷ ys) x a
+
+        fxaaz : {b : A} → (Dec (b ≡ a)) → A
+        fxaaz {b} = cases
+            where
+                open ReplaceAllImpl.Cases _≡?_ v[a/x] a z b
+
+        v[z/x] : Vec A (suc n)
+        v[z/x] = replace-all _≡?_ (y ∷ ys) x z
+
+        fxzaz : {b : A} → (Dec (b ≡ a)) → A
+        fxzaz {b} = cases
+            where
+                open ReplaceAllImpl.Cases _≡?_ v[z/x] a z b
+
+        ys[a/x] : Vec A n
+        ys[a/x] = replace-all _≡?_ ys x a
+
+        ys[a/x][z/a] : Vec A n
+        ys[a/x][z/a] = replace-all _≡?_ ys[a/x] a z
+
+        ys[z/x] : Vec A n
+        ys[z/x] = replace-all _≡?_ ys x z
+    
+        ys[z/x][z/a] : Vec A n
+        ys[z/x][z/a] = replace-all _≡?_ ys[z/x] a z
+
+        IH : ys[a/x][z/a] ≡ ys[z/x][z/a]
+        IH = replace-all-halfcut _≡?_ ys x z a
+
+        LHS-firstel : A
+        LHS-firstel = fxaaz ((fxa (y ≡? x)) ≡? a)
+
+        RHS-firstel : A
+        RHS-firstel = fxzaz ((fxz (y ≡? x)) ≡? a)
+
+        doesn't-matter
+            : {n : ℕ}
+            → (v : Vec A n)
+            → (x x' : A)
+            → ReplaceAllImpl.Cases.cases _≡?_ v x x' x' (x' ≡? x) ≡ x'
+        doesn't-matter v x x' = 
+            replace-all-cases-doesn't-matter _≡?_ v x x' (x' ≡? x)
+
+        cases 
+            : Dec (y ≡ x) 
+            → Dec (y ≡ a) 
+            → LHS-firstel ≡ RHS-firstel
+        cases (yes y≡x) _ =
+            begin 
+                fxaaz ((fxa (y ≡? x)) ≡? a)
+            ≡⟨ cong (λ d → fxaaz (fxa d ≡? a)) 
+                $ dec-yes-irr (y ≡? x) ≡-irr y≡x 
+             ⟩
+                fxaaz ((fxa (yes y≡x)) ≡? a)
+            ≡⟨⟩
+                fxaaz (a ≡? a)
+            ≡⟨ cong fxaaz $ dec-yes-irr (a ≡? a) ≡-irr refl ⟩
+                fxaaz (yes refl)
+            ≡⟨⟩
+                z
+            -- This equality holds both when z ≡ a and when z ≢ a!
+            ≡⟨ sym $ doesn't-matter v[z/x] a z ⟩ 
+                fxzaz (z ≡? a)
+            ≡⟨⟩
+                fxzaz ((fxz (yes y≡x)) ≡? a)
+            ≡⟨  sym 
+                $ cong (λ d → fxzaz (fxz d ≡? a)) 
+                $ dec-yes-irr (y ≡? x) ≡-irr y≡x 
+             ⟩
+                fxzaz ((fxz (y ≡? x)) ≡? a)
+            ∎
+        cases (no  y≢x) (yes y≡a) =
+            begin 
+                fxaaz ((fxa (y ≡? x)) ≡? a)
+            ≡⟨ cong (λ d → fxaaz (fxa d ≡? a)) 
+                $ dec-no (y ≡? x) y≢x 
+             ⟩
+                fxaaz ((fxa (no y≢x)) ≡? a)
+            ≡⟨⟩
+                fxaaz (y ≡? a)
+            ≡⟨ cong fxaaz $ dec-yes-irr (y ≡? a) ≡-irr y≡a ⟩
+                fxaaz (yes y≡a)
+            ≡⟨⟩
+                z
+            ≡⟨⟩
+                fxzaz (yes y≡a)
+            ≡⟨ sym $ cong fxzaz $ dec-yes-irr (y ≡? a) ≡-irr y≡a ⟩
+                fxzaz (y ≡? a)
+            ≡⟨⟩
+                fxzaz ((fxz (no y≢x)) ≡? a)
+            ≡⟨  sym
+                $ cong (λ d → fxzaz (fxz d ≡? a)) 
+                $ dec-no (y ≡? x) y≢x 
+             ⟩
+                fxzaz ((fxz (y ≡? x)) ≡? a)
+            ∎
+        cases (no  y≢x) (no  y≢a) =
+            begin 
+                fxaaz ((fxa (y ≡? x)) ≡? a)
+            ≡⟨ cong (λ d → fxaaz (fxa d ≡? a)) 
+                $ dec-no (y ≡? x) y≢x 
+             ⟩
+                fxaaz ((fxa (no y≢x)) ≡? a)
+            ≡⟨⟩
+                fxaaz (y ≡? a)
+            ≡⟨ cong fxaaz $ dec-no (y ≡? a) y≢a ⟩
+                fxaaz (no y≢a)
+            ≡⟨⟩
+                y
+            ≡⟨⟩
+                fxzaz (no y≢a)
+            ≡⟨ sym $ cong fxzaz $ dec-no (y ≡? a) y≢a ⟩
+                fxzaz (y ≡? a)
+            ≡⟨⟩
+                fxzaz ((fxz (no y≢x)) ≡? a)
+            ≡⟨  sym
+                $ cong (λ d → fxzaz (fxz d ≡? a)) 
+                $ dec-no (y ≡? x) y≢x 
+             ⟩
+                fxzaz ((fxz (y ≡? x)) ≡? a)
+            ∎
+            
+        firstel-eq : LHS-firstel ≡ RHS-firstel
+        firstel-eq = cases (y ≡? x) (y ≡? a)
+        
+    
 replace-all-weight-<
     : {n : ℕ}
     → {v : Vec ℕ n}

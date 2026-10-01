@@ -547,22 +547,22 @@ nospawn y x x' z z⊄y x'≢z = cases (z is-arg-of y') refl
 
 halfcomm-T
     : (s t t' r r' : T) 
-    → (t ≢ r)
-    → (t ≢ r')
-    → (r ≢ t')
-    → (replace-T (replace-T s r r') t t') ≡ (replace-T (replace-T s t t') r r')
+    → t ≢ r
+    → t ≢ r'
+    → r ≢ t'
+    → replace-T (replace-T s r r') t t' ≡ replace-T (replace-T s t t') r r'
 halfcomm-T (nullary c) t t' r r' t≢r t≢r' r≢t' = refl
 halfcomm-T (multiary c v) t t' r r' t≢r t≢r' r≢t'
     = cong (multiary c) $ replace-all-comm _≡T?_ v t≢r t≢r' r≢t'
 
 halfcomm
     : (y x x' z z' : ℕ) 
-    → (x ⊂ y) 
-    → (z ⊂ y) 
-    → (x ≢ z)
-    → (x ≢ z')
-    → (z ≢ x')
-    → (replace (replace y z z') x x') ≡ (replace (replace y x x') z z')
+    → x ⊂ y 
+    → z ⊂ y 
+    → x ≢ z
+    → x ≢ z'
+    → z ≢ x'
+    → replace (replace y z z') x x' ≡ replace (replace y x x') z z'
 halfcomm y x x' z z' _ _ x≢z x≢z' z≢x' =
     cong φ $
     begin 
@@ -666,11 +666,37 @@ eff y x x' x⊂y = ∈∈→⊂ t'∈∈s'
 --------------------------------------------------------------------------------
 -- halfcut
 --------------------------------------------------------------------------------
+--The proof is very similar to halfcomm.
+
+halfcut-T
+    : (s t r u : T)
+    → replace-T (replace-T s t u) u r ≡ replace-T (replace-T s t r) u r
+halfcut-T (nullary c) _ _ _ = refl
+halfcut-T (multiary c v) t r u = 
+    cong (multiary c) $ replace-all-halfcut _≡T?_ v t r u
 
 halfcut
     : (y x z a : ℕ)
     → replace (replace y x a) a z ≡ replace (replace y x z) a z
-halfcut = ?
+halfcut y x z a =
+    cong φ $
+    begin 
+        replace-T (φ⁻¹ (replace y x a)) (φ⁻¹ a) (φ⁻¹ z)
+    ≡⟨ cong (λ j → replace-T j u r) $ sym $ replace-T-replace y x a ⟩
+        replace-T (replace-T s t u) u r
+    ≡⟨ halfcut-T s t r u ⟩
+        replace-T (replace-T s t r) u r
+    ≡⟨ cong (λ j → replace-T j u r) $ replace-T-replace y x z ⟩
+        replace-T (φ⁻¹ (replace y x z)) (φ⁻¹ a) (φ⁻¹ z)
+    ∎
+    where
+        open ≡-Reasoning
+        import Eser.Equivalences.Properties
+        open Eser.Equivalences.Properties.NeqCong enum
+        s = φ⁻¹ y
+        t = φ⁻¹ x
+        r = φ⁻¹ z
+        u = φ⁻¹ a
 
 --------------------------------------------------------------------------------
 -- id-rep (identity replacement)
@@ -706,8 +732,8 @@ sig-to-replacestruct = record
     ; nospawn = nospawn
     ; halfcomm = halfcomm
     ; noeff = noeff
-    ; eff = {!  !}
-    ; halfcut = {! !} 
+    ; eff = eff
+    ; halfcut = halfcut
     ; id-rep = {! !} 
     ; complete = {! !} 
     }
