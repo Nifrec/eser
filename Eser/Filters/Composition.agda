@@ -47,6 +47,7 @@
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
+open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
 open import Relation.Binary.Definitions using (DecidableEquality)
@@ -90,6 +91,10 @@ module Eser.Filters.Composition where
 data MayFire (A : Set) : Set where
     fire : A → MayFire A
     pass : MayFire A
+
+IsFire : {A : Set} → MayFire A → Set 
+IsFire (fire _) = ⊤
+IsFire pass = ⊥
 
 MayFireFilter : Set
 MayFireFilter = 
@@ -172,6 +177,9 @@ filterify-self-sats f' = ?
 IsSingleton : Filter → Set
 IsSingleton F = 
     Σ[ f ∈ NFFun ] (NFFun-sats F f) × ((g : NFFun) → NFFun-sats F g → g ≈≈ f)
+
+IsSingleton' : MFF → Set
+IsSingleton' = IsSingleton ∘ MFF→Filter
 
 filterify-singleton
     : (f' : NFFun)
@@ -399,22 +407,57 @@ closure-sat-preservation
 closure-sat-preservation = ?
 
 --------------------------------------------------------------------------------
+-- A composition of dead-end-free one-hot MFFs is a singleton
+-- as soon as any of the composites is.
+--------------------------------------------------------------------------------
+-- This follows induction on the composition, using these two lemmas:
+
+compo-singleton-left
+    : {F G : MFF}
+    → DeadEndFree' F
+    → DeadEndFree' G
+    → IsOneHot' F
+    → IsOneHot' G
+    → IsSingleton' G
+    → IsSingleton' (G » F)
+compo-singleton-left = ?
+
+compo-singleton-right
+    : {F G : MFF}
+    → DeadEndFree' F
+    → DeadEndFree' G
+    → IsOneHot' F
+    → IsOneHot' G
+    → IsSingleton' G
+    → IsSingleton' (G » F)
+compo-singleton-right = ?
+
+--------------------------------------------------------------------------------
 -- Other properties of composition and MFFs
 --------------------------------------------------------------------------------
 -- These may be moved to earlier in the file, as other lemmas depend on them.
 
--- #TODO: I doubt this holds. Shouldn't it be Singleton->DeadEndFree
--- and Singleton'->DeadEndFree'?
---onehot→deadendfree
---    : {F : MFF}
---    → IsOneHot' F
---    → DeadEndFree' F
---onehot→deadendfree = ?
+AlwaysFires : MFF → Set
+AlwaysFires F = {n : ℕ} → (r : NFRestr n) → IsFire (F r)
 
-_ = {! onehot×alwaysfires↔singleton
+singleton→alwaysfires : {F : MFF} → IsSingleton' F → AlwaysFires F
+singleton→alwaysfires = ?
+
+singleton→onehot : {F : MFF} → IsSingleton' F → IsOneHot' F
+singleton→onehot = ? 
+
+singleton→deadendfree : {F : Filter} → IsSingleton F → DeadEndFree F
+singleton→deadendfree = ?
+
+singleton→deadendfree' : {F : MFF} → IsSingleton' F → DeadEndFree' F
+singleton→deadendfree' {F} = singleton→deadendfree {MFF→Filter F}
+
+
+onehot×alwaysfires↔singleton
         : (F : MFF)
-        → (IsOneHot' F × AlwaysFires F) ↔ (Singleton' F)
-        !}
+        → (IsOneHot' F × AlwaysFires F) ↔ (IsSingleton' F)
+onehot×alwaysfires↔singleton = ?
+
 --------------------------------------------------------------------------------
 -- Further notes
 --------------------------------------------------------------------------------
