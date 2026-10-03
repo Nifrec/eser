@@ -69,17 +69,14 @@ open import Function using (_∘_ ; _$_)
 --    ; ≤-<-trans
 --    )
 
---open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
 --open import Eser.EqRel.Conversions using (RelToFun)
---open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; n<1+n-lemma 
---    ; doubleSubst
---    ; m<1+n⇒m<n∨m≡n-when-≡
---    ; m<1+n⇒m<n∨m≡n-when-<
---    ; m≤n⇒m<n∨m≡n-when-<
---    )
---open import Data.Maybe
+open import Eser.Aux using (_≈_ )
+open import Eser.Filters.Conversions.NFFunToExence
 
 open import Eser.Filters.Base
+open import Eser.Filters.Properties
+open import Eser.Filters.PointwiseProperties
 
 module Eser.Filters.Composition where
 
@@ -100,6 +97,8 @@ MayFireFilter =
     → (r : NFRestr n)
     → MayFire(Choices r → Bool)
 
+MFF = MayFireFilter
+
 -- How we interpret a MayFireFilter as a Filter: passing means allowing all
 -- choices.
 MFF→Filter : MayFireFilter → Filter
@@ -108,3 +107,167 @@ MFF→Filter F {n} r c = cases (F r) c
         cases : MayFire (Choices r → Bool) → Choices r → Bool
         cases (fire f) c = f c
         cases pass _ = true
+
+-- Always fire.
+Filter→MFF : Filter → MayFireFilter
+Filter→MFF F r = fire (F r)
+
+--------------------------------------------------------------------------------
+-- _»_ : MayFireFilter composition
+--------------------------------------------------------------------------------
+-- Right associativity: H » G » F ≔ H » (G » F). 
+-- Not that it really matters since _×_ is associative anyway.
+infixr 70 _»_
+
+_»_ : MFF → MFF → MFF
+(G » F) r = cases (F r)
+    where   
+        cases : MayFire (Choices r → Bool) → MayFire (Choices r → Bool)
+        cases (fire f) = fire f
+        cases pass = G r
+
+-- _»_ is associative (up to function extensionality).
+»-assoc : (H G F : MFF) → (H » G) » F ≈ H » (G » F)
+»-assoc = {! TODO : Only prove if needed / if supervisors care. 
+             Idem for units and unit laws. !}
+
+--------------------------------------------------------------------------------
+-- Filter encoding of a relation
+--------------------------------------------------------------------------------
+
+-- 'Same NFFun' up to function extensionality.
+-- Defined as homotopy between underlaying ℕ → ℕ functions.
+_≈≈_ : NFFun → NFFun → Set
+(g , _ , _) ≈≈ (f , _ , _) = g ≈ f
+
+-- The imported _≡?_ from Filters.Properties gives 
+-- decidable equality on NFS r for any r : NFRestr n.
+-- But we also want to compare NFRestr themselves!
+_≡NFRestr?_ : {n : ℕ} → DecidableEquality (NFRestr n)
+r ≡NFRestr? s = ?
+
+filterify : NFFun → Filter
+filterify f {n} r = cases (restrict f n ≡NFRestr? r)
+    where
+        cases 
+            : (Dec (restrict f n ≡ r)) 
+            → Choices r 
+            → Bool
+        cases (yes refl) c = does (f-choice ≡? c)
+            where
+                f-choice : Choices (restrict f n)
+                f-choice = getChoiceFromExence (restrict+ f) n
+        -- If r is already different from f, then reject all choices.
+        cases (no _) c = false 
+
+MFF-filterify : NFFun → MFF
+MFF-filterify = Filter→MFF ∘ filterify
+
+filterify-self-sats
+    : (f' : NFFun)
+    → NFFun-sats (filterify f') f'
+filterify-self-sats f' = ?
+
+-- A Singleton Filter is a filter that is satisfied by exactly one relation.
+IsSingleton : Filter → Set
+IsSingleton F = 
+    Σ[ f ∈ NFFun ] (NFFun-sats F f) × ((g : NFFun) → NFFun-sats F g → g ≈≈ f)
+
+filterify-singleton
+    : (f' : NFFun)
+    → IsSingleton (filterify f')
+filterify-singleton = ?
+
+filterify-deadendfree
+    : (f' : NFFun)
+    → DeadEndFree (filterify f')
+filterify-deadendfree = ?
+
+-- The only NFFun that satisfies `filterify f` is `f` itself (up to function
+-- extensionality).
+-- This is the specification of `filterify`, so this lemma proves
+-- the correctness of `filterify`.
+filterify-unique-sat
+    : (f' g' : NFFun)
+    → NFFun-sats (filterify f') g'
+    → g' ≈≈ f'
+filterify-unique-sat = {! Should be corollary of the above two lemmas !}
+
+--------------------------------------------------------------------------------
+-- P-closure of a relation given a predicate P
+--------------------------------------------------------------------------------
+-- In set theory it is easy, the P-closure of R is the smallest extension of
+-- R that makes it satisfy P.
+--
+-- It particular, it is the relation R' such that 
+-- 1. R ⊆ R'
+-- 2. R' satisfies P
+-- 3. For all S with R ⊆ S that satisfy P, we have R' ⊆ S.
+--
+-- This does not exist for all predicates P.
+-- For example, if P says "has at least 3 equivalence classes",
+-- and R has 2 of them, then there is no extension of R with more than 2
+-- equivalence classes (indeed, any new arrow between two elements not yet in R
+-- would only collapse the two equivalence classes into one!).
+--
+-- We formalise the classical definition of the closure,
+-- and then characterise the filter-implemented-predicates that are closable.
+-- This also comes with an algorithm to 
+-- actually compute the closure of a relation.
+--
+-- In particular, a filter P is a closable predicate if and only if P is
+-- 1. One-hot (if it fires, it allows exactly one choice).
+-- 2. Dead-end-free.
+-- 3. Never forces the unique choice when firing to be newNF.
+--
+-- The P-closure of a relation R is then simply the unique relation
+-- satisfying the singleton filter F_R » P
+-- where F_R = Filter→MFF (filterify R).
+-- (That that is a singleton does require a lemma).
+
+
+-- Big theorem: characterisation of closable predicates (that are expressed as a
+-- filter).
+
+--------------------------------------------------------------------------------
+-- Corollary : compositions of closable filters remain closable
+--------------------------------------------------------------------------------
+
+-- #TODO: duh, they remain dead-end-free, they remain NeverForcesnewNF, and they
+-- remain one-hot. So it follows easily from the previous theorem.
+
+--------------------------------------------------------------------------------
+-- Lemma : P-closures of relations satisfying a filter
+--------------------------------------------------------------------------------
+
+-- #TODO : If F satisfies 
+
+--------------------------------------------------------------------------------
+-- Further notes
+--------------------------------------------------------------------------------
+-- Maybe the following obervations are worth formalising, maybe not.
+-- At least they are important examples for intuition about the usage and limits
+-- of filters. Especially useful to mention in a remark when writing a paper.
+
+-- The "has at most 3 equivalence classes" filter is expressible,
+-- non trivial and not one-hot. This shows not all usefull filters are
+-- necessarily one-hot. (Also works for other numbers than 3, of course).
+
+-- The "has at least 1+n equivalence classes" predicate
+-- cannot be expressed as a filter. 
+
+--------------------------------------------------------------------------------
+-- Next steps
+--------------------------------------------------------------------------------
+-- 1. Define 'swap' as a closable filter on replacement structures.
+-- 2. Define finite multisets by quotienting List ℕ.
+-- 3. Conflict free sets E of equations.
+--      - Show they compose to a closeable filter F_E.
+--      - Show R sats F_E => R has all equations of E.
+--      - Show R' sats F_E » P => <R is the P-closure of a R that has eqs of E>.
+-- 4. Correct-by-construction representation or other tool for building such
+--    sets of equations.
+-- 5. Binay associativity filter, show it is closable.
+-- 6. Use 3., 4. and 5. to give a toolbox for building decidable finitely
+--    presented monoids.
+
