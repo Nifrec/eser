@@ -1,8 +1,8 @@
 # Constructing quotients for enumerable types
 Agda source code library "*Eser*" (Enumerable Set Equivalence Relations).
 
-Clickable documentation is available at: [https://nifrec.github.io/eser-doc/].
-The index file of this website follows the outline of the paper.
+Clickable documentation accompanying the NWPT2026 abstract is available at: 
+[https://nifrec.github.io/eser-doc/Eser.NWPT26.html].
 
 
 ## Requirements
