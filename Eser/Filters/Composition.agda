@@ -235,6 +235,9 @@ filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 Rel-sats : Filter → EqRel → Set
 Rel-sats F R = NFFun-sats F (RelToFun R)
 
+Rel-sats' : MFF → EqRel → Set
+Rel-sats' = Rel-sats ∘ MFF→Filter
+
 _relates_to_ : EqRel → ℕ → ℕ → Set
 (R , _) relates x to y = T (R x y)
 
@@ -251,6 +254,8 @@ P closure-of R =
     ×
     ((S : EqRel) → R ⊆ S → Rel-sats P S → R' ⊆ S)   -- R' is minimal
 
+_closure-of'_ : MFF → EqRel → Set
+_closure-of'_ = _closure-of_ ∘ MFF→Filter
 --------------------------------------------------------------------------------
 -- Uniqueness of P-closure
 --------------------------------------------------------------------------------
@@ -333,6 +338,8 @@ NeverForcesnewNF' : MFF → Set
 NeverForcesnewNF' = NeverForcesnewNF ∘ MFF→Filter
 
 -- Big theorem: characterisation of closable predicates (expressed as a filter).
+-- #QUESTION: maybe better define this for Filter rather than MFF
+-- and get the special case for MFF as a cheap corollary?
 closable-characterisation
     : (F : MFF)
     → (IsClosable' F) ↔ (DeadEndFree' F × IsOneHot' F × NeverForcesnewNF' F)
@@ -342,14 +349,33 @@ closable-characterisation = ?
 -- Corollary : compositions of closable filters remain closable
 --------------------------------------------------------------------------------
 
--- #TODO: duh, they remain dead-end-free, they remain NeverForcesnewNF, and they
--- remain one-hot. So it follows easily from the previous theorem.
+closable-compos
+    : {F G : MFF}
+    → IsClosable' F
+    → IsClosable' G
+    → IsClosable' (G » F)
+closable-compos = {! 
+    #TODO: duh, they remain dead-end-free, 
+    they remain NeverForcesnewNF, and they
+    remain one-hot. 
+    So it follows easily from the previous theorem.
+    !}
 
 --------------------------------------------------------------------------------
 -- Lemma : P-closures of relations satisfying a filter
 --------------------------------------------------------------------------------
 
--- #TODO : If F satisfies 
+-- If a relation R satisfies F, then the P-closure R' of R satisfies F » P.
+-- (Note: the reverse implication does not hold. E.g., take F ≔ P,
+-- then R' obviously satisfies P » P, but R may not satisfy P).
+closure-sat-preservation
+    : {F P : MFF}
+    → {R : EqRel}
+    → IsClosable' P
+    → Rel-sats' F R
+    → (R' : P closure-of' R)
+    → Rel-sats' (F » P) (proj₁ R')
+closure-sat-preservation = ?
 
 --------------------------------------------------------------------------------
 -- Further notes
