@@ -349,6 +349,27 @@ closable-characterisation = ?
 -- Corollary : compositions of closable filters remain closable
 --------------------------------------------------------------------------------
 
+deadendfree-compos
+    : {F G : MFF}
+    → DeadEndFree' F
+    → DeadEndFree' G
+    → DeadEndFree' (G » F)
+deadendfree-compos = ?
+
+onehot-compos
+    : {F G : MFF}
+    → IsOneHot' F
+    → IsOneHot' G
+    → IsOneHot' (G » F)
+onehot-compos = ?
+
+neverforcesnewnf-compos
+    : {F G : MFF}
+    → NeverForcesnewNF' F
+    → NeverForcesnewNF' G
+    → NeverForcesnewNF' (G » F)
+neverforcesnewnf-compos = ?
+
 closable-compos
     : {F G : MFF}
     → IsClosable' F
@@ -358,7 +379,7 @@ closable-compos = {!
     #TODO: duh, they remain dead-end-free, 
     they remain NeverForcesnewNF, and they
     remain one-hot. 
-    So it follows easily from the previous theorem.
+    So it follows easily from the characterisation theorem.
     !}
 
 --------------------------------------------------------------------------------
@@ -377,6 +398,23 @@ closure-sat-preservation
     → Rel-sats' (F » P) (proj₁ R')
 closure-sat-preservation = ?
 
+--------------------------------------------------------------------------------
+-- Other properties of composition and MFFs
+--------------------------------------------------------------------------------
+-- These may be moved to earlier in the file, as other lemmas depend on them.
+
+-- #TODO: I doubt this holds. Shouldn't it be Singleton->DeadEndFree
+-- and Singleton'->DeadEndFree'?
+--onehot→deadendfree
+--    : {F : MFF}
+--    → IsOneHot' F
+--    → DeadEndFree' F
+--onehot→deadendfree = ?
+
+_ = {! onehot×alwaysfires↔singleton
+        : (F : MFF)
+        → (IsOneHot' F × AlwaysFires F) ↔ (Singleton' F)
+        !}
 --------------------------------------------------------------------------------
 -- Further notes
 --------------------------------------------------------------------------------
