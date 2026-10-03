@@ -69,9 +69,9 @@ open import Function using (_∘_ ; _$_)
 --    ; ≤-<-trans
 --    )
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
---open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_≈_ )
+open import Eser.EqRel.Definitions using (NFFun) renaming (DecEquiv to EqRel)
+open import Eser.EqRel.Conversions using (RelToFun)
+open import Eser.Aux using (_≈_ ; _↔_ )
 open import Eser.Filters.Conversions.NFFunToExence
 
 open import Eser.Filters.Base
@@ -191,10 +191,10 @@ filterify-unique-sat
     : (f' g' : NFFun)
     → NFFun-sats (filterify f') g'
     → g' ≈≈ f'
-filterify-unique-sat = {! Should be corollary of the above two lemmas !}
+filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 
 --------------------------------------------------------------------------------
--- P-closure of a relation given a predicate P
+-- Definition of P-closure of a relation given a predicate P
 --------------------------------------------------------------------------------
 -- In set theory it is easy, the P-closure of R is the smallest extension of
 -- R that makes it satisfy P.
@@ -225,9 +225,118 @@ filterify-unique-sat = {! Should be corollary of the above two lemmas !}
 -- where F_R = Filter→MFF (filterify R).
 -- (That that is a singleton does require a lemma).
 
+-- #QUESTION : define this in terms of EqRel or NFFuns?
+-- Currently using EqRel since the definition is quite extensional,
+-- from an NFFun one cannot immediately tell which elements are related.
+-- One can by converting the NFFun to an EqRel or by (1) converting it to an
+-- Exence and 
+-- (2) using the AreRelated defined in Eser.Filters.NormalityInNFRestr.
 
--- Big theorem: characterisation of closable predicates (that are expressed as a
--- filter).
+Rel-sats : Filter → EqRel → Set
+Rel-sats F R = NFFun-sats F (RelToFun R)
+
+_relates_to_ : EqRel → ℕ → ℕ → Set
+(R , _) relates x to y = T (R x y)
+
+-- R ⊆ S if S relates all pairs (x, y) that R relates.
+_⊆_ : EqRel → EqRel → Set
+R ⊆ S = ((x y : ℕ) → R relates x to y → S relates x to y)
+
+_closure-of_ : Filter → EqRel → Set
+P closure-of R =
+    Σ[ R' ∈ EqRel ]
+    R ⊆ R'                                          -- R' is extension of R
+    ×
+    Rel-sats P R'                                   -- R' satisfies P
+    ×
+    ((S : EqRel) → R ⊆ S → Rel-sats P S → R' ⊆ S)   -- R' is minimal
+
+--------------------------------------------------------------------------------
+-- Uniqueness of P-closure
+--------------------------------------------------------------------------------
+-- The definition of a closure of a relation already implies it is
+-- unique, at least up to function extensionality.
+ 
+-- Extensional equality between relations: 
+-- homotopy between the underlying ℕ → ℕ → Bool functions.
+
+_≣_ : EqRel → EqRel → Set
+(R , _) ≣ (S , _) = R ≈ S
+
+⊆→⊆→≣ : {R S : EqRel} → R ⊆ S → S ⊆ R → R ≣ S
+⊆→⊆→≣ = ?
+
+closure-unique
+    : {P : Filter}
+    → {R : EqRel}
+    → (R' S' : P closure-of R)
+    → (proj₁ R') ≣ (proj₁ S')
+closure-unique = {! #TODO: use the third property of closure-of, 
+    both on R and S, to get R ⊆ S and S ⊆ R, conclude by ⊆→⊆→≣ !}
+
+--------------------------------------------------------------------------------
+-- Charactersisation of closable filters
+--------------------------------------------------------------------------------
+
+IsClosable : Filter → Set
+IsClosable F = (R : EqRel) → F closure-of R
+
+IsClosable' : MFF → Set
+IsClosable' F = (R : EqRel) → (MFF→Filter F) closure-of R
+
+DeadEndFree' : MFF → Set
+DeadEndFree' = DeadEndFree ∘ MFF→Filter
+
+-- Filters that allow exaclty one choice when they fire.
+OneHotFilter : Set
+OneHotFilter = {n : ℕ} → (r : NFRestr n) → MayFire (Choices r)
+
+OneHot→MFF : OneHotFilter → MFF
+OneHot→MFF F' r = cases (F' r)
+    where
+        cases : MayFire (Choices r) → MayFire (Choices r → Bool)
+        cases pass = pass
+        cases (fire c) = fire $ λ c' → does (c ≡? c')
+
+OneHot→Filter : OneHotFilter → Filter
+OneHot→Filter = MFF→Filter ∘ OneHot→MFF
+
+-- #QUESTION: could also define as 
+-- IsOneHot F = Σ[ F' ∈ OneHotFilter ] F ≈ (OneHot→Filter F')
+-- Would that be better?
+-- #QUESTION: or remove the definition of 'OneHotFilter' alltogether?
+IsOneHot : Filter → Set
+IsOneHot F = 
+      {n : ℕ} 
+    → (r : NFRestr n) 
+    → {c c' : Choices r} 
+    → F Allows c In r 
+    → F Allows c' In r 
+    → c ≡ c'
+
+IsOneHot' : MFF → Set
+IsOneHot' = IsOneHot ∘ MFF→Filter
+
+-- Sanity check of definition 'OneHotFilter'.
+OneHot→IsOneHot : (F : OneHotFilter) → IsOneHot (OneHot→Filter F)
+OneHot→IsOneHot = ?
+
+NeverForcesnewNF : Filter → Set
+NeverForcesnewNF F = 
+      {n : ℕ} 
+    → (r : NFRestr n) 
+    → (c : Choices r)
+    → F Allows c In r
+    → c ≢ here
+
+NeverForcesnewNF' : MFF → Set
+NeverForcesnewNF' = NeverForcesnewNF ∘ MFF→Filter
+
+-- Big theorem: characterisation of closable predicates (expressed as a filter).
+closable-characterisation
+    : (F : MFF)
+    → (IsClosable' F) ↔ (DeadEndFree' F × IsOneHot' F × NeverForcesnewNF' F)
+closable-characterisation = ?
 
 --------------------------------------------------------------------------------
 -- Corollary : compositions of closable filters remain closable
