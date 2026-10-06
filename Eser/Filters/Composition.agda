@@ -348,10 +348,14 @@ NeverForcesnewNF' = NeverForcesnewNF ∘ MFF→Filter
 -- Big theorem: characterisation of closable predicates (expressed as a filter).
 -- #QUESTION: maybe better define this for Filter rather than MFF
 -- and get the special case for MFF as a cheap corollary?
-closable-characterisation
+-- #ANSWER: no ofc not. A 'Filter' always fires. If it 
+-- always fires, and never chooses newNF, then it just forces the full relation,
+-- i.e., relating everything to 0. This characterisation is only useful for
+-- MayFireFilters!
+closable-characterisation'
     : (F : MFF)
     → (IsClosable' F) ↔ (DeadEndFree' F × IsOneHot' F × NeverForcesnewNF' F)
-closable-characterisation = ?
+closable-characterisation' = ?
 
 --------------------------------------------------------------------------------
 -- Corollary : compositions of closable filters remain closable
