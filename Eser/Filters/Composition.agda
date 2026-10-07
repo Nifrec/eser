@@ -55,6 +55,9 @@ open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
+open import Data.List using (List ; [] ; _∷_)
+open import Data.List.Relation.Unary.Any as Any
+
 --open import Data.Nat.Properties using 
 --    (m<1+n⇒m<n∨m≡n 
 --    ; n<1+n 
@@ -73,11 +76,12 @@ open import Function using (_∘_ ; _$_)
 open import Eser.EqRel.Definitions using (NFFun) renaming (DecEquiv to EqRel)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_≈_ ; _↔_ )
-open import Eser.Filters.Conversions.NFFunToExence
 
+open import Eser.Filters.Conversions.NFFunToExence
 open import Eser.Filters.Base
 open import Eser.Filters.Properties
 open import Eser.Filters.PointwiseProperties
+open import Eser.Filters.Resurface
 
 module Eser.Filters.Composition where
 
@@ -253,14 +257,17 @@ _relates_to_ : EqRel → ℕ → ℕ → Set
 _⊆_ : EqRel → EqRel → Set
 R ⊆ S = ((x y : ℕ) → R relates x to y → S relates x to y)
 
-_closure-of_ : Filter → EqRel → Set
-P closure-of R =
-    Σ[ R' ∈ EqRel ]
-    R ⊆ R'                                          -- R' is extension of R
-    ×
-    Rel-sats P R'                                   -- R' satisfies P
-    ×
-    ((S : EqRel) → R ⊆ S → Rel-sats P S → R' ⊆ S)   -- R' is minimal
+⊆-refl : (R : EqRel) → R ⊆ R
+⊆-refl R x y xRy = xRy
+
+record _closure-of_ (F : Filter) (R : EqRel) : Set
+    where
+        field
+            rel : EqRel
+            ext : R ⊆ rel
+            sat : Rel-sats F rel
+            min : ((S : EqRel) → R ⊆ S → Rel-sats F S → rel ⊆ S)
+open _closure-of_
 
 _closure-of'_ : MFF → EqRel → Set
 _closure-of'_ = _closure-of_ ∘ MFF→Filter
@@ -283,7 +290,7 @@ closure-unique
     : {P : Filter}
     → {R : EqRel}
     → (R' S' : P closure-of R)
-    → (proj₁ R') ≣ (proj₁ S')
+    → (rel R') ≣ (rel S')
 closure-unique = {! #TODO: use the third property of closure-of, 
     both on R and S, to get R ⊆ S and S ⊆ R, conclude by ⊆→⊆→≣ !}
 
@@ -407,7 +414,7 @@ closure-sat-preservation
     → IsClosable' P
     → Rel-sats' F R
     → (R' : P closure-of' R)
-    → Rel-sats' (F » P) (proj₁ R')
+    → Rel-sats' (F » P) (rel R')
 closure-sat-preservation = ?
 
 --------------------------------------------------------------------------------
@@ -479,12 +486,169 @@ Extender = (R : EqRel) → Σ[ S ∈ EqRel ] R ⊆ S
 
 -- Extender composition. G ⋗ F means: first extend with F, then extend the
 -- result with G.
+infixr 50 _⋗_
 _⋗_ : Extender → Extender → Extender
 (G ⋗ F) R = 
     let (R' , R⊆R') = F R in
     let (R'' ,  R'⊆R'') = G R' in
     (R'' , ⊆-trans {R} {R'} {R''} R⊆R' R'⊆R'')
 
+IsClosable→Extender 
+    : {F : Filter}
+    → IsClosable F
+    → Extender
+IsClosable→Extender {F} close R = (rel (close R) , ext (close R))
+
+
+--------------------------------------------------------------------------------
+-- Equality filters
+--------------------------------------------------------------------------------
+-- In practice, many filters have a simple structure.
+-- They want to enforce the equation `n ≡ m` where m < n.
+-- That comes down to forcing the choice of n to be the normal form of m.
+-- This is a simple structure, because it doesn't really depend on the earlier
+-- choices in the input NFRestr. Constrast this with the congruence 
+-- or has-at-most-2-equivalence-classes filters, which do need to inspect the
+-- structure of existing equivalence classes.
+--
+-- The main advantage of such 'equation filters' is that they are all closable
+-- and that, when closing w.r.t. multiple equation filters, their order doesn't
+-- matter (_⋗_ becomes commutative). This makes it easy to construct the closure
+-- w.r.t. your set of equations!
+--
+-- Equation filters are allowed to have countably many equations,
+-- but at most one for each RHS. I take the convention that the RHS of an
+-- equation is larger than the LHS. (Equations where both sides are equal are
+-- useless, since all equivalence relations are already reflexive anyway).
+
+SingleEq : Set
+SingleEq = Σ[ n ∈ ℕ ] Σ[ m ∈ ℕ ] m < n
+
+EqFilter : Set
+EqFilter = (n : ℕ) → MayFire( Σ[ m ∈ ℕ ] m < n )
+
+SingleEq→EqFilter : SingleEq → EqFilter
+SingleEq→EqFilter (n , m , m<n) k = cases (n Data.Nat.≟ k)
+    where
+        cases : Dec (n ≡ k) → MayFire ( Σ[ m ∈ ℕ ] m < k )
+        cases (no _) = pass
+        cases (yes refl) = fire (m , m<n)
+
+EqFilter→OneHot : EqFilter → OneHotFilter
+EqFilter→OneHot E {n} r = cases (E n)
+    where
+        cases : MayFire ( Σ[ m ∈ ℕ ] m < n ) → MayFire (Choices r)
+        cases pass = pass
+        cases (fire (m , m<n)) = fire $ earlier-new $ resurface r m<n
+
+EqFilter→MFF : EqFilter → MFF
+EqFilter→MFF = OneHot→MFF ∘ EqFilter→OneHot
+
+EqFilter→Filter : EqFilter → Filter
+EqFilter→Filter = MFF→Filter ∘ EqFilter→MFF
+
+EqFilter-NeverForcesnewNF
+    : (E : EqFilter)
+    → NeverForcesnewNF' (EqFilter→MFF E)
+EqFilter-NeverForcesnewNF E = ?
+
+EqFilter-IsClosable'
+    : (E : EqFilter)
+    → IsClosable' (EqFilter→MFF E)
+EqFilter-IsClosable' E = ?
+
+EqFilter-IsClosable
+    : (E : EqFilter)
+    → IsClosable (EqFilter→Filter E)
+EqFilter-IsClosable E = ?
+
+infix 100 ∗_
+∗_ : EqFilter → Extender
+∗_ = IsClosable→Extender ∘ EqFilter-IsClosable 
+
+Eq : EqFilter → ℕ → ℕ → Set
+Eq E x y = Σ[ x<y ∈ (x < y) ] E y ≡ fire (x , x<y)
+
+--------------------------------------------------------------------------------
+-- Composing equality filters
+--------------------------------------------------------------------------------
+-- Theorems showing the properties of _⋗_ compositions of EqFilters.
+
+-- Same-extender-up-to-function-extensionalty relation.
+-- (Output relations are homotopic).
+_=ext_ : Extender → Extender → Set
+G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
+
+
+todo : Set
+todo = {! move <Path to own file !}
+
+-- Path R S x y
+-- is a finite sequence x = z_1 < z_2 < ... < z_k = y
+-- such that each z_i is related to z_{1+i} by either R or S.
+-- E.g. 1 R 2 S 5 R 7 R 10
+data <Path (R S : ℕ → ℕ → Set) : ℕ → ℕ → Set where
+    laststep 
+        : {x y : ℕ} 
+        → x < y 
+        → R x y ⊎ S x y 
+        → <Path R S x y
+    addstep
+        : {x y z : ℕ}
+        → x < y
+        → y < z
+        → R x y ⊎ S x y
+        → <Path R S y z
+        → <Path R S x z
+
+-- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
+-- Let S be the E-closure of R.
+-- Then x S y iff there exists a path 
+--      x = z_1 < z_2 < ... < z_k = y
+-- where for each i either 
+--      z_i R z_{1+i} 
+-- or 
+--      Eq E z_i z_{i + 1}.
+eqfilter-closure-characterisation
+    : (E : EqFilter)
+    → (R : EqRel)
+    → (x y : ℕ)
+    → ((proj₁ $ (∗ E) R) relates x to y) ↔ (<Path (R relates_to_) (Eq E) x y)
+eqfilter-closure-characterisation = ?
+ 
+-- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
+-- When closing by multiple equation filters, the order does not matter.
+eqfilter-closure-commutes
+    : (E E' : EqFilter)
+    → (∗ E ⋗ ∗ E') =ext (∗ E' ⋗ ∗ E)
+eqfilter-closure-commutes E E' = {! See sheet exco 6. Depends on prev lemma. !}
+
+id-Extender : Extender
+id-Extender R = (R , ⊆-refl R)
+
+eq-list-closure : List EqFilter → Extender
+eq-list-closure [] = id-Extender
+eq-list-closure (E ∷ Es) = ∗ E ⋗ (eq-list-closure Es)
+
+Eq' : List EqFilter → ℕ → ℕ →  Set
+Eq' L x y = Any (λ E → Eq E x y) L
+
+-- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
+-- Generalisation of `eqfilter-closure-characterisation` to compositions
+-- of equations. 
+-- Shows that the output of the L-closure is just R extended with
+-- the equations in L and closed under transitivity.
+eqfilter-closure-composition
+    : (L : List EqFilter)
+    → (R : EqRel)
+    → (x y : ℕ)
+    → ((proj₁ $ (eq-list-closure L) R) relates x to y) 
+      ↔ 
+      (<Path (R relates_to_) (Eq' L) x y)
+eqfilter-closure-composition = ?
+    
+-- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
+-- #TODO: prove every L-equation holds in S.
 
 --------------------------------------------------------------------------------
 -- Further notes
@@ -516,4 +680,12 @@ _⋗_ : Extender → Extender → Extender
 -- 5. Binay associativity filter, show it is closable.
 -- 6. Use 3., 4. and 5. to give a toolbox for building decidable finitely
 --    presented monoids.
+
+--------------------------------------------------------------------------------
+-- Don't forgets
+--------------------------------------------------------------------------------
+-- * Example of expressivity: 'at most 2 equiv classes'.
+
+don'tforget : Set
+don'fforget = {! TODO: don't forget !}
 
