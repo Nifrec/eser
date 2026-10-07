@@ -647,8 +647,28 @@ eqfilter-closure-composition
       (<Path (R relates_to_) (Eq' L) x y)
 eqfilter-closure-composition = ?
     
--- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
--- #TODO: prove every L-equation holds in S.
+-- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
+-- Every equation in L : List EqFilter holds in the L-closure of R.
+open import Data.List.Membership.Propositional
+open import Data.List.Relation.Unary.All as All
+-- #TODO L choose which (or both) of the two below to prove.
+-- Both should be easy given the previous theorem (or the other).
+-- When removing one statement, also remove the associated import.
+eqfilter-closure-composition-anyeqs
+    : (L : List EqFilter)
+    → (R : EqRel)
+    → {E : EqFilter}
+    → E ∈ L
+    → (x y : ℕ)
+    → Eq E x y
+    → (proj₁ $ (eq-list-closure L R)) relates x to y
+eqfilter-closure-composition-anyeqs = ?
+eqfilter-closure-composition-alleqs
+    : (L : List EqFilter)
+    → (R : EqRel)
+    → (x y : ℕ)
+    → All (λ E → Eq E x y → (proj₁ $ (eq-list-closure L R)) relates x to y) L
+eqfilter-closure-composition-alleqs = ?
 
 --------------------------------------------------------------------------------
 -- Further notes
@@ -665,27 +685,42 @@ eqfilter-closure-composition = ?
 -- cannot be expressed as a filter. 
 
 --------------------------------------------------------------------------------
+-- Finitely presentable signature quotients
+--------------------------------------------------------------------------------
+
+todo-forsigna : Set
+todo-forsigna = {! dont forget: prove correctness for signature; add congr 
+                   to the composition, then prove the output 
+                   (1) has all the equations in it.
+                   (2) it is closed under congruence.
+                   ...
+                   Not sure how to state concisely that 
+                   it doesn't have anything else.!}
+
+todo-catstuff : Set
+todo-catstuff = {! dont forget: initial σ-algebra respecting R !}
+
+
+--------------------------------------------------------------------------------
 -- Next steps
 -- #TODO: these are already outdated. Need to be updated using EqFilters
 -- etc.
 --------------------------------------------------------------------------------
--- 1. Define 'swap' as a closable filter on replacement structures.
+-- 1. Define 'swap' as a eqfilter filter on replacement structures.
 -- 2. Define finite multisets by quotienting List ℕ.
--- 3. Conflict free sets E of equations.
---      - Show they compose to a closeable filter F_E.
---      - Show R sats F_E => R has all equations of E.
---      - Show R' sats F_E » P => <R is the P-closure of a R that has eqs of E>.
 -- 4. Correct-by-construction representation or other tool for building such
 --    sets of equations.
 -- 5. Binay associativity filter, show it is closable.
 -- 6. Use 3., 4. and 5. to give a toolbox for building decidable finitely
 --    presented monoids.
 
+
 --------------------------------------------------------------------------------
 -- Don't forgets
 --------------------------------------------------------------------------------
 -- * Example of expressivity: 'at most 2 equiv classes'.
+-- * Example non-expressivity: 'at least 3 equiv classes'.
 
 don'tforget : Set
-don'fforget = {! TODO: don't forget !}
+don'tforget = {! TODO: don't forget !}
 
