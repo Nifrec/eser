@@ -463,6 +463,30 @@ onehot×alwaysfires↔singleton
 onehot×alwaysfires↔singleton = ?
 
 --------------------------------------------------------------------------------
+-- Extender composition
+--------------------------------------------------------------------------------
+-- Main idea: given equations E1, E2, E3, ... which you want to add to a
+-- relation R, one can close R by E1, then the result by E2, then that result by
+-- E3, and so on, and end by closing with congruence.
+--
+-- Note that 'Taking the closure of _' is an operation EqRel → EqRel
+-- s.t. the output is an extension of the input. We can generalise this:
+Extender : Set
+Extender = (R : EqRel) → Σ[ S ∈ EqRel ] R ⊆ S
+
+⊆-trans : {R S T : EqRel} → R ⊆ S → S ⊆ T → R ⊆ T
+⊆-trans R⊆S S⊆T x y = (S⊆T x y) ∘ (R⊆S x y)
+
+-- Extender composition. G ⋗ F means: first extend with F, then extend the
+-- result with G.
+_⋗_ : Extender → Extender → Extender
+(G ⋗ F) R = 
+    let (R' , R⊆R') = F R in
+    let (R'' ,  R'⊆R'') = G R' in
+    (R'' , ⊆-trans {R} {R'} {R''} R⊆R' R'⊆R'')
+
+
+--------------------------------------------------------------------------------
 -- Further notes
 --------------------------------------------------------------------------------
 -- Maybe the following obervations are worth formalising, maybe not.
@@ -478,6 +502,8 @@ onehot×alwaysfires↔singleton = ?
 
 --------------------------------------------------------------------------------
 -- Next steps
+-- #TODO: these are already outdated. Need to be updated using EqFilters
+-- etc.
 --------------------------------------------------------------------------------
 -- 1. Define 'swap' as a closable filter on replacement structures.
 -- 2. Define finite multisets by quotienting List ℕ.
