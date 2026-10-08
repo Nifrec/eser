@@ -39,6 +39,12 @@ IsFixpoint f a = f a ≡ a
 _↔_ : (A B : Set) → Set
 A ↔ B = (A → B) × (B → A)
 
+↔-to   : {A B : Set} → A ↔ B → A → B
+↔-to   = proj₁
+
+↔-from : {A B : Set} → A ↔ B → B → A
+↔-from = proj₂
+
 -- Homotopy between functions, i.e., pointwise equality.
 -- I.e., the functions are the same input-output map,
 -- but may have different implementations.

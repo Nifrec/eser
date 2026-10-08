@@ -50,13 +50,14 @@ open import Data.Empty
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
-open import Relation.Binary.Definitions using (DecidableEquality)
+open import Relation.Binary.Definitions using (Transitive ; DecidableEquality)
 open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 open import Data.List using (List ; [] ; _∷_)
 open import Data.List.Relation.Unary.Any as Any
+open import Data.List.Relation.Unary.Any.Properties
 
 --open import Data.Nat.Properties using 
 --    (m<1+n⇒m<n∨m≡n 
@@ -75,7 +76,8 @@ open import Data.List.Relation.Unary.Any as Any
 
 open import Eser.EqRel.Definitions using (NFFun) renaming (DecEquiv to EqRel)
 open import Eser.EqRel.Conversions using (RelToFun)
-open import Eser.Aux using (_≈_ ; _↔_ )
+open import Eser.Aux using (_≈_ ; _↔_ ; ↔-to ; ↔-from)
+open import Eser.Relation.Binary.Path
 
 open import Eser.Filters.Conversions.NFFunToExence
 open import Eser.Filters.Base
@@ -252,6 +254,9 @@ Rel-sats' = Rel-sats ∘ MFF→Filter
 
 _relates_to_ : EqRel → ℕ → ℕ → Set
 (R , _) relates x to y = T (R x y)
+
+relates-to-trans : (R : EqRel) → Transitive (R relates_to_)
+relates-to-trans = ?
 
 -- R ⊆ S if S relates all pairs (x, y) that R relates.
 _⊆_ : EqRel → EqRel → Set
@@ -623,7 +628,8 @@ Eq' L x y = Any (λ E → Eq E x y) L
 eqfilter-closure-composition
     : (L : List EqFilter)
     → (R : EqRel)
-    → (x y : ℕ)
+    → {x y : ℕ}
+    → x < y
     → ((proj₁ $ (eq-list-closure L) R) relates x to y) 
       ↔ 
       (<Path (R relates_to_) (Eq' L) x y)
@@ -638,16 +644,41 @@ eqfilter-closure-composition
 -- 2. For the other direction, a path is given, and proceed by induction
 --   on the path, inductively proving that every step xTy implies xSy,
 --   and then conclude by transitivity of S.
-eqfilter-closure-composition [] R x y = ans
+eqfilter-closure-composition [] R {x} {y} x<y = ans
     where
-        f : EqFilter → Set
-        f E = Eq E x y
+        path→R : <Path (R relates_to_) (Eq' []) x y → R relates x to y
+        path→R = path-uninhabited-right (λ x y → ¬Any[]) (relates-to-trans R)
+
+        R→path : R relates x to y → <Path (R relates_to_) (Eq' []) x y
+        R→path xRy = laststep x<y $ inj₁ xRy
 
         -- The goal simplifies to this:
-        ans : (R relates x to y) ↔ <Path (R relates_to_) (Any f [])
-        ans = ?
+        ans : (R relates x to y) ↔ <Path (R relates_to_) (Eq' []) x y
+        ans = (R→path , path→R)
+eqfilter-closure-composition (E ∷ Es) R {x} {y} x<y = (to , from)
+    where
+        S : EqRel
+        S = proj₁ $ (eq-list-closure (E ∷ Es)) R
+        to : S relates x to y → <Path (R relates_to_) (Eq' (E ∷ Es)) x y
+        to xSy = ?
+            where
+                -- S' is the same as S but not yet closed under E.
+                -- I.e., S is the E-closure of S'.
+                S' : EqRel
+                S' = proj₁ $ (eq-list-closure Es) R
+                lastclosure 
+                    : S relates x to y 
+                    → <Path (S' relates_to_) (Eq E) x y
+                lastclosure = ↔-to $ eqfilter-closure-characterisation E S x y
+                nestedpath' : <Path (S' relates_to_) (Eq E) x y
+                nestedpath' = lastclosure xSy
+                IH : S' relates x to y → <Path (R relates_to_) (Eq' Es) x y 
+                IH = ↔-to $ eqfilter-closure-composition Es R x<y
+                nestedpath : <Path (<Path (R relates_to_) (Eq' Es)) (Eq E) x y
+                nestedpath = path-map-left IH {x} {y} nestedpath'
 
-eqfilter-closure-composition (E ∷ Es) R x y = ?
+        from : <Path (R relates_to_) (Eq' (E ∷ Es)) x y → S relates x to y
+        from = ?
     
 -- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
 -- Every equation in L : List EqFilter holds in the L-closure of R.
