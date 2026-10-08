@@ -583,24 +583,6 @@ G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
 todo : Set
 todo = {! move <Path to own file !}
 
--- Path R S x y
--- is a finite sequence x = z_1 < z_2 < ... < z_k = y
--- such that each z_i is related to z_{1+i} by either R or S.
--- E.g. 1 R 2 S 5 R 7 R 10
-data <Path (R S : ℕ → ℕ → Set) : ℕ → ℕ → Set where
-    laststep 
-        : {x y : ℕ} 
-        → x < y 
-        → R x y ⊎ S x y 
-        → <Path R S x y
-    addstep
-        : {x y z : ℕ}
-        → x < y
-        → y < z
-        → R x y ⊎ S x y
-        → <Path R S y z
-        → <Path R S x z
-
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Let S be the E-closure of R.
 -- Then x S y iff there exists a path 
@@ -645,7 +627,27 @@ eqfilter-closure-composition
     → ((proj₁ $ (eq-list-closure L) R) relates x to y) 
       ↔ 
       (<Path (R relates_to_) (Eq' L) x y)
-eqfilter-closure-composition = ?
+-- Proof strategy: induction on L. 
+-- In the L ≗ [] case both sides are just xRy.
+-- In the L ≗ (E ∷ Es) case both directions needs to be shown separately.
+-- Let S ≔ proj₁ $ (eq-list-closure L) R.
+-- 1. Assume xSy. eqfilter-closure-characterisation gives a path
+--   containing S' and E as steps, where S' ≔ proj₁ $ (eq-list-closure Es) R.
+--   The IH allows to rewrite the S'-steps into sub-paths over R and Es.
+--   Then apply a 'flatten' lemma to make this into one path.
+-- 2. For the other direction, a path is given, and proceed by induction
+--   on the path, inductively proving that every step xTy implies xSy,
+--   and then conclude by transitivity of S.
+eqfilter-closure-composition [] R x y = ans
+    where
+        f : EqFilter → Set
+        f E = Eq E x y
+
+        -- The goal simplifies to this:
+        ans : (R relates x to y) ↔ <Path (R relates_to_) (Any f [])
+        ans = ?
+
+eqfilter-closure-composition (E ∷ Es) R x y = ?
     
 -- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
 -- Every equation in L : List EqFilter holds in the L-closure of R.
