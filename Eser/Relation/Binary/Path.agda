@@ -67,6 +67,16 @@ cat {R} {S} {x} {y} {z} (addstep {x} {a} {y} x<a _ step q) p =
         a<z : a < z
         a<z = path-to-< qp
 
+path-swap
+    : {R S : ℕ → ℕ → Set}
+    → <Path R S ⊆ <Path S R
+path-swap {R} {S} {x} {y} (laststep x<y (inj₁ xRy)) = laststep x<y (inj₂ xRy)
+path-swap {R} {S} {x} {y} (laststep x<y (inj₂ xSy)) = laststep x<y (inj₁ xSy)
+path-swap {R} {S} {x} {y} (addstep {x} {z} {y} x<z z<y (inj₁ xRz) p) =
+    addstep x<z z<y (inj₂ xRz) $ path-swap p
+path-swap {R} {S} {x} {y} (addstep {x} {z} {y} x<z z<y (inj₂ xSz) p) =
+    addstep x<z z<y (inj₁ xSz) $ path-swap p
+
 path-map-left
     : {R S T : ℕ → ℕ → Set}
     → R ⊆ T
@@ -80,6 +90,13 @@ path-map-left {R} {S} {T} R⊆T {x} {y}
     addstep {T} {S} x<z z<y (inj₁ xTz) $ path-map-left R⊆T {z} {y} p
 path-map-left R⊆T {x} {y} (addstep {x} {z} {y} x<z z<y (inj₂ xSz) p) =
     addstep x<z z<y (inj₂ xSz) $ path-map-left R⊆T p
+
+path-map-right
+    : {R S T : ℕ → ℕ → Set}
+    → S ⊆ T
+    → <Path R S ⊆ <Path R T
+path-map-right {R} {S} {T} S⊆T {x} {y} p = 
+    path-swap $ path-map-left S⊆T $ path-swap p
 
 -- Paths where one of the two relations is uninhabited and the other
 -- is transitive, are just this last relation.
