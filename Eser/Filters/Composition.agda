@@ -628,6 +628,17 @@ eq-list-closure (E ∷ Es) = ∗ E ⋗ (eq-list-closure Es)
 Eq' : List EqFilter → ℕ → ℕ →  Set
 Eq' L x y = Any (λ E → Eq E x y) L
 
+Eq'-⊎
+    : {Es : List EqFilter}
+    → {E : EqFilter}
+    → {x y : ℕ}
+    → (Eq' Es ⊎⊎ Eq E) x y
+    → Eq' (E ∷ Es) x y
+Eq'-⊎ {Es} {E} {x} {y} = ↔-to $ Any-⊎-right (λ E → Eq E x y) E Es
+    where
+        open import Eser.Data.List.Relation.Unary.Any.Properties
+            using (Any-⊎-right)
+
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Generalisation of `eqfilter-closure-characterisation` to compositions
 -- of equations. 
@@ -672,7 +683,7 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
             → x < y 
             → S relates x to y 
             → <Path (R relates_to_) (Eq' (E ∷ Es)) x y
-        to-< {x} {y} x<y xSy = ?
+        to-< {x} {y} x<y xSy = flatpath'
             where
                 -- S' is the same as S but not yet closed under E.
                 -- I.e., S is the E-closure of S'.
@@ -692,25 +703,14 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
                         $ eqfilter-closure-characterisation E S' x y
                 nestedpath : <Path (S' relates_to_) (Eq E) x y
                 nestedpath = tripath-elim-< (lastclosure xSy) x<y
-                --IH 
-                --    : {x y : ℕ}
-                --    → x < y
-                --    → S' relates x to y 
-                --    → <Path (R relates_to_) (Eq' Es) x y 
-                --IH {x} {y} x<y xSy = (λ p → tripath-elim-< p x<y)
-                --         $ ↔-to (eqfilter-closure-composition Es R x y) xSy
-
-                --nestedpath : <Path (<Path (R relates_to_) (Eq' Es)) (Eq E) x y
-                --nestedpath = path-map-left {S' relates_to_} {Eq E} 
-                --                {<Path (R relates_to_) (Eq E)} 
-                --                (IH {x} {y} x<y) {x} {y} nestedpath'
 
                 IH  : {x y : ℕ}
                     → S' relates x to y 
                     → TriPath (R relates_to_) (Eq' Es) x y 
                 IH {x} {y} = ↔-to (eqfilter-closure-composition Es R x y)
 
-                nestedpath' : <Path (TriPath (R relates_to_) (Eq' Es)) (Eq E) x y
+                nestedpath' : <Path (TriPath (R relates_to_) (Eq' Es)) 
+                                    (Eq E) x y
                 nestedpath' = path-map-left {S' relates_to_} {Eq E} 
                                 {TriPath (R relates_to_) (Eq' Es)} 
                                 IH {x} {y} nestedpath
@@ -722,7 +722,8 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
                 flatpath : <Path (R relates_to_) (Eq' Es ⊎⊎ Eq E) x y
                 flatpath = path-flatten-left nestedpath''
 
-                -- #TODO: Now show Es and E merge into Eq' (E ∷ Es)...
+                flatpath' : <Path (R relates_to_) (Eq' (E ∷ Es)) x y
+                flatpath' = path-map-right Eq'-⊎ flatpath
         to 
             : (x y : ℕ)
             → S relates x to y 
@@ -737,7 +738,6 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
                 cases (tri≈ _ x≡y _) = λ _ → emptypath x≡y
                 cases (tri> _ _ y<x) xSy = oppdir y<x 
                     $ to-< {y} {x} y<x (relates-to-sym S {x} {y} xSy )
-
 
         from 
             : (x y : ℕ) 
