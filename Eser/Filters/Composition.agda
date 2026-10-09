@@ -247,10 +247,6 @@ filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 -- One can by converting the NFFun to an EqRel or by (1) converting it to an
 -- Exence and 
 -- (2) using the AreRelated defined in Eser.Filters.NormalityInNFRestr.
-
-Rel-sats : Filter → EqRel → Set
-Rel-sats F R = NFFun-sats F (RelToFun R)
-
 Rel-sats' : MFF → EqRel → Set
 Rel-sats' = Rel-sats ∘ MFF→Filter
 
@@ -582,6 +578,14 @@ infix 100 ∗_
 Eq : EqFilter → ℕ → ℕ → Set
 Eq E x y = Σ[ x<y ∈ (x < y) ] E y ≡ fire (x , x<y)
 
+eqfilter-closure-subrelat
+    : {E : EqFilter}
+    → {R : EqRel}
+    → {x y : ℕ}
+    → Eq E x y
+    → (proj₁ $ (∗ E) R) relates x to y
+eqfilter-closure-subrelat {E} {R} {x} {y} xEy = ?
+
 --------------------------------------------------------------------------------
 -- Composing equality filters
 --------------------------------------------------------------------------------
@@ -627,6 +631,33 @@ eq-list-closure (E ∷ Es) = ∗ E ⋗ (eq-list-closure Es)
 
 Eq' : List EqFilter → ℕ → ℕ →  Set
 Eq' L x y = Any (λ E → Eq E x y) L
+
+eqfilter-closure-compos-subrelat
+    : {L : List EqFilter}
+    → {R : EqRel}
+    → {x y : ℕ}
+    → Eq' L x y
+    → ((proj₁ $ (eq-list-closure L) R) relates x to y) 
+eqfilter-closure-compos-subrelat {[]} {R} {x} {y} ()
+eqfilter-closure-compos-subrelat {E ∷ Es} {R} {x} {y} (here xEy) =
+    eqfilter-closure-subrelat {E} {S'} {x} {y} xEy
+    where
+        S' : EqRel
+        S' = proj₁ $ (eq-list-closure Es) R
+eqfilter-closure-compos-subrelat {E ∷ Es} {R} {x} {y} (there any) = xSy
+    where
+        S : EqRel
+        S =  proj₁ $ (eq-list-closure (E ∷ Es)) R
+        -- ^ That equals `proj₁ $ (∗ E) S'`
+        S' : EqRel
+        S' = proj₁ $ (eq-list-closure Es) R
+        S'⊆S : S' ⊆ S
+        S'⊆S = proj₂ $ (∗ E) S'
+        xS'y : S' relates x to y
+        xS'y = eqfilter-closure-compos-subrelat {Es} {R} {x} {y} any
+        xSy : S relates x to y
+        xSy = S'⊆S x y xS'y
+
 
 Eq'-⊎
     : {Es : List EqFilter}
@@ -678,6 +709,15 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
         S : EqRel
         S = proj₁ $ (eq-list-closure (E ∷ Es)) R
 
+        -- S' is the same as S but not yet closed under E.
+        -- I.e., S is the E-closure of S'.
+        S' : EqRel
+        S' = proj₁ $ (eq-list-closure Es) R
+
+        check : S ≡ proj₁ ((∗ E) S')
+        check = refl
+
+
         to-< 
             : {x y : ℕ}
             → x < y 
@@ -685,14 +725,6 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
             → <Path (R relates_to_) (Eq' (E ∷ Es)) x y
         to-< {x} {y} x<y xSy = flatpath'
             where
-                -- S' is the same as S but not yet closed under E.
-                -- I.e., S is the E-closure of S'.
-                S' : EqRel
-                S' = proj₁ $ (eq-list-closure Es) R
-
-                check : S ≡ proj₁ ((∗ E) S')
-                check = refl
-
                 lastclosure 
                     : S relates x to y 
                     → TriPath (S' relates_to_) (Eq E) x y
@@ -739,11 +771,31 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
                 cases (tri> _ _ y<x) xSy = oppdir y<x 
                     $ to-< {y} {x} y<x (relates-to-sym S {x} {y} xSy )
 
+        R⊆S : R ⊆ S
+        R⊆S = ?
+
+        L→S : {x y : ℕ} → (Eq' (E ∷ Es) x y) → S relates x to y
+        L→S = ?
+
+        from-samedir 
+            : {x y : ℕ}
+            → <Path (R relates_to_) (Eq' (E ∷ Es)) x y 
+            → S relates x to y
+        from-samedir (laststep {x} {y} x<y (inj₁ xRy)) = R⊆S x y xRy
+        from-samedir (laststep {x} {y} x<y (inj₂ xLy)) = L→S xLy
+        from-samedir (addstep {x} {z} {y} x<z z<y (inj₁ xRz) p) = 
+            relates-to-trans S {x} {z} {y} (R⊆S x z xRz) (from-samedir p)
+        from-samedir (addstep {x} {z} {y} x<z z<y (inj₂ xLz) p) =
+            relates-to-trans S {x} {z} {y} (L→S xLz) (from-samedir p)
+
         from 
             : (x y : ℕ) 
             → TriPath (R relates_to_) (Eq' (E ∷ Es)) x y 
             → S relates x to y
-        from = ?
+        from x y (samedir {x} {y} x<y p) = from-samedir p
+        from x y (emptypath refl) = relates-to-refl S {x}
+        from x y (oppdir {x} {y} y<x p) = 
+            relates-to-sym S {y} {x} (from-samedir {y} {x} p)
     
 -- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
 -- Every equation in L : List EqFilter holds in the L-closure of R.

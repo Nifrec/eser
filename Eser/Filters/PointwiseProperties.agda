@@ -37,6 +37,9 @@ Exence-sats F (h , H) = (n : ℕ) → F Allows (getChoiceFromExence (h , H) n) I
 NFFun-sats : Filter → NFFun → Set
 NFFun-sats F f' = Exence-sats F (restrict+ f')
 
+Rel-sats : Filter → EqRel → Set
+Rel-sats F R = NFFun-sats F (RelToFun R)
+
 -- All sub-restrictions of a restriction satisfy a filter.
 data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
     allsat-empty : AllRestr-sat F empty
