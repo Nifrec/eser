@@ -647,18 +647,55 @@ P fires-with (r , c) = cases (P r)
         cases pass = ⊥
         cases (fire f) = f c ≡ true
 
+IsClosable'→LocallyOneHot
+    : {P : MFF}
+    → IsClosable' P
+    → {n : ℕ}
+    → {r : NFRestr n}
+    → (c : Choices r)
+    → P fires-with (r , c)
+    → LocallyOneHot (MFF→Filter P) r c
+IsClosable'→LocallyOneHot = ?
+
 -- Let P be a closable filter (so it is one-hot) and S be the P-closure of R.
 -- Then if x is the unique choice that P (S ↾ y) allows, then xSy holds.
 closure-contains-required-equations
     : {P : MFF}
     → {R S : EqRel}
     → (C : IsClosable' P)
-    → S ≡ rel (C R)
+    → S ≡ rel (C R)                 --^ S is only needed for readability.
     → {y : ℕ}
     → (c : Choices (S ↾ y))
     → P fires-with (S ↾ y , c)
     → S relates y to (choiceToℕ c)
-closure-contains-required-equations = ?
+closure-contains-required-equations {P} {R} {S} C refl {y} c P-fires-c = 
+    unique-choice-to-relate {MFF→Filter P} {S} {y} c loconehot
+    where
+        r : NFRestr y
+        r = S ↾ y
+        loconehot : LocallyOneHot (MFF→Filter P) r c
+        loconehot = IsClosable'→LocallyOneHot {P} C c P-fires-c
+
+-- Let L : List EqFilter.
+-- If S is the L-closure of R then R ⊆ S.
+eqfilter-closure-composition-subrelat-R
+    : (L : List EqFilter)
+    → (R : EqRel)
+    → R ⊆ (proj₁ $ (eq-list-closure L) R)
+eqfilter-closure-composition-subrelat-R [] R x y xRy = xRy
+eqfilter-closure-composition-subrelat-R (E ∷ Es) R = 
+    ⊆-trans {R} {S'} {S} R⊆S' S'⊆S
+    where
+        S  : EqRel
+        S  = (proj₁ $ (eq-list-closure (E ∷ Es)) R)
+        S' : EqRel
+        S' = (proj₁ $ (eq-list-closure Es) R)
+        R⊆S' : R ⊆ S'
+        R⊆S' = eqfilter-closure-composition-subrelat-R Es R
+        S'⊆S : S' ⊆ S
+        S'⊆S = ext (EqFilter-IsClosable E S')
+
+
 
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Generalisation of `eqfilter-closure-characterisation` to compositions
@@ -683,16 +720,29 @@ eqfilter-closure-composition
 -- 2. For the other direction, a path is given, and proceed by induction
 --   on the path, inductively proving that every step xTy implies xSy,
 --   and then conclude by transitivity of S.
-eqfilter-closure-composition [] R x y = {! ans !}
+eqfilter-closure-composition [] R x y = ans
     where
-        path→R : <Path (R relates_to_) (Eq' []) x y → R relates x to y
-        path→R = path-uninhabited-right (λ x y → ¬Any[]) (relates-to-trans R)
+        path→R : TriPath (R relates_to_) (Eq' []) x y → R relates x to y
+        path→R (samedir x<y p) = 
+            path-uninhabited-right (λ x y → ¬Any[]) (relates-to-trans R) p
+        path→R (emptypath refl) = relates-to-refl R
+        path→R (oppdir x<y p) = relates-to-sym R $ 
+            path-uninhabited-right (λ y x → ¬Any[]) (relates-to-trans R) p
 
-        R→path : R relates x to y → <Path (R relates_to_) (Eq' []) x y
-        R→path xRy = laststep {! x<y !} $ inj₁ xRy
+        R→path : R relates x to y → TriPath (R relates_to_) (Eq' []) x y
+        R→path xRy = cases (<-cmp x y)
+            where
+                cases 
+                    : Tri (x < y) (x ≡ y) (x > y) → 
+                    TriPath (R relates_to_) (Eq' []) x y
+                cases (tri< x<y x≢y y≮x) =
+                    samedir x<y $ laststep x<y $ inj₁ xRy
+                cases (tri≈ x≮y x≡y y≮x) = emptypath x≡y
+                cases (tri> x≮y x≢y y<x) = 
+                    oppdir y<x $ laststep y<x $ inj₁ (relates-to-sym R xRy)
 
         -- The goal simplifies to this:
-        ans : (R relates x to y) ↔ <Path (R relates_to_) (Eq' []) x y
+        ans : (R relates x to y) ↔ TriPath (R relates_to_) (Eq' []) x y
         ans = (R→path , path→R)
 eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
     where
@@ -762,10 +812,12 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
                     $ to-< {y} {x} y<x (relates-to-sym S {x} {y} xSy )
 
         R⊆S : R ⊆ S
-        R⊆S = ?
+        R⊆S = eqfilter-closure-composition-subrelat-R (E ∷ Es) R
+
 
         L→S : {x y : ℕ} → (Eq' (E ∷ Es) x y) → S relates x to y
-        L→S = ?
+        L→S = eqfilter-closure-compos-subrelat {E ∷ Es} {R}
+
 
         from-samedir 
             : {x y : ℕ}

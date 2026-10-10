@@ -11,6 +11,7 @@
 
 module Eser.EqRel where
 
-open import Eser.EqRel.Definitions public
-open import Eser.EqRel.Conversions public
+open import Eser.EqRel.Definitions     public
+open import Eser.EqRel.Conversions     public
 open import Eser.EqRel.Correspondences public
+open import Eser.EqRel.EqRelProperties public
