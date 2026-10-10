@@ -16,7 +16,7 @@ open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
 

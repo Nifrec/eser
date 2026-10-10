@@ -64,7 +64,7 @@ card-example-∞ = refl
 -- §3.1 is the submodule `Eser.EqRel`.
 
 -- Definitions of decidable equivalence relations and normal-form functions:
-open import Eser.EqRel.Definitions using (NFFun) renaming (DecEquiv to EqRel)
+ import Eser.EqRel.Definitions using (NFFun ; EqRel) 
 
 -- Conversions between decidable equivalence relations
 -- and normal-form functions, named ρ and ρ⁻¹ in the paper:

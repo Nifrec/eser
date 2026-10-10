@@ -39,7 +39,7 @@ open import Data.Nat.Properties using (
     ; ≰⇒>
     )
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst ; irrel-×-closure ; uip
     ; restIsProofIrrel

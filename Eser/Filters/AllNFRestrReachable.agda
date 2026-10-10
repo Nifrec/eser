@@ -40,7 +40,7 @@ open import Data.Nat.Properties using
     ; <-trans
     )
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using 
     ( tri-≡

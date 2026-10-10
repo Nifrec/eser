@@ -39,7 +39,7 @@ open import Data.Nat.Properties using (
     ; ≰⇒>
     )
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst ; irrel-×-closure ; uip
     ; restIsProofIrrel
@@ -140,7 +140,7 @@ module ReplaceResp (T : ReplaceStruct) where
     -- A relation is 'Replacement Respecting'
     -- if replacing an argument x of y by a related argument x'
     -- results in a term y' that is related to y.
-    module _ (R' : DecEquiv) where
+    module _ (R' : EqRel) where
         R = proj₁ R'
         ReplaceRespGlobal : Set
         ReplaceRespGlobal 
@@ -746,7 +746,7 @@ module ReplaceResp (T : ReplaceStruct) where
     -- Main theorems
     ----------------------------------------------------------------------------
 
-    -- Implementation note: we could also have given a `R' : DecEquiv`
+    -- Implementation note: we could also have given a `R' : EqRel`
     -- and use RelToFun instead. 
     theo-ReplaceResp-left
         : (f' : NFFun)

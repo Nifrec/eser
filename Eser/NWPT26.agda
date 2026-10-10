@@ -41,7 +41,7 @@ open import Eser.Aux using (_≈_)
 -- §1 Quotients over enumerable types
 --------------------------------------------------------------------------------
 -- Definitions of decidable equivalence relations and normal-form functions:
-open import Eser.EqRel.Definitions using (NFFun) renaming (DecEquiv to EqRel)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 
 -- Conversions between decidable equivalence relations
 -- and normal-form functions.

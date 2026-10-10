@@ -76,7 +76,7 @@ open import Data.List.Relation.Unary.Any.Properties
 --    ; ≤-<-trans
 --    )
 
-open import Eser.EqRel.Definitions using (NFFun) renaming (DecEquiv to EqRel)
+open import Eser.EqRel.Definitions using (NFFun) renaming (EqRel to EqRel)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_≈_ ; _↔_ ; ↔-to ; ↔-from)
 open import Eser.Relation.Binary.Path

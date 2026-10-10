@@ -37,7 +37,7 @@ open import Data.Nat.Properties using (
     ; ≰⇒>
     )
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst ; irrel-×-closure ; uip
     ; restIsProofIrrel
@@ -150,7 +150,7 @@ module Eser.Filters.ReplaceStructs.ForSignature
     _⋤ℕ_ : ℕ → ℕ → Set
     t ⋤ℕ a = (proj₂ $ φ⁻¹ t) ⋤ (proj₂ $ φ⁻¹ a)
 
-    IsCongruence : DecEquiv → Set
+    IsCongruence : EqRel → Set
     IsCongruence R'@(R , is-equiv-rel) 
         = (t : ℕ)                         --^ For all closed terms t ...
         → (a : ℕ) → (a ⋤ℕ t)              --^ ... and all arguments a of t

@@ -47,7 +47,7 @@ open import Data.Nat.Properties using (
     ; ≰⇒>
     )
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_ ; doubleSubst ; irrel-×-closure ; uip
     ; restIsProofIrrel
@@ -80,6 +80,6 @@ module Eser.Filters.Congruence.ForSignature where
 --------------------------------------------------------------------------------
 open ReplaceResp toReplaceStruct
 theo-ReplaceResp-is-IsCongr
-    : (R : DecEquiv)
+    : (R : EqRel)
     → ReplaceRespGlobal R ↔ IsCongruence R
 theo-ReplaceResp-is-IsCongr R = ?

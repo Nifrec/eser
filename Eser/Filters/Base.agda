@@ -19,7 +19,7 @@ open import Data.Maybe
 
 open import Data.Nat.Properties using (≤-refl ; ≤-trans ; n≤1+n)
 
-open import Eser.EqRel.Definitions using (NFFun ; DecEquiv)
+open import Eser.EqRel.Definitions using (NFFun ; EqRel)
 open import Eser.EqRel.Conversions using (RelToFun)
 open import Eser.Aux using (_↔_ ; _≈_)
 
@@ -86,7 +86,7 @@ module Eser.Filters.Base where
 --------------------------------------------------------------------------------
 
 Predicate : Set₁
-Predicate = DecEquiv → Set
+Predicate = EqRel → Set
 
 --------------------------------------------------------------------------------
 -- Representation of restrictions of normalisation functions

@@ -87,7 +87,7 @@ record LocalisiblePred : Set₁ where
         Prel : RelPred
         Ploc : LocPred
         correspondence : 
-            (R : DecEquiv) → (Prel R ↔ (AllRestr (proj₁ (RelToFun R)) Ploc))
+            (R : EqRel) → (Prel R ↔ (AllRestr (proj₁ (RelToFun R)) Ploc))
 open LocalisiblePred
 
 -- A local predicate that is pointwise decidable.

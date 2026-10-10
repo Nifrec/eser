@@ -55,7 +55,7 @@ findMinZeroLemma P P0 =
     n≤0⇒n≡0 ℓ≤0
 
 lemma1 
-    : (R : DecEquiv) 
+    : (R : EqRel) 
     → (proj₁ ∘ RelToFun) R 
         ≈ 
         λ n → proj₁ (findMinAlwaysPoss n ((proj₁ R) n) 
@@ -152,7 +152,7 @@ lemma3
     : (f : ℕ → ℕ) 
     → (nleq : NFLeq f) 
     → (nfix : NFFix f)
-    → (R : DecEquiv)
+    → (R : EqRel)
     → (defR : proj₁ R ≡ λ (n m : ℕ) → f n ≡ᵇ f m)
     → (proj₁ ∘ RelToFun) R ≈ f
 lemma3 f nleq nfix R refl n = 
@@ -277,7 +277,7 @@ oneMinPerClass R Req n m hₙ hₘ
 -- has nR'm 
 -- if the min ℓ≤n s.t. nRℓ equals the min ℓ≤m s.t. mRℓ.
 RFRLemma 
-    : (R : DecEquiv) 
+    : (R : EqRel) 
     → (proj₁ ∘ FunToRel ∘ RelToFun) R 
         ≡ 
         λ (n m : ℕ) → (
@@ -296,7 +296,7 @@ RFRLemma R = refl
 -- So this proof uncurries R : ℕ → ℕ → Bool (for which we didn't prove homotopy)
 -- to R : ℕ × ℕ → Bool for which we did prove homotopy.
 RFRHomot 
-    : (R : DecEquiv) 
+    : (R : EqRel) 
     → (uncurry ∘ proj₁ ∘ FunToRel ∘ RelToFun) R ≈ (uncurry ∘  proj₁) R
 RFRHomot R (n , m) = 
     let H₁ = RFRLemma R
@@ -330,7 +330,7 @@ open LocalisiblePred
 -- of a localisible property.
 RelToFunPresvProps
     : (P : LocalisiblePred)
-    → (R : DecEquiv)
+    → (R : EqRel)
     → Prel P R ↔ AllRestr ((proj₁ ∘ RelToFun) R) (Ploc P)
 RelToFunPresvProps P R = correspondence P R
 
@@ -404,7 +404,7 @@ FunToRelPresvProps→
     → Prel P (FunToRel f) 
     → AllRestr (proj₁ f) (Ploc P)
 FunToRelPresvProps→ (localisiblePred Prel Ploc corresp) f PrelR =
-    let R : DecEquiv
+    let R : EqRel
         R = FunToRel f
     in
     let H : AllRestr ((proj₁ ∘ RelToFun ∘ FunToRel) f ) Ploc

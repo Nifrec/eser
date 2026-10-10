@@ -39,14 +39,14 @@ module Eser.EqRel.Conversions where
 -- Maps between relations and functions.
 -- 
 -- The main definitions are:
--- * FunToRel : NFFun → DecEquiv
--- * RelToFun : DecEquiv → NFFun
+-- * FunToRel : NFFun → EqRel
+-- * RelToFun : EqRel → NFFun
 -- But there are also a lot of auxiliary lemmas in this section
 -- necessary to define them.
 --
 -- Some notes:
 -- * FunToRel does not use the NF-properties of the input.
---      It could be retyped as (ℕ → ℕ) → DecEquiv.
+--      It could be retyped as (ℕ → ℕ) → EqRel.
 -- * RelToFun does use symmetry and transitivity to prove the NF-properties of
 --      the output. However, given only reflexivity one can still
 --      use the current implementation 
@@ -54,7 +54,7 @@ module Eser.EqRel.Conversions where
 --      define ReflexiveRel → (ℕ → ℕ).
 --------------------------------------------------------------------------------
 
-FunToRel : NFFun → DecEquiv
+FunToRel : NFFun → EqRel
 FunToRel (f , nleq , nfix) = 
     (R , isequiv)
     where
@@ -214,7 +214,7 @@ boolRelTrans
     → (R a c ≡ true)
 boolRelTrans {A} {a} {b} {c} {R} transR Rab Rbc = transR Rab Rbc
 
-RelToFun : DecEquiv → NFFun
+RelToFun : EqRel → NFFun
 RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) = 
     let f : ℕ → ℕ
         f n = proj₁ (findMinAlwaysPoss n (R n) (reflR {n}))

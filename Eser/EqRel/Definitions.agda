@@ -50,8 +50,8 @@ _⊢_~_ : {A : Set} → (A → A → Bool) → Rel A 0ℓ
 R ⊢ n ~ m = R n m ≡ true
 
 -- Decidable equivalence relations.
-DecEquiv : Set
-DecEquiv = Σ[ R ∈ DecRel ]( IsEquivalence (R ⊢_~_) )
+EqRel : Set
+EqRel = Σ[ R ∈ DecRel ]( IsEquivalence (R ⊢_~_) )
 
 -- Type of predicates on a relation 
 -- (Not necessarily proof irrelevant
@@ -59,11 +59,11 @@ DecEquiv = Σ[ R ∈ DecRel ]( IsEquivalence (R ⊢_~_) )
 -- the `Prop` sort is not vanilla and experimental,
 -- and adding proofs of proof-irrelevance via Σ is overcomplicating things).
 RelPred : Set₁
-RelPred = DecEquiv → Set
+RelPred = EqRel → Set
 
 -- Equivalence relations that also have a given property.
-DecEquivWithProp : RelPred → Set
-DecEquivWithProp P = Σ[ R ∈ DecRel ] Σ[ Req ∈ IsEquivalence (R ⊢_~_) ] (P (R , Req))
+EqRelWithProp : RelPred → Set
+EqRelWithProp P = Σ[ R ∈ DecRel ] Σ[ Req ∈ IsEquivalence (R ⊢_~_) ] (P (R , Req))
 
 --------------------------------------------------------------------------------
 -- Normal-form functions and globally-defined properties of them.
