@@ -43,15 +43,15 @@ module Eser.EqRel.Definitions where
 -- The Agda stdlib lets a relation output a Set, which is annoying when
 -- trying to show a homotopy that does not care about proof implementations.
 -- See below `_ ⊢ _ ~ _` for a conversion to the stdlib's representation.
-DecRel : Set
-DecRel = ℕ → ℕ → Bool
+EqRel : Set
+EqRel = ℕ → ℕ → Bool
 
 _⊢_~_ : {A : Set} → (A → A → Bool) → Rel A 0ℓ
 R ⊢ n ~ m = R n m ≡ true
 
 -- Decidable equivalence relations.
 DecEquiv : Set
-DecEquiv = Σ[ R ∈ DecRel ]( IsEquivalence (R ⊢_~_) )
+DecEquiv = Σ[ R ∈ EqRel ]( IsEquivalence (R ⊢_~_) )
 
 -- Type of predicates on a relation 
 -- (Not necessarily proof irrelevant
@@ -63,7 +63,7 @@ RelPred = DecEquiv → Set
 
 -- Equivalence relations that also have a given property.
 DecEquivWithProp : RelPred → Set
-DecEquivWithProp P = Σ[ R ∈ DecRel ] Σ[ Req ∈ IsEquivalence (R ⊢_~_) ] (P (R , Req))
+DecEquivWithProp P = Σ[ R ∈ EqRel ] Σ[ Req ∈ IsEquivalence (R ⊢_~_) ] (P (R , Req))
 
 --------------------------------------------------------------------------------
 -- Normal-form functions and globally-defined properties of them.

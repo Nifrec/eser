@@ -1,5 +1,5 @@
 -- Module      : Eser.Correspondences
--- Description : Theorems about correspondences between DecRel and NFFun.
+-- Description : Theorems about correspondences between EqRel and NFFun.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
 -- Maintainer  : Lulof Pirée
