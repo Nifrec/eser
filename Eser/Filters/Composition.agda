@@ -145,27 +145,6 @@ _≈≈_ : NFFun → NFFun → Set
 _≡NFRestr?_ : {n : ℕ} → DecidableEquality (NFRestr n)
 r ≡NFRestr? s = ?
 
-filterify : NFFun → Filter
-filterify f {n} r = cases (restrict f n ≡NFRestr? r)
-    where
-        cases 
-            : (Dec (restrict f n ≡ r)) 
-            → Choices r 
-            → Bool
-        cases (yes refl) c = does (f-choice ≡? c)
-            where
-                f-choice : Choices (restrict f n)
-                f-choice = getChoiceFromExence (restrict+ f) n
-        -- If r is already different from f, then reject all choices.
-        cases (no _) c = false 
-
-MFF-filterify : NFFun → MFF
-MFF-filterify = Filter→MFF ∘ filterify
-
-filterify-self-sats
-    : (f' : NFFun)
-    → NFFun-sats (filterify f') f'
-filterify-self-sats f' = ?
 
 -- A Singleton Filter is a filter that is satisfied by exactly one relation.
 IsSingleton : Filter → Set
@@ -174,26 +153,6 @@ IsSingleton F =
 
 IsSingleton' : MFF → Set
 IsSingleton' = IsSingleton ∘ MFF→Filter
-
-filterify-singleton
-    : (f' : NFFun)
-    → IsSingleton (filterify f')
-filterify-singleton = ?
-
-filterify-deadendfree
-    : (f' : NFFun)
-    → DeadEndFree (filterify f')
-filterify-deadendfree = ?
-
--- The only NFFun that satisfies `filterify f` is `f` itself (up to function
--- extensionality).
--- This is the specification of `filterify`, so this lemma proves
--- the correctness of `filterify`.
-filterify-unique-sat
-    : (f' g' : NFFun)
-    → NFFun-sats (filterify f') g'
-    → g' ≈≈ f'
-filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 
 --------------------------------------------------------------------------------
 -- Definition of P-closure of a relation given a predicate P
@@ -554,6 +513,49 @@ eqfilter-closure-subrelat
 eqfilter-closure-subrelat {E} {R} {x} {y} xEy = ?
 
 --------------------------------------------------------------------------------
+-- Turning an NFFun into a filter that is only satisfied by that NFFun.
+--------------------------------------------------------------------------------
+eqfilterify : NFFun → OneHotFilter
+eqfilterify (f , f-leq , f-fix) {n} r = fire c
+    where
+        c : Choices r
+        -- This is `here` if f n ≡ n,
+        -- and (earlier-new $ resurface m<n) if f n ≡ m for some m < n.
+        c = resurface' r (f-leq n)
+
+filterify : NFFun → Filter
+filterify = OneHot→Filter ∘ eqfilterify
+
+MFF-filterify : NFFun → MFF
+MFF-filterify = Filter→MFF ∘ filterify
+
+filterify-self-sats
+    : (f' : NFFun)
+    → NFFun-sats (filterify f') f'
+filterify-self-sats f' = ?
+
+filterify-singleton
+    : (f' : NFFun)
+    → IsSingleton (filterify f')
+filterify-singleton = ?
+
+filterify-deadendfree
+    : (f' : NFFun)
+    → DeadEndFree (filterify f')
+filterify-deadendfree = ?
+
+-- The only NFFun that satisfies `filterify f` is `f` itself (up to function
+-- extensionality).
+-- This is the specification of `filterify`, so this lemma proves
+-- the correctness of `filterify`.
+filterify-unique-sat
+    : (f' g' : NFFun)
+    → NFFun-sats (filterify f') g'
+    → g' ≈≈ f'
+filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
+
+
+--------------------------------------------------------------------------------
 -- Composing equality filters
 --------------------------------------------------------------------------------
 -- Theorems showing the properties of _⋗_ compositions of EqFilters.
@@ -563,9 +565,6 @@ eqfilter-closure-subrelat {E} {R} {x} {y} xEy = ?
 _=ext_ : Extender → Extender → Set
 G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
 
-
-todo : Set
-todo = {! move <Path to own file !}
 
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Let S be the E-closure of R.
@@ -580,7 +579,20 @@ eqfilter-closure-characterisation
     → (R : EqRel)
     → (x y : ℕ)
     → ((proj₁ $ (∗ E) R) relates x to y) ↔ (TriPath (R relates_to_) (Eq E) x y)
-eqfilter-closure-characterisation = ?
+eqfilter-closure-characterisation E R x y = (to x y , from x y)
+    where
+        S : EqRel
+        S = proj₁ $ (∗ E) R
+        to : (x y : ℕ) → S relates x to y → TriPath (R relates_to_) (Eq E) x y
+        to x y xSy = cases (<-cmp x y)
+            where
+                cases : Tri (x < y) (x ≡ y) (x > y) →  TriPath (R relates_to_) (Eq E) x y
+                cases (tri< x<y x≢y y≮x) = ?
+                    samedir x<y  
+                cases (tri≈ x≮y x≡y y≮x) = emptypath x≡y
+                cases (tri> x≮y x≢y y<x) = ?
+        from = ?
+                
  
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- When closing by multiple equation filters, the order does not matter.
@@ -647,6 +659,8 @@ P fires-with (r , c) = cases (P r)
         cases pass = ⊥
         cases (fire f) = f c ≡ true
 
+remove? : Set
+remove? = {! Next two lemmas below are unused? !}
 IsClosable'→LocallyOneHot
     : {P : MFF}
     → IsClosable' P

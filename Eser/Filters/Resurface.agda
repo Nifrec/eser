@@ -323,6 +323,20 @@ resurface-correctness {suc n'} r {m} p q =
                 NFRestrToℕ (trim' r q)
             ∎
 
+-- Variant of resurface that works on ≤-inputs as well.
+-- In the ≡ case it returns the 'nere' choice (introduce-a-new-equiv-class).
+resurface' 
+    : {n : ℕ}
+    → (r : NFRestr n)
+    → {m : ℕ}
+    → m ≤ n
+    → Choices r
+resurface' {n} r {m} m≤n = cases (m≤n⇒m<n∨m≡n m≤n)
+    where
+        cases : (m < n) ⊎ (m ≡ n) → Choices r
+        cases (inj₁ m<n) = earlier-new $ resurface r m<n
+        cases (inj₂ m≡n) = here
+
 lemma-resurface-NFSToℕ
     : {n : ℕ}
     → (r : NFRestr n)
