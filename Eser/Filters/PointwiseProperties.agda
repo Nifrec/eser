@@ -7,6 +7,7 @@
 
 {-# OPTIONS --safe #-}
 
+
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -36,9 +37,6 @@ Exence-sats F (h , H) = (n : ℕ) → F Allows (getChoiceFromExence (h , H) n) I
 
 NFFun-sats : Filter → NFFun → Set
 NFFun-sats F f' = Exence-sats F (restrict+ f')
-
-Rel-sats : Filter → EqRel → Set
-Rel-sats F R = NFFun-sats F (RelToFun R)
 
 -- All sub-restrictions of a restriction satisfy a filter.
 data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
@@ -218,6 +216,44 @@ DeadEndFree F =
     → (r : NFRestr n) 
     → AllRestr-sat F r 
     → Σ[ c ∈ Choices r ] F Allows c In r
+
+--------------------------------------------------------------------------------
+-- Filter satisfiability for equivalence relations.
+--------------------------------------------------------------------------------
+Rel-sats : Filter → EqRel → Set
+Rel-sats F R = NFFun-sats F (RelToFun R)
+
+rel-to-exence : EqRel → Exence
+rel-to-exence = restrict+ ∘ RelToFun
+
+exence-to-rel : Exence → EqRel
+exence-to-rel = FunTo Rel ∘ combine
+
+exence-sat-to-rel-sat
+    : {R : EqRel}
+    → {F : Filter}
+    → Exence-sats F (rel-to-exence R)
+    → Rel-sats F R
+exence-sat-to-rel-sat = ?
+
+getchoice-to-relate
+    : {R : EqRel}
+    → {y : ℕ}
+    → (c : Choices (restrict (RunToFun R) y))
+    → c ≡ getChoiceFromExence (rel-to-exence R) y
+    → R relates y to (choiceToℕ c)
+getchoice-to-relate = ?
+
+unique-choice-to-relate
+    : {F : Filter}
+    → {R : EqRel}
+    → {y : ℕ}
+    → (c : Choices (restrict (RelToFun R) y))
+    → LocallyOneHot F (restrict (RelToFun R) y) c
+    → R relates y to (choiceToℕ c)
+unique-choice-to-relate = ?
+
+
 
 --------------------------------------------------------------------------------
 -- Filter compatibility relation
