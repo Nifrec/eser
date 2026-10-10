@@ -36,53 +36,40 @@ module Eser.EqRel.Definitions where
 --------------------------------------------------------------------------------
 -- Relations on ℕ
 --------------------------------------------------------------------------------
-
 -- Relations as functions. 
 -- This Bool-valued representation is always proof-irrelevant
 -- and decidable, and more convenient when proving homotopy between relations.
 -- The Agda stdlib lets a relation output a Set, which is annoying when
 -- trying to show a homotopy that does not care about proof implementations.
--- See below `_ ⊢ _ ~ _` for a conversion to the stdlib's representation.
 DecRel : Set
 DecRel = ℕ → ℕ → Bool
 
-_⊢_~_ : {A : Set} → (A → A → Bool) → Rel A 0ℓ
-R ⊢ n ~ m = R n m ≡ true
-
 -- Decidable equivalence relations.
 EqRel : Set
-EqRel = Σ[ R ∈ DecRel ]( IsEquivalence (R ⊢_~_) )
+EqRel = Σ[ R ∈ DecRel ]( IsEquivalence (λ x y → R x y ≡ true))
 
--- Type of predicates on a relation 
--- (Not necessarily proof irrelevant
--- since that's simply a bit inconvenient to implement in Agda --
--- the `Prop` sort is not vanilla and experimental,
--- and adding proofs of proof-irrelevance via Σ is overcomplicating things).
-RelPred : Set₁
-RelPred = EqRel → Set
+_relates_to_ : EqRel → ℕ → ℕ → Set
+(R , _) relates x to y = T (R x y)
 
--- Equivalence relations that also have a given property.
-EqRelWithProp : RelPred → Set
-EqRelWithProp P = Σ[ R ∈ DecRel ] Σ[ Req ∈ IsEquivalence (R ⊢_~_) ] (P (R , Req))
+-- R ⊆ S if S relates all pairs (x, y) that R relates.
+_⊆_ : EqRel → EqRel → Set
+R ⊆ S = ((x y : ℕ) → R relates x to y → S relates x to y)
+
 
 --------------------------------------------------------------------------------
 -- Normal-form functions and globally-defined properties of them.
 --------------------------------------------------------------------------------
--- Property of a function.
-FunPred : Set₁
-FunPred = (ℕ → ℕ) → Set
-
 -- Coherence constraint on normal form functions: 
 -- the normal form of n is always smaller or equal to n,
 -- i.e., has been explored earlier.
 -- This is necessary when building equivalence relations by inductively
 -- assigning each n ∈ ℕ to its normal form.
-NFLeq : FunPred
+NFLeq : (ℕ → ℕ) → Set
 NFLeq f = (n : ℕ) → f n ≤ n
 
 -- Coherence constraint on normal form functions: 
 -- the normal form of a normal form is itself.
-NFFix : FunPred
+NFFix : (ℕ → ℕ) → Set
 NFFix f = (n : ℕ) → f (f n) ≡ f n
 
 -- Functions ℕ → ℕ that encode an equivalence relation,
@@ -90,40 +77,3 @@ NFFix f = (n : ℕ) → f (f n) ≡ f n
 -- them to be used as a normal-form function.
 NFFun : Set
 NFFun = Σ[ f ∈ (ℕ → ℕ) ]( NFLeq f × NFFix f)
-
--- #TODO: remove?
-NFFunWithProp : FunPred → Set
-NFFunWithProp P = Σ[ f ∈ (ℕ → ℕ) ] ( NFLeq f × NFFix f × P f)
-
-
---------------------------------------------------------------------------------
--- Normal-form functions and locally-defined predicates on them.
---------------------------------------------------------------------------------
--- Get the first n outputs of a function ℕ → ℕ as a vector.
--- Equivalently, restrict the domain to {0, 1, ..., n-1}.
-restrict : (n : ℕ) → (ℕ → ℕ) → Vec ℕ n
-restrict 0 f = []
-restrict (suc n) f = (f n) ∷ (restrict n f)
-
--- Decidable locally defined predicate.
--- For each n, judge whether the restriction of a function ℕ → ℕ
--- to {0, ..., n-1} satisfies the predicate.
-LocPred : Set₁
-LocPred = (n : ℕ) → Vec ℕ n → Set
-
--- Predicate that all restrictions of a function satisfy a
--- locally defined property.
-AllRestr : (ℕ → ℕ) → LocPred → Set
-AllRestr f P = (n : ℕ) → P n (restrict n f)
-
--- #TODO: remove?
--- Local version of NFLeq: f m ≤ m for all m,
--- where f m is encoded as the value of a vector at index 0.
-NFLeqLoc : LocPred
-NFLeqLoc n v = (m : Fin n) → lookup v m ≤ toℕ m
-
-NFFunWithLocPred : LocPred → Set
-NFFunWithLocPred P = Σ[ f ∈ (ℕ → ℕ) ] (
-      NFLeq f
-    × NFFix f
-    × AllRestr f P)

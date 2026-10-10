@@ -61,7 +61,7 @@ FunToRel (f , nleq , nfix) =
         R : ℕ → ℕ → Bool
         R n m = f n ≡ᵇ f m
         R' : ℕ → ℕ → Set
-        R' = R ⊢_~_
+        R' x y = R x y ≡ true
         isequiv : IsEquivalence R'
         isequiv = 
             let
@@ -180,39 +180,6 @@ minUnique n m P (Pn , noSmallerN) (Pm , noSmallerM) with (n ≤? m)
         m≤n = ≰⇒≥ n≰m
     in
     sym (noSmallerN m m≤n Pm)
-
--- #TODO: move or remove
-boolRelToSetRel
-    : {A : Set}
-    → {a b : A}
-    → {R : A → A → Bool}
-    → (R a b ≡ true)
-    → (R ⊢ a ~ b)
-boolRelToSetRel {A} {a} {b} {R} Rab = Rab
-
--- #TODO: move or remove
-setRelToBoolRel
-    : {A : Set}
-    → {a b : A}
-    → {R : A → A → Bool}
-    → (R ⊢ a ~ b)
-    → (R a b ≡ true)
-setRelToBoolRel {A} {a} {b} {R} R⊢a~b with R a b Data.Bool.≟ true
-... | yes Rab = Rab
-... | no  ¬Rab = ⊥-elim (¬Rab R⊢a~b)
-
--- #TODO: Remove? Look how silly it is...
--- (It helped me to realise that "Transitive (R ⊢_~_)" can be directly applied
--- to Boolean equalities, by definition of the (_⊢_~_) notation!).
-boolRelTrans
-    : {A : Set}
-    → {a b c : A}
-    → {R : A → A → Bool}
-    → (Transitive (R ⊢_~_))
-    → (R a b ≡ true)
-    → (R b c ≡ true)
-    → (R a c ≡ true)
-boolRelTrans {A} {a} {b} {c} {R} transR Rab Rbc = transR Rab Rbc
 
 RelToFun : EqRel → NFFun
 RelToFun (R , record { refl = reflR ; sym = symR ; trans = transR }) = 

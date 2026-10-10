@@ -5,8 +5,8 @@
 -- Maintainer  : Lulof Pirée
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --safe #-}
-
+--{-# OPTIONS --safe #-}
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
@@ -19,7 +19,7 @@ open import Data.Sum
 open import Function using (_∘_ ; _$_)
 
 open import Eser.EqRel.Definitions using (NFFun ; EqRel)
-open import Eser.EqRel.Conversions using (RelToFun)
+open import Eser.EqRel.Conversions using (RelToFun ; FunToRel)
 open import Eser.Aux using (_↔_ ; _≈_ ; restIsProofIrrel ; pair-eq)
 
 open import Eser.Filters.Base
@@ -33,7 +33,7 @@ module Eser.Filters.PointwiseProperties where
 --------------------------------------------------------------------------------
 
 Exence-sats : Filter → Exence → Set
-Exence-sats F (h , H) = (n : ℕ) → F Allows (getChoiceFromExence (h , H) n) In h n
+Exence-sats F (h , H) = (n : ℕ) → F allows (getChoiceFromExence (h , H) n) to h n
 
 NFFun-sats : Filter → NFFun → Set
 NFFun-sats F f' = Exence-sats F (restrict+ f')
@@ -45,14 +45,14 @@ data AllRestr-sat (F : Filter) : {n : ℕ} → NFRestr n → Set where
         : {n : ℕ} 
         → (r : NFRestr n) 
         → AllRestr-sat F r
-        → F Allows here In r
+        → F allows here to r
         → AllRestr-sat F (newNF r)
     allsat-oldNF 
         : {n : ℕ} 
         → (r : NFRestr n) 
         → (c : NFS r)
         → AllRestr-sat F r
-        → F Allows (earlier-new c) In r
+        → F allows (earlier-new c) to r
         → AllRestr-sat F (oldNF r c)
 
 -- Derived constructor that mutiplexes over the previous two constructors.
@@ -62,7 +62,7 @@ allsat-addChoice
     → (r : NFRestr n) 
     → (c : Choices r)
     → AllRestr-sat F r
-    → F Allows c In r
+    → F allows c to r
     → AllRestr-sat F (addChoice r c)
 allsat-addChoice {F} {n} r here sat allowed 
     = allsat-newNF r sat allowed
@@ -80,7 +80,7 @@ lemma-allrestr-sat-addchoice
     → (r : NFRestr n)
     → (c : Choices r)
     → AllRestr-sat F (addChoice r c)
-    → F Allows c In r
+    → F allows c to r
 lemma-allrestr-sat-addchoice {F} {n} r here (allsat-newNF r sat x) = x
 lemma-allrestr-sat-addchoice {F} {n} r 
                              (earlier-new c) (allsat-oldNF r c sat x) = x
@@ -104,7 +104,7 @@ Exence-sats-to-alt {F} {h , H} sat (suc n) =
         c-prop = proj₂ $ ⋖-to-addChoice (H n)
         c-eq : getChoice (h n) (h (suc n)) (H n) ≡ c
         c-eq = sym $ lemma-getChoice-exence n h H
-        c-allowed : F Allows c In (h n)
+        c-allowed : F allows c to (h n)
         c-allowed = subst (λ x → FilterAllows F (h n) x) c-eq (sat n)
 
         ans' : AllRestr-sat F (addChoice (h n) c)
@@ -129,10 +129,10 @@ Exence-sats-from-alt {F} {(h , H)} sat n = ans
         eq = lemma-⋖-addChoice-exence h H c refl
         K₂ : c ≡ getChoice (h n) (h (suc n)) (H n)
         K₂ = lemma-getChoice-exence n h H
-        c-allowed : F Allows c In (h n)
+        c-allowed : F allows c to (h n)
         c-allowed = lemma-allrestr-sat-addchoice (h n) c K₁
-        ans : F Allows (getChoice (h n) (h (suc n)) (H n)) In (h n)
-        ans = subst (λ x → F Allows x In (h n)) K₂ c-allowed
+        ans : F allows (getChoice (h n) (h (suc n)) (H n)) to (h n)
+        ans = subst (λ x → F allows x to (h n)) K₂ c-allowed
 
 --------------------------------------------------------------------------------
 -- Conversions preserve satisfiablity
@@ -159,11 +159,11 @@ theo-combine-presv-sat
     → Exence-sats F E
     → NFFun-sats F (combine E)
 theo-combine-presv-sat {F} (h , H) sat n = 
-    subst (λ ((r , s)  , r⋖s) → F Allows getChoice r s r⋖s In r) eq (sat n)
+    subst (λ ((r , s)  , r⋖s) → F allows getChoice r s r⋖s to r) eq (sat n)
     -- The goal unfolds to showing 
     -- Exence-sats F (restrict+ ∘ combine (h , H))
     -- i.e.
-    -- (n : ℕ) → F Allows getChoice (h' n) (h' (suc n)) (H' n) In (h' n)    (G)
+    -- (n : ℕ) → F allows getChoice (h' n) (h' (suc n)) (H' n) to (h' n)    (G)
     -- where
     -- (h' , H') ≔ (restrict+ ∘ combine (h , H)).
     -- But the `restrict+ ∘ combine ≈ id` theorem gives that `h' n ≡ h n`
@@ -215,44 +215,7 @@ DeadEndFree F =
     {n : ℕ} 
     → (r : NFRestr n) 
     → AllRestr-sat F r 
-    → Σ[ c ∈ Choices r ] F Allows c In r
-
---------------------------------------------------------------------------------
--- Filter satisfiability for equivalence relations.
---------------------------------------------------------------------------------
-Rel-sats : Filter → EqRel → Set
-Rel-sats F R = NFFun-sats F (RelToFun R)
-
-rel-to-exence : EqRel → Exence
-rel-to-exence = restrict+ ∘ RelToFun
-
-exence-to-rel : Exence → EqRel
-exence-to-rel = FunTo Rel ∘ combine
-
-exence-sat-to-rel-sat
-    : {R : EqRel}
-    → {F : Filter}
-    → Exence-sats F (rel-to-exence R)
-    → Rel-sats F R
-exence-sat-to-rel-sat = ?
-
-getchoice-to-relate
-    : {R : EqRel}
-    → {y : ℕ}
-    → (c : Choices (restrict (RunToFun R) y))
-    → c ≡ getChoiceFromExence (rel-to-exence R) y
-    → R relates y to (choiceToℕ c)
-getchoice-to-relate = ?
-
-unique-choice-to-relate
-    : {F : Filter}
-    → {R : EqRel}
-    → {y : ℕ}
-    → (c : Choices (restrict (RelToFun R) y))
-    → LocallyOneHot F (restrict (RelToFun R) y) c
-    → R relates y to (choiceToℕ c)
-unique-choice-to-relate = ?
-
+    → Σ[ c ∈ Choices r ] F allows c to r
 
 
 --------------------------------------------------------------------------------
@@ -289,13 +252,13 @@ _♥_ F G = DeadEndFree (F ⋀ G)
 lemma-DeadEndFree-firstchoice
     : {F : Filter}
     → DeadEndFree F
-    → F Allows here {0} {empty} In empty
+    → F allows here {0} {empty} to empty
 lemma-DeadEndFree-firstchoice {F} DeF 
-    = subst (λ c → F Allows c In empty) c≡here c-allowed
+    = subst (λ c → F allows c to empty) c≡here c-allowed
     where
         c : Choices empty
         c = proj₁ $ DeF {0} empty allsat-empty
-        c-allowed : F Allows c In empty
+        c-allowed : F allows c to empty
         c-allowed = proj₂ $ DeF {0} empty allsat-empty
         c≡here : c ≡ here
         c≡here = empty-has-one-choice c
@@ -329,7 +292,7 @@ lemma-DeadEndFree-firstchoice {F} DeF
 ClassGreedy : Filter → Exence → Set
 ClassGreedy F (h , H) = 
     (n : ℕ) 
-    → F Allows (here {n} {h n}) In (h n)
+    → F allows (here {n} {h n}) to (h n)
     → getChoiceFromExence (h , H) n ≡ here {n} {h n}
 
 ClassGreedyNFFun : Filter → NFFun → Set
@@ -350,7 +313,7 @@ theo-combine-presv-greed
 theo-combine-presv-greed {F} (h , H) greedy n = 
     subst 
         (λ (( r , s) , r⋖s) →
-          (F Allows here In r → getChoice r s r⋖s ≡ here)
+          (F allows here to r → getChoice r s r⋖s ≡ here)
         )
         eq
         (greedy n)
@@ -358,7 +321,7 @@ theo-combine-presv-greed {F} (h , H) greedy n =
     -- ClassGreedy F (restrict+ ∘ combine (h , H))
     -- i.e.
     -- (n : ℕ) 
-    --      → F Allows here In (h' n) 
+    --      → F allows here to (h' n) 
     --      → getChoice (h' n) (h' (suc n)) (H' n) ≡ here
     -- where
     -- (h' , H') ≔ (restrict+ ∘ combine (h , H)).
@@ -387,14 +350,14 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
         : {n : ℕ}
         → (r : NFRestr n)
         → AllRestr-sat F r
-        → Σ[ c ∈ Choices r ] F Allows c In r
+        → Σ[ c ∈ Choices r ] F allows c to r
     nextChoice-cases
         : {n : ℕ}
         → (r : NFRestr (suc n))
         → AllRestr-sat F r
         → (b : Bool)
         → F r here ≡ b
-        → Σ[ c ∈ Choices r ] F Allows c In r
+        → Σ[ c ∈ Choices r ] F allows c to r
     nextChoice {0} empty _ = (here , lemma-DeadEndFree-firstchoice DeF)
     nextChoice {suc n} r z = nextChoice-cases {n} r z (F r here) refl
     
@@ -411,7 +374,7 @@ module GreedyNewClass (F : Filter) (DeF : DeadEndFree F) where
             r-sat = proj₂ $ h+ n
             c : Choices r
             c = proj₁ $ nextChoice r r-sat
-            c-allowed : F Allows c In r
+            c-allowed : F allows c to r
             c-allowed = proj₂ $ nextChoice r r-sat
 
     h : (n : ℕ) → NFRestr n 

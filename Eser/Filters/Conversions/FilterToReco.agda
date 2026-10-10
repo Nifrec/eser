@@ -135,15 +135,15 @@ stronger-to-implication
     → (r : NFRestr n)
     → (c : Choices r)
     → G StrongerThan F
-    → G Allows c In r
-    → F Allows c In r
+    → G allows c to r
+    → F allows c to r
 stronger-to-implication {F} {G} {n} r c G>F G-allows 
     = stronger-to-implication-cases (F r c) refl
     where
         stronger-to-implication-cases 
             : (b : Bool) 
             → (F r c ≡ b) 
-            → F Allows c In r
+            → F allows c to r
         stronger-to-implication-cases false p = ⊥-elim $ true≢false true≡false
             where
                 G-disallows : G r c ≡ false

@@ -961,10 +961,10 @@ module ReplaceResp (T : ReplaceStruct) where
             cases
                 : (p : AllArgsNormal r ⊎ MinNonNormalArg r)
                 → (allArgsNormal? r ≡ p)
-                → Σ[ c ∈ Choices r ] F Allows c In r
+                → Σ[ c ∈ Choices r ] F allows c to r
             cases (inj₁ allNormal) p-eq = (here , allowed)
                 where
-                    allowed : F Allows here In r
+                    allowed : F allows here to r
                     allowed = 
                         begin 
                             F r here
@@ -989,7 +989,7 @@ module ReplaceResp (T : ReplaceStruct) where
                     c : Choices r
                     c = earlier-new $ resurface r yx<y
 
-                    allowed : F Allows c In r
+                    allowed : F allows c to r
                     allowed = 
                         begin 
                             F r c

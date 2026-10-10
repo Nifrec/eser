@@ -42,7 +42,7 @@
 -- both options do behave identically though.
 --------------------------------------------------------------------------------
 
-{-# OPTIONS --safe #-}
+--{-# OPTIONS --safe #-}
 
 open import Data.Nat
 open import Data.Bool hiding (_<_ ; _≤_)
@@ -61,23 +61,9 @@ open import Data.List using (List ; [] ; _∷_)
 open import Data.List.Relation.Unary.Any as Any
 open import Data.List.Relation.Unary.Any.Properties
 
---open import Data.Nat.Properties using 
---    (m<1+n⇒m<n∨m≡n 
---    ; n<1+n 
---    ; <-irrefl 
---    ; m≤n⇒m<n∨m≡n
---    ; <-trans
---    ; n≮n
---    ; <-irrelevant
---    ; suc-injective
---    ; ≤-refl
---    ; ≤-trans
---    ; n≤1+n
---    ; ≤-<-trans
---    )
-
-open import Eser.EqRel.Definitions using (NFFun) renaming (EqRel to EqRel)
+open import Eser.EqRel.Definitions
 open import Eser.EqRel.Conversions using (RelToFun)
+open import Eser.EqRel.EqRelProperties
 open import Eser.Aux using (_≈_ ; _↔_ ; ↔-to ; ↔-from)
 open import Eser.Relation.Binary.Path
 
@@ -250,25 +236,6 @@ filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 Rel-sats' : MFF → EqRel → Set
 Rel-sats' = Rel-sats ∘ MFF→Filter
 
-_relates_to_ : EqRel → ℕ → ℕ → Set
-(R , _) relates x to y = T (R x y)
-
-relates-to-refl : (R : EqRel) → Reflexive (R relates_to_)
-relates-to-refl = ?
-
-relates-to-sym : (R : EqRel) → Symmetric (R relates_to_)
-relates-to-sym = ?
-
-relates-to-trans : (R : EqRel) → Transitive (R relates_to_)
-relates-to-trans = ?
-
--- R ⊆ S if S relates all pairs (x, y) that R relates.
-_⊆_ : EqRel → EqRel → Set
-R ⊆ S = ((x y : ℕ) → R relates x to y → S relates x to y)
-
-⊆-refl : (R : EqRel) → R ⊆ R
-⊆-refl R x y xRy = xRy
-
 record _closure-of_ (F : Filter) (R : EqRel) : Set
     where
         field
@@ -339,8 +306,8 @@ IsOneHot F =
       {n : ℕ} 
     → (r : NFRestr n) 
     → {c c' : Choices r} 
-    → F Allows c In r 
-    → F Allows c' In r 
+    → F allows c to r 
+    → F allows c' to r 
     → c ≡ c'
 
 IsOneHot' : MFF → Set
@@ -355,7 +322,7 @@ NeverForcesnewNF F =
       {n : ℕ} 
     → (r : NFRestr n) 
     → (c : Choices r)
-    → F Allows c In r
+    → F allows c to r
     → c ≢ here
 
 NeverForcesnewNF' : MFF → Set
@@ -658,7 +625,6 @@ eqfilter-closure-compos-subrelat {E ∷ Es} {R} {x} {y} (there any) = xSy
         xSy : S relates x to y
         xSy = S'⊆S x y xS'y
 
-
 Eq'-⊎
     : {Es : List EqFilter}
     → {E : EqFilter}
@@ -669,6 +635,30 @@ Eq'-⊎ {Es} {E} {x} {y} = ↔-to $ Any-⊎-right (λ E → Eq E x y) E Es
     where
         open import Eser.Data.List.Relation.Unary.Any.Properties
             using (Any-⊎-right)
+
+_fires-with_ 
+    : (P : MFF)
+    → {y : ℕ}
+    → Σ[ r ∈ NFRestr y ] Choices r
+    → Set
+P fires-with (r , c) = cases (P r)
+    where
+        cases : MayFire (Choices r → Bool) → Set
+        cases pass = ⊥
+        cases (fire f) = f c ≡ true
+
+-- Let P be a closable filter (so it is one-hot) and S be the P-closure of R.
+-- Then if x is the unique choice that P (S ↾ y) allows, then xSy holds.
+closure-contains-required-equations
+    : {P : MFF}
+    → {R S : EqRel}
+    → (C : IsClosable' P)
+    → S ≡ rel (C R)
+    → {y : ℕ}
+    → (c : Choices (S ↾ y))
+    → P fires-with (S ↾ y , c)
+    → S relates y to (choiceToℕ c)
+closure-contains-required-equations = ?
 
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Generalisation of `eqfilter-closure-characterisation` to compositions

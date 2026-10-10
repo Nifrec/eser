@@ -248,7 +248,20 @@ Filter = {n : ℕ} → (r : NFRestr n) → Choices r → Bool
 FilterAllows : {n : ℕ} → Filter → (r : NFRestr n) → Choices r → Set
 FilterAllows F r c = F r c ≡ true
 
-syntax FilterAllows F r c = F Allows c In r
+syntax FilterAllows F r c = F allows c to r
+-- "allows_in_" is not valid because "in" is already a keyword in Agda.
+
+-- Predicate that c is the unique choice that F allows in r.
+LocallyOneHot
+    : (F : Filter)
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → (c : Choices r)
+    → Set
+LocallyOneHot F {n} r c = 
+    F allows c to r
+    ×
+    Σ[ c' ∈ (Choices r) ] (F allows c' to r → c' ≡ c)
 
 --------------------------------------------------------------------------------
 -- Restriction Coherent families of predicates (recos)
