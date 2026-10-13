@@ -45,6 +45,12 @@ A ↔ B = (A → B) × (B → A)
 ↔-from : {A B : Set} → A ↔ B → B → A
 ↔-from = proj₂
 
+↔-sym : {A B : Set} → A ↔ B → B ↔ A
+↔-sym (f , g) = (g , f)
+
+↔-trans : {A B C : Set} → A ↔ B → B ↔ C → A ↔ C
+↔-trans (f , g) (f' , g') = (f' ∘ f , g ∘ g')
+
 -- Homotopy between functions, i.e., pointwise equality.
 -- I.e., the functions are the same input-output map,
 -- but may have different implementations.
@@ -63,9 +69,13 @@ isContr A = Σ[ a ∈ A ]((a' : A) → a ≡ a')
 Between : (a b : ℕ) → ℕ → Set
 Between a b ℓ = (a < ℓ) × (ℓ < b)
  
+-- 2-layer homotopy.
+-- #EXT: B could depend on A.
+_≈≈_ : {A B C : Set} → (f g : A → B → C) → Set
+_≈≈_ {A} {B} f g = (a : A) → (b : B) → f a b ≡ g a b
 
 -- The standard library's `_ Preserves _ ⟶ _` (warning: the unicode
--- encoding of → and ⟶ are different, but not in my font...)
+-- encoding of → and ⟶ are different, but look identical in my font...)
 -- gave type errors with Agda being unable to fill all constraints.
 _Presv_To_ : {A B : Set} → (A → B) → Rel A 0ℓ → Rel B 0ℓ → Set
 _Presv_To_ {A} {B} f _<A_ _<B_ = (a a' : A) → a <A a' → (f a) <B (f a')
@@ -107,6 +117,17 @@ depSubst
     → (b : B a)
     → (a , b) ≡ (a' , subst B H b)
 depSubst a a' refl b = refl
+
+≡→↔
+    : {A B : Set}
+    → A ≡ B
+    → A ↔ B
+≡→↔ {A} {B} eq = (f , g)
+    where
+        f : A → B
+        f = subst id eq
+        g : B → A
+        g = subst id (sym eq)
 
 proj₁₂ 
     : {A : Set}

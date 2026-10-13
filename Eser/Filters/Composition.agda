@@ -137,8 +137,8 @@ _»_ : MFF → MFF → MFF
 
 -- 'Same NFFun' up to function extensionality.
 -- Defined as homotopy between underlaying ℕ → ℕ functions.
-_≈≈_ : NFFun → NFFun → Set
-(g , _ , _) ≈≈ (f , _ , _) = g ≈ f
+_≈'_ : NFFun → NFFun → Set
+(g , _ , _) ≈' (f , _ , _) = g ≈ f
 
 -- The imported _≡?_ from Filters.Properties gives 
 -- decidable equality on NFS r for any r : NFRestr n.
@@ -150,7 +150,7 @@ r ≡NFRestr? s = ?
 -- A Singleton Filter is a filter that is satisfied by exactly one relation.
 IsSingleton : Filter → Set
 IsSingleton F = 
-    Σ[ f ∈ NFFun ] (NFFun-sats F f) × ((g : NFFun) → NFFun-sats F g → g ≈≈ f)
+    Σ[ f ∈ NFFun ] (NFFun-sats F f) × ((g : NFFun) → NFFun-sats F g → g ≈' f)
 
 IsSingleton' : MFF → Set
 IsSingleton' = IsSingleton ∘ MFF→Filter
@@ -552,7 +552,7 @@ filterify-deadendfree = ?
 filterify-unique-sat
     : (f' g' : NFFun)
     → NFFun-sats (filterify f') g'
-    → g' ≈≈ f'
+    → g' ≈' f'
 filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 
 

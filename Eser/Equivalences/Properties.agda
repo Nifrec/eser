@@ -47,13 +47,13 @@ open import Eser.Equivalences.Properties.SigmaFinInfInhabitedProof public
 --------------------------------------------------------------------------------
 
 ≃-refl : {A : Set} → (A ≃ A)
-≃-refl = ↔-refl
+≃-refl = Function.Properties.Inverse.↔-refl
 
 ≃-sym : {A B : Set} → (A ≃ B) → (B ≃ A)
-≃-sym = ↔-sym
+≃-sym = Function.Properties.Inverse.↔-sym
 
 ≃-trans : {A B C : Set} → (A ≃ B) → (B ≃ C) → (A ≃ C)
-≃-trans = ↔-trans
+≃-trans = Function.Properties.Inverse.↔-trans
 
 mk≃ = mk↔
 

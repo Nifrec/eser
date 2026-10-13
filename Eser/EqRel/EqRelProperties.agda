@@ -22,9 +22,10 @@ open import Function using (_∘_ ; _$_)
 
 open import Eser.EqRel.Definitions
 open import Eser.EqRel.Conversions
+open import Eser.EqRel.Correspondences
 open import Eser.Filters.PointwiseProperties
 
-open import Eser.Aux using (_≈_ ; _↔_ ; ↔-to ; ↔-from)
+open import Eser.Aux using (_≈_ ; _≈≈_ ; _↔_ ; ↔-to ; ↔-from ; doubleCong)
 open import Eser.Relation.Binary.Path
 
 open import Eser.Filters.Conversions.NFFunToExence
@@ -54,6 +55,10 @@ exence-to-rel = FunToRel ∘ combine
 _↾_ : EqRel → (n : ℕ) → NFRestr n
 R ↾ n = restrict (RelToFun R) n
 
+-- Using an Exence as a relation.
+ExRel : Exence → ℕ → ℕ → Set
+ExRel E = (exence-to-rel E) relates_to_
+
 --------------------------------------------------------------------------------
 -- General properties
 --------------------------------------------------------------------------------
@@ -71,8 +76,66 @@ relates-to-trans = ?
 ⊆-refl R x y xRy = xRy
 
 --------------------------------------------------------------------------------
+-- Conversion to Exence and back is bijection-up-to-funext.
+--------------------------------------------------------------------------------
+-- The function ℕ → ℕ → Bool underlying the relation outputted by FunToRel
+-- is entirely determined by the function ℕ → ℕ underlying the input NFFun.
+FunToRel-proof-irrel
+    : (f g : NFFun)
+    → (proj₁ f) ≈ (proj₁ g)
+    → (proj₁ (FunToRel f)) ≈≈ (proj₁ (FunToRel g))
+FunToRel-proof-irrel f'@(f , _ , _) g'@(g , _ , _) homot x y = 
+    begin 
+        proj₁ (FunToRel f') x y
+    ≡⟨⟩
+        f x ≡ᵇ f y
+    ≡⟨ doubleCong _≡ᵇ_ (homot x) (homot y) ⟩
+        g x ≡ᵇ g y
+    ≡⟨⟩
+        proj₁ (FunToRel g') x y
+    ∎
+    where
+        open ≡-Reasoning
+RFRHomot-nocurry
+    : (R : EqRel) 
+    → (proj₁ ∘ FunToRel ∘ RelToFun) R ≈≈ proj₁ R
+RFRHomot-nocurry R x y = 
+    -- That curry (uncurry f) ≡ f holds judgementally.
+    -- `cong curry` also was not needed (and didn't even type check).
+    begin 
+        (proj₁ ∘ FunToRel ∘ RelToFun) R x y
+    ≡⟨ RFRHomot R (x , y) ⟩
+        (proj₁ R) x y
+    ∎
+    where
+        open ≡-Reasoning
+
+eqrel-exence-round-trip
+    : (R : EqRel)
+    → ((proj₁ ∘ FunToRel ∘ combine ∘ restrict+ ∘ RelToFun) R) ≈≈ (proj₁ R)
+eqrel-exence-round-trip R x y =
+    begin 
+        (proj₁ ∘ FunToRel ∘ combine ∘ restrict+ ∘ RelToFun) R x y
+    ≡⟨ FunToRel-proof-irrel f' f f'≈f x y ⟩
+        (proj₁ ∘ FunToRel ∘ RelToFun) R x y
+    ≡⟨ RFRHomot-nocurry R x y ⟩
+        (proj₁ R) x y 
+    ∎
+    where
+        open ≡-Reasoning
+        f : NFFun
+        f = RelToFun R
+        f' : NFFun
+        f' = (combine ∘ restrict+ ∘ RelToFun) R
+        f'≈f : (proj₁ f') ≈ (proj₁ f)
+        f'≈f = theo-combine∘restrict+ (RelToFun R)
+    
+
+
+--------------------------------------------------------------------------------
 -- Properties of Filter satisfiability for equivalence relations
 --------------------------------------------------------------------------------
+
 exence-sat-to-rel-sat
     : {R : EqRel}
     → {F : Filter}
