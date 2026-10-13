@@ -557,63 +557,27 @@ filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 --------------------------------------------------------------------------------
 -- Composing equality filters
 --------------------------------------------------------------------------------
--- Theorems showing the properties of _⋗_ compositions of EqFilters.
-
--- Same-extender-up-to-function-extensionalty relation.
--- (Output relations are homotopic).
-_=ext_ : Extender → Extender → Set
-G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
+-- Theorems showing the properties of closures and  
+-- _⋗_ compositions of EqFilters.
 
 -- Statement (final type) of the next theorem:
 ClosureBiimpl
-    : (F : MFF)
-    → (C : IsClosable' F)
+    : (E : EqFilter)
     → (R : EqRel)
     → Set
-ClosureBiimpl F C R = 
+ClosureBiimpl E R = 
       (x y : ℕ)
     → (S relates x to y) 
       ↔
-      (Path (R relates_to_) (FRel F D) x y )
+      (Path (R relates_to_) (Eq E) x y )
     where
-        -- Closure of R w.r.t. F.
+        F : Filter
+        F = EqFilter→Filter E
+        C : IsClosable F
+        C = EqFilter-IsClosable E
+        -- S is the E-closure of R.
         S : EqRel
         S = rel (C R)
-        D : DeadEndFree' F
-        D = proj₁ $ ↔-to (closable-characterisation' F) C
-
--- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
--- If S is the F-closure of R then xSy iff there exists
--- a path from x to y of steps xTy where T is the union of:
--- 1. The reflexive, symmetric, transitive closure of R.
--- 2. {(x , y) | x is the unique choice E allows at y}.
-closure-characterisation
-    : {F : MFF}
-    → (C : IsClosable' F)
-    → (R : EqRel)
-    → ClosureBiimpl F C R
-closure-characterisation {F} C R x y = (to x y , from x y)
-    where
-        -- Closure of R w.r.t. F.
-        S : EqRel
-        S = rel (C R)
-        D : DeadEndFree' F
-        D = proj₁ $ ↔-to (closable-characterisation' F) C
-        E : ℕ → ℕ → Set
-        E = FRel F D
-        
-
-        to
-            : (x y : ℕ)
-            → S relates x to y 
-            → Path (R relates_to_) E x y 
-        to x y xSy = ?
-
-        from
-            : (x y : ℕ)
-            → Path (R relates_to_) E x y 
-            → S relates x to y 
-        from x y p = ?
 
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Let S be the E-closure of R.
@@ -626,19 +590,33 @@ closure-characterisation {F} C R x y = (to x y , from x y)
 eqfilter-closure-characterisation
     : (E : EqFilter)
     → (R : EqRel)
-    → (x y : ℕ)
-    → ((proj₁ $ (∗ E) R) relates x to y) ↔ (Path (R relates_to_) (Eq E) x y)
+    → ClosureBiimpl E R
 eqfilter-closure-characterisation E R x y = (to x y , from x y)
     where
+        F : Filter
+        F = EqFilter→Filter E
+        C : IsClosable F
+        C = EqFilter-IsClosable E
+        -- S is the E-closure of R.
         S : EqRel
-        S = proj₁ $ (∗ E) R
-        to 
-            : (x y : ℕ) 
+        S = rel (C R)
+
+        to : (x y : ℕ) 
             → S relates x to y 
             → Path (R relates_to_) (Eq E) x y
         to x y xSy = ?
-        from = ?
+
+        from 
+            : (x y : ℕ) 
+            → Path (R relates_to_) (Eq E) x y
+            → S relates x to y 
+        from x y p = ?
+
                 
+-- Same-extender-up-to-function-extensionalty relation.
+-- (Output relations are homotopic).
+_=ext_ : Extender → Extender → Set
+G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
  
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- When closing by multiple equation filters, the order does not matter.
@@ -791,7 +769,7 @@ eqfilter-closure-composition [] R x y = ans
         --    path-uninhabited-right (λ y x → ¬Any[]) (relates-to-trans R) p
 
         R→path : R relates x to y → Path (R relates_to_) (Eq' []) x y
-        R→path = ?
+        --R→path = ?
         R→path xRy = {! cases (<-cmp x y) !}
             --where
             --    cases 
