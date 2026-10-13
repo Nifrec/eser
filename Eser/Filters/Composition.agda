@@ -555,20 +555,14 @@ filterify-unique-sat
 filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 
 --------------------------------------------------------------------------------
--- General properties of closures
+-- Composing equality filters
 --------------------------------------------------------------------------------
+-- Theorems showing the properties of _⋗_ compositions of EqFilters.
 
--- Convert a DeadEndFree MayFireFilter into a relation on ℕ.
--- Informally: the relation E : ℕ → ℕ → Set
--- s.t. xEy iff F allows r in x
--- where r is the 'canonical' NFRestr y obtained by following
--- the default DeadEndFreeness choices.
-FRel 
-    : (F : MFF) 
-    → DeadEndFree' F
-    → (ℕ → ℕ → Set)
-FRel F x y = {! "x is the unique choice F allows in y".
-    Use DeadEndFreeness to get the NFRestr at which we test? !}
+-- Same-extender-up-to-function-extensionalty relation.
+-- (Output relations are homotopic).
+_=ext_ : Extender → Extender → Set
+G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
 
 -- Statement (final type) of the next theorem:
 ClosureBiimpl
@@ -620,21 +614,6 @@ closure-characterisation {F} C R x y = (to x y , from x y)
             → Path (R relates_to_) E x y 
             → S relates x to y 
         from x y p = ?
-
-
-
-
-
---------------------------------------------------------------------------------
--- Composing equality filters
---------------------------------------------------------------------------------
--- Theorems showing the properties of _⋗_ compositions of EqFilters.
-
--- Same-extender-up-to-function-extensionalty relation.
--- (Output relations are homotopic).
-_=ext_ : Extender → Extender → Set
-G =ext F = (R : EqRel) → proj₁ (proj₁ $ G R) ≈ proj₁ (proj₁ $ F R)
-
 
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Let S be the E-closure of R.
