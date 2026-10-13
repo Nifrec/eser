@@ -554,6 +554,76 @@ filterify-unique-sat
     → g' ≈≈ f'
 filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 
+--------------------------------------------------------------------------------
+-- General properties of closures
+--------------------------------------------------------------------------------
+
+-- Convert a DeadEndFree MayFireFilter into a relation on ℕ.
+-- Informally: the relation E : ℕ → ℕ → Set
+-- s.t. xEy iff F allows r in x
+-- where r is the 'canonical' NFRestr y obtained by following
+-- the default DeadEndFreeness choices.
+FRel 
+    : (F : MFF) 
+    → DeadEndFree' F
+    → (ℕ → ℕ → Set)
+FRel F x y = {! "x is the unique choice F allows in y".
+    Use DeadEndFreeness to get the NFRestr at which we test? !}
+
+-- Statement (final type) of the next theorem:
+ClosureBiimpl
+    : (F : MFF)
+    → (C : IsClosable' F)
+    → (R : EqRel)
+    → Set
+ClosureBiimpl F C R = 
+      (x y : ℕ)
+    → (S relates x to y) 
+      ↔
+      (Path (R relates_to_) (FRel F D) x y )
+    where
+        -- Closure of R w.r.t. F.
+        S : EqRel
+        S = rel (C R)
+        D : DeadEndFree' F
+        D = proj₁ $ ↔-to (closable-characterisation' F) C
+
+-- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
+-- If S is the F-closure of R then xSy iff there exists
+-- a path from x to y of steps xTy where T is the union of:
+-- 1. The reflexive, symmetric, transitive closure of R.
+-- 2. {(x , y) | x is the unique choice E allows at y}.
+closure-characterisation
+    : {F : MFF}
+    → (C : IsClosable' F)
+    → (R : EqRel)
+    → ClosureBiimpl F C R
+closure-characterisation {F} C R x y = (to x y , from x y)
+    where
+        -- Closure of R w.r.t. F.
+        S : EqRel
+        S = rel (C R)
+        D : DeadEndFree' F
+        D = proj₁ $ ↔-to (closable-characterisation' F) C
+        E : ℕ → ℕ → Set
+        E = FRel F D
+        
+
+        to
+            : (x y : ℕ)
+            → S relates x to y 
+            → Path (R relates_to_) E x y 
+        to x y xSy = ?
+
+        from
+            : (x y : ℕ)
+            → Path (R relates_to_) E x y 
+            → S relates x to y 
+        from x y p = ?
+
+
+
+
 
 --------------------------------------------------------------------------------
 -- Composing equality filters
@@ -578,19 +648,16 @@ eqfilter-closure-characterisation
     : (E : EqFilter)
     → (R : EqRel)
     → (x y : ℕ)
-    → ((proj₁ $ (∗ E) R) relates x to y) ↔ (TriPath (R relates_to_) (Eq E) x y)
+    → ((proj₁ $ (∗ E) R) relates x to y) ↔ (Path (R relates_to_) (Eq E) x y)
 eqfilter-closure-characterisation E R x y = (to x y , from x y)
     where
         S : EqRel
         S = proj₁ $ (∗ E) R
-        to : (x y : ℕ) → S relates x to y → TriPath (R relates_to_) (Eq E) x y
-        to x y xSy = cases (<-cmp x y)
-            where
-                cases : Tri (x < y) (x ≡ y) (x > y) →  TriPath (R relates_to_) (Eq E) x y
-                cases (tri< x<y x≢y y≮x) = ?
-                    samedir x<y  
-                cases (tri≈ x≮y x≡y y≮x) = emptypath x≡y
-                cases (tri> x≮y x≢y y<x) = ?
+        to 
+            : (x y : ℕ) 
+            → S relates x to y 
+            → Path (R relates_to_) (Eq E) x y
+        to x y xSy = ?
         from = ?
                 
  
@@ -722,7 +789,7 @@ eqfilter-closure-composition
     → (x y : ℕ)
     → ((proj₁ $ (eq-list-closure L) R) relates x to y) 
       ↔ 
-      (TriPath (R relates_to_) (Eq' L) x y)
+      (Path (R relates_to_) (Eq' L) x y)
 -- Proof strategy: induction on L. 
 -- In the L ≗ [] case both sides are just xRy.
 -- In the L ≗ (E ∷ Es) case both directions needs to be shown separately.
@@ -736,27 +803,29 @@ eqfilter-closure-composition
 --   and then conclude by transitivity of S.
 eqfilter-closure-composition [] R x y = ans
     where
-        path→R : TriPath (R relates_to_) (Eq' []) x y → R relates x to y
-        path→R (samedir x<y p) = 
-            path-uninhabited-right (λ x y → ¬Any[]) (relates-to-trans R) p
-        path→R (emptypath refl) = relates-to-refl R
-        path→R (oppdir x<y p) = relates-to-sym R $ 
-            path-uninhabited-right (λ y x → ¬Any[]) (relates-to-trans R) p
+        path→R : Path (R relates_to_) (Eq' []) x y → R relates x to y
+        path→R = ?
+        --path→R (samedir x<y p) = 
+        --    path-uninhabited-right (λ x y → ¬Any[]) (relates-to-trans R) p
+        --path→R (emptypath refl) = relates-to-refl R
+        --path→R (oppdir x<y p) = relates-to-sym R $ 
+        --    path-uninhabited-right (λ y x → ¬Any[]) (relates-to-trans R) p
 
-        R→path : R relates x to y → TriPath (R relates_to_) (Eq' []) x y
-        R→path xRy = cases (<-cmp x y)
-            where
-                cases 
-                    : Tri (x < y) (x ≡ y) (x > y) → 
-                    TriPath (R relates_to_) (Eq' []) x y
-                cases (tri< x<y x≢y y≮x) =
-                    samedir x<y $ laststep x<y $ inj₁ xRy
-                cases (tri≈ x≮y x≡y y≮x) = emptypath x≡y
-                cases (tri> x≮y x≢y y<x) = 
-                    oppdir y<x $ laststep y<x $ inj₁ (relates-to-sym R xRy)
+        R→path : R relates x to y → Path (R relates_to_) (Eq' []) x y
+        R→path = ?
+        R→path xRy = {! cases (<-cmp x y) !}
+            --where
+            --    cases 
+            --        : Tri (x < y) (x ≡ y) (x > y) → 
+            --        Path (R relates_to_) (Eq' []) x y
+            --    cases (tri< x<y x≢y y≮x) =
+            --        samedir x<y $ laststep x<y $ inj₁ xRy
+            --    cases (tri≈ x≮y x≡y y≮x) = emptypath x≡y
+            --    cases (tri> x≮y x≢y y<x) = 
+            --        oppdir y<x $ laststep y<x $ inj₁ (relates-to-sym R xRy)
 
         -- The goal simplifies to this:
-        ans : (R relates x to y) ↔ TriPath (R relates_to_) (Eq' []) x y
+        ans : (R relates x to y) ↔ Path (R relates_to_) (Eq' []) x y
         ans = (R→path , path→R)
 eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
     where
@@ -772,58 +841,58 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
         check = refl
 
 
-        to-< 
-            : {x y : ℕ}
-            → x < y 
-            → S relates x to y 
-            → <Path (R relates_to_) (Eq' (E ∷ Es)) x y
-        to-< {x} {y} x<y xSy = flatpath'
-            where
-                lastclosure 
-                    : S relates x to y 
-                    → TriPath (S' relates_to_) (Eq E) x y
-                lastclosure = 
-                    ↔-to 
-                        {S relates x to y} 
-                        {TriPath (S' relates_to_) (Eq E) x y}
-                        $ eqfilter-closure-characterisation E S' x y
-                nestedpath : <Path (S' relates_to_) (Eq E) x y
-                nestedpath = tripath-elim-< (lastclosure xSy) x<y
+        --to-< 
+        --    : {x y : ℕ}
+        --    → S relates x to y 
+        --    → <Path (R relates_to_) (Eq' (E ∷ Es)) x y
+        --to-< {x} {y} x<y xSy = flatpath'
+        --    where
+        --        lastclosure 
+        --            : S relates x to y 
+        --            → Path (S' relates_to_) (Eq E) x y
+        --        lastclosure = 
+        --            ↔-to 
+        --                {S relates x to y} 
+        --                {Path (S' relates_to_) (Eq E) x y}
+        --                $ eqfilter-closure-characterisation E S' x y
+        --        nestedpath : <Path (S' relates_to_) (Eq E) x y
+        --        nestedpath = tripath-elim-< (lastclosure xSy) x<y
 
-                IH  : {x y : ℕ}
-                    → S' relates x to y 
-                    → TriPath (R relates_to_) (Eq' Es) x y 
-                IH {x} {y} = ↔-to (eqfilter-closure-composition Es R x y)
+        --        IH  : {x y : ℕ}
+        --            → S' relates x to y 
+        --            → Path (R relates_to_) (Eq' Es) x y 
+        --        IH {x} {y} = ↔-to (eqfilter-closure-composition Es R x y)
 
-                nestedpath' : <Path (TriPath (R relates_to_) (Eq' Es)) 
-                                    (Eq E) x y
-                nestedpath' = path-map-left {S' relates_to_} {Eq E} 
-                                {TriPath (R relates_to_) (Eq' Es)} 
-                                IH {x} {y} nestedpath
-                -- The TriPath steps must all be <Path steps in the same
-                -- direction.
-                nestedpath'' : <Path (<Path (R relates_to_) (Eq' Es)) (Eq E) x y
-                nestedpath'' = nested-tripath-left nestedpath'
+        --        nestedpath' : <Path (Path (R relates_to_) (Eq' Es)) 
+        --                            (Eq E) x y
+        --        nestedpath' = path-map-left {S' relates_to_} {Eq E} 
+        --                        {Path (R relates_to_) (Eq' Es)} 
+        --                        IH {x} {y} nestedpath
+        --        -- The Path steps must all be <Path steps in the same
+        --        -- direction.
+        --        nestedpath'' : <Path (<Path (R relates_to_) (Eq' Es)) (Eq E) x y
+        --        nestedpath'' = nested-tripath-left nestedpath'
 
-                flatpath : <Path (R relates_to_) (Eq' Es ⊎⊎ Eq E) x y
-                flatpath = path-flatten-left nestedpath''
+        --        flatpath : <Path (R relates_to_) (Eq' Es ⊎⊎ Eq E) x y
+        --        flatpath = path-flatten-left nestedpath''
 
-                flatpath' : <Path (R relates_to_) (Eq' (E ∷ Es)) x y
-                flatpath' = path-map-right Eq'-⊎ flatpath
+        --        flatpath' : <Path (R relates_to_) (Eq' (E ∷ Es)) x y
+        --        flatpath' = path-map-right Eq'-⊎ flatpath
         to 
             : (x y : ℕ)
             → S relates x to y 
-            → TriPath (R relates_to_) (Eq' (E ∷ Es)) x y
-        to x y = cases (<-cmp x y)
-            where
-                cases 
-                    : Tri (x < y) (x ≡ y) (x > y)
-                    → S relates x to y 
-                    → TriPath (R relates_to_) (Eq' (E ∷ Es)) x y
-                cases (tri< x<y _ _) xSy = samedir x<y $ to-< {x} {y} x<y xSy
-                cases (tri≈ _ x≡y _) = λ _ → emptypath x≡y
-                cases (tri> _ _ y<x) xSy = oppdir y<x 
-                    $ to-< {y} {x} y<x (relates-to-sym S {x} {y} xSy )
+            → Path (R relates_to_) (Eq' (E ∷ Es)) x y
+        to x y = ?
+            --cases (<-cmp x y)
+            --where
+            --    cases 
+            --        : Tri (x < y) (x ≡ y) (x > y)
+            --        → S relates x to y 
+            --        → Path (R relates_to_) (Eq' (E ∷ Es)) x y
+            --    cases (tri< x<y _ _) xSy = samedir x<y $ to-< {x} {y} x<y xSy
+            --    cases (tri≈ _ x≡y _) = λ _ → emptypath x≡y
+            --    cases (tri> _ _ y<x) xSy = oppdir y<x 
+            --        $ to-< {y} {x} y<x (relates-to-sym S {x} {y} xSy )
 
         R⊆S : R ⊆ S
         R⊆S = eqfilter-closure-composition-subrelat-R (E ∷ Es) R
@@ -833,25 +902,26 @@ eqfilter-closure-composition (E ∷ Es) R x y = (to x y , from x y)
         L→S = eqfilter-closure-compos-subrelat {E ∷ Es} {R}
 
 
-        from-samedir 
-            : {x y : ℕ}
-            → <Path (R relates_to_) (Eq' (E ∷ Es)) x y 
-            → S relates x to y
-        from-samedir (laststep {x} {y} x<y (inj₁ xRy)) = R⊆S x y xRy
-        from-samedir (laststep {x} {y} x<y (inj₂ xLy)) = L→S xLy
-        from-samedir (addstep {x} {z} {y} x<z z<y (inj₁ xRz) p) = 
-            relates-to-trans S {x} {z} {y} (R⊆S x z xRz) (from-samedir p)
-        from-samedir (addstep {x} {z} {y} x<z z<y (inj₂ xLz) p) =
-            relates-to-trans S {x} {z} {y} (L→S xLz) (from-samedir p)
+        --from-samedir 
+        --    : {x y : ℕ}
+        --    → <Path (R relates_to_) (Eq' (E ∷ Es)) x y 
+        --    → S relates x to y
+        --from-samedir (laststep {x} {y} x<y (inj₁ xRy)) = R⊆S x y xRy
+        --from-samedir (laststep {x} {y} x<y (inj₂ xLy)) = L→S xLy
+        --from-samedir (addstep {x} {z} {y} x<z z<y (inj₁ xRz) p) = 
+        --    relates-to-trans S {x} {z} {y} (R⊆S x z xRz) (from-samedir p)
+        --from-samedir (addstep {x} {z} {y} x<z z<y (inj₂ xLz) p) =
+        --    relates-to-trans S {x} {z} {y} (L→S xLz) (from-samedir p)
 
         from 
             : (x y : ℕ) 
-            → TriPath (R relates_to_) (Eq' (E ∷ Es)) x y 
+            → Path (R relates_to_) (Eq' (E ∷ Es)) x y 
             → S relates x to y
-        from x y (samedir {x} {y} x<y p) = from-samedir p
-        from x y (emptypath refl) = relates-to-refl S {x}
-        from x y (oppdir {x} {y} y<x p) = 
-            relates-to-sym S {y} {x} (from-samedir {y} {x} p)
+        from = ?
+        --from x y (samedir {x} {y} x<y p) = from-samedir p
+        --from x y (emptypath refl) = relates-to-refl S {x}
+        --from x y (oppdir {x} {y} y<x p) = 
+        --    relates-to-sym S {y} {x} (from-samedir {y} {x} p)
     
 -- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
 -- Every equation in L : List EqFilter holds in the L-closure of R.

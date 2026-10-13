@@ -45,78 +45,90 @@ open import Eser.Aux using (_↔_)
 
 open import Eser.Equivalences
 
-module Eser.Relation.Binary.Path {A : Set} (R S : A → A → Set) where
+module Eser.Relation.Binary.Path {A : Set} where
 
-data Path : A → A → Set where
-    empty : (x : A) → Path x x
-    step 
+module _ (R S : A → A → Set) where
+
+    data Path : A → A → Set where
+        empty : (x : A) → Path x x
+        step 
+            : {x y z : A}
+            → R x y ⊎ R y x ⊎ S x y ⊎ S y x
+            → Path y z
+            → Path x z
+
+    -- Path concatenation.
+    path-trans
         : {x y z : A}
-        → R x y ⊎ R y x ⊎ S x y ⊎ S y x
+        → Path x y
         → Path y z
         → Path x z
+    path-trans {x} {y} {z} (empty x) p = p
+    path-trans {x} {y} {z} (step v q) p = step v (path-trans q p)
 
--- Path concatenation.
-path-trans
-    : {x y z : A}
-    → Path x y
-    → Path y z
-    → Path x z
-path-trans {x} {y} {z} (empty x) p = p
-path-trans {x} {y} {z} (step v q) p = step v (path-trans q p)
-
-path-sym
-    : {x y : A}
-    → Path x y
-    → Path y x
-path-sym {x} {x} (empty x) = empty x
-path-sym {x} {z} (step {y = y} (inj₁ Rxy) p) =
-    -- Note the types:
-    --               p : y ⇝ z
-    --      path-sym p : z ⇝ y
-    path-trans  (path-sym p) (step (inj₂ $ inj₁ Rxy)  (empty x))
-path-sym {x} {z} (step {y = y} (inj₂ (inj₁ Ryx)) p) = 
-    path-trans  (path-sym p) (step (inj₁ Ryx)  (empty x))
-path-sym {x} {z} (step {y = y} (inj₂ (inj₂ (inj₁ Sxy))) p) =
-    path-trans  (path-sym p) (step (inj₂ $ inj₂ $ inj₂ Sxy) (empty x))
-path-sym {x} {z} (step {y = y} (inj₂ (inj₂ (inj₂ Syx))) p) =
-    path-trans  (path-sym p) (step (inj₂ $ inj₂ $ inj₁ Syx) (empty x))
-
--- Alternative formulation.
-data Path' : A → A → Set where
-    p-atomic
+    path-sym
         : {x y : A}
-        → R x y ⊎ S x y
-        → Path' x y
-    p-refl 
-        : (x : A) 
-        → Path' x x
-    p-sym 
-        : {x y : A} 
-        → Path' x y 
-        → Path' y x
-    p-trans 
-        : {x y z : A} 
-        → Path' x y
-        → Path' y z
-        → Path' x z
+        → Path x y
+        → Path y x
+    path-sym {x} {x} (empty x) = empty x
+    path-sym {x} {z} (step {y = y} (inj₁ Rxy) p) =
+        -- Note the types:
+        --               p : y ⇝ z
+        --      path-sym p : z ⇝ y
+        path-trans  (path-sym p) (step (inj₂ $ inj₁ Rxy)  (empty x))
+    path-sym {x} {z} (step {y = y} (inj₂ (inj₁ Ryx)) p) = 
+        path-trans  (path-sym p) (step (inj₁ Ryx)  (empty x))
+    path-sym {x} {z} (step {y = y} (inj₂ (inj₂ (inj₁ Sxy))) p) =
+        path-trans  (path-sym p) (step (inj₂ $ inj₂ $ inj₂ Sxy) (empty x))
+    path-sym {x} {z} (step {y = y} (inj₂ (inj₂ (inj₂ Syx))) p) =
+        path-trans  (path-sym p) (step (inj₂ $ inj₂ $ inj₁ Syx) (empty x))
 
-Path→Path' : {x y : A} → Path x y → Path' x y
-Path→Path' {x} {x} (empty x) = p-refl x
-Path→Path' {x} {z} (step {y = y} (inj₁ Rxy) p) = 
-    p-trans (p-atomic (inj₁ $ Rxy)) (Path→Path' p)
-Path→Path' {x} {z} (step {y = y} (inj₂ (inj₁ Ryx)) p) =
-    p-trans (p-sym $ p-atomic $ inj₁ Ryx) (Path→Path' p)
-Path→Path' {x} {z} (step {y = y} (inj₂ (inj₂ (inj₁ Sxy))) p) =
-    p-trans (p-atomic (inj₂ $ Sxy)) (Path→Path' p)
-Path→Path' {x} {z} (step {y = y} (inj₂ (inj₂ (inj₂ Syx))) p) =
-    p-trans (p-sym $ p-atomic $ inj₂ Syx) (Path→Path' p)
+    -- Alternative formulation.
+    data Path' : A → A → Set where
+        p-atomic
+            : {x y : A}
+            → R x y ⊎ S x y
+            → Path' x y
+        p-refl 
+            : (x : A) 
+            → Path' x x
+        p-sym 
+            : {x y : A} 
+            → Path' x y 
+            → Path' y x
+        p-trans 
+            : {x y z : A} 
+            → Path' x y
+            → Path' y z
+            → Path' x z
 
-Path'→Path : {x y : A} → Path' x y → Path x y
-Path'→Path {x} {y} (p-atomic (inj₁ Rxy)) = step (inj₁ Rxy) (empty y)
-Path'→Path {x} {y} (p-atomic (inj₂ Sxy)) = 
-    step (inj₂ $ inj₂ $ inj₁ Sxy) (empty y)
-Path'→Path {x} {x} (p-refl x) = empty x
-Path'→Path {x} {y} (p-sym p) = 
-    path-sym $ Path'→Path p
-Path'→Path {x} {z} (p-trans {y = y} p q) = 
-    path-trans (Path'→Path p) (Path'→Path q)
+    Path→Path' : {x y : A} → Path x y → Path' x y
+    Path→Path' {x} {x} (empty x) = p-refl x
+    Path→Path' {x} {z} (step {y = y} (inj₁ Rxy) p) = 
+        p-trans (p-atomic (inj₁ $ Rxy)) (Path→Path' p)
+    Path→Path' {x} {z} (step {y = y} (inj₂ (inj₁ Ryx)) p) =
+        p-trans (p-sym $ p-atomic $ inj₁ Ryx) (Path→Path' p)
+    Path→Path' {x} {z} (step {y = y} (inj₂ (inj₂ (inj₁ Sxy))) p) =
+        p-trans (p-atomic (inj₂ $ Sxy)) (Path→Path' p)
+    Path→Path' {x} {z} (step {y = y} (inj₂ (inj₂ (inj₂ Syx))) p) =
+        p-trans (p-sym $ p-atomic $ inj₂ Syx) (Path→Path' p)
+
+    Path'→Path : {x y : A} → Path' x y → Path x y
+    Path'→Path {x} {y} (p-atomic (inj₁ Rxy)) = step (inj₁ Rxy) (empty y)
+    Path'→Path {x} {y} (p-atomic (inj₂ Sxy)) = 
+        step (inj₂ $ inj₂ $ inj₁ Sxy) (empty y)
+    Path'→Path {x} {x} (p-refl x) = empty x
+    Path'→Path {x} {y} (p-sym p) = 
+        path-sym $ Path'→Path p
+    Path'→Path {x} {z} (p-trans {y = y} p q) = 
+        path-trans (Path'→Path p) (Path'→Path q)
+
+--------------------------------------------------------------------------------
+-- Properties of Path
+--------------------------------------------------------------------------------
+
+-- Pointwise ⊎ of two relations.
+_⊎⊎_ : (A → A → Set)
+     → (A → A → Set)
+     → (A → A → Set)
+(S ⊎⊎ T) x y = (S x y) ⊎ (T x y)
