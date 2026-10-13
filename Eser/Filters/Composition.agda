@@ -91,6 +91,10 @@ IsFire : {A : Set} → MayFire A → Set 
 IsFire (fire _) = ⊤
 IsFire pass = ⊥
 
+isfire? : {A : Set} (m : MayFire A) → Dec (IsFire m)
+isfire? (fire _) = yes tt
+isfire? pass = no λ ()
+
 MayFireFilter : Set
 MayFireFilter = 
       {n : ℕ}
@@ -300,6 +304,37 @@ closable-characterisation'
     → (IsClosable' F) ↔ (DeadEndFree' F × IsOneHot' F × NeverForcesnewNF' F)
 closable-characterisation' = ?
 
+allows'-to
+    : (F : MFF)
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → Choices r
+    → Set
+allows'-to F r c = (MFF→Filter F) allows c to r
+
+syntax allows'-to F r c = F allows' c to r
+
+-- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
+-- Any closable filter that always fires allows exactly one choice
+-- in each NFRestr.
+
+AlwaysFires : MFF → Set
+AlwaysFires F = {n : ℕ} → (r : NFRestr n) → IsFire (F r)
+
+get-unique-choice
+    : {F : MFF}
+    → IsClosable' F
+    → AlwaysFires F
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → Σ[ c ∈ Choices r ] (F allows' c to r) 
+                       × ((c' : Choices r) → (F allows' c' to r) → (c' ≡ c))
+get-unique-choice {F} C AF r = 
+    let (def , oh , nonewNF) = ↔-to (closable-characterisation' F) C
+    in
+    ?
+    
+
 --------------------------------------------------------------------------------
 -- Corollary : compositions of closable filters remain closable
 --------------------------------------------------------------------------------
@@ -383,9 +418,6 @@ compo-singleton-right = ?
 -- Other properties of composition and MFFs
 --------------------------------------------------------------------------------
 -- These may be moved to earlier in the file, as other lemmas depend on them.
-
-AlwaysFires : MFF → Set
-AlwaysFires F = {n : ℕ} → (r : NFRestr n) → IsFire (F r)
 
 singleton→alwaysfires : {F : MFF} → IsSingleton' F → AlwaysFires F
 singleton→alwaysfires = ?

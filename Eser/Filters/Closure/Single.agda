@@ -52,6 +52,31 @@ open import Eser.Filters.Composition
 open _closure-of_
 
 module Eser.Filters.Closure.Single where
+
+--------------------------------------------------------------------------------
+-- Preliminary/auxiliary lemmas
+--------------------------------------------------------------------------------
+
+-- Get the F-closure of R represented in the form of an Exence.
+exclosure
+    : {F : Filter}
+    → (C : IsClosable F)
+    → (R : EqRel)
+    → Exence
+exclosure C R = rel-to-exence $ rel (C R)
+
+get-unique-choice-exence
+    : {F : MFF}
+    → (C : IsClosable' F)
+    → (AF : AlwaysFires F)
+    → (R : EqRel)
+    → (y : ℕ)
+    → getChoiceFromExence (exclosure C R) y 
+      ≡ 
+      (proj₁ $ get-unique-choice C AF (proj₁ (exclosure C R) y))
+get-unique-choice-exence = ?
+
+
 --------------------------------------------------------------------------------
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Characterisation of a closure of a relation w.r.t. an EqFilter.
@@ -70,6 +95,15 @@ module Eser.Filters.Closure.Single where
 -- Then we lift the result via the canonical conversions to EqRel.
 --------------------------------------------------------------------------------
 
+get-closure-as-exence 
+    : (E : EqFilter)
+    → (R : EqRel)
+    → Exence
+get-closure-as-exence E R = rel-to-exence $ rel (C R)
+    where
+        C : IsClosable (EqFilter→Filter E)
+        C = EqFilter-IsClosable E
+
 -- Statement of next lemma.
 ClosureExBiimpl
     : (E : EqFilter)
@@ -77,17 +111,9 @@ ClosureExBiimpl
     → Set
 ClosureExBiimpl E R = 
       (x y : ℕ)
-    → (ExRel hH x y)
+    → (ExRel (get-closure-as-exence E R) x y)
       ↔
       (Path (R relates_to_) (Eq E) x y )
-    where
-        F : Filter
-        F = EqFilter→Filter E
-        C : IsClosable F
-        C = EqFilter-IsClosable E
-        -- hH S is the Exence-representation of the E-closure of R.
-        hH : Exence
-        hH = rel-to-exence $ rel (C R)
 
 eqfil-closure-char-exence
     : (E : EqFilter)
@@ -101,11 +127,38 @@ eqfil-closure-char-exence E R x y = (to x y , from x y)
         C = EqFilter-IsClosable E
         hH : Exence
         hH = rel-to-exence $ rel (C R)
+        h : (n : ℕ) → NFRestr n
+        h = proj₁ hH
+
+        --open PathBase (R relates_to_) (Eq E)
 
         to : (x y : ℕ) 
             → ExRel hH x y
             → Path (R relates_to_) (Eq E) x y
-        to x y xSy = ?
+        to x y = cases (<-cmp x y)
+            where
+                -- The only difficult case is when x < y.
+                -- When x ≡ y we can return an empty path,
+                -- and y < x is symmetric to the x < y case.
+                to-< 
+                    : {x y : ℕ}
+                    → x < y
+                    → Dec (IsFire (E y))
+                    → ExRel hH x y
+                    → Path (R relates_to_) (Eq E) x y
+                to-< {x} {y} x<y (no ¬fire) xhHy = ?
+                to-< {x} {y} x<y (yes fire) xhHy = ?
+
+                cases 
+                    : (Tri (x < y) (x ≡ y) (x > y))
+                    → ExRel hH x y
+                    → Path (R relates_to_) (Eq E) x y
+                cases (tri≈ _ refl _) _ = empty x
+                cases (tri< x<y _ _) = to-< x<y (isfire? (E y))
+                cases (tri> _ _ y<x) xhHy = 
+                    path-sym (R relates_to_) (Eq E) 
+                    $ to-< {y} {x} y<x (isfire? (E x)) 
+                        (relates-to-sym (exence-to-rel hH) {x} {y} xhHy)
 
         from 
             : (x y : ℕ) 
