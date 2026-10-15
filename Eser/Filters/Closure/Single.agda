@@ -80,6 +80,176 @@ get-unique-choice-exence
       (proj₁ $ get-unique-choice C AF (proj₁ (exclosure C R) y))
 get-unique-choice-exence = ?
 
+--------------------------------------------------------------------------------
+-- Conversion lemma between Exence and EqRel version of main theorem
+--------------------------------------------------------------------------------
+-- Also used as sublemma within the proofs.
+
+ConversionStatement
+    : (E : EqFilter)
+    → (R : EqRel)
+    → Set
+ConversionStatement E R = (x y : ℕ) → (S relates x to y) ↔ (ExRel hH x y)
+    where
+        F : Filter
+        F = EqFilter→Filter E
+        C : IsClosable F
+        C = EqFilter-IsClosable E
+        hH : Exence
+        hH = rel-to-exence $ rel (C R)
+        S : EqRel
+        S = rel (C R)
+
+-- Pointwise conversion from the Exence representation
+-- to the EqRel representation of a closure.
+closure-exence-to-eqrel
+    : (E : EqFilter)
+    → (R : EqRel)
+    → ConversionStatement E R
+closure-exence-to-eqrel E R x y = ≡→↔ $ sym $ eq x y
+    where
+        F : Filter
+        F = EqFilter→Filter E
+        C : IsClosable F
+        C = EqFilter-IsClosable E
+        hH : Exence
+        hH = rel-to-exence $ rel (C R)
+        S : EqRel
+        S = rel (C R)
+
+        open ≡-Reasoning
+
+        S'' : ℕ → ℕ → Bool
+        S'' = proj₁ $ (FunToRel ∘ combine ∘ restrict+ ∘ RelToFun) S
+
+        eq : (x y : ℕ)
+           → ExRel hH x y ≡ S relates x to y 
+        eq x y = 
+            begin 
+                ExRel hH x y 
+            ≡⟨⟩
+                ((FunToRel ∘ combine) hH) relates x to y
+            ≡⟨⟩
+                ((FunToRel ∘ combine ∘ restrict+ ∘ RelToFun) S) relates x to y
+            ≡⟨⟩
+                T (S'' x y) 
+            ≡⟨ cong T $ eqrel-exence-round-trip S x y ⟩ 
+                T (proj₁ S x y) 
+            ≡⟨⟩
+                S relates x to y
+            ∎
+
+--------------------------------------------------------------------------------
+-- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
+-- The F-closure of R is the same thing as the unique relation satisfying
+-- the filter `(filterify' R) » F`.
+-- This gives a way of computing the closure.
+--------------------------------------------------------------------------------
+toMove : Set
+toMove = {! TODO: move to more appropriate file? !}
+
+closureFilter
+    : (F : MFF)
+    → (R : EqRel)
+    → MFF
+closureFilter F R = (EqRel→MFF R) » F
+
+closure-implementation
+    : {F : MFF}
+    → (R : EqRel)
+    → {S : EqRel}
+    → DeadEndFree' F
+    → IsOneHot' F
+    → NeverForcesnewNF' F
+    → (S is-the F closure-of R) ↔ (Rel-sats' (closureFilter F R) S)
+closure-implementation {F} R {S} DEF OH NFN = ?
+
+-- Given an MFF composition G » F and an input r : NFRestr n
+-- on which we know F r doesn't and G r does fire,
+-- then any Exence containing r that satisfies G » F must
+-- contain one of the choices that G allows at r.
+»-second-fires
+    : {G F : MFF}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → {y : ℕ}
+    → IsPass (F (h y))
+    → IsFire (G (h y))
+    → Exence-sats (MFF→Filter (G » F)) (h , H)
+    → G allows' (getChoiceFromExence (h , H) y) to (h y)
+»-second-fires = ?
+
+
+Filter→MFF→Filter
+    : (F : Filter)
+    → (MFF→Filter (Filter→MFF F)) ≈ F
+Filter→MFF→Filter = ?
+
+UniqueChoice : MFF → Set
+UniqueChoice F = 
+      {n : ℕ}
+    → (r : NFRestr n)
+    → Σ[ c ∈ Choices r ] (
+                         F allows' c to r
+                         × 
+                         ((c' : Choices r) → (F allows' c' to r) → c' ≡ c)
+                         )
+
+-- When converting a relation to a filter, one obtains a filter that allows
+-- exactly one choice to each input NFRestr.
+eqrel-uniquechoice
+    : (R : EqRel)
+    → UniqueChoice (EqRel→MFF R)
+eqrel-uniquechoice R {n} r = (c , p , u)
+    where
+        f : ℕ → ℕ
+        f = proj₁ $ RelToFun R
+        f-leq : (n : ℕ) → f n ≤ n
+        f-leq = proj₁ $ proj₂ $ RelToFun R
+        
+        F : MFF
+        F = EqRel→MFF R
+        c : Choices r
+        c = resurface' r (f-leq n)
+        p : F allows' c to r
+        p = 
+            begin 
+                MFF→Filter (EqRel→MFF R) r c
+            ≡⟨⟩
+                (MFF→Filter ∘ NFFun→MFF ∘ RelToFun) R r c
+            ≡⟨ ? ⟩
+                true
+            ∎
+            
+        u : (c' : Choices r) → F allows' c' to r → c' ≡ c
+        u c' prf = ?
+
+-- Special case of previous lemma: if we also know that G allows exactly
+-- one choice at r, then that must be the choice the Exence makes as well.
+»-second-fires-unique
+    : {G F : MFF}
+    → (h : (n : ℕ) → NFRestr n)
+    → (H : (n : ℕ) → h n ⋖ h (suc n))
+    → {y : ℕ}
+    → IsPass (F (h y))
+    → (u : UniqueChoice G)
+    → Exence-sats' (G » F) (h , H)
+    → getChoiceFromExence (h , H) y ≡ proj₁ (u (h y))
+»-second-fires-unique = ?
+
+-- If an Exence makes the choice newNF at y,
+-- then y is made the smallest element of a new equivalence class.
+-- Later numbers added to this class are greater than y.
+-- So there cannot be a smaller number x < y that the Exence relates to y,
+-- since it cannot be added to this equivalence class.
+newNF-not-related-to-smaller
+    : (hH : Exence)
+    → {x y : ℕ}
+    → getChoiceFromExence hH y ≡ here
+    → x < y
+    → ExRel hH x y
+    → ⊥
+newNF-not-related-to-smaller = ?
 
 --------------------------------------------------------------------------------
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
@@ -112,6 +282,34 @@ ClosureExBiimpl E R =
       ↔
       (Path (R relates_to_) (Eq E) x y )
 
+eqfilter-passes
+    : (E : EqFilter)
+    → {y : ℕ}
+    → IsPass (E y)
+    → (r : NFRestr y)
+    → IsPass (EqFilter→MFF E r)
+eqfilter-passes E {y} eq r = 
+    begin 
+        EqFilter→MFF E r
+    ≡⟨⟩
+        OneHot→MFF (EqFilter→OneHot E) r
+    ≡⟨⟩
+        OH-cases (EqFilter→OneHot E r)
+    ≡⟨⟩
+        OH-cases (EF-cases (E y))
+    ≡⟨ cong (OH-cases ∘ EF-cases) eq ⟩
+        OH-cases (EF-cases pass)
+    ≡⟨⟩
+        OH-cases pass
+    ≡⟨⟩
+        pass
+    ∎
+    where
+    open ≡-Reasoning
+    open OneHotToMFFImpl (EqFilter→OneHot E) r renaming (cases to OH-cases)
+    open EqFilterToOneHotImpl E r renaming (cases to EF-cases)
+    
+
 -- Implementation of the next theorem.
 -- Just to reduce number of arguments to pass around and things
 -- to redefine every time.
@@ -120,16 +318,22 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
 
     F : Filter
     F = EqFilter→Filter E
+    F' : MFF
+    F' = EqFilter→MFF E
+    G' : MFF
+    G' = EqRel→MFF R
     C : IsClosable F
     C = EqFilter-IsClosable E
     hH : Exence
     hH = rel-to-exence $ rel (C R)
     h : (n : ℕ) → NFRestr n
     h = proj₁ hH
+    H : (n : ℕ) → h n ⋖ h (suc n)
+    H = proj₂ hH
     R⊆S : R ⊆ (rel (C R))
     R⊆S = ext (C R)
     R⊆hH : {x y : ℕ} → R relates x to y → ExRel hH x y
-    R⊆hH {x} {y} xRy = ↔-to (closure-exence-to-eqrel E R x y) (R⊆S xRy)
+    R⊆hH {x} {y} xRy = ↔-to (closure-exence-to-eqrel E R x y) (R⊆S x y xRy)
 
     -- Case in which E does not contain an equality with y as LHS,
     -- i.e., when the associated MFF did not fire.
@@ -151,14 +355,12 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     to-<-nofire
         : {x y m : ℕ}
         → x < y
-        → E y ≡ pass
+        → IsPass (E y)
         → m ≡ (proj₁ $ RelToFun R) y
-        → Tri (x < m) (x ≡ m) (x > m)
         → ExRel hH x y
         → Path (R relates_to_) (Eq E) x y
-    to-<-nofire {x} {y} {m} x<y passes eq-m (tri≈ _ refl _) xhHy = 
-        step (inj₁ mRy) $ empty y 
-        where
+    to-<-nofire {x} {y} {m} x<y passes eq-m = to-<-nofire-cases (<-cmp x m)
+            where   
             f' : NFFun
             f' = RelToFun R
             f : ℕ → ℕ
@@ -210,26 +412,52 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                     ≡⟨⟩
                         R' relates m to y
                     ∎
+            to-<-nofire-cases
+                : Tri (x < m) (x ≡ m) (x > m)
+                → ExRel hH x y
+                → Path (R relates_to_) (Eq E) x y
+            to-<-nofire-cases (tri≈ _ refl _) xhHy = step (inj₁ mRy) $ empty y 
+                        
+            to-<-nofire-cases (tri< x<m _ _) xhHy = ans
+                where
+                    m<y : Tri (m < y) (m ≡ y) (m > y) → m < y
+                    m<y (tri< m<y _ _ ) = m<y
+                    m<y (tri≈ _ m≡y _) = 
+                        ⊥-elim $ newNF-not-related-to-smaller hH choice x<y xhHy
+                        where
+                            uniq : UniqueChoice G'
+                            uniq {n} r = ?
+                            e-sat : Exence-sats' (closureFilter F' R) hH
+                            e-sat = ?
+
+                            
+                            choice : getChoiceFromExence hH y ≡ here
+                            choice = 
+                                begin 
+                                    getChoiceFromExence hH y
+                                ≡⟨ »-second-fires-unique {G'} {F'}
+                                   h H (eqfilter-passes E {y} passes (h y)) uniq e-sat ⟩
+                                    proj₁ (uniq (h y))
+                                ≡⟨ ? ⟩
+                                    here
+                                ∎
+                                
+                            mhHy : ExRel hH m y
+                            mhHy = ?
+
+                    m<y (tri> _ _ y<m) = {! f-leq !}
+
+                    mhHy : ExRel hH m y
+                    mhHy = R⊆hH mRy 
+
+                    rec : Path (R relates_to_) (Eq E) x m
+                    rec = {! well-founded recursive call using m<y (<-cmp m y) on mhHy !}
+
+                    ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
+
                 
-    to-<-nofire {x} {y} {m} x<y passes eq-n (tri< x<m _ _) xhHy = ans
-        where
-            m<y : m < y
-            m<y = {! derive contra when m ≥ y !}
 
-            mRy : R relates m to y
-            mRy = ?
-
-            mhHy : ExRel hH m y
-            mhHy = R⊆hH mRy 
-
-            rec : Path (R relates_to_) (Eq E) x m
-            rec = {! well-founded recursive call using m<y on mhHy !}
-
-            ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
-
-            
-
-    to-<-nofire {x} {y} {m} x<y passes eq-m (tri> _ _ m<x) xhHy = ?
+            to-<-nofire-cases (tri> _ _ m<x) xhHy = ?
             
     -- The only difficult case of `to` is when x < y.
     -- When x ≡ y we can return an empty path,
@@ -320,63 +548,9 @@ eqfil-closure-char-exence E R x y = (to x y , from x y)
         open EqfilClosureCharExenceImpl E R
 
 --------------------------------------------------------------------------------
--- Conversion lemma of previous lemma to main theorem.
+-- Main theorem stated in terms of EqRel
 --------------------------------------------------------------------------------
 
-
-ConversionStatement
-    : (E : EqFilter)
-    → (R : EqRel)
-    → Set
-ConversionStatement E R = (x y : ℕ) → (S relates x to y) ↔ (ExRel hH x y)
-    where
-        F : Filter
-        F = EqFilter→Filter E
-        C : IsClosable F
-        C = EqFilter-IsClosable E
-        hH : Exence
-        hH = rel-to-exence $ rel (C R)
-        S : EqRel
-        S = rel (C R)
-
--- Pointwise conversion from the Exence representation
--- to the EqRel representation of a closure.
-closure-exence-to-eqrel
-    : (E : EqFilter)
-    → (R : EqRel)
-    → ConversionStatement E R
-closure-exence-to-eqrel E R x y = ≡→↔ $ sym $ eq x y
-    where
-        F : Filter
-        F = EqFilter→Filter E
-        C : IsClosable F
-        C = EqFilter-IsClosable E
-        hH : Exence
-        hH = rel-to-exence $ rel (C R)
-        S : EqRel
-        S = rel (C R)
-
-        open ≡-Reasoning
-
-        S'' : ℕ → ℕ → Bool
-        S'' = proj₁ $ (FunToRel ∘ combine ∘ restrict+ ∘ RelToFun) S
-
-        eq : (x y : ℕ)
-           → ExRel hH x y ≡ S relates x to y 
-        eq x y = 
-            begin 
-                ExRel hH x y 
-            ≡⟨⟩
-                ((FunToRel ∘ combine) hH) relates x to y
-            ≡⟨⟩
-                ((FunToRel ∘ combine ∘ restrict+ ∘ RelToFun) S) relates x to y
-            ≡⟨⟩
-                T (S'' x y) 
-            ≡⟨ cong T $ eqrel-exence-round-trip S x y ⟩ 
-                T (proj₁ S x y) 
-            ≡⟨⟩
-                S relates x to y
-            ∎
             
 -- Statement (final type) of the next theorem:
 ClosureBiimpl
