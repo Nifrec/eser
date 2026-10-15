@@ -123,6 +123,16 @@ module _ (R S : A → A → Set) where
     Path'→Path {x} {z} (p-trans {y = y} p q) = 
         path-trans (Path'→Path p) (Path'→Path q)
 
+    add-last-step
+        : {x y z : A}
+        → Path x y
+        → R y z ⊎ S y z
+        → Path x z
+    add-last-step {z = z} p (inj₁ yRz) = 
+        path-trans p (step (inj₁ yRz) $ empty z)
+    add-last-step {z = z} p (inj₂ ySz) = 
+        path-trans p (step (inj₂ $ inj₂ $ inj₁ ySz) $ empty z)
+
 --------------------------------------------------------------------------------
 -- Properties of Path
 --------------------------------------------------------------------------------
@@ -132,3 +142,8 @@ _⊎⊎_ : (A → A → Set)
      → (A → A → Set)
      → (A → A → Set)
 (S ⊎⊎ T) x y = (S x y) ⊎ (T x y)
+
+--------------------------------------------------------------------------------
+-- Other conveniences
+--------------------------------------------------------------------------------
+

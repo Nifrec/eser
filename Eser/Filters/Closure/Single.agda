@@ -116,6 +116,8 @@ ClosureExBiimpl E R =
 -- Just to reduce number of arguments to pass around and things
 -- to redefine every time.
 module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
+    open ≡-Reasoning
+
     F : Filter
     F = EqFilter→Filter E
     C : IsClosable F
@@ -124,7 +126,10 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     hH = rel-to-exence $ rel (C R)
     h : (n : ℕ) → NFRestr n
     h = proj₁ hH
-    open ≡-Reasoning
+    R⊆S : R ⊆ (rel (C R))
+    R⊆S = ext (C R)
+    R⊆hH : {x y : ℕ} → R relates x to y → ExRel hH x y
+    R⊆hH {x} {y} xRy = ↔-to (closure-exence-to-eqrel E R x y) (R⊆S xRy)
 
     -- Case in which E does not contain an equality with y as LHS,
     -- i.e., when the associated MFF did not fire.
@@ -206,7 +211,24 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                         R' relates m to y
                     ∎
                 
-    to-<-nofire {x} {y} {m} x<y passes eq-n (tri< x<m _ _) xhHy = ?
+    to-<-nofire {x} {y} {m} x<y passes eq-n (tri< x<m _ _) xhHy = ans
+        where
+            m<y : m < y
+            m<y = {! derive contra when m ≥ y !}
+
+            mRy : R relates m to y
+            mRy = ?
+
+            mhHy : ExRel hH m y
+            mhHy = R⊆hH mRy 
+
+            rec : Path (R relates_to_) (Eq E) x m
+            rec = {! well-founded recursive call using m<y on mhHy !}
+
+            ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
+
+            
+
     to-<-nofire {x} {y} {m} x<y passes eq-m (tri> _ _ m<x) xhHy = ?
             
     -- The only difficult case of `to` is when x < y.
