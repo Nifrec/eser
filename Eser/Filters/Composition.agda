@@ -88,11 +88,13 @@ data MayFire (A : Set) : Set where
     pass : MayFire A
 
 IsFire : {A : Set} → MayFire A → Set 
-IsFire (fire _) = ⊤
-IsFire pass = ⊥
+IsFire {A} m = Σ[ a ∈ A ] m ≡ fire a
+
+IsPass : {A : Set} → MayFire A → Set
+IsPass m = m ≡ pass
 
 isfire? : {A : Set} (m : MayFire A) → Dec (IsFire m)
-isfire? (fire _) = yes tt
+isfire? (fire a) = yes (a , refl)
 isfire? pass = no λ ()
 
 MayFireFilter : Set
@@ -188,7 +190,7 @@ IsSingleton' = IsSingleton ∘ MFF→Filter
 --
 -- The P-closure of a relation R is then simply the unique relation
 -- satisfying the singleton filter F_R » P
--- where F_R = Filter→MFF (filterify R).
+-- where F_R = Filter→MFF (NFFun→Filter R).
 -- (That that is a singleton does require a lemma).
 
 -- #QUESTION : define this in terms of EqRel or NFFuns?
@@ -199,6 +201,8 @@ IsSingleton' = IsSingleton ∘ MFF→Filter
 -- (2) using the AreRelated defined in Eser.Filters.NormalityInNFRestr.
 Rel-sats' : MFF → EqRel → Set
 Rel-sats' = Rel-sats ∘ MFF→Filter
+Exence-sats' : MFF → Exence → Set
+Exence-sats' = Exence-sats ∘ MFF→Filter
 
 record _closure-of_ (F : Filter) (R : EqRel) : Set
     where
@@ -211,17 +215,22 @@ open _closure-of_
 
 _closure-of'_ : MFF → EqRel → Set
 _closure-of'_ = _closure-of_ ∘ MFF→Filter
+
+-- Extensional equality between relations: 
+-- homotopy between the underlying ℕ → ℕ → Bool functions.
+_≣_ : EqRel → EqRel → Set
+(R , _) ≣ (S , _) = R ≈ S
+
+-- Predicate that a relation is (extensionally) equal to the F-closure of R.
+_is-the_closure-of_ : EqRel → MFF → EqRel → Set
+S is-the F closure-of R = Σ[ C ∈ F closure-of' R ] (S ≣ rel C)
+
 --------------------------------------------------------------------------------
 -- Uniqueness of P-closure
 --------------------------------------------------------------------------------
 -- The definition of a closure of a relation already implies it is
 -- unique, at least up to function extensionality.
  
--- Extensional equality between relations: 
--- homotopy between the underlying ℕ → ℕ → Bool functions.
-
-_≣_ : EqRel → EqRel → Set
-(R , _) ≣ (S , _) = R ≈ S
 
 ⊆→⊆→≣ : {R S : EqRel} → R ⊆ S → S ⊆ R → R ≣ S
 ⊆→⊆→≣ = ?
@@ -233,6 +242,7 @@ closure-unique
     → (rel R') ≣ (rel S')
 closure-unique = {! #TODO: use the third property of closure-of, 
     both on R and S, to get R ⊆ S and S ⊆ R, conclude by ⊆→⊆→≣ !}
+
 
 --------------------------------------------------------------------------------
 -- Charactersisation of closable filters
@@ -253,7 +263,7 @@ OneHotFilter = {n : ℕ} → (r : NFRestr n) → MayFire (Choices r)
 
 OneHot→MFF : OneHotFilter → MFF
 OneHot→MFF F' r = cases (F' r)
-    where
+    module OneHotToMFFImpl where
         cases : MayFire (Choices r) → MayFire (Choices r → Bool)
         cases pass = pass
         cases (fire c) = fire $ λ c' → does (c ≡? c')
@@ -320,6 +330,7 @@ syntax allows'-to F r c = F allows' c to r
 
 AlwaysFires : MFF → Set
 AlwaysFires F = {n : ℕ} → (r : NFRestr n) → IsFire (F r)
+
 
 get-unique-choice
     : {F : MFF}
@@ -504,7 +515,7 @@ SingleEq→EqFilter (n , m , m<n) k = cases (n Data.Nat.≟ k)
 
 EqFilter→OneHot : EqFilter → OneHotFilter
 EqFilter→OneHot E {n} r = cases (E n)
-    where
+    module EqFilterToOneHotImpl where
         cases : MayFire ( Σ[ m ∈ ℕ ] m < n ) → MayFire (Choices r)
         cases pass = pass
         cases (fire (m , m<n)) = fire $ earlier-new $ resurface r m<n
@@ -548,44 +559,55 @@ eqfilter-closure-subrelat {E} {R} {x} {y} xEy = ?
 --------------------------------------------------------------------------------
 -- Turning an NFFun into a filter that is only satisfied by that NFFun.
 --------------------------------------------------------------------------------
-eqfilterify : NFFun → OneHotFilter
-eqfilterify (f , f-leq , f-fix) {n} r = fire c
+
+-- We cannot turn an NFFun into an EqFilter, since the output
+-- on input n should be (f n , f n < n), but it is possible that f n ≡ n.
+-- However, since f n ≤ n, we do have enough information to construct a
+-- OneHotFilter: in case that f n ≡ n, we can pick the choice `here`.
+NFFun→OneHot : NFFun → OneHotFilter
+NFFun→OneHot (f , f-leq , f-fix) {n} r = fire c
     where
         c : Choices r
         -- This is `here` if f n ≡ n,
         -- and (earlier-new $ resurface m<n) if f n ≡ m for some m < n.
         c = resurface' r (f-leq n)
 
-filterify : NFFun → Filter
-filterify = OneHot→Filter ∘ eqfilterify
+NFFun→Filter : NFFun → Filter
+NFFun→Filter = OneHot→Filter ∘ NFFun→OneHot
 
-MFF-filterify : NFFun → MFF
-MFF-filterify = Filter→MFF ∘ filterify
+NFFun→MFF : NFFun → MFF
+NFFun→MFF = OneHot→MFF ∘ NFFun→OneHot
 
-filterify-self-sats
-    : (f' : NFFun)
-    → NFFun-sats (filterify f') f'
-filterify-self-sats f' = ?
+EqRel→MFF : EqRel → MFF
+EqRel→MFF = NFFun→MFF ∘ RelToFun
 
-filterify-singleton
-    : (f' : NFFun)
-    → IsSingleton (filterify f')
-filterify-singleton = ?
+EqRel→Filter : EqRel → Filter
+EqRel→Filter = NFFun→Filter ∘ RelToFun
 
-filterify-deadendfree
-    : (f' : NFFun)
-    → DeadEndFree (filterify f')
-filterify-deadendfree = ?
+--NFFun→Filter-self-sats
+--    : (f' : NFFun)
+--    → NFFun-sats (NFFun→Filter f') f'
+--NFFun→Filter-self-sats f' = ?
 
--- The only NFFun that satisfies `filterify f` is `f` itself (up to function
+--NFFun→Filter-singleton
+--    : (f' : NFFun)
+--    → IsSingleton (NFFun→Filter f')
+--NFFun→Filter-singleton = ?
+
+--NFFun→Filter-deadendfree
+--    : (f' : NFFun)
+--    → DeadEndFree (NFFun→Filter f')
+--NFFun→Filter-deadendfree = ?
+
+-- The only NFFun that satisfies `NFFun→Filter f` is `f` itself (up to function
 -- extensionality).
--- This is the specification of `filterify`, so this lemma proves
--- the correctness of `filterify`.
-filterify-unique-sat
+-- This is the specification of `NFFun→Filter`, so this lemma proves
+-- the correctness of `NFFun→Filter`.
+NFFun→Filter-unique-sat
     : (f' g' : NFFun)
-    → NFFun-sats (filterify f') g'
+    → NFFun-sats (NFFun→Filter f') g'
     → g' ≈' f'
-filterify-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
+NFFun→Filter-unique-sat = {! #TODO: Should be corollary of the above two lemmas !}
 
 
 id-Extender : Extender
