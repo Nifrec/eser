@@ -14,6 +14,8 @@
 open import Data.Nat
 open import Data.Nat.Properties using
     ( m≤n⇒m<n∨m≡n
+    ; n≮n
+    ; ≤-<-trans
     )
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -173,7 +175,8 @@ conversion-sat
     → (R : EqRel)
     → (F : MFF)
     → ConversionSatStatement E R F
-conversion-sat = ?
+-- Trivial: this is the very definition of Rel-sats'!
+conversion-sat E R F = (id , id)
 
 --------------------------------------------------------------------------------
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
@@ -530,7 +533,8 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                                     here
                                 ∎
 
-                    m<y (tri> _ _ y<m) = {! f-leq !}
+                    m<y (tri> _ _ y<m) = ⊥-elim $ n≮n m (subst (_< m) (sym eq-m) 
+                                                  (≤-<-trans (f-leq y) (y<m)))
 
                     mhHy : ExRel hH m y
                     mhHy = R⊆hH mRy 
