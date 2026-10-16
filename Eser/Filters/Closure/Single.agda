@@ -60,6 +60,7 @@ open import Eser.Aux using
 open import Eser.Logic using
     ( ≡→≡ᵇ
     ; does-toWitness
+    ; T-intro
     )
 open import Eser.Relation.Binary.Path
 
@@ -370,6 +371,76 @@ eqfilter-passes E {y} eq r =
     open OneHot→MFFImpl (EqFilter→OneHot E) r renaming (cases to OH-cases)
     open EqFilterToOneHotImpl E r renaming (cases to EF-cases)
     
+eqfilter-fires-to-exrel
+    : {E : EqFilter}
+    → {hH : Exence}
+    → Exence-sats' (EqFilter→MFF E) hH
+    → {m y : ℕ}
+    → {m<y : m < y}
+    → E y ≡ fire (m , m<y)
+    → ExRel hH m y
+eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
+    where
+    S : EqRel
+    S = exence-to-rel hH
+    f' : NFFun
+    f' = combine hH
+    f : ℕ → ℕ
+    f = proj₁ f'
+
+    c : Choices (h y)
+    c = getChoiceFromExence hH y
+    E-allows-c : (EqFilter→Filter E) allows c to (h y)
+    E-allows-c = e-sat y
+
+    c' : Choices (h y)
+    c' = earlier-new (resurface (h y) m<y)
+
+    E-allows-c' : (EqFilter→Filter E) allows c' to (h y)
+    E-allows-c' = 
+        begin 
+            (EqFilter→Filter E) (h y) c'
+        ≡⟨⟩
+            true 
+        ∎
+        
+
+    c≡c' : c ≡ c'
+    c≡c' = EqFilter-IsOneHot E (h y) E-allows-c E-allows-c'
+
+    open ≡-Reasoning
+    k : ℕ 
+    k = choiceToℕ (getChoiceFromExence hH m)
+    k' : ℕ
+    k' = NFSToℕ (resurface (h y) m<y)
+
+    mSy : proj₁ S m y ≡ true
+    mSy = 
+        begin 
+            proj₁ S m y
+        ≡⟨⟩
+            f m ≡ᵇ f y
+        ≡⟨⟩
+            choiceToℕ (getChoiceFromExence hH m)
+            ≡ᵇ
+            choiceToℕ(getChoiceFromExence hH y)
+        ≡⟨ cong (λ a → choiceToℕ (getChoiceFromExence hH m) ≡ᵇ (choiceToℕ a)) 
+                c≡c'
+        ⟩
+            choiceToℕ (getChoiceFromExence hH m)
+            ≡ᵇ
+            choiceToℕ (earlier-new $ resurface (h y) m<y)
+        ≡⟨⟩
+            choiceToℕ (getChoiceFromExence hH m)
+            ≡ᵇ
+            NFSToℕ (resurface (h y) m<y)
+        ≡⟨ ≡→≡ᵇ k k' $ sym $ lemma-resurface-getChoice h H m<y ⟩
+            true
+        ∎
+        
+
+    goal : T (proj₁ S m y)
+    goal = T-intro mSy
 
 -- Implementation of the next theorem.
 -- Just to reduce number of arguments to pass around and things
@@ -423,7 +494,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     -- (See `to` below for this case distinction).
     -- The `b` and `y < b` arguments implement terminating recursion via the
     -- fuel technique, and are only relevant for the termination checker.
-    -- It is defined in mutual induction with `to-<-nofire`.
+    -- It is defined in mutual induction with `to-<-nofire` and `to-<-fire`.
     to-< 
         : {b x y : ℕ}
         → y < b
@@ -433,6 +504,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         → ExRel hH x y
         → Path (R relates_to_) (Eq E) x y
 
+    -- to-<-nofire
     -- Case in which E does not contain an equality with y as LHS,
     -- i.e., when the associated MFF did not fire.
     -- The the filter associated with R did still fire,
@@ -446,10 +518,15 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     -- which would not be the case if hH inherits the normalisation y => y
     -- from R.
     --
-    -- If x < m < y or m < x, w.l.o.g. say x < m,
+    -- If x < m < y,
     -- then trans+sym of hH gives x hH m,
     -- then a well-founded recursive call (on m < y) gives a path x ⇝ m,
     -- and we add m R y as last step to finish.
+    --
+    -- Finally, if m < x,
+    -- then trans+sym of hH gives m hH x, a well-founded recursive
+    -- call (on x < y) gives a path m ⇝ x. We can add mRy as first step
+    -- to obtain a path y ⇝ x, and conclude via path-sym.
     to-<-nofire
         : {b x y m : ℕ}
         → y < b
@@ -506,11 +583,15 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                     ≡⟨⟩
                         R' relates m to y
                     ∎
+
+            mhHy : ExRel hH m y
+            mhHy = R⊆hH mRy 
+
             to-<-nofire-cases
                 : Tri (x < m) (x ≡ m) (x > m)
                 → ExRel hH x y
                 → Path (R relates_to_) (Eq E) x y
-            to-<-nofire-cases (tri≈ _ refl _) xhHy = step (inj₁ mRy) $ empty y 
+            to-<-nofire-cases (tri≈ _ refl _) _ = step (inj₁ mRy) $ empty y 
                         
             to-<-nofire-cases (tri< x<m _ _) xhHy = ans
                 where
@@ -556,8 +637,6 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                     m<y (tri> _ _ y<m) = ⊥-elim $ n≮n m (subst (_< m) (sym eq-m) 
                                                   (≤-<-trans (f-leq y) (y<m)))
 
-                    mhHy : ExRel hH m y
-                    mhHy = R⊆hH mRy 
 
                     xhHm : ExRel hH x m
                     xhHm = ExRel-trans {hH} {x} {y} {m} xhHy 
@@ -571,8 +650,84 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                     ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
 
                 
+            -- Similar to the previous case, but easier: we already know x < y;
+            -- the previous case needed quite a discourse on proving that y < m.
+            to-<-nofire-cases (tri> _ _ m<x) xhHy = ans
+                where
+                    x<b : x < b
+                    x<b = ℓ<m<1+n→ℓ<n x<y y<1+b
 
-            to-<-nofire-cases (tri> _ _ m<x) xhHy = ?
+                    mhHx : ExRel hH m x
+                    mhHx = ExRel-trans {hH} {m} {y} {x} mhHy 
+                                       (ExRel-sym {hH} {x} {y} xhHy)
+
+                    rec : Path (R relates_to_) (Eq E) m x
+                    rec = to-< {b} x<b m<x (E x) refl mhHx
+
+                    flipped-path : Path (R relates_to_) (Eq E) y x
+                    flipped-path = step (inj₂ (inj₁ mRy)) rec
+
+                    ans = path-sym (R relates_to_) (Eq E) flipped-path
+    to-<-fire
+        : {b x y m : ℕ}
+        → y < b
+        → x < y
+        → (m<y : m < y)
+        → (E y ≡ fire (m , m<y))
+        → ExRel hH x y
+        → Path (R relates_to_) (Eq E) x y
+    to-<-fire {suc b} {x} {y} {m} y<1+b x<y m<y fired =
+        to-<-fire-cases (<-cmp x m)
+        where
+        mEy : Eq E m y
+        mEy = (m<y , fired)
+        mhHy : ExRel hH m y
+        mhHy = ? -- TODO: implied by mEy.
+
+        to-<-fire-cases 
+                : Tri (x < m) (x ≡ m) (x > m)
+                → ExRel hH x y
+                → Path (R relates_to_) (Eq E) x y
+        
+        to-<-fire-cases (tri≈ _ refl _) _ = 
+            step (inj₂ $ inj₂ $ inj₁ mEy) $ empty y
+
+        to-<-fire-cases (tri< x<m _ _) xhHy = ans
+            -- Similar to the x<m case of to-<-nofire-cases,
+            -- exept that we don't need to prove m<y (we already know,
+            -- the firing provides a witness), 
+            -- and that we have an E-step i.o. an R-step.
+            where
+            xhHm : ExRel hH x m
+            xhHm = ExRel-trans {hH} {x} {y} {m} xhHy 
+                               (ExRel-sym {hH} {m} {y} mhHy)
+
+            m<b : m < b
+            m<b = ℓ<m<1+n→ℓ<n m<y y<1+b
+
+            rec : Path (R relates_to_) (Eq E) x m
+            rec = to-< {b} m<b x<m (E m) refl xhHm
+
+            ans = add-last-step (R relates_to_) (Eq E) rec (inj₂ mEy)
+
+        to-<-fire-cases (tri> _ _ m<x) xhHy = ans
+            -- Similar to the m<x case of to-<-nofire-cases,
+            -- but using an E-step i.o. an R-step.
+            where
+                x<b : x < b
+                x<b = ℓ<m<1+n→ℓ<n x<y y<1+b
+
+                mhHx : ExRel hH m x
+                mhHx = ExRel-trans {hH} {m} {y} {x} mhHy 
+                                   (ExRel-sym {hH} {x} {y} xhHy)
+
+                rec : Path (R relates_to_) (Eq E) m x
+                rec = to-< {b} x<b m<x (E x) refl mhHx
+
+                flipped-path : Path (R relates_to_) (Eq E) y x
+                flipped-path = step (inj₂ $ inj₂ $ inj₂ mEy) rec
+
+                ans = path-sym (R relates_to_) (Eq E) flipped-path
             
     to-< {y = y} y<b x<y pass eq = to-<-nofire {m = f y} y<b x<y (sym eq) refl
         -- Make a case distinction on the normal form of y according
@@ -602,6 +757,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         --
         -- The case m < x is symmetric to the previous one,
         -- noting that also x < y holds.
+
     to-< {suc b} {x} {y} b<y x<y (fire (m , m<y)) eq xhHy = ?
         -- In this case, the EqFilter fired on input y
         -- and forced the NF of y to be the same as the NF of m.

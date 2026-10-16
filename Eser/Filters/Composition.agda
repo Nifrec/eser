@@ -548,6 +548,11 @@ EqFilter-IsClosable
     → IsClosable (EqFilter→Filter E)
 EqFilter-IsClosable E = ?
 
+EqFilter-IsOneHot
+    : (E : EqFilter)
+    → IsOneHot (EqFilter→Filter E)
+EqFilter-IsOneHot E = OneHot→IsOneHot (EqFilter→OneHot E)
+
 infix 100 ∗_
 ∗_ : EqFilter → Extender
 ∗_ = IsClosable→Extender ∘ EqFilter-IsClosable 
