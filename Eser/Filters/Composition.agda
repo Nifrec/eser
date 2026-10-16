@@ -109,7 +109,7 @@ MFF = MayFireFilter
 -- choices.
 MFF→Filter : MayFireFilter → Filter
 MFF→Filter F {n} r c = cases (F r) c
-    where
+    module MFF→FilterImpl where
         cases : MayFire (Choices r → Bool) → Choices r → Bool
         cases (fire f) c = f c
         cases pass _ = true
@@ -263,7 +263,7 @@ OneHotFilter = {n : ℕ} → (r : NFRestr n) → MayFire (Choices r)
 
 OneHot→MFF : OneHotFilter → MFF
 OneHot→MFF F' r = cases (F' r)
-    module OneHotToMFFImpl where
+    module OneHot→MFFImpl where
         cases : MayFire (Choices r) → MayFire (Choices r → Bool)
         cases pass = pass
         cases (fire c) = fire $ λ c' → does (c ≡? c')

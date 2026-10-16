@@ -21,6 +21,7 @@ open import Relation.Binary.Definitions
     using (Tri ; Reflexive ; Symmetric ; Transitive ; DecidableEquality)
 open Tri
 open import Relation.Nullary
+open import Relation.Nullary.Decidable
 open import Data.Product
 open import Data.Sum
 open import Function using (_∘_ ; _$_ ; id)
@@ -44,6 +45,7 @@ open import Eser.Aux using
     )
 open import Eser.Logic using
     ( ≡→≡ᵇ
+    ; does-toWitness
     )
 open import Eser.Relation.Binary.Path
 
@@ -202,27 +204,47 @@ eqrel-uniquechoice
     → UniqueChoice (EqRel→MFF R)
 eqrel-uniquechoice R {n} r = (c , p , u)
     where
+        f' : NFFun
+        f' = RelToFun R
         f : ℕ → ℕ
-        f = proj₁ $ RelToFun R
+        f = proj₁ f'
         f-leq : (n : ℕ) → f n ≤ n
-        f-leq = proj₁ $ proj₂ $ RelToFun R
+        f-leq = proj₁ $ proj₂ f'
         
         F : MFF
         F = EqRel→MFF R
         c : Choices r
         c = resurface' r (f-leq n)
+        open MFF→FilterImpl F r c renaming (cases to mff2filt-cases)
+        open OneHot→MFFImpl (NFFun→OneHot f') r renaming (cases to oh2mff-cases)
         p : F allows' c to r
         p = 
             begin 
                 MFF→Filter (EqRel→MFF R) r c
             ≡⟨⟩
                 (MFF→Filter ∘ NFFun→MFF ∘ RelToFun) R r c
-            ≡⟨ ? ⟩
+            ≡⟨⟩
+                (MFF→Filter ∘ OneHot→MFF ∘ NFFun→OneHot) f' r c
+            ≡⟨⟩
+                mff2filt-cases (OneHot→MFF (NFFun→OneHot f') r) c
+            ≡⟨⟩
+                mff2filt-cases (oh2mff-cases ((NFFun→OneHot f') r)) c
+            ≡⟨⟩ -- Definition NFFun→OneHot:
+                mff2filt-cases (oh2mff-cases (fire c)) c
+            ≡⟨⟩ -- Definition oh2mff-cases:
+                mff2filt-cases (fire $ λ c' → does (c ≡? c') ) c
+            ≡⟨⟩ -- Definition mff2filt-cases
+                does (c ≡? c)
+            ≡⟨ dec-true (c ≡? c) refl ⟩
                 true
             ∎
             
         u : (c' : Choices r) → F allows' c' to r → c' ≡ c
-        u c' prf = ?
+        u c' prf = sym $ does-toWitness (c ≡? c') prf'
+            where
+                -- prf normalises to this:
+                prf' : does (c ≡? c') ≡ true
+                prf' = prf
 
 -- Special case of previous lemma: if we also know that G allows exactly
 -- one choice at r, then that must be the choice the Exence makes as well.
@@ -306,7 +328,7 @@ eqfilter-passes E {y} eq r =
     ∎
     where
     open ≡-Reasoning
-    open OneHotToMFFImpl (EqFilter→OneHot E) r renaming (cases to OH-cases)
+    open OneHot→MFFImpl (EqFilter→OneHot E) r renaming (cases to OH-cases)
     open EqFilterToOneHotImpl E r renaming (cases to EF-cases)
     
 

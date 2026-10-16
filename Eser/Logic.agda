@@ -10,13 +10,15 @@ module Eser.Logic where
 
 open import Data.Sum
 open import Relation.Nullary
+open import Relation.Nullary.Decidable
 open import Data.Empty
+open import Data.Unit
 open import Data.Bool
 open import Data.Bool.Properties
 open import Relation.Binary.Definitions using (DecidableEquality)
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
-open import Function using (_$_)
+open import Function using (_$_ ; id)
 
 -- This also works with `¬ (A ⊎ B)`, as it is a shorthand for `A ⊎ B → ⊥` 
 -- (i.e., special case with `C := ⊥`).
@@ -218,3 +220,16 @@ isYes-intro-false
     → isYes a? ≡ false
 isYes-intro-false {A} ¬a (no _) = refl
 isYes-intro-false {A} ¬a (yes a) = ⊥-elim $ ¬a a
+
+T-intro
+    : {b : Bool}
+    → b ≡ true
+    → T b
+T-intro eq = subst T (sym eq) tt
+
+does-toWitness
+    : {A : Set}
+    → (a? : Dec A)
+    → does a? ≡ true
+    → A
+does-toWitness {A} a? eq = toWitness (T-intro $ trans (isYes≗does a?) eq)
