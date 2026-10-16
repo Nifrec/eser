@@ -75,6 +75,27 @@ relates-to-trans = ?
 ⊆-refl : (R : EqRel) → R ⊆ R
 ⊆-refl R x y xRy = xRy
 
+ExRel-refl
+    : (E : Exence)
+    → (x : ℕ)
+    → ExRel E x x
+ExRel-refl E x = relates-to-refl (exence-to-rel E) {x}
+
+ExRel-sym
+    : {E : Exence}
+    → {x y : ℕ}
+    → ExRel E x y 
+    → ExRel E y x
+ExRel-sym {E} xEy = relates-to-sym (exence-to-rel E) xEy
+
+ExRel-trans
+    : {E : Exence}
+    → {x y z : ℕ}
+    → ExRel E x y 
+    → ExRel E y z
+    → ExRel E x z
+ExRel-trans {E} xEy yEz = relates-to-trans (exence-to-rel E) xEy yEz
+
 --------------------------------------------------------------------------------
 -- Conversion to Exence and back is bijection-up-to-funext.
 --------------------------------------------------------------------------------

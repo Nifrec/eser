@@ -16,6 +16,7 @@ open import Data.Nat.Properties using
     ( m≤n⇒m<n∨m≡n
     ; n≮n
     ; ≤-<-trans
+    ; n<1+n
     )
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
@@ -54,6 +55,7 @@ open import Eser.Aux using
     ; ≡→↔
     ; ≤-transport
     ; m≤n⇒m<n∨m≡n-when-≡
+    ; ℓ<m<1+n→ℓ<n
     )
 open import Eser.Logic using
     ( ≡→≡ᵇ
@@ -415,6 +417,22 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     R⊆hH : {x y : ℕ} → R relates x to y → ExRel hH x y
     R⊆hH {x} {y} xRy = ↔-to (closure-exence-to-eqrel E R x y) (R⊆S x y xRy)
 
+    -- The only difficult case of `to` is when x < y.
+    -- When x ≡ y we can return an empty path,
+    -- and y < x is symmetric to the x < y case.
+    -- (See `to` below for this case distinction).
+    -- The `b` and `y < b` arguments implement terminating recursion via the
+    -- fuel technique, and are only relevant for the termination checker.
+    -- It is defined in mutual induction with `to-<-nofire`.
+    to-< 
+        : {b x y : ℕ}
+        → y < b
+        → x < y
+        → (p : MayFire (Σ[ m ∈ ℕ ] m < y ))
+        → p ≡ E y
+        → ExRel hH x y
+        → Path (R relates_to_) (Eq E) x y
+
     -- Case in which E does not contain an equality with y as LHS,
     -- i.e., when the associated MFF did not fire.
     -- The the filter associated with R did still fire,
@@ -433,13 +451,15 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     -- then a well-founded recursive call (on m < y) gives a path x ⇝ m,
     -- and we add m R y as last step to finish.
     to-<-nofire
-        : {x y m : ℕ}
+        : {b x y m : ℕ}
+        → y < b
         → x < y
         → IsPass (E y)
-        → m ≡ (proj₁ $ RelToFun R) y
+        → m ≡ f y
         → ExRel hH x y
         → Path (R relates_to_) (Eq E) x y
-    to-<-nofire {x} {y} {m} x<y passes eq-m = to-<-nofire-cases (<-cmp x m)
+    to-<-nofire {suc b} {x} {y} {m} y<1+b x<y passes eq-m = 
+        to-<-nofire-cases (<-cmp x m)
             where   
             fm≡m : f m ≡ m
             fm≡m = 
@@ -539,8 +559,14 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                     mhHy : ExRel hH m y
                     mhHy = R⊆hH mRy 
 
+                    xhHm : ExRel hH x m
+                    xhHm = ExRel-trans {hH} {x} {y} {m} xhHy 
+                                       (ExRel-sym {hH} {m} {y} mhHy)
+
+                    m<b : m < b
+                    m<b = ℓ<m<1+n→ℓ<n (m<y $ <-cmp m y)  y<1+b
                     rec : Path (R relates_to_) (Eq E) x m
-                    rec = {! well-founded recursive call using m<y (<-cmp m y) on mhHy !}
+                    rec = to-< {b} m<b x<m (E m) refl xhHm
 
                     ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
 
@@ -548,18 +574,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
 
             to-<-nofire-cases (tri> _ _ m<x) xhHy = ?
             
-    -- The only difficult case of `to` is when x < y.
-    -- When x ≡ y we can return an empty path,
-    -- and y < x is symmetric to the x < y case.
-    -- (See `to` below for this case distinction).
-    to-< 
-        : {x y : ℕ}
-        → x < y
-        → (p : MayFire (Σ[ m ∈ ℕ ] m < y ))
-        → p ≡ E y
-        → ExRel hH x y
-        → Path (R relates_to_) (Eq E) x y
-    to-< {x} {y} x<y pass eq xhHy = ?
+    to-< {y = y} y<b x<y pass eq = to-<-nofire {m = f y} y<b x<y (sym eq) refl
         -- Make a case distinction on the normal form of y according
         -- to R. It is some m ≤ y such that m R y.
         --
@@ -587,7 +602,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         --
         -- The case m < x is symmetric to the previous one,
         -- noting that also x < y holds.
-    to-< {x} {y} x<y (fire (m , m<y)) eq xhHy = ?
+    to-< {suc b} {x} {y} b<y x<y (fire (m , m<y)) eq xhHy = ?
         -- In this case, the EqFilter fired on input y
         -- and forced the NF of y to be the same as the NF of m.
         -- So we have m E y.
@@ -611,10 +626,10 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         → ExRel hH x y
         → Path (R relates_to_) (Eq E) x y
     cases {x} (tri≈ _ refl _) _ = empty x
-    cases {x} {y} (tri< x<y _ _) = to-< x<y (E y) refl
+    cases {x} {y} (tri< x<y _ _) = to-< {b = suc y} (n<1+n y) x<y (E y) refl
     cases {x} {y} (tri> _ _ y<x) xhHy = 
         path-sym (R relates_to_) (Eq E) 
-        $ to-< {y} {x} y<x (E x) refl
+        $ to-< {suc x} {y} {x} (n<1+n x) y<x (E x) refl
             (relates-to-sym (exence-to-rel hH) {x} {y} xhHy)
 
 
