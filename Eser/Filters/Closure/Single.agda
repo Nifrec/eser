@@ -12,13 +12,21 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
+open import Data.Nat.Properties using
+    ( m≤n⇒m<n∨m≡n
+    )
 open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
 open ≡-Reasoning
-open import Relation.Binary.Definitions 
-    using (Tri ; Reflexive ; Symmetric ; Transitive ; DecidableEquality)
+open import Relation.Binary.Definitions using 
+    ( Tri 
+    ; Reflexive 
+    ; Symmetric 
+    ; Transitive 
+    ; DecidableEquality
+    )
 open Tri
 open import Relation.Nullary
 open import Relation.Nullary.Decidable
@@ -42,6 +50,8 @@ open import Eser.Aux using
     ; ↔-trans 
     ; doubleCong
     ; ≡→↔
+    ; ≤-transport
+    ; m≤n⇒m<n∨m≡n-when-≡
     )
 open import Eser.Logic using
     ( ≡→≡ᵇ
@@ -141,6 +151,30 @@ closure-exence-to-eqrel E R x y = ≡→↔ $ sym $ eq x y
                 S relates x to y
             ∎
 
+-- 𝐂𝐨𝐫𝐨𝐥𝐥𝐚𝐫𝐲
+-- S satisfies an MFF iff hH does.
+ConversionSatStatement
+    : (E : EqFilter)
+    → (R : EqRel)
+    → (F : MFF)
+    → Set
+ConversionSatStatement E R F = Rel-sats' F S ↔ Exence-sats' F hH
+    where
+        E* : Filter
+        E* = EqFilter→Filter E
+        C : IsClosable E*
+        C = EqFilter-IsClosable E
+        hH : Exence
+        hH = rel-to-exence $ rel (C R)
+        S : EqRel
+        S = rel (C R)
+conversion-sat
+    : (E : EqFilter)
+    → (R : EqRel)
+    → (F : MFF)
+    → ConversionSatStatement E R F
+conversion-sat = ?
+
 --------------------------------------------------------------------------------
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- The F-closure of R is the same thing as the unique relation satisfying
@@ -182,10 +216,10 @@ closure-implementation {F} R {S} DEF OH NFN = ?
 »-second-fires = ?
 
 
-Filter→MFF→Filter
-    : (F : Filter)
-    → (MFF→Filter (Filter→MFF F)) ≈ F
-Filter→MFF→Filter = ?
+--Filter→MFF→Filter
+--    : (F : Filter)
+--    → (MFF→Filter (Filter→MFF F)) ≈ F
+--Filter→MFF→Filter = ?
 
 UniqueChoice : MFF → Set
 UniqueChoice F = 
@@ -233,7 +267,7 @@ eqrel-uniquechoice R {n} r = (c , p , u)
                 mff2filt-cases (oh2mff-cases (fire c)) c
             ≡⟨⟩ -- Definition oh2mff-cases:
                 mff2filt-cases (fire $ λ c' → does (c ≡? c') ) c
-            ≡⟨⟩ -- Definition mff2filt-cases
+            ≡⟨⟩ -- Definition mff2filt-cases:
                 does (c ≡? c)
             ≡⟨ dec-true (c ≡? c) refl ⟩
                 true
@@ -344,14 +378,35 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     F' = EqFilter→MFF E
     G' : MFF
     G' = EqRel→MFF R
+    uniq : UniqueChoice G'
+    uniq = eqrel-uniquechoice R
     C : IsClosable F
     C = EqFilter-IsClosable E
+    S : EqRel
+    S = rel ( C R)
     hH : Exence
-    hH = rel-to-exence $ rel (C R)
+    hH = rel-to-exence S
     h : (n : ℕ) → NFRestr n
     h = proj₁ hH
     H : (n : ℕ) → h n ⋖ h (suc n)
     H = proj₂ hH
+    S-is-closure : S is-the F' closure-of R
+    S-is-closure = closure-is-closure {F'} {R} (C R)
+
+    f' : NFFun
+    f' = RelToFun R
+    f : ℕ → ℕ
+    f = proj₁ f'
+    f-leq : (n : ℕ) → f n ≤ n
+    f-leq = proj₁ $ proj₂ f'
+    f-fix : (z : ℕ) → f (f z) ≡ f z
+    f-fix = proj₂ $ proj₂ f'
+
+    DEF-OH-NFN : DeadEndFree' F' × IsOneHot' F' × NeverForcesnewNF' F'
+    DEF-OH-NFN = ↔-to (closable-characterisation' F') C
+    DEF = proj₁ DEF-OH-NFN
+    OH = proj₁ $ proj₂ $ DEF-OH-NFN
+    NFN = proj₂ $ proj₂ $ DEF-OH-NFN
     R⊆S : R ⊆ (rel (C R))
     R⊆S = ext (C R)
     R⊆hH : {x y : ℕ} → R relates x to y → ExRel hH x y
@@ -383,12 +438,6 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         → Path (R relates_to_) (Eq E) x y
     to-<-nofire {x} {y} {m} x<y passes eq-m = to-<-nofire-cases (<-cmp x m)
             where   
-            f' : NFFun
-            f' = RelToFun R
-            f : ℕ → ℕ
-            f = proj₁ f'
-            f-fix : (z : ℕ) → f (f z) ≡ f z
-            f-fix = proj₂ $ proj₂ f'
             fm≡m : f m ≡ m
             fm≡m = 
                 begin 
@@ -447,11 +496,20 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                     m<y (tri≈ _ m≡y _) = 
                         ⊥-elim $ newNF-not-related-to-smaller hH choice x<y xhHy
                         where
-                            uniq : UniqueChoice G'
-                            uniq {n} r = ?
-                            e-sat : Exence-sats' (closureFilter F' R) hH
-                            e-sat = ?
+                            rel-sat : Rel-sats' (closureFilter F' R) S
+                            rel-sat = ↔-to 
+                                (closure-implementation {F'} R {S} DEF OH NFN)
+                                S-is-closure
 
+                            e-sat : Exence-sats' (closureFilter F' R) hH
+                            e-sat = 
+                                ↔-to (conversion-sat E R (closureFilter F' R)) 
+                                rel-sat
+
+                            m≤y : m ≤ y
+                            m≤y = subst (_≤ y) (sym eq-m) (f-leq y)
+
+                            open Resurface'Impl (h y) m≤y renaming (cases to resurf'-cases)
                             
                             choice : getChoiceFromExence hH y ≡ here
                             choice = 
@@ -460,12 +518,17 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                                 ≡⟨ »-second-fires-unique {G'} {F'}
                                    h H (eqfilter-passes E {y} passes (h y)) uniq e-sat ⟩
                                     proj₁ (uniq (h y))
-                                ≡⟨ ? ⟩
+                                ≡⟨⟩
+                                    resurface' (h y) {f y} (f-leq y)
+                                ≡⟨ ≤-transport (resurface' (h y)) (sym eq-m) (f-leq y) m≤y ⟩
+                                    resurface' (h y) {m} m≤y
+                                ≡⟨⟩
+                                    resurf'-cases (m≤n⇒m<n∨m≡n m≤y)
+                                ≡⟨ cong resurf'-cases $ m≤n⇒m<n∨m≡n-when-≡ m y m≤y m≡y ⟩
+                                    resurf'-cases (inj₂ m≡y)
+                                ≡⟨⟩
                                     here
                                 ∎
-                                
-                            mhHy : ExRel hH m y
-                            mhHy = ?
 
                     m<y (tri> _ _ y<m) = {! f-leq !}
 

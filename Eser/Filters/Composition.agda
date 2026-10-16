@@ -223,10 +223,10 @@ _≣_ : EqRel → EqRel → Set
 
 -- Predicate that a relation is (extensionally) equal to the F-closure of R.
 _is-the_closure-of_ : EqRel → MFF → EqRel → Set
-S is-the F closure-of R = Σ[ C ∈ F closure-of' R ] (S ≣ rel C)
+S is-the F closure-of R = (C : F closure-of' R) → (S ≣ rel C)
 
 --------------------------------------------------------------------------------
--- Uniqueness of P-closure
+-- Uniqueness of F-closure
 --------------------------------------------------------------------------------
 -- The definition of a closure of a relation already implies it is
 -- unique, at least up to function extensionality.
@@ -236,13 +236,20 @@ S is-the F closure-of R = Σ[ C ∈ F closure-of' R ] (S ≣ rel C)
 ⊆→⊆→≣ = ?
 
 closure-unique
-    : {P : Filter}
+    : {F : Filter}
     → {R : EqRel}
-    → (R' S' : P closure-of R)
+    → (R' S' : F closure-of R)
     → (rel R') ≣ (rel S')
 closure-unique = {! #TODO: use the third property of closure-of, 
     both on R and S, to get R ⊆ S and S ⊆ R, conclude by ⊆→⊆→≣ !}
 
+closure-is-closure
+    : {F : MFF}
+    → {R : EqRel}
+    → (C : (MFF→Filter F) closure-of R)
+    → (rel C) is-the F closure-of R
+closure-is-closure {F} {R} C C' = closure-unique {MFF→Filter F} C C'
+    
 
 --------------------------------------------------------------------------------
 -- Charactersisation of closable filters

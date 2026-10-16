@@ -258,6 +258,17 @@ module SigmaCasts {I : Set} {A : I → Set} where
 -- Natural number arithmetic
 --------------------------------------------------------------------------------
 
+≤-transport
+    : {A : Set}
+    → {n : ℕ}
+    → (f : {m : ℕ} → m ≤ n → A)
+    → {k m : ℕ}
+    → k ≡ m
+    → (k≤n : k ≤ n)
+    → (m≤n : m ≤ n)
+    → f {k} k≤n ≡ f {m} m≤n
+≤-transport {A} {n} f refl k≤n m≤n = cong f (≤-irrelevant k≤n m≤n)
+
 1+n≮n : (n : ℕ) → ¬ (ℕ.suc n < n)
 1+n≮n n 1+n<n = (n≮n (suc n) $ m<n⇒m<1+n 1+n<n)
 
@@ -590,6 +601,24 @@ m≤n⇒m<n∨m≡n-when-< m n p q =
     m≤n⇒m<n∨m≡n-when-<-cases m n p q (inj₁ m<n) p₁ = 
         subst (λ x →  (m≤n⇒m<n∨m≡n p) ≡ inj₁ x) (<-irrelevant m<n q) p₁
     m≤n⇒m<n∨m≡n-when-<-cases m n p q (inj₂ refl) p₁ = ⊥-elim $ n≮n m q
+
+m≤n⇒m<n∨m≡n-when-≡
+    : (m n : ℕ)
+    → (p : m ≤ n)
+    → (q : m ≡ n)
+    → (m≤n⇒m<n∨m≡n p) ≡ inj₂ q
+m≤n⇒m<n∨m≡n-when-≡ m n p q = 
+    m≤n⇒m<n∨m≡n-when-≡-cases m n p q (m≤n⇒m<n∨m≡n p) refl
+    where
+    m≤n⇒m<n∨m≡n-when-≡-cases
+        : (m n : ℕ)
+        → (p : m ≤ n)
+        → (q : m ≡ n)
+        → (p₀ : m < n ⊎ m ≡ n)
+        → (p₁ : (m≤n⇒m<n∨m≡n p) ≡ p₀)
+        → (m≤n⇒m<n∨m≡n p) ≡ inj₂ q
+    m≤n⇒m<n∨m≡n-when-≡-cases m n p refl (inj₁ m<n) p₁ = ⊥-elim $ n≮n n m<n
+    m≤n⇒m<n∨m≡n-when-≡-cases m n p refl (inj₂ refl) p₁ = p₁
 
 -- Given a ≡ b, we know that `<-cmp a b` must output something
 -- of the form `tri≈ _ a≡b _`.

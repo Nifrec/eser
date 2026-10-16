@@ -323,8 +323,14 @@ resurface-correctness {suc n'} r {m} p q =
                 NFRestrToℕ (trim' r q)
             ∎
 
--- Variant of resurface that works on ≤-inputs as well.
--- In the ≡ case it returns the 'nere' choice (introduce-a-new-equiv-class).
+-- Return the 'canonical' choice needed to extend r into the relation
+-- that relates n to m ≤ n.
+-- If m < n, this choice is unique, and is given by `resurface m<n`.
+-- If m ≡ n, any choice trivially ensures m and n are related
+-- (since any `NFRestr (1+n)` is a reflexive relation).
+-- In this case, we define the 'canonical' choice as making n a new equivalence
+-- class, i.e., the `here` choice. We do this because the function NFFun→OneHot
+-- can then simply be correctly implemented via resurface'.
 resurface' 
     : {n : ℕ}
     → (r : NFRestr n)
@@ -332,7 +338,7 @@ resurface'
     → m ≤ n
     → Choices r
 resurface' {n} r {m} m≤n = cases (m≤n⇒m<n∨m≡n m≤n)
-    where
+    module Resurface'Impl where
         cases : (m < n) ⊎ (m ≡ n) → Choices r
         cases (inj₁ m<n) = earlier-new $ resurface r m<n
         cases (inj₂ m≡n) = here
