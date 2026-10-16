@@ -395,12 +395,30 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
 
     c' : Choices (h y)
     c' = earlier-new (resurface (h y) m<y)
+    
+    F : MFF
+    F = EqFilter→MFF E
+    open MFF→FilterImpl F (h y) c' renaming (cases to mff2filt-cases)
+    open OneHot→MFFImpl (NFFun→OneHot f') r renaming (cases to oh2mff-cases)
+    open EqFilterToOneHotImpl E (h y) renaming (cases to ef2oh-cases)
 
     E-allows-c' : (EqFilter→Filter E) allows c' to (h y)
     E-allows-c' = 
         begin 
             (EqFilter→Filter E) (h y) c'
         ≡⟨⟩
+            (MFF→Filter ∘ OneHot→MFF ∘ EqFilter→OneHot) E (h y) c'
+            
+        ≡⟨ {! somewhere have to subst that E fires on y !} ⟩
+            mff2filt-cases (oh2mff-cases ((EqFilter→OneHot E) (h y))) c'
+        --≡⟨⟩ -- Definition NFFun→OneHot:
+        --    mff2filt-cases (oh2mff-cases (fire ())) c'
+        --≡⟨⟩ -- Definition oh2mff-cases:
+        --    mff2filt-cases (fire $ λ c' → does (c ≡? c') ) c
+        --≡⟨⟩ -- Definition mff2filt-cases:
+        --    does (c ≡? c)
+        --≡⟨ dec-true (c ≡? c) refl ⟩
+            
             true 
         ∎
         
