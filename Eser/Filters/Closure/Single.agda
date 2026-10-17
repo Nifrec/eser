@@ -190,6 +190,8 @@ conversion-sat E R F = (id , id)
 toMove : Set
 toMove = {! TODO: move to more appropriate file? !}
 
+-- The composite filter that is used to compute the F-closure of R:
+-- the closure is the unique relation that satisfies this filter.
 closureFilter
     : (F : MFF)
     → (R : EqRel)
@@ -220,12 +222,6 @@ closure-implementation {F} R {S} DEF OH NFN = ?
     → Exence-sats (MFF→Filter (G » F)) (h , H)
     → G allows' (getChoiceFromExence (h , H) y) to (h y)
 »-second-fires = ?
-
-
---Filter→MFF→Filter
---    : (F : Filter)
---    → (MFF→Filter (Filter→MFF F)) ≈ F
---Filter→MFF→Filter = ?
 
 UniqueChoice : MFF → Set
 UniqueChoice F = 
@@ -869,7 +865,6 @@ eqfil-closure-char-exence E R x y = (to x y , from x y)
 --------------------------------------------------------------------------------
 -- Main theorem stated in terms of EqRel
 --------------------------------------------------------------------------------
-
             
 -- Statement (final type) of the next theorem:
 ClosureBiimpl
