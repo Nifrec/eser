@@ -398,35 +398,42 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
     
     F : MFF
     F = EqFilter→MFF E
+
+    open ≡-Reasoning
     open MFF→FilterImpl F (h y) c' renaming (cases to mff2filt-cases)
-    open OneHot→MFFImpl (NFFun→OneHot f') r renaming (cases to oh2mff-cases)
+    open OneHot→MFFImpl (NFFun→OneHot f') (h y) renaming (cases to oh2mff-cases)
     open EqFilterToOneHotImpl E (h y) renaming (cases to ef2oh-cases)
 
     E-allows-c' : (EqFilter→Filter E) allows c' to (h y)
     E-allows-c' = 
+        -- Strategy: unfold all the definitions, substitute eq-fire,
+        -- and then all the conversions compute.
         begin 
             (EqFilter→Filter E) (h y) c'
         ≡⟨⟩
             (MFF→Filter ∘ OneHot→MFF ∘ EqFilter→OneHot) E (h y) c'
-            
-        ≡⟨ {! somewhere have to subst that E fires on y !} ⟩
+        ≡⟨⟩
             mff2filt-cases (oh2mff-cases ((EqFilter→OneHot E) (h y))) c'
-        --≡⟨⟩ -- Definition NFFun→OneHot:
-        --    mff2filt-cases (oh2mff-cases (fire ())) c'
-        --≡⟨⟩ -- Definition oh2mff-cases:
-        --    mff2filt-cases (fire $ λ c' → does (c ≡? c') ) c
-        --≡⟨⟩ -- Definition mff2filt-cases:
-        --    does (c ≡? c)
-        --≡⟨ dec-true (c ≡? c) refl ⟩
-            
+        ≡⟨⟩
+            mff2filt-cases (oh2mff-cases (ef2oh-cases (E y))) c'
+        ≡⟨ cong 
+            (λ a → mff2filt-cases (oh2mff-cases (ef2oh-cases a)) c') eq-fire ⟩
+            mff2filt-cases (oh2mff-cases (ef2oh-cases (fire (m , m<y)))) c'
+        ≡⟨⟩ -- Now all the case distinctions compute:
+            mff2filt-cases (oh2mff-cases (fire c' )) c'
+        ≡⟨⟩
+            mff2filt-cases (oh2mff-cases (fire c' )) c'
+        ≡⟨⟩
+            mff2filt-cases (fire $ λ c →  does (c' ≡? c) ) c'
+        ≡⟨⟩
+            does (c' ≡? c')
+        ≡⟨ dec-true (c' ≡? c') refl ⟩
             true 
         ∎
-        
 
     c≡c' : c ≡ c'
     c≡c' = EqFilter-IsOneHot E (h y) E-allows-c E-allows-c'
 
-    open ≡-Reasoning
     k : ℕ 
     k = choiceToℕ (getChoiceFromExence hH m)
     k' : ℕ
@@ -455,7 +462,6 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
         ≡⟨ ≡→≡ᵇ k k' $ sym $ lemma-resurface-getChoice h H m<y ⟩
             true
         ∎
-        
 
     goal : T (proj₁ S m y)
     goal = T-intro mSy
