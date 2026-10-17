@@ -1,4 +1,5 @@
 -- Module      : Eser.Filters.Composition
+-- 
 -- Description : Composing Filters and properties of composition.
 -- Copyright   : (c) Lulof Pirée, 2026
 -- License     : AGPL-v3
@@ -105,14 +106,18 @@ MayFireFilter =
 
 MFF = MayFireFilter
 
+MF-counit
+    : {A : Set}
+    → MayFire (A → Bool)
+    → A
+    → Bool
+MF-counit (fire f) a = f a
+MF-counit pass _ = true
+
 -- How we interpret a MayFireFilter as a Filter: passing means allowing all
 -- choices.
 MFF→Filter : MayFireFilter → Filter
-MFF→Filter F {n} r c = cases (F r) c
-    module MFF→FilterImpl where
-        cases : MayFire (Choices r → Bool) → Choices r → Bool
-        cases (fire f) c = f c
-        cases pass _ = true
+MFF→Filter F {n} r c = MF-counit (F r) c
 
 -- Always fire.
 Filter→MFF : Filter → MayFireFilter
@@ -127,7 +132,7 @@ infixr 70 _»_
 
 _»_ : MFF → MFF → MFF
 (G » F) r = cases (F r)
-    where   
+    module »Impl where   
         cases : MayFire (Choices r → Bool) → MayFire (Choices r → Bool)
         cases (fire f) = fire f
         cases pass = G r
