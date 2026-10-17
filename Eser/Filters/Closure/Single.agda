@@ -466,6 +466,16 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
     goal : T (proj₁ S m y)
     goal = T-intro mSy
 
+closable-exence-sat
+    : {F : MFF}
+    → (R : EqRel)
+    → (C : IsClosable' F)
+    → Exence-sats' F (rel-to-exence $ rel $ C R)
+closable-exence-sat {F} R C = sat (C R)
+    -- ^ This proves that the relation (rel (C R)) satisfies R.
+    -- But `Rel-sats` is defined via Exence-sats on rel-to-exence,
+    -- so is judgementally equal to the goal.
+    
 -- Implementation of the next theorem.
 -- Just to reduce number of arguments to pass around and things
 -- to redefine every time.
@@ -483,7 +493,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     C : IsClosable F
     C = EqFilter-IsClosable E
     S : EqRel
-    S = rel ( C R)
+    S = rel (C R)
     hH : Exence
     hH = rel-to-exence S
     h : (n : ℕ) → NFRestr n
@@ -492,6 +502,8 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     H = proj₂ hH
     S-is-closure : S is-the F' closure-of R
     S-is-closure = closure-is-closure {F'} {R} (C R)
+    hH-E-sat : Exence-sats' F' hH
+    hH-E-sat = closable-exence-sat {F'} R C
 
     f' : NFFun
     f' = RelToFun R
@@ -619,59 +631,63 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                         
             to-<-nofire-cases (tri< x<m _ _) xhHy = ans
                 where
-                    m<y : Tri (m < y) (m ≡ y) (m > y) → m < y
-                    m<y (tri< m<y _ _ ) = m<y
-                    m<y (tri≈ _ m≡y _) = 
-                        ⊥-elim $ newNF-not-related-to-smaller hH choice x<y xhHy
-                        where
-                            rel-sat : Rel-sats' (closureFilter F' R) S
-                            rel-sat = ↔-to 
-                                (closure-implementation {F'} R {S} DEF OH NFN)
-                                S-is-closure
+                m<y : Tri (m < y) (m ≡ y) (m > y) → m < y
+                m<y (tri< m<y _ _ ) = m<y
+                m<y (tri≈ _ m≡y _) = 
+                    ⊥-elim $ newNF-not-related-to-smaller hH choice x<y xhHy
+                    where
+                    rel-sat : Rel-sats' (closureFilter F' R) S
+                    rel-sat = ↔-to 
+                        (closure-implementation {F'} R {S} DEF OH NFN)
+                        S-is-closure
 
-                            e-sat : Exence-sats' (closureFilter F' R) hH
-                            e-sat = 
-                                ↔-to (conversion-sat E R (closureFilter F' R)) 
-                                rel-sat
+                    e-sat : Exence-sats' (closureFilter F' R) hH
+                    e-sat = 
+                        ↔-to (conversion-sat E R (closureFilter F' R)) 
+                        rel-sat
 
-                            m≤y : m ≤ y
-                            m≤y = subst (_≤ y) (sym eq-m) (f-leq y)
+                    m≤y : m ≤ y
+                    m≤y = subst (_≤ y) (sym eq-m) (f-leq y)
 
-                            open Resurface'Impl (h y) m≤y renaming (cases to resurf'-cases)
-                            
-                            choice : getChoiceFromExence hH y ≡ here
-                            choice = 
-                                begin 
-                                    getChoiceFromExence hH y
-                                ≡⟨ »-second-fires-unique {G'} {F'}
-                                   h H (eqfilter-passes E {y} passes (h y)) uniq e-sat ⟩
-                                    proj₁ (uniq (h y))
-                                ≡⟨⟩
-                                    resurface' (h y) {f y} (f-leq y)
-                                ≡⟨ ≤-transport (resurface' (h y)) (sym eq-m) (f-leq y) m≤y ⟩
-                                    resurface' (h y) {m} m≤y
-                                ≡⟨⟩
-                                    resurf'-cases (m≤n⇒m<n∨m≡n m≤y)
-                                ≡⟨ cong resurf'-cases $ m≤n⇒m<n∨m≡n-when-≡ m y m≤y m≡y ⟩
-                                    resurf'-cases (inj₂ m≡y)
-                                ≡⟨⟩
-                                    here
-                                ∎
+                    open Resurface'Impl (h y) m≤y 
+                        renaming (cases to resurf'-cases)
+                    
+                    choice : getChoiceFromExence hH y ≡ here
+                    choice = 
+                        begin 
+                            getChoiceFromExence hH y
+                        ≡⟨ »-second-fires-unique {G'} {F'}
+                           h H (eqfilter-passes E {y} passes (h y)) uniq e-sat
+                         ⟩
+                            proj₁ (uniq (h y))
+                        ≡⟨⟩
+                            resurface' (h y) {f y} (f-leq y)
+                        ≡⟨ ≤-transport 
+                            (resurface' (h y)) (sym eq-m) (f-leq y) m≤y 
+                         ⟩
+                            resurface' (h y) {m} m≤y
+                        ≡⟨⟩
+                            resurf'-cases (m≤n⇒m<n∨m≡n m≤y)
+                        ≡⟨ cong resurf'-cases $ m≤n⇒m<n∨m≡n-when-≡ m y m≤y m≡y ⟩
+                            resurf'-cases (inj₂ m≡y)
+                        ≡⟨⟩
+                            here
+                        ∎
 
-                    m<y (tri> _ _ y<m) = ⊥-elim $ n≮n m (subst (_< m) (sym eq-m) 
-                                                  (≤-<-trans (f-leq y) (y<m)))
+                m<y (tri> _ _ y<m) = ⊥-elim $ n≮n m (subst (_< m) (sym eq-m) 
+                                              (≤-<-trans (f-leq y) (y<m)))
 
 
-                    xhHm : ExRel hH x m
-                    xhHm = ExRel-trans {hH} {x} {y} {m} xhHy 
-                                       (ExRel-sym {hH} {m} {y} mhHy)
+                xhHm : ExRel hH x m
+                xhHm = ExRel-trans {hH} {x} {y} {m} xhHy 
+                                   (ExRel-sym {hH} {m} {y} mhHy)
 
-                    m<b : m < b
-                    m<b = ℓ<m<1+n→ℓ<n (m<y $ <-cmp m y)  y<1+b
-                    rec : Path (R relates_to_) (Eq E) x m
-                    rec = to-< {b} m<b x<m (E m) refl xhHm
+                m<b : m < b
+                m<b = ℓ<m<1+n→ℓ<n (m<y $ <-cmp m y)  y<1+b
+                rec : Path (R relates_to_) (Eq E) x m
+                rec = to-< {b} m<b x<m (E m) refl xhHm
 
-                    ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
+                ans = add-last-step (R relates_to_) (Eq E) rec (inj₁ mRy)
 
                 
             -- Similar to the previous case, but easier: we already know x < y;
@@ -700,13 +716,13 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         → (E y ≡ fire (m , m<y))
         → ExRel hH x y
         → Path (R relates_to_) (Eq E) x y
-    to-<-fire {suc b} {x} {y} {m} y<1+b x<y m<y fired =
+    to-<-fire {suc b} {x} {y} {m} y<1+b x<y m<y eq-fire =
         to-<-fire-cases (<-cmp x m)
         where
         mEy : Eq E m y
-        mEy = (m<y , fired)
+        mEy = (m<y , eq-fire)
         mhHy : ExRel hH m y
-        mhHy = ? -- TODO: implied by mEy.
+        mhHy = eqfilter-fires-to-exrel {E} {hH} hH-E-sat {m} {y} {m<y} eq-fire
 
         to-<-fire-cases 
                 : Tri (x < m) (x ≡ m) (x > m)
@@ -754,7 +770,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
                 ans = path-sym (R relates_to_) (Eq E) flipped-path
             
     to-< {y = y} y<b x<y pass eq = to-<-nofire {m = f y} y<b x<y (sym eq) refl
-        -- Make a case distinction on the normal form of y according
+        -- ^ Make a case distinction on the normal form of y according
         -- to R. It is some m ≤ y such that m R y.
         --
         -- The case m ≡ y leads to a contradiction.
@@ -782,8 +798,8 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         -- The case m < x is symmetric to the previous one,
         -- noting that also x < y holds.
 
-    to-< {suc b} {x} {y} b<y x<y (fire (m , m<y)) eq xhHy = ?
-        -- In this case, the EqFilter fired on input y
+    to-< y<b x<y (fire (m , m<y)) eq = to-<-fire y<b x<y m<y (sym eq)
+        -- ^ In this case, the EqFilter fired on input y
         -- and forced the NF of y to be the same as the NF of m.
         -- So we have m E y.
         -- Since hH sats the EqFilter, it follows that hH related m
