@@ -34,7 +34,11 @@ open import Data.Empty
 open import Data.Unit
 open import Relation.Binary.Core using () renaming (_⇒_ to _⊆_)
 open import Relation.Binary.PropositionalEquality
-open import Relation.Binary.Definitions using (Transitive)
+open import Relation.Binary.Definitions using 
+    ( Reflexive 
+    ; Symmetric 
+    ; Transitive
+    )
 open import Relation.Nullary
 open import Data.Product
 open import Data.Sum
@@ -132,6 +136,31 @@ module _ (R S : A → A → Set) where
         path-trans p (step (inj₁ yRz) $ empty z)
     add-last-step {z = z} p (inj₂ ySz) = 
         path-trans p (step (inj₂ $ inj₂ $ inj₁ ySz) $ empty z)
+
+    -- If T is an equivalence relation containing both R and S,
+    -- then any Path R S x y implies xTy.
+    path-compile 
+        : {T : A → A → Set}
+        → Reflexive T
+        → Symmetric T
+        → Transitive T
+        → ({x y : A} → R x y → T x y)
+        → ({x y : A} → S x y → T x y)
+        → (x y : A) 
+        → Path x y
+        → T x y
+    path-compile ref _ _ _ _ x x (empty x) = ref {x}
+    path-compile {T} ref sym tra R⊆T S⊆T x y (step {x} {z} {y} xR|Sz p )
+        = tra (step-to-T xR|Sz) (path-compile {T} ref sym tra R⊆T S⊆T z y p)
+        where
+            step-to-T
+                : {x y : A}
+                → R x y ⊎ R y x ⊎ S x y ⊎ S y x
+                → T x y
+            step-to-T {x} {y} (inj₁ xRy) = R⊆T xRy
+            step-to-T {x} {y} (inj₂ (inj₁ yRx)) = sym $ R⊆T yRx
+            step-to-T {x} {y} (inj₂ (inj₂ (inj₁ xSy))) = S⊆T xSy
+            step-to-T {x} {y} (inj₂ (inj₂ (inj₂ ySx))) = sym $ S⊆T ySx
 
 --------------------------------------------------------------------------------
 -- Properties of Path
