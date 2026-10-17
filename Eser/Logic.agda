@@ -227,6 +227,12 @@ T-intro
     → T b
 T-intro eq = subst T (sym eq) tt
 
+T-elim
+    : {b : Bool}
+    → T b
+    → b ≡ true
+T-elim {true} _ = refl
+
 does-toWitness
     : {A : Set}
     → (a? : Dec A)

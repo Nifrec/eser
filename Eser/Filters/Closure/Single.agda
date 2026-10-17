@@ -22,7 +22,6 @@ open import Data.Bool hiding (_<_ ; _≤_)
 open import Data.Empty
 open import Data.Unit
 open import Relation.Binary.PropositionalEquality
-open ≡-Reasoning
 open import Relation.Binary.Definitions using 
     ( Tri 
     ; Reflexive 
@@ -59,8 +58,10 @@ open import Eser.Aux using
     )
 open import Eser.Logic using
     ( ≡→≡ᵇ
+    ; ≡ᵇ→≡
     ; does-toWitness
     ; T-intro
+    ; T-elim
     )
 open import Eser.Relation.Binary.Path
 
@@ -251,6 +252,7 @@ eqrel-uniquechoice R {n} r = (c , p , u)
         F = EqRel→MFF R
         c : Choices r
         c = resurface' r (f-leq n)
+        open ≡-Reasoning
         open MFF→FilterImpl F r c renaming (cases to mff2filt-cases)
         open OneHot→MFFImpl (NFFun→OneHot f') r renaming (cases to oh2mff-cases)
         p : F allows' c to r
@@ -307,12 +309,36 @@ newNF-not-related-to-smaller
     → x < y
     → ExRel hH x y
     → ⊥
-newNF-not-related-to-smaller = ?
+newNF-not-related-to-smaller hH@(h , H) {x} {y} eq-choice x<y xhHy = n≮n y y<y
+    where
+    f : ℕ → ℕ
+    f = proj₁ $ combine hH
+    f-leq : (n : ℕ) → f n ≤ n
+    f-leq = proj₁ $ proj₂ $ combine hH
+
+    open Data.Nat.Properties.≤-Reasoning
+    y<y : y < y
+    y<y = begin-strict
+            y
+        ≡⟨⟩
+            choiceToℕ {r = h y} here
+        ≡⟨ cong choiceToℕ $ sym eq-choice ⟩
+            choiceToℕ (getChoiceFromExence hH y)
+        ≡⟨⟩
+            f y
+        ≡⟨ sym $ ≡ᵇ→≡ (f x) (f y) (T-elim {f x ≡ᵇ f y} xhHy) ⟩
+            f x
+        ≤⟨ f-leq x ⟩
+            x
+        <⟨ x<y ⟩
+            y 
+        ∎
+    
+
 
 --------------------------------------------------------------------------------
 -- 𝐓𝐡𝐞𝐨𝐫𝐞𝐦
 -- Characterisation of a closure of a relation w.r.t. an EqFilter.
---
 --------------------------------------------------------------------------------
 -- Proof stategy: we first prove it for the Exence corresponding to the closure,
 -- because this representation is much closer to filters and the construction of
