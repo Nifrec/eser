@@ -253,20 +253,20 @@ closure-implementation {F} R {S} DEF OH NFN = ?
     where
     open ≡-Reasoning
 
--- Given an MFF composition G » F and an input r : NFRestr n
--- on which we know F r doesn't and G r does fire,
--- then any Exence containing r that satisfies G » F must
--- contain one of the choices that G allows at r.
-»-second-fires
-    : {G F : MFF}
-    → (h : (n : ℕ) → NFRestr n)
-    → (H : (n : ℕ) → h n ⋖ h (suc n))
-    → {y : ℕ}
-    → IsPass (F (h y))
-    → IsFire (G (h y))
-    → Exence-sats (MFF→Filter (G » F)) (h , H)
-    → G allows' (getChoiceFromExence (h , H) y) to (h y)
-»-second-fires = ?
+---- Given an MFF composition G » F and an input r : NFRestr n
+---- on which we know F r doesn't and G r does fire,
+---- then any Exence containing r that satisfies G » F must
+---- contain one of the choices that G allows at r.
+--»-second-fires
+--    : {G F : MFF}
+--    → (h : (n : ℕ) → NFRestr n)
+--    → (H : (n : ℕ) → h n ⋖ h (suc n))
+--    → {y : ℕ}
+--    → IsPass (F (h y))
+--    → IsFire (G (h y))
+--    → Exence-sats (MFF→Filter (G » F)) (h , H)
+--    → G allows' (getChoiceFromExence (h , H) y) to (h y)
+--»-second-fires = ?
 
 UniqueChoice : MFF → Set
 UniqueChoice F = 
@@ -327,8 +327,9 @@ eqrel-uniquechoice R {n} r = (c , p , u)
                 prf' : does (c ≡? c') ≡ true
                 prf' = prf
 
--- Special case of »-second-fires: if we also know that G allows exactly
--- one choice at r, then that must be the choice the Exence makes as well.
+-- If F does not fire on input r, and we also know that G allows exactly
+-- one choice at r, then (G » F) r also allows only that choice;
+-- so any Exence satisfying (G » F) must contain that choice as well.
 »-second-fires-unique
     : {G F : MFF}
     → (h : (n : ℕ) → NFRestr n)
@@ -338,7 +339,20 @@ eqrel-uniquechoice R {n} r = (c , p , u)
     → (u : UniqueChoice G)
     → Exence-sats' (G » F) (h , H)
     → getChoiceFromExence (h , H) y ≡ proj₁ (u (h y))
-»-second-fires-unique = ?
+»-second-fires-unique {G} {F} h H {y} passes u sats = c≡c*
+    where
+    c : Choices (h y)
+    c = getChoiceFromExence (h , H) y
+    c* : Choices (h y)
+    c* = proj₁ (u (h y))
+    -- Type check on the data we have:
+    K₀ : MFF→Filter (G » F) (h y) c ≡ true
+    K₀ = sats y
+    -- This is the same type as `G allows' c to (hy)`, by definition:
+    K₁ : MFF→Filter G (h y) c ≡ true 
+    K₁ = sym $ trans (sym K₀) (»-first-passes-filter G F (h y) passes c)
+    c≡c* : c ≡ c*
+    c≡c* = (proj₂ $ proj₂ $ u (h y)) c K₁
 
 -- If an Exence makes the choice newNF at y,
 -- then y is made the smallest element of a new equivalence class.
