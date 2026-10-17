@@ -466,6 +466,16 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
     goal : T (proj₁ S m y)
     goal = T-intro mSy
 
+eqfilter-eq-to-exrel
+    : {E : EqFilter}
+    → {hH : Exence}
+    → {x y : ℕ}
+    → Exence-sats' (EqFilter→MFF E) hH
+    → Eq E x y
+    → ExRel hH x y
+eqfilter-eq-to-exrel {E} {hH} {x} {y} sat (x<y , eq-fire) = 
+    eqfilter-fires-to-exrel {E} {hH} sat {x} {y} {x<y} eq-fire
+
 closable-exence-sat
     : {F : MFF}
     → (R : EqRel)
@@ -502,8 +512,6 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     H = proj₂ hH
     S-is-closure : S is-the F' closure-of R
     S-is-closure = closure-is-closure {F'} {R} (C R)
-    hH-E-sat : Exence-sats' F' hH
-    hH-E-sat = closable-exence-sat {F'} R C
 
     f' : NFFun
     f' = RelToFun R
@@ -519,6 +527,12 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
     DEF = proj₁ DEF-OH-NFN
     OH = proj₁ $ proj₂ $ DEF-OH-NFN
     NFN = proj₂ $ proj₂ $ DEF-OH-NFN
+
+    hH-E-sat : Exence-sats' F' hH
+    hH-E-sat = closable-exence-sat {F'} R C
+    E⊆hH : {x y : ℕ} → Eq E x y → ExRel hH x y
+    E⊆hH = eqfilter-eq-to-exrel {E} {hH} hH-E-sat
+
     R⊆S : R ⊆ (rel (C R))
     R⊆S = ext (C R)
     R⊆hH : {x y : ℕ} → R relates x to y → ExRel hH x y
@@ -722,7 +736,7 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         mEy : Eq E m y
         mEy = (m<y , eq-fire)
         mhHy : ExRel hH m y
-        mhHy = eqfilter-fires-to-exrel {E} {hH} hH-E-sat {m} {y} {m<y} eq-fire
+        mhHy = E⊆hH mEy
 
         to-<-fire-cases 
                 : Tri (x < m) (x ≡ m) (x > m)
@@ -837,7 +851,12 @@ module EqfilClosureCharExenceImpl (E : EqFilter) (R : EqRel) where
         : (x y : ℕ) 
         → Path (R relates_to_) (Eq E) x y
         → ExRel hH x y
-    from x y p = ?
+    -- Type checker became confused about implicit arguments, hence the λs.
+    from = path-compile {ℕ} (R relates_to_) (Eq E) {ExRel hH} 
+           (λ {x} → ExRel-refl hH x) 
+           (λ {x y} → ExRel-sym {hH} {x} {y}) 
+           (λ {x y z} → ExRel-trans {hH} {x} {y} {z}) 
+           R⊆hH E⊆hH
 
 eqfil-closure-char-exence
     : (E : EqFilter)
