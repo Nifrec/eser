@@ -209,6 +209,50 @@ closure-implementation
     → (S is-the F closure-of R) ↔ (Rel-sats' (closureFilter F R) S)
 closure-implementation {F} R {S} DEF OH NFN = ?
 
+-- If F passes on input r, then (G » F) r is homotopic to G r.
+»-first-passes-mff
+    : (G F : MFF)
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → IsPass (F r)
+    → (G » F) r ≡ G r
+»-first-passes-mff G F {n} r passes =
+    begin 
+        (G » F) r
+    ≡⟨⟩
+        »-cases (F r) 
+    ≡⟨ cong »-cases passes ⟩
+        »-cases pass
+    ≡⟨⟩
+        G r
+    ∎
+    where
+    open ≡-Reasoning
+    open »Impl G F r renaming (cases to »-cases)
+
+-- Corollary of »-first-passes-filter:
+-- here the final type is an equality in Bool
+-- instead of in MayFire(Choices r → Bool).
+»-first-passes-filter
+    : (G F : MFF)
+    → {n : ℕ}
+    → (r : NFRestr n)
+    → IsPass (F r)
+    → (c : Choices r)
+    → (MFF→Filter (G » F) r c) ≡ (MFF→Filter G r c)
+»-first-passes-filter G F r passes c =
+    begin 
+        MFF→Filter (G » F) r c
+    ≡⟨⟩
+        MF-counit ((G » F) r) c
+    ≡⟨ cong (λ v → MF-counit v c ) $ »-first-passes-mff G F r passes ⟩
+        MF-counit (G r) c
+    ≡⟨⟩
+        MFF→Filter G r c
+    ∎
+    where
+    open ≡-Reasoning
+
 -- Given an MFF composition G » F and an input r : NFRestr n
 -- on which we know F r doesn't and G r does fire,
 -- then any Exence containing r that satisfies G » F must
@@ -253,7 +297,6 @@ eqrel-uniquechoice R {n} r = (c , p , u)
         c : Choices r
         c = resurface' r (f-leq n)
         open ≡-Reasoning
-        open MFF→FilterImpl F r c renaming (cases to mff2filt-cases)
         open OneHot→MFFImpl (NFFun→OneHot f') r renaming (cases to oh2mff-cases)
         p : F allows' c to r
         p = 
@@ -264,14 +307,14 @@ eqrel-uniquechoice R {n} r = (c , p , u)
             ≡⟨⟩
                 (MFF→Filter ∘ OneHot→MFF ∘ NFFun→OneHot) f' r c
             ≡⟨⟩
-                mff2filt-cases (OneHot→MFF (NFFun→OneHot f') r) c
+                MF-counit (OneHot→MFF (NFFun→OneHot f') r) c
             ≡⟨⟩
-                mff2filt-cases (oh2mff-cases ((NFFun→OneHot f') r)) c
+                MF-counit (oh2mff-cases ((NFFun→OneHot f') r)) c
             ≡⟨⟩ -- Definition NFFun→OneHot:
-                mff2filt-cases (oh2mff-cases (fire c)) c
+                MF-counit (oh2mff-cases (fire c)) c
             ≡⟨⟩ -- Definition oh2mff-cases:
-                mff2filt-cases (fire $ λ c' → does (c ≡? c') ) c
-            ≡⟨⟩ -- Definition mff2filt-cases:
+                MF-counit (fire $ λ c' → does (c ≡? c') ) c
+            ≡⟨⟩ -- Definition MF-counit:
                 does (c ≡? c)
             ≡⟨ dec-true (c ≡? c) refl ⟩
                 true
@@ -284,7 +327,7 @@ eqrel-uniquechoice R {n} r = (c , p , u)
                 prf' : does (c ≡? c') ≡ true
                 prf' = prf
 
--- Special case of previous lemma: if we also know that G allows exactly
+-- Special case of »-second-fires: if we also know that G allows exactly
 -- one choice at r, then that must be the choice the Exence makes as well.
 »-second-fires-unique
     : {G F : MFF}
@@ -422,7 +465,6 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
     F = EqFilter→MFF E
 
     open ≡-Reasoning
-    open MFF→FilterImpl F (h y) c' renaming (cases to mff2filt-cases)
     open OneHot→MFFImpl (NFFun→OneHot f') (h y) renaming (cases to oh2mff-cases)
     open EqFilterToOneHotImpl E (h y) renaming (cases to ef2oh-cases)
 
@@ -435,18 +477,18 @@ eqfilter-fires-to-exrel {E} {hH@(h , H)} e-sat {m} {y} {m<y} eq-fire = goal
         ≡⟨⟩
             (MFF→Filter ∘ OneHot→MFF ∘ EqFilter→OneHot) E (h y) c'
         ≡⟨⟩
-            mff2filt-cases (oh2mff-cases ((EqFilter→OneHot E) (h y))) c'
+            MF-counit (oh2mff-cases ((EqFilter→OneHot E) (h y))) c'
         ≡⟨⟩
-            mff2filt-cases (oh2mff-cases (ef2oh-cases (E y))) c'
+            MF-counit (oh2mff-cases (ef2oh-cases (E y))) c'
         ≡⟨ cong 
-            (λ a → mff2filt-cases (oh2mff-cases (ef2oh-cases a)) c') eq-fire ⟩
-            mff2filt-cases (oh2mff-cases (ef2oh-cases (fire (m , m<y)))) c'
+            (λ a → MF-counit (oh2mff-cases (ef2oh-cases a)) c') eq-fire ⟩
+            MF-counit (oh2mff-cases (ef2oh-cases (fire (m , m<y)))) c'
         ≡⟨⟩ -- Now all the case distinctions compute:
-            mff2filt-cases (oh2mff-cases (fire c' )) c'
+            MF-counit (oh2mff-cases (fire c' )) c'
         ≡⟨⟩
-            mff2filt-cases (oh2mff-cases (fire c' )) c'
+            MF-counit (oh2mff-cases (fire c' )) c'
         ≡⟨⟩
-            mff2filt-cases (fire $ λ c →  does (c' ≡? c) ) c'
+            MF-counit (fire $ λ c →  does (c' ≡? c) ) c'
         ≡⟨⟩
             does (c' ≡? c')
         ≡⟨ dec-true (c' ≡? c') refl ⟩
